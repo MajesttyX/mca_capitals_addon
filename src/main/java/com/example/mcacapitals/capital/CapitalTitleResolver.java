@@ -34,6 +34,10 @@ public class CapitalTitleResolver {
             return female ? "Princess" : "Prince";
         }
 
+        if (entityId.equals(capital.getHeir())) {
+            return "Heir Apparent";
+        }
+
         if (capital.isDuke(entityId)) {
             return female ? "Duchess" : "Duke";
         }

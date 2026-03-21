@@ -11,18 +11,6 @@ public class CapitalManager {
     private CapitalManager() {
     }
 
-    public static CapitalRecord createCapital(UUID capitalId, UUID sovereignId, boolean sovereignFemale) {
-        CapitalRecord record = new CapitalRecord(capitalId, sovereignId, sovereignFemale);
-        CAPITALS.put(capitalId, record);
-        return record;
-    }
-
-    public static CapitalRecord createCapital(UUID capitalId, Integer villageId, UUID sovereignId, boolean sovereignFemale) {
-        CapitalRecord record = new CapitalRecord(capitalId, villageId, sovereignId, sovereignFemale);
-        CAPITALS.put(capitalId, record);
-        return record;
-    }
-
     public static Map<UUID, CapitalRecord> getAllCapitals() {
         return CAPITALS;
     }
@@ -40,20 +28,20 @@ public class CapitalManager {
         return null;
     }
 
-    public static CapitalRecord getCapitalByVillageId(int villageId) {
+    public static CapitalRecord getCapitalByVillageId(Integer villageId) {
+        if (villageId == null) {
+            return null;
+        }
+
         for (CapitalRecord capital : CAPITALS.values()) {
-            if (capital.getVillageId() != null && capital.getVillageId() == villageId) {
+            if (villageId.equals(capital.getVillageId())) {
                 return capital;
             }
         }
         return null;
     }
 
-    public static boolean hasCapitalForSovereign(UUID sovereignId) {
-        return getCapitalBySovereign(sovereignId) != null;
-    }
-
-    public static boolean hasCapitalForVillageId(int villageId) {
+    public static boolean hasCapitalForVillageId(Integer villageId) {
         return getCapitalByVillageId(villageId) != null;
     }
 

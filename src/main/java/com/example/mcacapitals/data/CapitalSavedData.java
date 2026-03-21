@@ -36,7 +36,6 @@ public class CapitalSavedData extends SavedData {
             if (capital.getSovereign() != null) {
                 capitalTag.putUUID("Sovereign", capital.getSovereign());
             }
-
             capitalTag.putBoolean("SovereignFemale", capital.isSovereignFemale());
 
             if (capital.getConsort() != null) {
@@ -53,8 +52,13 @@ public class CapitalSavedData extends SavedData {
                 capitalTag.putUUID("Heir", capital.getHeir());
             }
 
+            capitalTag.putBoolean("MonarchyRejected", capital.isMonarchyRejected());
             capitalTag.putString("State", capital.getState().name());
+            capitalTag.put("ChronicleEntries", writeStringList(capital.getChronicleEntries()));
             capitalTag.put("RoyalChildren", writeUuidSet(capital.getRoyalChildren()));
+            capitalTag.put("RoyalSuccessionOrder", writeUuidList(capital.getRoyalSuccessionOrder()));
+            capitalTag.put("LegitimizedRoyalChildren", writeUuidSet(capital.getLegitimizedRoyalChildren()));
+            capitalTag.put("DisinheritedRoyalChildren", writeUuidSet(capital.getDisinheritedRoyalChildren()));
             capitalTag.put("Dukes", writeUuidSet(capital.getDukes()));
             capitalTag.put("Lords", writeUuidSet(capital.getLords()));
             capitalTag.put("Knights", writeUuidSet(capital.getKnights()));
@@ -100,6 +104,8 @@ public class CapitalSavedData extends SavedData {
                 capital.setHeir(capitalTag.getUUID("Heir"));
             }
 
+            capital.setMonarchyRejected(capitalTag.getBoolean("MonarchyRejected"));
+
             if (capitalTag.contains("State", Tag.TAG_STRING)) {
                 try {
                     capital.setState(CapitalState.valueOf(capitalTag.getString("State")));
@@ -108,7 +114,11 @@ public class CapitalSavedData extends SavedData {
                 }
             }
 
+            readStringList(capitalTag.getList("ChronicleEntries", Tag.TAG_STRING), capital.getChronicleEntries());
             readUuidSet(capitalTag.getList("RoyalChildren", Tag.TAG_STRING), capital.getRoyalChildren());
+            readUuidList(capitalTag.getList("RoyalSuccessionOrder", Tag.TAG_STRING), capital.getRoyalSuccessionOrder());
+            readUuidSet(capitalTag.getList("LegitimizedRoyalChildren", Tag.TAG_STRING), capital.getLegitimizedRoyalChildren());
+            readUuidSet(capitalTag.getList("DisinheritedRoyalChildren", Tag.TAG_STRING), capital.getDisinheritedRoyalChildren());
             readUuidSet(capitalTag.getList("Dukes", Tag.TAG_STRING), capital.getDukes());
             readUuidSet(capitalTag.getList("Lords", Tag.TAG_STRING), capital.getLords());
             readUuidSet(capitalTag.getList("Knights", Tag.TAG_STRING), capital.getKnights());
@@ -117,6 +127,15 @@ public class CapitalSavedData extends SavedData {
             readUuidBooleanMap(capitalTag.getList("DukeFemale", Tag.TAG_COMPOUND), capital.getDukeFemale());
             readUuidBooleanMap(capitalTag.getList("LordFemale", Tag.TAG_COMPOUND), capital.getLordFemale());
             readUuidBooleanMap(capitalTag.getList("KnightFemale", Tag.TAG_COMPOUND), capital.getKnightFemale());
+
+            capital.getRoyalChildren().removeIf(capital.getDisinheritedRoyalChildren()::contains);
+            capital.getRoyalSuccessionOrder().removeIf(id -> !capital.getRoyalChildren().contains(id));
+            for (UUID childId : capital.getRoyalChildren()) {
+                if (!capital.getRoyalSuccessionOrder().contains(childId)) {
+                    capital.getRoyalSuccessionOrder().add(childId);
+                }
+            }
+            capital.getLegitimizedRoyalChildren().retainAll(capital.getRoyalChildren());
 
             CapitalManager.getAllCapitals().put(capital.getCapitalId(), capital);
         }
@@ -132,6 +151,22 @@ public class CapitalSavedData extends SavedData {
         return listTag;
     }
 
+    private static ListTag writeUuidList(Iterable<UUID> uuids) {
+        ListTag listTag = new ListTag();
+        for (UUID uuid : uuids) {
+            listTag.add(StringTag.valueOf(uuid.toString()));
+        }
+        return listTag;
+    }
+
+    private static ListTag writeStringList(Iterable<String> values) {
+        ListTag listTag = new ListTag();
+        for (String value : values) {
+            listTag.add(StringTag.valueOf(value));
+        }
+        return listTag;
+    }
+
     private static void readUuidSet(ListTag listTag, Set<UUID> destination) {
         destination.clear();
 
@@ -141,6 +176,26 @@ public class CapitalSavedData extends SavedData {
                 destination.add(UUID.fromString(raw));
             } catch (IllegalArgumentException ignored) {
             }
+        }
+    }
+
+    private static void readUuidList(ListTag listTag, java.util.List<UUID> destination) {
+        destination.clear();
+
+        for (int i = 0; i < listTag.size(); i++) {
+            String raw = listTag.getString(i);
+            try {
+                destination.add(UUID.fromString(raw));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+    }
+
+    private static void readStringList(ListTag listTag, java.util.List<String> destination) {
+        destination.clear();
+
+        for (int i = 0; i < listTag.size(); i++) {
+            destination.add(listTag.getString(i));
         }
     }
 
@@ -162,7 +217,6 @@ public class CapitalSavedData extends SavedData {
 
         for (int i = 0; i < listTag.size(); i++) {
             CompoundTag pair = listTag.getCompound(i);
-
             if (pair.hasUUID("Id")) {
                 destination.put(pair.getUUID("Id"), pair.getBoolean("Value"));
             }

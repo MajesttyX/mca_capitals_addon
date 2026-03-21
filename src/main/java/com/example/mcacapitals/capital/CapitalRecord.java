@@ -1,7 +1,9 @@
 package com.example.mcacapitals.capital;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -22,10 +24,18 @@ public class CapitalRecord {
 
     private UUID heir;
 
-    private final Set<UUID> royalChildren = new HashSet<>();
-    private final Set<UUID> dukes = new HashSet<>();
-    private final Set<UUID> lords = new HashSet<>();
-    private final Set<UUID> knights = new HashSet<>();
+    private boolean monarchyRejected;
+
+    private final List<String> chronicleEntries = new ArrayList<>();
+
+    private final Set<UUID> royalChildren = new LinkedHashSet<>();
+    private final List<UUID> royalSuccessionOrder = new ArrayList<>();
+    private final Set<UUID> legitimizedRoyalChildren = new LinkedHashSet<>();
+    private final Set<UUID> disinheritedRoyalChildren = new LinkedHashSet<>();
+
+    private final Set<UUID> dukes = new LinkedHashSet<>();
+    private final Set<UUID> lords = new LinkedHashSet<>();
+    private final Set<UUID> knights = new LinkedHashSet<>();
 
     private final Map<UUID, Boolean> royalChildFemale = new HashMap<>();
     private final Map<UUID, Boolean> dukeFemale = new HashMap<>();
@@ -44,6 +54,7 @@ public class CapitalRecord {
         this.sovereign = sovereign;
         this.sovereignFemale = sovereignFemale;
         this.state = CapitalState.PENDING;
+        this.monarchyRejected = false;
     }
 
     public synchronized UUID getCapitalId() {
@@ -114,8 +125,42 @@ public class CapitalRecord {
         this.heir = heir;
     }
 
+    public synchronized boolean isMonarchyRejected() {
+        return monarchyRejected;
+    }
+
+    public synchronized void setMonarchyRejected(boolean monarchyRejected) {
+        this.monarchyRejected = monarchyRejected;
+    }
+
+    public synchronized List<String> getChronicleEntries() {
+        return chronicleEntries;
+    }
+
+    public synchronized void addChronicleEntry(String entry) {
+        if (entry == null || entry.isBlank()) {
+            return;
+        }
+        chronicleEntries.add(entry);
+        if (chronicleEntries.size() > 200) {
+            chronicleEntries.remove(0);
+        }
+    }
+
     public synchronized Set<UUID> getRoyalChildren() {
         return royalChildren;
+    }
+
+    public synchronized List<UUID> getRoyalSuccessionOrder() {
+        return royalSuccessionOrder;
+    }
+
+    public synchronized Set<UUID> getLegitimizedRoyalChildren() {
+        return legitimizedRoyalChildren;
+    }
+
+    public synchronized Set<UUID> getDisinheritedRoyalChildren() {
+        return disinheritedRoyalChildren;
     }
 
     public synchronized Set<UUID> getDukes() {
@@ -155,10 +200,37 @@ public class CapitalRecord {
     }
 
     public synchronized void addRoyalChild(UUID villagerId, boolean female) {
-        if (villagerId != null) {
+        if (villagerId != null && !disinheritedRoyalChildren.contains(villagerId)) {
             royalChildren.add(villagerId);
             royalChildFemale.put(villagerId, female);
+            if (!royalSuccessionOrder.contains(villagerId)) {
+                royalSuccessionOrder.add(villagerId);
+            }
         }
+    }
+
+    public synchronized void addLegitimizedRoyalChild(UUID villagerId, boolean female) {
+        if (villagerId != null) {
+            disinheritedRoyalChildren.remove(villagerId);
+            legitimizedRoyalChildren.add(villagerId);
+            addRoyalChild(villagerId, female);
+        }
+    }
+
+    public synchronized void disinheritRoyalChild(UUID villagerId) {
+        if (villagerId == null) {
+            return;
+        }
+
+        if (villagerId.equals(heir)) {
+            heir = null;
+        }
+
+        disinheritedRoyalChildren.add(villagerId);
+        legitimizedRoyalChildren.remove(villagerId);
+        royalChildren.remove(villagerId);
+        royalSuccessionOrder.removeIf(villagerId::equals);
+        royalChildFemale.remove(villagerId);
     }
 
     public synchronized void addDuke(UUID villagerId, boolean female) {
@@ -184,6 +256,14 @@ public class CapitalRecord {
 
     public synchronized boolean isRoyalChild(UUID villagerId) {
         return villagerId != null && royalChildren.contains(villagerId);
+    }
+
+    public synchronized boolean isLegitimizedRoyalChild(UUID villagerId) {
+        return villagerId != null && legitimizedRoyalChildren.contains(villagerId);
+    }
+
+    public synchronized boolean isDisinheritedRoyalChild(UUID villagerId) {
+        return villagerId != null && disinheritedRoyalChildren.contains(villagerId);
     }
 
     public synchronized boolean isDuke(UUID villagerId) {
@@ -249,6 +329,15 @@ public class CapitalRecord {
 
         this.royalChildFemale.clear();
         this.royalChildFemale.putAll(newRoyalChildFemale);
+
+        this.royalSuccessionOrder.removeIf(id -> !this.royalChildren.contains(id));
+        for (UUID childId : this.royalChildren) {
+            if (!this.royalSuccessionOrder.contains(childId)) {
+                this.royalSuccessionOrder.add(childId);
+            }
+        }
+
+        this.legitimizedRoyalChildren.retainAll(this.royalChildren);
 
         this.lords.clear();
         this.lords.addAll(newLords);

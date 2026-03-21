@@ -19,48 +19,67 @@ public class CapitalCourtWatcher {
     }
 
     public static boolean refreshIfChanged(ServerLevel level, CapitalRecord capital) {
-        if (capital.getSovereign() == null) {
+        if (capital == null) {
             return false;
         }
 
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        String newFingerprint = buildFingerprint(level, capital, residents);
+        String oldFingerprint = CAPITAL_FINGERPRINTS.get(capital.getCapitalId());
 
-        UUID sovereign = capital.getSovereign();
-        UUID sovereignSpouse = MCAIntegrationBridge.getSpouse(level, sovereign);
-        UUID currentConsort = capital.getConsort();
+        if (Objects.equals(newFingerprint, oldFingerprint)) {
+            return false;
+        }
 
-        if (!Objects.equals(sovereignSpouse, currentConsort)) {
-            CapitalCourtBuilder.applySovereignMarriage(level, capital);
-            CapitalNameService.refreshCapitalNames(level, capital, residents);
-            CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), buildFingerprint(level, capital, residents));
+        CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), newFingerprint);
+
+        if (capital.getSovereign() != null) {
+            UUID oldConsort = capital.getConsort();
+            UUID sovereignSpouse = MCAIntegrationBridge.getSpouse(level, capital.getSovereign());
+
+            if (!Objects.equals(sovereignSpouse, oldConsort)) {
+                CapitalCourtBuilder.applySovereignMarriage(level, capital);
+
+                UUID newConsort = capital.getConsort();
+                if (newConsort != null) {
+                    String spouseName = MCAIntegrationBridge.getEntityByUuid(level, newConsort) != null
+                            ? MCAIntegrationBridge.getEntityByUuid(level, newConsort).getName().getString()
+                            : newConsort.toString();
+
+                    CapitalChronicleService.addEntry(level, capital,
+                            spouseName + " became consort of "
+                                    + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+                } else if (oldConsort != null) {
+                    String oldName = MCAIntegrationBridge.getEntityByUuid(level, oldConsort) != null
+                            ? MCAIntegrationBridge.getEntityByUuid(level, oldConsort).getName().getString()
+                            : oldConsort.toString();
+
+                    CapitalChronicleService.addEntry(level, capital,
+                            oldName + " ceased to be consort of "
+                                    + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+                }
+            }
+
+            if (!CapitalSuccessionService.isHeirStillValid(level, capital)) {
+                capital.setHeir(null);
+            }
+
+            CapitalFoundationService.refreshCourt(level, capital);
             CapitalDataAccess.markDirty(level);
             return true;
         }
 
-        if (capital.getDowager() != null) {
-            if (capital.getDowager().equals(capital.getSovereign())
-                    || capital.getDowager().equals(capital.getConsort())) {
-                CapitalFoundationService.refreshCourt(level, capital);
-                CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), buildFingerprint(level, capital, residents));
-                CapitalDataAccess.markDirty(level);
-                return true;
-            }
-        }
-
-        String newFingerprint = buildFingerprint(level, capital, residents);
-        String oldFingerprint = CAPITAL_FINGERPRINTS.get(capital.getCapitalId());
-
-        if (!newFingerprint.equals(oldFingerprint)) {
-            CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), newFingerprint);
-            CapitalFoundationService.refreshCourt(level, capital);
-            return true;
-        }
-
-        return false;
+        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalDataAccess.markDirty(level);
+        return true;
     }
 
     public static void clearFingerprint(UUID capitalId) {
         CAPITAL_FINGERPRINTS.remove(capitalId);
+    }
+
+    public static void clearAllFingerprints() {
+        CAPITAL_FINGERPRINTS.clear();
     }
 
     private static String buildFingerprint(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
@@ -73,6 +92,9 @@ public class CapitalCourtWatcher {
         sb.append("consort=").append(capital.getConsort()).append('|');
         sb.append("dowager=").append(capital.getDowager()).append('|');
         sb.append("heir=").append(capital.getHeir()).append('|');
+        sb.append("royalOrder=").append(capital.getRoyalSuccessionOrder()).append('|');
+        sb.append("disinherited=").append(capital.getDisinheritedRoyalChildren()).append('|');
+        sb.append("legitimized=").append(capital.getLegitimizedRoyalChildren()).append('|');
 
         Set<UUID> watchSet = new HashSet<>(residents);
 

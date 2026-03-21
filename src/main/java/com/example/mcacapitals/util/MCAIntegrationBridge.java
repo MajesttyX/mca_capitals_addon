@@ -5,11 +5,14 @@ import net.mca.server.world.data.FamilyTree;
 import net.mca.server.world.data.FamilyTreeNode;
 import net.mca.server.world.data.Village;
 import net.mca.server.world.data.VillageManager;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -67,7 +70,7 @@ public class MCAIntegrationBridge {
             return Collections.emptySet();
         }
 
-        Set<UUID> result = new HashSet<>();
+        Set<UUID> result = new LinkedHashSet<>();
         for (UUID childId : nodeOpt.get().children()) {
             if (!isNullUuid(childId)) {
                 result.add(childId);
@@ -201,6 +204,33 @@ public class MCAIntegrationBridge {
                 .orElse(0);
     }
 
+    public static String getVillageName(ServerLevel level, Integer villageId) {
+        if (level == null || villageId == null) {
+            return "Unknown Village";
+        }
+
+        return VillageManager.get(level)
+                .getOrEmpty(villageId)
+                .map(Village::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .orElse("Unknown Village");
+    }
+
+    public static BlockPos getVillageCenter(ServerLevel level, Integer villageId) {
+        if (level == null || villageId == null) {
+            return BlockPos.ZERO;
+        }
+
+        return VillageManager.get(level)
+                .getOrEmpty(villageId)
+                .map(Village::getCenter)
+                .map(center -> {
+                    Vec3i vec = center;
+                    return new BlockPos(vec.getX(), vec.getY(), vec.getZ());
+                })
+                .orElse(BlockPos.ZERO);
+    }
+
     public static Set<UUID> getVillageResidents(ServerLevel level, int villageId) {
         if (level == null) {
             return Collections.emptySet();
@@ -213,7 +243,7 @@ public class MCAIntegrationBridge {
 
         return villageOpt.get()
                 .getResidentsUUIDs()
-                .collect(Collectors.toCollection(HashSet::new));
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public static String describeEntity(ServerLevel level, UUID entityId) {

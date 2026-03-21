@@ -16,6 +16,7 @@ public class CapitalNameService {
             "Prince Consort",
             "Queen Consort",
             "King Consort",
+            "Heir Apparent",
             "Princess",
             "Prince",
             "Duchess",
@@ -62,7 +63,7 @@ public class CapitalNameService {
                     ? villager.getCustomName().getString()
                     : villager.getName().getString();
 
-            String baseName = stripKnownTitle(currentName);
+            String baseName = stripKnownTitles(currentName);
             String title = CapitalTitleResolver.getDisplayTitle(level, capital, entityId);
 
             String finalName = (title == null || title.isBlank() || "Commoner".equals(title) || "None".equals(title))
@@ -87,26 +88,32 @@ public class CapitalNameService {
                     ? villager.getCustomName().getString()
                     : villager.getName().getString();
 
-            String baseName = stripKnownTitle(currentName);
+            String baseName = stripKnownTitles(currentName);
             villager.setCustomName(Component.literal(baseName));
             villager.setCustomNameVisible(true);
         }
     }
 
-    private static String stripKnownTitle(String name) {
+    private static String stripKnownTitles(String name) {
         if (name == null || name.isBlank()) {
             return "Unnamed";
         }
 
         String result = name.trim();
+        boolean changed = true;
 
-        for (String title : KNOWN_TITLES) {
-            String prefix = title + " ";
-            if (result.startsWith(prefix)) {
-                return result.substring(prefix.length()).trim();
+        while (changed) {
+            changed = false;
+            for (String title : KNOWN_TITLES) {
+                String prefix = title + " ";
+                if (result.startsWith(prefix)) {
+                    result = result.substring(prefix.length()).trim();
+                    changed = true;
+                    break;
+                }
             }
         }
 
-        return result;
+        return result.isBlank() ? "Unnamed" : result;
     }
 }

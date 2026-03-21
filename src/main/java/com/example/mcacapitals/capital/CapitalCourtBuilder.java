@@ -4,9 +4,8 @@ import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -26,53 +25,56 @@ public class CapitalCourtBuilder {
         boolean newConsortFemale = false;
         UUID newHeir = null;
 
-        Set<UUID> newRoyalChildren = new HashSet<>();
-        Map<UUID, Boolean> newRoyalChildFemale = new HashMap<>();
+        Set<UUID> newRoyalChildren = new LinkedHashSet<>();
+        Map<UUID, Boolean> newRoyalChildFemale = new LinkedHashMap<>();
 
-        Set<UUID> newLords = new HashSet<>();
-        Map<UUID, Boolean> newLordFemale = new HashMap<>();
+        Set<UUID> newLords = new LinkedHashSet<>();
+        Map<UUID, Boolean> newLordFemale = new LinkedHashMap<>();
 
-        Set<UUID> newKnights = new HashSet<>();
-        Map<UUID, Boolean> newKnightFemale = new HashMap<>();
+        Set<UUID> newKnights = new LinkedHashSet<>();
+        Map<UUID, Boolean> newKnightFemale = new LinkedHashMap<>();
 
         UUID spouse = MCAIntegrationBridge.getSpouse(level, sovereign);
-        if (isValidRelationshipSpouse(level, spouse)) {
+        if (isValidRelationshipPerson(level, spouse)) {
             newConsort = spouse;
             newConsortFemale = MCAIntegrationBridge.isFemale(level, spouse);
         }
 
         for (UUID childId : MCAIntegrationBridge.getChildren(level, sovereign)) {
-            if (MCAIntegrationBridge.hasFamilyNode(level, childId)) {
-                newRoyalChildren.add(childId);
-                newRoyalChildFemale.put(childId, MCAIntegrationBridge.isFemale(level, childId));
-            }
-        }
-
-        for (UUID residentId : residents) {
-            if (residentId.equals(sovereign)) {
+            if (childId == null || capital.isDisinheritedRoyalChild(childId)) {
                 continue;
             }
 
-            if (MCAIntegrationBridge.isChildOf(level, residentId, sovereign)) {
-                newRoyalChildren.add(residentId);
-                newRoyalChildFemale.put(residentId, MCAIntegrationBridge.isFemale(level, residentId));
+            boolean biologicalRoyalChild = MCAIntegrationBridge.isChildOf(level, childId, sovereign);
+
+            if (biologicalRoyalChild || capital.isLegitimizedRoyalChild(childId)) {
+                newRoyalChildren.add(childId);
+                newRoyalChildFemale.put(childId, MCAIntegrationBridge.isFemale(level, childId));
+                capital.addRoyalChild(childId, MCAIntegrationBridge.isFemale(level, childId));
             }
         }
 
-        newHeir = newRoyalChildren.stream()
-                .filter(residents::contains)
-                .sorted(Comparator.comparing(UUID::toString))
-                .findFirst()
-                .orElse(null);
-
-        if (newHeir == null) {
-            newHeir = newRoyalChildren.stream()
-                    .sorted(Comparator.comparing(UUID::toString))
-                    .findFirst()
-                    .orElse(null);
+        for (UUID existingRoyalChild : capital.getRoyalChildren()) {
+            if (existingRoyalChild == null || capital.isDisinheritedRoyalChild(existingRoyalChild)) {
+                continue;
+            }
+            if (capital.isLegitimizedRoyalChild(existingRoyalChild) || MCAIntegrationBridge.isChildOf(level, existingRoyalChild, sovereign)) {
+                newRoyalChildren.add(existingRoyalChild);
+                newRoyalChildFemale.put(existingRoyalChild, capital.isRoyalChildFemale(existingRoyalChild));
+            }
         }
 
-        Set<UUID> allRelevant = new HashSet<>(residents);
+        UUID existingHeir = capital.getHeir();
+        if (isValidHeirCandidate(level, existingHeir, sovereign, residents, newRoyalChildren)) {
+            newHeir = existingHeir;
+        } else {
+            newHeir = firstValidRoyalChild(capital.getRoyalSuccessionOrder(), residents, sovereign, level, newRoyalChildren);
+            if (newHeir == null) {
+                newHeir = firstValidRoyalChild(capital.getRoyalSuccessionOrder(), null, sovereign, level, newRoyalChildren);
+            }
+        }
+
+        Set<UUID> allRelevant = new LinkedHashSet<>(residents);
         allRelevant.addAll(newRoyalChildren);
 
         if (newConsort != null) {
@@ -159,16 +161,16 @@ public class CapitalCourtBuilder {
         }
 
         UUID spouse = MCAIntegrationBridge.getSpouse(level, sovereign);
-        UUID validConsort = isValidRelationshipSpouse(level, spouse) ? spouse : null;
+        UUID validConsort = isValidRelationshipPerson(level, spouse) ? spouse : null;
         boolean spouseFemale = validConsort != null && MCAIntegrationBridge.isFemale(level, validConsort);
 
         UUID heirBefore = capital.getHeir();
-        Set<UUID> royalChildrenBefore = new HashSet<>(capital.getRoyalChildren());
-        Map<UUID, Boolean> royalChildFemaleBefore = new HashMap<>(capital.getRoyalChildFemale());
-        Set<UUID> lordsBefore = new HashSet<>(capital.getLords());
-        Map<UUID, Boolean> lordFemaleBefore = new HashMap<>(capital.getLordFemale());
-        Set<UUID> knightsBefore = new HashSet<>(capital.getKnights());
-        Map<UUID, Boolean> knightFemaleBefore = new HashMap<>(capital.getKnightFemale());
+        Set<UUID> royalChildrenBefore = new LinkedHashSet<>(capital.getRoyalChildren());
+        Map<UUID, Boolean> royalChildFemaleBefore = new LinkedHashMap<>(capital.getRoyalChildFemale());
+        Set<UUID> lordsBefore = new LinkedHashSet<>(capital.getLords());
+        Map<UUID, Boolean> lordFemaleBefore = new LinkedHashMap<>(capital.getLordFemale());
+        Set<UUID> knightsBefore = new LinkedHashSet<>(capital.getKnights());
+        Map<UUID, Boolean> knightFemaleBefore = new LinkedHashMap<>(capital.getKnightFemale());
 
         capital.replaceDynamicRoles(
                 validConsort,
@@ -192,16 +194,58 @@ public class CapitalCourtBuilder {
         }
     }
 
-    private static boolean isValidRelationshipSpouse(ServerLevel level, UUID spouseId) {
-        if (spouseId == null) {
+    private static UUID firstValidRoyalChild(
+            Iterable<UUID> orderedRoyalChildren,
+            Set<UUID> residents,
+            UUID sovereign,
+            ServerLevel level,
+            Set<UUID> validRoyalChildren
+    ) {
+        for (UUID childId : orderedRoyalChildren) {
+            if (childId == null || childId.equals(sovereign)) {
+                continue;
+            }
+            if (!validRoyalChildren.contains(childId)) {
+                continue;
+            }
+            if (residents != null && !residents.contains(childId)) {
+                continue;
+            }
+            if (MCAIntegrationBridge.hasFamilyNode(level, childId)) {
+                return childId;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isValidHeirCandidate(
+            ServerLevel level,
+            UUID candidate,
+            UUID sovereign,
+            Set<UUID> residents,
+            Set<UUID> validRoyalChildren
+    ) {
+        if (candidate == null || candidate.equals(sovereign)) {
             return false;
         }
 
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, spouseId);
+        if (validRoyalChildren.contains(candidate)) {
+            return MCAIntegrationBridge.hasFamilyNode(level, candidate);
+        }
+
+        return residents.contains(candidate) && MCAIntegrationBridge.hasFamilyNode(level, candidate);
+    }
+
+    private static boolean isValidRelationshipPerson(ServerLevel level, UUID personId) {
+        if (personId == null) {
+            return false;
+        }
+
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, personId);
         if (entity != null) {
             return entity.isAlive() && !entity.isRemoved();
         }
 
-        return MCAIntegrationBridge.hasFamilyNode(level, spouseId);
+        return MCAIntegrationBridge.hasFamilyNode(level, personId);
     }
 }
