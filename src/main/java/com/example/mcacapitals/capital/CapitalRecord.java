@@ -26,7 +26,11 @@ public class CapitalRecord {
 
     private boolean monarchyRejected;
 
+    private boolean mourningActive;
+    private long mourningEndDay;
+
     private final List<String> chronicleEntries = new ArrayList<>();
+    private final Map<UUID, String> mourningOriginalClothes = new HashMap<>();
 
     private final Set<UUID> royalChildren = new LinkedHashSet<>();
     private final List<UUID> royalSuccessionOrder = new ArrayList<>();
@@ -55,6 +59,8 @@ public class CapitalRecord {
         this.sovereignFemale = sovereignFemale;
         this.state = CapitalState.PENDING;
         this.monarchyRejected = false;
+        this.mourningActive = false;
+        this.mourningEndDay = 0L;
     }
 
     public synchronized UUID getCapitalId() {
@@ -133,6 +139,22 @@ public class CapitalRecord {
         this.monarchyRejected = monarchyRejected;
     }
 
+    public synchronized boolean isMourningActive() {
+        return mourningActive;
+    }
+
+    public synchronized void setMourningActive(boolean mourningActive) {
+        this.mourningActive = mourningActive;
+    }
+
+    public synchronized long getMourningEndDay() {
+        return mourningEndDay;
+    }
+
+    public synchronized void setMourningEndDay(long mourningEndDay) {
+        this.mourningEndDay = mourningEndDay;
+    }
+
     public synchronized List<String> getChronicleEntries() {
         return chronicleEntries;
     }
@@ -145,6 +167,10 @@ public class CapitalRecord {
         if (chronicleEntries.size() > 200) {
             chronicleEntries.remove(0);
         }
+    }
+
+    public synchronized Map<UUID, String> getMourningOriginalClothes() {
+        return mourningOriginalClothes;
     }
 
     public synchronized Set<UUID> getRoyalChildren() {

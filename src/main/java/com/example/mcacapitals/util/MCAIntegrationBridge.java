@@ -1,6 +1,7 @@
 package com.example.mcacapitals.util;
 
 import net.mca.entity.VillagerEntityMCA;
+import net.mca.entity.ai.relationship.AgeState;
 import net.mca.server.world.data.FamilyTree;
 import net.mca.server.world.data.FamilyTreeNode;
 import net.mca.server.world.data.Village;
@@ -48,6 +49,28 @@ public class MCAIntegrationBridge {
             return villager.getGenetics().getGender().binary().getDataName().equalsIgnoreCase("female");
         }
         return false;
+    }
+
+    public static AgeState getAgeState(ServerLevel level, UUID entityId) {
+        Entity entity = getEntityByUuid(level, entityId);
+        if (entity instanceof VillagerEntityMCA villager) {
+            return villager.getAgeState();
+        }
+        return AgeState.UNASSIGNED;
+    }
+
+    public static boolean isTeenOrAdultVillager(ServerLevel level, UUID entityId) {
+        Entity entity = getEntityByUuid(level, entityId);
+        if (!(entity instanceof VillagerEntityMCA villager)) {
+            return false;
+        }
+
+        if (!villager.isAlive() || villager.isRemoved()) {
+            return false;
+        }
+
+        AgeState ageState = villager.getAgeState();
+        return ageState == AgeState.TEEN || ageState == AgeState.ADULT;
     }
 
     public static boolean hasFamilyNode(ServerLevel level, UUID entityId) {
@@ -252,6 +275,7 @@ public class MCAIntegrationBridge {
                 + ", isGuard=" + isMCAGuard(level, entityId)
                 + ", isMaster=" + isMasterProfessionVillager(level, entityId)
                 + ", isFemale=" + isFemale(level, entityId)
+                + ", ageState=" + getAgeState(level, entityId)
                 + ", spouse=" + (getSpouse(level, entityId) == null ? "none" : getSpouse(level, entityId))
                 + ", childCount=" + getChildren(level, entityId).size()
                 + ", profession=" + describeProfession(level, entityId);

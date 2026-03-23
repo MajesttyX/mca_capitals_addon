@@ -29,9 +29,7 @@ public class CapitalSuccessionService {
         UUID oldConsort = capital.getConsort();
         boolean oldConsortFemale = capital.isConsortFemale();
 
-        String deadName = MCAIntegrationBridge.getEntityByUuid(level, sovereign) != null
-                ? MCAIntegrationBridge.getEntityByUuid(level, sovereign).getName().getString()
-                : sovereign.toString();
+        String deadName = resolveName(level, sovereign);
 
         Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
         Map<UUID, Boolean> oldRoyalChildFemale = new LinkedHashMap<>(capital.getRoyalChildFemale());
@@ -39,6 +37,8 @@ public class CapitalSuccessionService {
 
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         UUID successor = findSuccessor(level, capital, residents);
+
+        CapitalMourningService.startMourning(level, capital, deadName + " died.");
 
         if (successor == null) {
             capital.setSovereign(null);
@@ -52,9 +52,7 @@ public class CapitalSuccessionService {
                 capital.setDowager(oldConsort);
                 capital.setDowagerFemale(oldConsortFemale);
 
-                String dowagerName = MCAIntegrationBridge.getEntityByUuid(level, oldConsort) != null
-                        ? MCAIntegrationBridge.getEntityByUuid(level, oldConsort).getName().getString()
-                        : oldConsort.toString();
+                String dowagerName = resolveName(level, oldConsort);
 
                 CapitalChronicleService.addEntry(level, capital,
                         deadName + " died. " + dowagerName + " was left as surviving consort while the throne stood vacant.");
@@ -138,9 +136,7 @@ public class CapitalSuccessionService {
         }
         capital.setHeir(nextHeir);
 
-        String successorName = MCAIntegrationBridge.getEntityByUuid(level, successor) != null
-                ? MCAIntegrationBridge.getEntityByUuid(level, successor).getName().getString()
-                : successor.toString();
+        String successorName = resolveName(level, successor);
 
         CapitalChronicleService.addEntry(level, capital,
                 deadName + " died. " + successorName + " inherited the throne of "
@@ -287,5 +283,10 @@ public class CapitalSuccessionService {
         }
 
         return MCAIntegrationBridge.hasFamilyNode(level, entityId);
+    }
+
+    private static String resolveName(ServerLevel level, UUID id) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
+        return entity != null ? entity.getName().getString() : id.toString();
     }
 }

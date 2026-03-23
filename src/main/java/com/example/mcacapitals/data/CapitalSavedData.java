@@ -53,8 +53,13 @@ public class CapitalSavedData extends SavedData {
             }
 
             capitalTag.putBoolean("MonarchyRejected", capital.isMonarchyRejected());
+            capitalTag.putBoolean("MourningActive", capital.isMourningActive());
+            capitalTag.putLong("MourningEndDay", capital.getMourningEndDay());
             capitalTag.putString("State", capital.getState().name());
+
             capitalTag.put("ChronicleEntries", writeStringList(capital.getChronicleEntries()));
+            capitalTag.put("MourningOriginalClothes", writeUuidStringMap(capital.getMourningOriginalClothes()));
+
             capitalTag.put("RoyalChildren", writeUuidSet(capital.getRoyalChildren()));
             capitalTag.put("RoyalSuccessionOrder", writeUuidList(capital.getRoyalSuccessionOrder()));
             capitalTag.put("LegitimizedRoyalChildren", writeUuidSet(capital.getLegitimizedRoyalChildren()));
@@ -77,7 +82,7 @@ public class CapitalSavedData extends SavedData {
 
     public static CapitalSavedData load(CompoundTag tag) {
         CapitalSavedData data = new CapitalSavedData();
-        CapitalManager.getAllCapitals().clear();
+        CapitalManager.clearAll();
 
         ListTag capitalsTag = tag.getList("Capitals", Tag.TAG_COMPOUND);
         for (int i = 0; i < capitalsTag.size(); i++) {
@@ -105,6 +110,8 @@ public class CapitalSavedData extends SavedData {
             }
 
             capital.setMonarchyRejected(capitalTag.getBoolean("MonarchyRejected"));
+            capital.setMourningActive(capitalTag.getBoolean("MourningActive"));
+            capital.setMourningEndDay(capitalTag.getLong("MourningEndDay"));
 
             if (capitalTag.contains("State", Tag.TAG_STRING)) {
                 try {
@@ -115,6 +122,8 @@ public class CapitalSavedData extends SavedData {
             }
 
             readStringList(capitalTag.getList("ChronicleEntries", Tag.TAG_STRING), capital.getChronicleEntries());
+            readUuidStringMap(capitalTag.getList("MourningOriginalClothes", Tag.TAG_COMPOUND), capital.getMourningOriginalClothes());
+
             readUuidSet(capitalTag.getList("RoyalChildren", Tag.TAG_STRING), capital.getRoyalChildren());
             readUuidList(capitalTag.getList("RoyalSuccessionOrder", Tag.TAG_STRING), capital.getRoyalSuccessionOrder());
             readUuidSet(capitalTag.getList("LegitimizedRoyalChildren", Tag.TAG_STRING), capital.getLegitimizedRoyalChildren());
@@ -167,38 +176,6 @@ public class CapitalSavedData extends SavedData {
         return listTag;
     }
 
-    private static void readUuidSet(ListTag listTag, Set<UUID> destination) {
-        destination.clear();
-
-        for (int i = 0; i < listTag.size(); i++) {
-            String raw = listTag.getString(i);
-            try {
-                destination.add(UUID.fromString(raw));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-    }
-
-    private static void readUuidList(ListTag listTag, java.util.List<UUID> destination) {
-        destination.clear();
-
-        for (int i = 0; i < listTag.size(); i++) {
-            String raw = listTag.getString(i);
-            try {
-                destination.add(UUID.fromString(raw));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-    }
-
-    private static void readStringList(ListTag listTag, java.util.List<String> destination) {
-        destination.clear();
-
-        for (int i = 0; i < listTag.size(); i++) {
-            destination.add(listTag.getString(i));
-        }
-    }
-
     private static ListTag writeUuidBooleanMap(Map<UUID, Boolean> map) {
         ListTag listTag = new ListTag();
 
@@ -212,13 +189,64 @@ public class CapitalSavedData extends SavedData {
         return listTag;
     }
 
+    private static ListTag writeUuidStringMap(Map<UUID, String> map) {
+        ListTag listTag = new ListTag();
+
+        for (Map.Entry<UUID, String> entry : map.entrySet()) {
+            CompoundTag pair = new CompoundTag();
+            pair.putUUID("Id", entry.getKey());
+            pair.putString("Value", entry.getValue() == null ? "" : entry.getValue());
+            listTag.add(pair);
+        }
+
+        return listTag;
+    }
+
+    private static void readUuidSet(ListTag listTag, Set<UUID> destination) {
+        destination.clear();
+        for (int i = 0; i < listTag.size(); i++) {
+            String raw = listTag.getString(i);
+            try {
+                destination.add(UUID.fromString(raw));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+    }
+
+    private static void readUuidList(ListTag listTag, java.util.List<UUID> destination) {
+        destination.clear();
+        for (int i = 0; i < listTag.size(); i++) {
+            String raw = listTag.getString(i);
+            try {
+                destination.add(UUID.fromString(raw));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+    }
+
+    private static void readStringList(ListTag listTag, java.util.List<String> destination) {
+        destination.clear();
+        for (int i = 0; i < listTag.size(); i++) {
+            destination.add(listTag.getString(i));
+        }
+    }
+
     private static void readUuidBooleanMap(ListTag listTag, Map<UUID, Boolean> destination) {
         destination.clear();
-
         for (int i = 0; i < listTag.size(); i++) {
             CompoundTag pair = listTag.getCompound(i);
             if (pair.hasUUID("Id")) {
                 destination.put(pair.getUUID("Id"), pair.getBoolean("Value"));
+            }
+        }
+    }
+
+    private static void readUuidStringMap(ListTag listTag, Map<UUID, String> destination) {
+        destination.clear();
+        for (int i = 0; i < listTag.size(); i++) {
+            CompoundTag pair = listTag.getCompound(i);
+            if (pair.hasUUID("Id")) {
+                destination.put(pair.getUUID("Id"), pair.getString("Value"));
             }
         }
     }

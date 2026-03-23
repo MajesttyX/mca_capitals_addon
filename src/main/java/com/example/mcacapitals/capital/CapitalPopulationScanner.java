@@ -5,6 +5,7 @@ import com.example.mcacapitals.item.ModItems;
 import com.example.mcacapitals.item.RoyalCharterItem;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -74,6 +75,7 @@ public class CapitalPopulationScanner {
             if (capital.getSovereign() != null) {
                 if (CapitalSuccessionService.handleSuccessionIfNeeded(level, capital)) {
                     CapitalDataAccess.markDirty(level);
+                    CapitalMourningService.tickMourning(level, capital);
                     continue;
                 }
             }
@@ -81,6 +83,8 @@ public class CapitalPopulationScanner {
             if (CapitalCourtWatcher.refreshIfChanged(level, capital)) {
                 CapitalDataAccess.markDirty(level);
             }
+
+            CapitalMourningService.tickMourning(level, capital);
         }
     }
 
@@ -114,7 +118,7 @@ public class CapitalPopulationScanner {
             nearest.drop(charter, false);
         }
 
-        nearest.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+        nearest.sendSystemMessage(Component.literal(
                 "The people of " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
                         + " seek a sovereign. A Royal Charter has been placed in your hands."
         ));

@@ -3,6 +3,7 @@ package com.example.mcacapitals.capital;
 import com.example.mcacapitals.data.CapitalDataAccess;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,6 +15,7 @@ import java.util.UUID;
 public class CapitalCourtWatcher {
 
     private static final Map<UUID, String> CAPITAL_FINGERPRINTS = new HashMap<>();
+    private static final Map<UUID, Map<UUID, UUID>> ROYAL_SPOUSE_SNAPSHOTS = new HashMap<>();
 
     private CapitalCourtWatcher() {
     }
@@ -31,36 +33,40 @@ public class CapitalCourtWatcher {
             return false;
         }
 
+        UUID oldConsort = capital.getConsort();
+        UUID oldDowager = capital.getDowager();
+        UUID oldHeir = capital.getHeir();
+
+        recordRoyalMarriageEntries(level, capital);
+
         CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), newFingerprint);
 
         if (capital.getSovereign() != null) {
-            UUID oldConsort = capital.getConsort();
             UUID sovereignSpouse = MCAIntegrationBridge.getSpouse(level, capital.getSovereign());
-
-            if (!Objects.equals(sovereignSpouse, oldConsort)) {
+            if (!Objects.equals(sovereignSpouse, capital.getConsort())) {
                 CapitalCourtBuilder.applySovereignMarriage(level, capital);
+            }
 
-                UUID newConsort = capital.getConsort();
-                if (newConsort != null) {
-                    String spouseName = MCAIntegrationBridge.getEntityByUuid(level, newConsort) != null
-                            ? MCAIntegrationBridge.getEntityByUuid(level, newConsort).getName().getString()
-                            : newConsort.toString();
+            if (oldConsort != null && capital.getConsort() == null && isConfirmedDead(level, oldConsort)) {
+                CapitalMourningService.startMourning(level, capital, resolveDisplayName(level, capital, oldConsort) + " died.");
+                CapitalChronicleService.addEntry(level, capital,
+                        resolveDisplayName(level, capital, oldConsort) + " died and the court entered mourning.");
+            }
 
-                    CapitalChronicleService.addEntry(level, capital,
-                            spouseName + " became consort of "
-                                    + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
-                } else if (oldConsort != null) {
-                    String oldName = MCAIntegrationBridge.getEntityByUuid(level, oldConsort) != null
-                            ? MCAIntegrationBridge.getEntityByUuid(level, oldConsort).getName().getString()
-                            : oldConsort.toString();
-
-                    CapitalChronicleService.addEntry(level, capital,
-                            oldName + " ceased to be consort of "
-                                    + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
-                }
+            if (oldDowager != null && isConfirmedDead(level, oldDowager)) {
+                capital.setDowager(null);
+                capital.setDowagerFemale(false);
+                CapitalMourningService.startMourning(level, capital, resolveDisplayName(level, capital, oldDowager) + " died.");
+                CapitalChronicleService.addEntry(level, capital,
+                        resolveDisplayName(level, capital, oldDowager) + " died and the court entered mourning.");
             }
 
             if (!CapitalSuccessionService.isHeirStillValid(level, capital)) {
+                if (oldHeir != null && isConfirmedDead(level, oldHeir)) {
+                    CapitalMourningService.startMourning(level, capital, resolveDisplayName(level, capital, oldHeir) + " died.");
+                    CapitalChronicleService.addEntry(level, capital,
+                            resolveDisplayName(level, capital, oldHeir) + " died and the court entered mourning.");
+                }
                 capital.setHeir(null);
             }
 
@@ -76,10 +82,57 @@ public class CapitalCourtWatcher {
 
     public static void clearFingerprint(UUID capitalId) {
         CAPITAL_FINGERPRINTS.remove(capitalId);
+        ROYAL_SPOUSE_SNAPSHOTS.remove(capitalId);
     }
 
     public static void clearAllFingerprints() {
         CAPITAL_FINGERPRINTS.clear();
+        ROYAL_SPOUSE_SNAPSHOTS.clear();
+    }
+
+    private static void recordRoyalMarriageEntries(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null) {
+            return;
+        }
+
+        Set<UUID> trackedRoyals = new HashSet<>();
+        if (capital.getSovereign() != null) {
+            trackedRoyals.add(capital.getSovereign());
+        }
+        trackedRoyals.addAll(capital.getRoyalChildren());
+
+        Map<UUID, UUID> previousSnapshot = ROYAL_SPOUSE_SNAPSHOTS.get(capital.getCapitalId());
+        Map<UUID, UUID> currentSnapshot = new HashMap<>();
+
+        for (UUID royalId : trackedRoyals) {
+            if (royalId == null) {
+                continue;
+            }
+
+            UUID currentSpouse = MCAIntegrationBridge.getSpouse(level, royalId);
+            currentSnapshot.put(royalId, currentSpouse);
+
+            if (previousSnapshot == null) {
+                continue;
+            }
+
+            UUID previousSpouse = previousSnapshot.get(royalId);
+            if (Objects.equals(previousSpouse, currentSpouse)) {
+                continue;
+            }
+
+            if (currentSpouse == null) {
+                continue;
+            }
+
+            String royalName = resolveDisplayName(level, capital, royalId);
+            String spouseName = resolveDisplayName(level, capital, currentSpouse);
+
+            CapitalChronicleService.addEntry(level, capital,
+                    royalName + " was married to " + spouseName + ".");
+        }
+
+        ROYAL_SPOUSE_SNAPSHOTS.put(capital.getCapitalId(), currentSnapshot);
     }
 
     private static String buildFingerprint(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
@@ -92,6 +145,8 @@ public class CapitalCourtWatcher {
         sb.append("consort=").append(capital.getConsort()).append('|');
         sb.append("dowager=").append(capital.getDowager()).append('|');
         sb.append("heir=").append(capital.getHeir()).append('|');
+        sb.append("mourningActive=").append(capital.isMourningActive()).append('|');
+        sb.append("mourningEndDay=").append(capital.getMourningEndDay()).append('|');
         sb.append("royalOrder=").append(capital.getRoyalSuccessionOrder()).append('|');
         sb.append("disinherited=").append(capital.getDisinheritedRoyalChildren()).append('|');
         sb.append("legitimized=").append(capital.getLegitimizedRoyalChildren()).append('|');
@@ -135,5 +190,69 @@ public class CapitalCourtWatcher {
         }
 
         return sb.toString();
+    }
+
+    private static boolean isConfirmedDead(ServerLevel level, UUID id) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
+        return entity != null && (!entity.isAlive() || entity.isRemoved());
+    }
+
+    private static String resolveDisplayName(ServerLevel level, CapitalRecord capital, UUID id) {
+        if (id == null) {
+            return "Unknown";
+        }
+
+        String baseName = resolveBaseName(level, id);
+        String title = CapitalTitleResolver.getDisplayTitle(level, capital, id);
+
+        if (title == null || title.isBlank() || "Commoner".equalsIgnoreCase(title) || "None".equalsIgnoreCase(title)) {
+            return baseName;
+        }
+
+        return title + " " + stripKnownTitles(baseName);
+    }
+
+    private static String resolveBaseName(ServerLevel level, UUID id) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
+        return entity != null ? entity.getName().getString() : id.toString();
+    }
+
+    private static String stripKnownTitles(String name) {
+        if (name == null || name.isBlank()) {
+            return "Unnamed";
+        }
+
+        String result = name.trim();
+        String[] knownTitles = {
+                "King Consort",
+                "Queen Consort",
+                "Queen Dowager",
+                "Prince Consort",
+                "Heir Apparent",
+                "Princess",
+                "Prince",
+                "Duchess",
+                "Duke",
+                "Lady",
+                "Lord",
+                "Dame",
+                "Sir",
+                "Queen",
+                "King"
+        };
+
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (String title : knownTitles) {
+                String prefix = title + " ";
+                if (result.startsWith(prefix)) {
+                    result = result.substring(prefix.length()).trim();
+                    changed = true;
+                }
+            }
+        }
+
+        return result.isBlank() ? "Unnamed" : result;
     }
 }

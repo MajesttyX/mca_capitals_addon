@@ -21,6 +21,8 @@ public class CapitalCourtBuilder {
             return;
         }
 
+        Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
+
         UUID newConsort = null;
         boolean newConsortFemale = false;
         UUID newHeir = null;
@@ -45,9 +47,9 @@ public class CapitalCourtBuilder {
                 continue;
             }
 
-            boolean biologicalRoyalChild = MCAIntegrationBridge.isChildOf(level, childId, sovereign);
+            boolean dynasticChild = MCAIntegrationBridge.isChildOf(level, childId, sovereign);
 
-            if (biologicalRoyalChild || capital.isLegitimizedRoyalChild(childId)) {
+            if (dynasticChild || capital.isLegitimizedRoyalChild(childId)) {
                 newRoyalChildren.add(childId);
                 newRoyalChildFemale.put(childId, MCAIntegrationBridge.isFemale(level, childId));
                 capital.addRoyalChild(childId, MCAIntegrationBridge.isFemale(level, childId));
@@ -152,6 +154,15 @@ public class CapitalCourtBuilder {
             capital.setDowager(null);
             capital.setDowagerFemale(false);
         }
+
+        for (UUID childId : newRoyalChildren) {
+            if (!oldRoyalChildren.contains(childId)) {
+                String name = resolveName(level, childId);
+                CapitalChronicleService.addEntry(level, capital,
+                        "A royal child, " + name + ", was entered into the dynastic record of "
+                                + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+            }
+        }
     }
 
     public static void applySovereignMarriage(ServerLevel level, CapitalRecord capital) {
@@ -247,5 +258,10 @@ public class CapitalCourtBuilder {
         }
 
         return MCAIntegrationBridge.hasFamilyNode(level, personId);
+    }
+
+    private static String resolveName(ServerLevel level, UUID id) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
+        return entity != null ? entity.getName().getString() : id.toString();
     }
 }
