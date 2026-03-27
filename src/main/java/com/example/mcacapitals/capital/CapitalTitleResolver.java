@@ -33,12 +33,16 @@ public class CapitalTitleResolver {
             return "Commander";
         }
 
-        if (isDynasticPrinceOrPrincess(level, capital, entityId)) {
+        if (entityId.equals(capital.getHeir())) {
+            if (capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
+                return "Heir Apparent";
+            }
+
             return female ? "Princess" : "Prince";
         }
 
-        if (entityId.equals(capital.getHeir()) && capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
-            return "Heir Apparent";
+        if (isDynasticPrinceOrPrincess(level, capital, entityId)) {
+            return female ? "Princess" : "Prince";
         }
 
         if (capital.isRoyalGuard(entityId)) {
@@ -178,6 +182,10 @@ public class CapitalTitleResolver {
 
         UUID consort = capital.getConsort();
         if (consort != null && MCAIntegrationBridge.isChildOf(level, entityId, consort)) {
+            return true;
+        }
+
+        if (entityId.equals(capital.getHeir()) && capital.getHeirMode() != CapitalRecord.HeirMode.MANUAL) {
             return true;
         }
 
