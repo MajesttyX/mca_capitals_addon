@@ -3,7 +3,6 @@ package com.example.mcacapitals.capital;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 
-import java.util.Map;
 import java.util.UUID;
 
 public class CapitalTitleResolver {
@@ -18,10 +17,6 @@ public class CapitalTitleResolver {
 
         boolean female = isFemaleForTitle(level, capital, entityId);
 
-        if (entityId.equals(capital.getDowager())) {
-            return female ? "Queen Dowager" : "Prince Consort";
-        }
-
         if (entityId.equals(capital.getSovereign())) {
             return female ? "Queen" : "King";
         }
@@ -30,24 +25,48 @@ public class CapitalTitleResolver {
             return female ? "Queen Consort" : "King Consort";
         }
 
-        if (capital.isRoyalChild(entityId)) {
+        if (entityId.equals(capital.getDowager())) {
+            return female ? "Queen Dowager" : "Prince Consort";
+        }
+
+        if (entityId.equals(capital.getCommander())) {
+            return "Commander";
+        }
+
+        if (isDynasticPrinceOrPrincess(level, capital, entityId)) {
             return female ? "Princess" : "Prince";
         }
 
-        if (entityId.equals(capital.getHeir())) {
+        if (entityId.equals(capital.getHeir()) && capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
             return "Heir Apparent";
+        }
+
+        if (capital.isRoyalGuard(entityId)) {
+            return female ? "Dame" : "Sir";
         }
 
         if (capital.isDuke(entityId)) {
             return female ? "Duchess" : "Duke";
         }
 
-        if (capital.isLord(entityId)) {
-            return female ? "Lady" : "Lord";
+        if (isMarriageDuke(level, capital, entityId)) {
+            return female ? "Duchess" : "Duke";
         }
 
         if (capital.isKnight(entityId)) {
             return female ? "Dame" : "Sir";
+        }
+
+        if (isMarriageKnight(level, capital, entityId)) {
+            return female ? "Dame" : "Sir";
+        }
+
+        if (capital.isLord(entityId)) {
+            return female ? "Lady" : "Lord";
+        }
+
+        if (isMarriageLord(level, capital, entityId)) {
+            return female ? "Lady" : "Lord";
         }
 
         return "Commoner";
@@ -58,9 +77,34 @@ public class CapitalTitleResolver {
             return null;
         }
 
-        for (Map.Entry<UUID, CapitalRecord> entry : CapitalManager.getAllCapitals().entrySet()) {
-            CapitalRecord capital = entry.getValue();
+        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+            if (capital != null && capital.containsEntity(entityId)) {
+                return capital;
+            }
+        }
+
+        return null;
+    }
+
+    public static CapitalRecord findCapitalForEntity(ServerLevel level, UUID entityId) {
+        if (entityId == null) {
+            return null;
+        }
+
+        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+            if (capital == null) {
+                continue;
+            }
+
             if (capital.containsEntity(entityId)) {
+                return capital;
+            }
+
+            if (level != null && (
+                    isMarriageDuke(level, capital, entityId)
+                            || isMarriageLord(level, capital, entityId)
+                            || isMarriageKnight(level, capital, entityId)
+            )) {
                 return capital;
             }
         }
@@ -69,7 +113,7 @@ public class CapitalTitleResolver {
     }
 
     public static String getDisplayTitleForEntity(ServerLevel level, UUID entityId) {
-        CapitalRecord capital = findCapitalForEntity(entityId);
+        CapitalRecord capital = findCapitalForEntity(level, entityId);
         if (capital == null) {
             return "Commoner";
         }
@@ -82,28 +126,112 @@ public class CapitalTitleResolver {
             return false;
         }
 
-        if (entityId.equals(capital.getDowager())) {
-            return capital.isDowagerFemale();
-        }
         if (entityId.equals(capital.getSovereign())) {
             return capital.isSovereignFemale();
         }
         if (entityId.equals(capital.getConsort())) {
             return capital.isConsortFemale();
         }
+        if (entityId.equals(capital.getDowager())) {
+            return capital.isDowagerFemale();
+        }
+        if (entityId.equals(capital.getCommander())) {
+            return capital.isCommanderFemale();
+        }
         if (capital.isRoyalChild(entityId)) {
             return capital.isRoyalChildFemale(entityId);
+        }
+        if (capital.isRoyalGuard(entityId)) {
+            return capital.isRoyalGuardFemale(entityId);
         }
         if (capital.isDuke(entityId)) {
             return capital.isDukeFemale(entityId);
         }
-        if (capital.isLord(entityId)) {
-            return capital.isLordFemale(entityId);
-        }
         if (capital.isKnight(entityId)) {
             return capital.isKnightFemale(entityId);
         }
+        if (capital.isLord(entityId)) {
+            return capital.isLordFemale(entityId);
+        }
 
         return level != null && MCAIntegrationBridge.isFemale(level, entityId);
+    }
+
+    private static boolean isDynasticPrinceOrPrincess(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (level == null || capital == null || entityId == null) {
+            return false;
+        }
+
+        if (capital.isRoyalChild(entityId)) {
+            return true;
+        }
+
+        UUID sovereign = capital.getSovereign();
+        if (sovereign != null && MCAIntegrationBridge.isChildOf(level, entityId, sovereign)) {
+            return true;
+        }
+
+        UUID dowager = capital.getDowager();
+        if (dowager != null && MCAIntegrationBridge.isChildOf(level, entityId, dowager)) {
+            return true;
+        }
+
+        UUID consort = capital.getConsort();
+        if (consort != null && MCAIntegrationBridge.isChildOf(level, entityId, consort)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static boolean isMarriageDuke(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (level == null || capital == null || entityId == null) {
+            return false;
+        }
+
+        for (UUID dukeId : capital.getDukes()) {
+            UUID spouse = MCAIntegrationBridge.getSpouse(level, dukeId);
+            if (entityId.equals(spouse)
+                    && !entityId.equals(capital.getConsort())
+                    && !entityId.equals(capital.getSovereign())
+                    && !entityId.equals(capital.getDowager())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isMarriageLord(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (level == null || capital == null || entityId == null) {
+            return false;
+        }
+
+        for (UUID lordId : capital.getLords()) {
+            UUID spouse = MCAIntegrationBridge.getSpouse(level, lordId);
+            if (entityId.equals(spouse)
+                    && !entityId.equals(capital.getConsort())
+                    && !entityId.equals(capital.getSovereign())
+                    && !entityId.equals(capital.getDowager())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isMarriageKnight(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (level == null || capital == null || entityId == null) {
+            return false;
+        }
+
+        for (UUID knightId : capital.getKnights()) {
+            UUID spouse = MCAIntegrationBridge.getSpouse(level, knightId);
+            if (entityId.equals(spouse)
+                    && !entityId.equals(capital.getConsort())
+                    && !entityId.equals(capital.getSovereign())
+                    && !entityId.equals(capital.getDowager())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

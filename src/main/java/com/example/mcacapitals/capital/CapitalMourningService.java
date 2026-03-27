@@ -2,8 +2,6 @@ package com.example.mcacapitals.capital;
 
 import com.example.mcacapitals.data.CapitalDataAccess;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
-import net.mca.entity.VillagerEntityMCA;
-import net.mca.resources.ClothingList;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
@@ -74,17 +72,17 @@ public class CapitalMourningService {
         Map<UUID, String> originals = capital.getMourningOriginalClothes();
         for (Map.Entry<UUID, String> entry : originals.entrySet()) {
             Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entry.getKey());
-            if (!(entity instanceof VillagerEntityMCA villager)) {
+            if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
                 continue;
             }
 
             String original = entry.getValue();
             if (original == null || original.isBlank()) {
-                villager.randomizeClothes();
-            } else if (ClothingList.getInstance().clothing.containsKey(original)) {
-                villager.setClothes(original);
+                MCAIntegrationBridge.randomizeClothes(level, entry.getKey());
+            } else if (MCAIntegrationBridge.clothingExists(original)) {
+                MCAIntegrationBridge.setClothes(level, entry.getKey(), original);
             } else {
-                villager.randomizeClothes();
+                MCAIntegrationBridge.randomizeClothes(level, entry.getKey());
             }
         }
 
@@ -103,7 +101,7 @@ public class CapitalMourningService {
 
         for (UUID residentId : residents) {
             Entity entity = MCAIntegrationBridge.getEntityByUuid(level, residentId);
-            if (!(entity instanceof VillagerEntityMCA villager)) {
+            if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
                 continue;
             }
 
@@ -116,17 +114,18 @@ public class CapitalMourningService {
                 continue;
             }
 
-            if (!ClothingList.getInstance().clothing.containsKey(targetClothes)) {
+            if (!MCAIntegrationBridge.clothingExists(targetClothes)) {
                 continue;
             }
 
-            capital.getMourningOriginalClothes().putIfAbsent(residentId, villager.getClothes());
+            capital.getMourningOriginalClothes().putIfAbsent(residentId, MCAIntegrationBridge.getClothes(level, residentId));
 
-            if (targetClothes.equals(villager.getClothes())) {
+            String currentClothes = MCAIntegrationBridge.getClothes(level, residentId);
+            if (targetClothes.equals(currentClothes)) {
                 continue;
             }
 
-            villager.setClothes(targetClothes);
+            MCAIntegrationBridge.setClothes(level, residentId, targetClothes);
         }
     }
 

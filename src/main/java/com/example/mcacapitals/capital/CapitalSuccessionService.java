@@ -5,8 +5,10 @@ import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -33,7 +35,7 @@ public class CapitalSuccessionService {
 
         Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
         Map<UUID, Boolean> oldRoyalChildFemale = new LinkedHashMap<>(capital.getRoyalChildFemale());
-        java.util.List<UUID> oldSuccessionOrder = new java.util.ArrayList<>(capital.getRoyalSuccessionOrder());
+        List<UUID> oldSuccessionOrder = new ArrayList<>(capital.getRoyalSuccessionOrder());
 
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         UUID successor = findSuccessor(level, capital, residents);
@@ -46,6 +48,7 @@ public class CapitalSuccessionService {
             capital.setConsort(null);
             capital.setConsortFemale(false);
             capital.setHeir(null);
+            capital.setHeirFemale(false);
             capital.setState(CapitalState.PENDING);
 
             if (isValidRelationshipPerson(level, oldConsort)) {
@@ -62,6 +65,8 @@ public class CapitalSuccessionService {
                                 + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + " fell vacant.");
             }
 
+            capital.getRoyalChildren().clear();
+            capital.getRoyalChildFemale().clear();
             for (UUID royalChild : oldRoyalChildren) {
                 if (royalChild != null && !royalChild.equals(sovereign) && !capital.isDisinheritedRoyalChild(royalChild)) {
                     capital.addRoyalChild(royalChild, oldRoyalChildFemale.getOrDefault(royalChild, false));
@@ -71,6 +76,11 @@ public class CapitalSuccessionService {
             capital.getRoyalSuccessionOrder().clear();
             for (UUID childId : oldSuccessionOrder) {
                 if (childId != null && !childId.equals(sovereign) && capital.getRoyalChildren().contains(childId)) {
+                    capital.getRoyalSuccessionOrder().add(childId);
+                }
+            }
+            for (UUID childId : capital.getRoyalChildren()) {
+                if (childId != null && !childId.equals(sovereign) && !capital.getRoyalSuccessionOrder().contains(childId)) {
                     capital.getRoyalSuccessionOrder().add(childId);
                 }
             }
@@ -103,38 +113,30 @@ public class CapitalSuccessionService {
 
         capital.getRoyalSuccessionOrder().clear();
         for (UUID childId : oldSuccessionOrder) {
-            if (childId != null && !childId.equals(successor) && capital.getRoyalChildren().contains(childId)) {
+            if (childId == null || childId.equals(successor)) {
+                continue;
+            }
+            if (capital.getRoyalChildren().contains(childId) && !capital.getRoyalSuccessionOrder().contains(childId)) {
                 capital.getRoyalSuccessionOrder().add(childId);
             }
         }
         for (UUID childId : capital.getRoyalChildren()) {
-            if (!capital.getRoyalSuccessionOrder().contains(childId)) {
+            if (childId != null && !childId.equals(successor) && !capital.getRoyalSuccessionOrder().contains(childId)) {
                 capital.getRoyalSuccessionOrder().add(childId);
             }
         }
 
-        UUID nextHeir = null;
-        for (UUID childId : capital.getRoyalSuccessionOrder()) {
-            if (childId == null || childId.equals(capital.getSovereign())) {
-                continue;
-            }
-            if (residents.contains(childId) && MCAIntegrationBridge.hasFamilyNode(level, childId)) {
-                nextHeir = childId;
-                break;
-            }
-        }
-        if (nextHeir == null) {
-            for (UUID childId : capital.getRoyalSuccessionOrder()) {
-                if (childId == null || childId.equals(capital.getSovereign())) {
-                    continue;
-                }
-                if (MCAIntegrationBridge.hasFamilyNode(level, childId)) {
-                    nextHeir = childId;
-                    break;
-                }
-            }
-        }
+        UUID nextHeir = findNextHeirAfterSuccession(level, capital, residents);
         capital.setHeir(nextHeir);
+        if (nextHeir != null) {
+            if (capital.getRoyalChildren().contains(nextHeir)) {
+                capital.setHeirFemale(capital.isRoyalChildFemale(nextHeir));
+            } else {
+                capital.setHeirFemale(MCAIntegrationBridge.isFemale(level, nextHeir));
+            }
+        } else {
+            capital.setHeirFemale(false);
+        }
 
         String successorName = resolveName(level, successor);
 
@@ -154,13 +156,13 @@ public class CapitalSuccessionService {
             return heir;
         }
 
-        for (UUID id : capital.getRoyalSuccessionOrder()) {
+        for (UUID id : orderedRoyalSuccessors(capital)) {
             if (residents.contains(id) && isValidAbdicationCandidate(level, capital, id)) {
                 return id;
             }
         }
 
-        for (UUID id : capital.getRoyalSuccessionOrder()) {
+        for (UUID id : orderedRoyalSuccessors(capital)) {
             if (isValidAbdicationCandidate(level, capital, id)) {
                 return id;
             }
@@ -201,7 +203,7 @@ public class CapitalSuccessionService {
             return false;
         }
 
-        if (capital.getRoyalChildren().contains(heir)) {
+        if (capital.getRoyalChildren().contains(heir) || capital.isLegitimizedRoyalChild(heir)) {
             return MCAIntegrationBridge.hasFamilyNode(level, heir);
         }
 
@@ -211,17 +213,17 @@ public class CapitalSuccessionService {
 
     private static UUID findSuccessor(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         UUID heir = capital.getHeir();
-        if (isValidSuccessionCandidate(level, heir)) {
+        if (isValidSuccessionCandidate(level, heir) && !capital.isDisinheritedRoyalChild(heir)) {
             return heir;
         }
 
-        for (UUID id : capital.getRoyalSuccessionOrder()) {
+        for (UUID id : orderedRoyalSuccessors(capital)) {
             if (residents.contains(id) && isValidSuccessionCandidate(level, id)) {
                 return id;
             }
         }
 
-        for (UUID id : capital.getRoyalSuccessionOrder()) {
+        for (UUID id : orderedRoyalSuccessors(capital)) {
             if (isValidSuccessionCandidate(level, id)) {
                 return id;
             }
@@ -233,8 +235,20 @@ public class CapitalSuccessionService {
             }
         }
 
+        for (UUID id : capital.getDukes()) {
+            if (isValidSuccessionCandidate(level, id)) {
+                return id;
+            }
+        }
+
         for (UUID id : capital.getLords()) {
             if (residents.contains(id) && isValidSuccessionCandidate(level, id)) {
+                return id;
+            }
+        }
+
+        for (UUID id : capital.getLords()) {
+            if (isValidSuccessionCandidate(level, id)) {
                 return id;
             }
         }
@@ -245,7 +259,53 @@ public class CapitalSuccessionService {
             }
         }
 
+        for (UUID id : capital.getKnights()) {
+            if (isValidSuccessionCandidate(level, id)) {
+                return id;
+            }
+        }
+
         return null;
+    }
+
+    private static UUID findNextHeirAfterSuccession(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        for (UUID id : orderedRoyalSuccessors(capital)) {
+            if (id == null || id.equals(capital.getSovereign()) || capital.isDisinheritedRoyalChild(id)) {
+                continue;
+            }
+            if (residents.contains(id) && isValidSuccessionCandidate(level, id)) {
+                return id;
+            }
+        }
+
+        for (UUID id : orderedRoyalSuccessors(capital)) {
+            if (id == null || id.equals(capital.getSovereign()) || capital.isDisinheritedRoyalChild(id)) {
+                continue;
+            }
+            if (isValidSuccessionCandidate(level, id)) {
+                return id;
+            }
+        }
+
+        return null;
+    }
+
+    private static List<UUID> orderedRoyalSuccessors(CapitalRecord capital) {
+        LinkedHashSet<UUID> ordered = new LinkedHashSet<>();
+
+        for (UUID id : capital.getRoyalSuccessionOrder()) {
+            if (id != null && !capital.isDisinheritedRoyalChild(id)) {
+                ordered.add(id);
+            }
+        }
+
+        for (UUID id : capital.getRoyalChildren()) {
+            if (id != null && !capital.isDisinheritedRoyalChild(id)) {
+                ordered.add(id);
+            }
+        }
+
+        return new ArrayList<>(ordered);
     }
 
     private static boolean isValidLivingSovereign(ServerLevel level, UUID entityId) {

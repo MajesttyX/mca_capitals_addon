@@ -95,6 +95,9 @@ public class HeirScepterHandler {
         }
 
         capital.setHeir(targetId);
+        capital.setHeirMode(CapitalRecord.HeirMode.MANUAL);
+        capital.setHeirFemale(MCAIntegrationBridge.isFemale(level, targetId));
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 

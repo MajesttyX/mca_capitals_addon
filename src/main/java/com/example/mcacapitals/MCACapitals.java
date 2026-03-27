@@ -11,7 +11,9 @@ import com.example.mcacapitals.util.AbdicationPromptCommands;
 import com.example.mcacapitals.util.CapitalDebugCommands;
 import com.example.mcacapitals.util.CapitalFoundingCommands;
 import com.example.mcacapitals.util.CapitalLifecycleHandler;
+import com.example.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.example.mcacapitals.util.CapitalTestCommands;
+import com.example.mcacapitals.util.RoyalGuardInteractionHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.common.MinecraftForge;
@@ -47,6 +49,7 @@ public class MCACapitals {
         MinecraftForge.EVENT_BUS.register(new LegitimizationDecreeHandler());
         MinecraftForge.EVENT_BUS.register(new DeclarationOfAbdicationHandler());
         MinecraftForge.EVENT_BUS.register(new CapitalLifecycleHandler());
+        MinecraftForge.EVENT_BUS.register(new RoyalGuardInteractionHandler());
         MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
     }
 
@@ -55,6 +58,7 @@ public class MCACapitals {
         CapitalDebugCommands.register(event.getDispatcher());
         AbdicationPromptCommands.register(event.getDispatcher());
         CapitalFoundingCommands.register(event.getDispatcher());
+        CapitalRoyalGuardCommands.register(event.getDispatcher());
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {

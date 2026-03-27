@@ -1,8 +1,8 @@
 package com.example.mcacapitals.data;
 
+import com.example.mcacapitals.capital.CapitalManager;
+import com.example.mcacapitals.capital.CapitalRecord;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
 
 public class CapitalDataAccess {
 
@@ -17,6 +17,15 @@ public class CapitalDataAccess {
     }
 
     public static void markDirty(ServerLevel level) {
-        get(level).setDirty();
+        CapitalSavedData data = get(level);
+        data.getCapitals().clear();
+
+        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+            if (capital != null) {
+                data.getCapitals().add(capital);
+            }
+        }
+
+        data.setDirty();
     }
 }

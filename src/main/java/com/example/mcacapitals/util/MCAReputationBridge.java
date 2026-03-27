@@ -1,13 +1,9 @@
 package com.example.mcacapitals.util;
 
-import net.mca.entity.VillagerEntityMCA;
-import net.mca.entity.ai.Memories;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
 
 import java.util.Comparator;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -17,15 +13,7 @@ public class MCAReputationBridge {
     }
 
     public static int getHeartsWithVillager(ServerLevel level, UUID villagerId, UUID playerId) {
-        Entity entity = level.getEntity(villagerId);
-        if (!(entity instanceof VillagerEntityMCA villager)) {
-            return 0;
-        }
-
-        Map<UUID, Memories> memories = villager.getVillagerBrain().getMemories();
-        Memories memory = memories.get(playerId);
-
-        return memory != null ? memory.getHearts() : 0;
+        return MCAIntegrationBridge.getHeartsWithPlayer(level, villagerId, playerId);
     }
 
     public static int getCapitalHeartsScore(ServerLevel level, Set<UUID> residentIds, UUID playerId) {

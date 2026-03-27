@@ -27,18 +27,11 @@ public class CapitalPopulationScanner {
 
     @SubscribeEvent
     public void onLevelTick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
-
-        if (!(event.level instanceof ServerLevel level)) {
-            return;
-        }
+        if (event.phase != TickEvent.Phase.END) return;
+        if (!(event.level instanceof ServerLevel level)) return;
 
         tickCounter++;
-        if (tickCounter < 20) {
-            return;
-        }
+        if (tickCounter < 20) return;
         tickCounter = 0;
 
         boolean changed = normalizeCapitals(level);
@@ -57,9 +50,7 @@ public class CapitalPopulationScanner {
             }
         }
 
-        if (changed) {
-            CapitalDataAccess.markDirty(level);
-        }
+        if (changed) CapitalDataAccess.markDirty(level);
 
         for (CapitalRecord capital : new ArrayList<>(CapitalManager.getAllCapitals().values())) {
             if (capital.getVillageId() != null && !MCAIntegrationBridge.hasVillage(level, capital.getVillageId())) {
@@ -67,9 +58,7 @@ public class CapitalPopulationScanner {
             }
 
             if (capital.getSovereign() == null && !capital.isMonarchyRejected()) {
-                if (issueRoyalCharterIfNeeded(level, capital)) {
-                    CapitalDataAccess.markDirty(level);
-                }
+                if (issueRoyalCharterIfNeeded(level, capital)) CapitalDataAccess.markDirty(level);
             }
 
             if (capital.getSovereign() != null) {
@@ -84,39 +73,32 @@ public class CapitalPopulationScanner {
                 CapitalDataAccess.markDirty(level);
             }
 
+            Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+            if (CapitalRoyalGuardService.tickRoyalGuards(level, capital, residents)) {
+                CapitalDataAccess.markDirty(level);
+            }
+
             CapitalMourningService.tickMourning(level, capital);
         }
     }
 
     private boolean issueRoyalCharterIfNeeded(ServerLevel level, CapitalRecord capital) {
-        if (capital.getVillageId() == null) {
-            return false;
-        }
-
-        if (hasOutstandingRoyalCharter(level, capital.getCapitalId())) {
-            return false;
-        }
+        if (capital.getVillageId() == null) return false;
+        if (hasOutstandingRoyalCharter(level, capital.getCapitalId())) return false;
 
         BlockPos center = MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId());
-
         ServerPlayer nearest = level.players().stream()
                 .filter(player -> player.distanceToSqr(center.getX() + 0.5D, center.getY() + 0.5D, center.getZ() + 0.5D) <= (double) FOUNDING_RADIUS * FOUNDING_RADIUS)
                 .min(Comparator.comparingDouble(player -> player.distanceToSqr(center.getX() + 0.5D, center.getY() + 0.5D, center.getZ() + 0.5D)))
                 .orElse(null);
 
-        if (nearest == null) {
-            return false;
-        }
+        if (nearest == null) return false;
 
         ItemStack charter = RoyalCharterItem.createForCapital(level, capital);
-        if (charter.isEmpty()) {
-            return false;
-        }
+        if (charter.isEmpty()) return false;
 
         boolean inserted = nearest.addItem(charter);
-        if (!inserted) {
-            nearest.drop(charter, false);
-        }
+        if (!inserted) nearest.drop(charter, false);
 
         nearest.sendSystemMessage(Component.literal(
                 "The people of " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
@@ -127,25 +109,14 @@ public class CapitalPopulationScanner {
 
     private boolean hasOutstandingRoyalCharter(ServerLevel level, UUID capitalId) {
         for (ServerPlayer player : level.players()) {
-            for (ItemStack stack : player.getInventory().items) {
-                if (isRoyalCharterForCapital(stack, capitalId)) {
-                    return true;
-                }
-            }
-            for (ItemStack stack : player.getInventory().offhand) {
-                if (isRoyalCharterForCapital(stack, capitalId)) {
-                    return true;
-                }
-            }
+            for (ItemStack stack : player.getInventory().items) if (isRoyalCharterForCapital(stack, capitalId)) return true;
+            for (ItemStack stack : player.getInventory().offhand) if (isRoyalCharterForCapital(stack, capitalId)) return true;
         }
         return false;
     }
 
     private boolean isRoyalCharterForCapital(ItemStack stack, UUID capitalId) {
-        if (stack == null || !stack.is(ModItems.ROYAL_CHARTER.get()) || !stack.hasTag()) {
-            return false;
-        }
-
+        if (stack == null || !stack.is(ModItems.ROYAL_CHARTER.get()) || !stack.hasTag()) return false;
         String raw = stack.getTag().getString("CapitalId");
         return capitalId.toString().equals(raw);
     }
@@ -156,15 +127,8 @@ public class CapitalPopulationScanner {
         for (CapitalRecord capital : new ArrayList<>(CapitalManager.getAllCapitals().values())) {
             if (capital.getVillageId() == null) {
                 Integer resolvedVillageId = null;
-
-                if (capital.getSovereign() != null) {
-                    resolvedVillageId = MCAIntegrationBridge.getVillageIdForResident(level, capital.getSovereign());
-                }
-
-                if (resolvedVillageId == null && capital.getConsort() != null) {
-                    resolvedVillageId = MCAIntegrationBridge.getVillageIdForResident(level, capital.getConsort());
-                }
-
+                if (capital.getSovereign() != null) resolvedVillageId = MCAIntegrationBridge.getVillageIdForResident(level, capital.getSovereign());
+                if (resolvedVillageId == null && capital.getConsort() != null) resolvedVillageId = MCAIntegrationBridge.getVillageIdForResident(level, capital.getConsort());
                 if (resolvedVillageId != null) {
                     capital.setVillageId(resolvedVillageId);
                     changed = true;
@@ -173,17 +137,11 @@ public class CapitalPopulationScanner {
         }
 
         Map<Integer, CapitalRecord> preferredByVillage = new HashMap<>();
-
         for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
             Integer villageId = capital.getVillageId();
-            if (villageId == null) {
-                continue;
-            }
-
+            if (villageId == null) continue;
             CapitalRecord existing = preferredByVillage.get(villageId);
-            if (existing == null || isPreferred(capital, existing)) {
-                preferredByVillage.put(villageId, capital);
-            }
+            if (existing == null || isPreferred(capital, existing)) preferredByVillage.put(villageId, capital);
         }
 
         for (CapitalRecord capital : new ArrayList<>(CapitalManager.getAllCapitals().values())) {
@@ -210,34 +168,15 @@ public class CapitalPopulationScanner {
     }
 
     private boolean isPreferred(CapitalRecord candidate, CapitalRecord existing) {
-        if (candidate.getSovereign() != null && existing.getSovereign() == null) {
-            return true;
-        }
-        if (candidate.getSovereign() == null && existing.getSovereign() != null) {
-            return false;
-        }
+        if (candidate.getSovereign() != null && existing.getSovereign() == null) return true;
+        if (candidate.getSovereign() == null && existing.getSovereign() != null) return false;
+        if (candidate.getState() == CapitalState.ACTIVE && existing.getState() != CapitalState.ACTIVE) return true;
+        if (candidate.getState() != CapitalState.ACTIVE && existing.getState() == CapitalState.ACTIVE) return false;
 
-        if (candidate.getState() == CapitalState.ACTIVE && existing.getState() != CapitalState.ACTIVE) {
-            return true;
-        }
-        if (candidate.getState() != CapitalState.ACTIVE && existing.getState() == CapitalState.ACTIVE) {
-            return false;
-        }
+        int candidateWeight = candidate.getRoyalChildren().size() + candidate.getDukes().size() + candidate.getLords().size() + candidate.getKnights().size();
+        int existingWeight = existing.getRoyalChildren().size() + existing.getDukes().size() + existing.getLords().size() + existing.getKnights().size();
 
-        int candidateWeight = candidate.getRoyalChildren().size()
-                + candidate.getDukes().size()
-                + candidate.getLords().size()
-                + candidate.getKnights().size();
-
-        int existingWeight = existing.getRoyalChildren().size()
-                + existing.getDukes().size()
-                + existing.getLords().size()
-                + existing.getKnights().size();
-
-        if (candidateWeight != existingWeight) {
-            return candidateWeight > existingWeight;
-        }
-
+        if (candidateWeight != existingWeight) return candidateWeight > existingWeight;
         return candidate.getCapitalId().toString().compareTo(existing.getCapitalId().toString()) < 0;
     }
 }

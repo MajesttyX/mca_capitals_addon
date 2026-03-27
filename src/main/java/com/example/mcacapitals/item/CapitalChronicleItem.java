@@ -4,29 +4,27 @@ import com.example.mcacapitals.capital.CapitalChronicleService;
 import com.example.mcacapitals.capital.CapitalManager;
 import com.example.mcacapitals.capital.CapitalRecord;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
-import net.mca.client.book.Book;
-import net.mca.item.ExtendedWrittenBookItem;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.WrittenBookItem;
 import net.minecraft.world.level.Level;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-public class CapitalChronicleItem extends ExtendedWrittenBookItem {
+public class CapitalChronicleItem extends WrittenBookItem {
 
     private static final double MAX_BIND_DISTANCE_SQR = 128.0D * 128.0D;
 
     public CapitalChronicleItem() {
-        super(new Properties().stacksTo(1), new Book("capital_chronicle"));
+        super(new Properties().stacksTo(1));
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.example.mcacapitals.capital;
 
-import net.mca.entity.VillagerEntityMCA;
+import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -17,6 +17,7 @@ public class CapitalNameService {
             "Queen Consort",
             "King Consort",
             "Heir Apparent",
+            "Commander",
             "Princess",
             "Prince",
             "Duchess",
@@ -47,31 +48,33 @@ public class CapitalNameService {
         if (capital.getHeir() != null) {
             allRelevant.add(capital.getHeir());
         }
+        if (capital.getCommander() != null) {
+            allRelevant.add(capital.getCommander());
+        }
 
         allRelevant.addAll(capital.getRoyalChildren());
         allRelevant.addAll(capital.getDukes());
         allRelevant.addAll(capital.getLords());
         allRelevant.addAll(capital.getKnights());
+        allRelevant.addAll(capital.getRoyalGuards());
 
         for (UUID entityId : allRelevant) {
             Entity entity = level.getEntity(entityId);
-            if (!(entity instanceof VillagerEntityMCA villager)) {
+            if (entity == null || !MCAIntegrationBridge.isMCAVillager(level, entityId)) {
                 continue;
             }
 
-            String currentName = villager.getCustomName() != null
-                    ? villager.getCustomName().getString()
-                    : villager.getName().getString();
+            String currentName = entity.getCustomName() != null
+                    ? entity.getCustomName().getString()
+                    : entity.getName().getString();
 
-            String baseName = stripKnownTitles(currentName);
-            String title = CapitalTitleResolver.getDisplayTitle(level, capital, entityId);
+            String baseName = normalizeBaseName(currentName);
+            String finalName = buildDisplayName(level, capital, entityId, baseName);
 
-            String finalName = (title == null || title.isBlank() || "Commoner".equals(title) || "None".equals(title))
-                    ? baseName
-                    : title + " " + baseName;
-
-            villager.setCustomName(Component.literal(finalName));
-            villager.setCustomNameVisible(true);
+            if (!currentName.equals(finalName)) {
+                entity.setCustomName(Component.literal(finalName));
+                entity.setCustomNameVisible(true);
+            }
         }
 
         for (UUID residentId : residents) {
@@ -80,28 +83,53 @@ public class CapitalNameService {
             }
 
             Entity entity = level.getEntity(residentId);
-            if (!(entity instanceof VillagerEntityMCA villager)) {
+            if (entity == null || !MCAIntegrationBridge.isMCAVillager(level, residentId)) {
                 continue;
             }
 
-            String currentName = villager.getCustomName() != null
-                    ? villager.getCustomName().getString()
-                    : villager.getName().getString();
+            String currentName = entity.getCustomName() != null
+                    ? entity.getCustomName().getString()
+                    : entity.getName().getString();
 
-            String baseName = stripKnownTitles(currentName);
-            villager.setCustomName(Component.literal(baseName));
-            villager.setCustomNameVisible(true);
+            String baseName = normalizeBaseName(currentName);
+
+            if (!currentName.equals(baseName)) {
+                entity.setCustomName(Component.literal(baseName));
+                entity.setCustomNameVisible(true);
+            }
         }
     }
 
-    private static String stripKnownTitles(String name) {
+    private static String buildDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId, String baseName) {
+        if (capital.isRoyalGuard(entityId)) {
+            String honorific = capital.isRoyalGuardFemale(entityId) ? "Dame" : "Sir";
+            String guardType = capital.isSovereignFemale() ? "Queensguard" : "Kingsguard";
+            return honorific + " " + baseName + " of the " + guardType;
+        }
+
+        String title = CapitalTitleResolver.getDisplayTitle(level, capital, entityId);
+        if (title == null || title.isBlank() || "Commoner".equals(title) || "None".equals(title)) {
+            return baseName;
+        }
+
+        return title + " " + baseName;
+    }
+
+    private static String normalizeBaseName(String name) {
         if (name == null || name.isBlank()) {
             return "Unnamed";
         }
 
         String result = name.trim();
-        boolean changed = true;
 
+        if (result.endsWith(" of the Kingsguard")) {
+            result = result.substring(0, result.length() - " of the Kingsguard".length()).trim();
+        }
+        if (result.endsWith(" of the Queensguard")) {
+            result = result.substring(0, result.length() - " of the Queensguard".length()).trim();
+        }
+
+        boolean changed = true;
         while (changed) {
             changed = false;
             for (String title : KNOWN_TITLES) {

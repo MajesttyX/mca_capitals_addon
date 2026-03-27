@@ -29,3 +29,6 @@ mandatory=true
 versionRange="[7.6.15,)"
 ordering="AFTER"
 side="BOTH"
+
+[[mixins]]
+config="examplemod.mixins.json"

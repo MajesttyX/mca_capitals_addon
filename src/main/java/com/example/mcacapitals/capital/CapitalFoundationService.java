@@ -86,6 +86,25 @@ public class CapitalFoundationService {
         CapitalCourtBuilder.rebuildCourt(level, capital, residents);
         CapitalNameService.refreshCapitalNames(level, capital, residents);
 
+        String dukeName = MCAIntegrationBridge.getEntityByUuid(level, villagerId) != null
+                ? MCAIntegrationBridge.getEntityByUuid(level, villagerId).getName().getString()
+                : villagerId.toString();
+
+        UUID spouse = MCAIntegrationBridge.getSpouse(level, villagerId);
+        if (spouse != null && residents.contains(spouse)) {
+            String spouseName = MCAIntegrationBridge.getEntityByUuid(level, spouse) != null
+                    ? MCAIntegrationBridge.getEntityByUuid(level, spouse).getName().getString()
+                    : spouse.toString();
+
+            CapitalChronicleService.addEntry(level, capital,
+                    dukeName + " was raised to ducal rank, and " + spouseName
+                            + " entered the court by marriage.");
+        } else {
+            CapitalChronicleService.addEntry(level, capital,
+                    dukeName + " was raised to ducal rank in "
+                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+        }
+
         CapitalManager.getAllCapitals().put(capital.getCapitalId(), capital);
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
@@ -194,8 +213,8 @@ public class CapitalFoundationService {
         UUID dowager = capital.getDowager();
         boolean dowagerFemale = capital.isDowagerFemale();
 
-        Set<UUID> dukes = new HashSet<>(capital.getDukes());
-        HashMap<UUID, Boolean> dukeFemale = new HashMap<>(capital.getDukeFemale());
+        Set<UUID> directDukes = new HashSet<>(capital.getDukes());
+        HashMap<UUID, Boolean> directDukeFemale = new HashMap<>(capital.getDukeFemale());
 
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
 
@@ -206,11 +225,9 @@ public class CapitalFoundationService {
         capital.setDowager(dowager);
         capital.setDowagerFemale(dowagerFemale);
 
-        capital.getDukes().clear();
-        capital.getDukes().addAll(dukes);
-
-        capital.getDukeFemale().clear();
-        capital.getDukeFemale().putAll(dukeFemale);
+        for (UUID dukeId : directDukes) {
+            capital.addDuke(dukeId, directDukeFemale.getOrDefault(dukeId, MCAIntegrationBridge.isFemale(level, dukeId)));
+        }
 
         CapitalCourtBuilder.rebuildCourt(level, capital, residents);
         CapitalNameService.refreshCapitalNames(level, capital, residents);

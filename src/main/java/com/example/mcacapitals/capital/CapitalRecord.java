@@ -1,7 +1,9 @@
 package com.example.mcacapitals.capital;
 
+import net.minecraft.core.BlockPos;
+
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +14,7 @@ public class CapitalRecord {
 
     private final UUID capitalId;
     private Integer villageId;
+    private CapitalState state;
 
     private UUID sovereign;
     private boolean sovereignFemale;
@@ -23,33 +26,58 @@ public class CapitalRecord {
     private boolean dowagerFemale;
 
     private UUID heir;
+    private boolean heirFemale;
+    private HeirMode heirMode = HeirMode.DYNASTIC;
+
+    private final Set<UUID> royalChildren = new LinkedHashSet<>();
+    private final Map<UUID, Boolean> royalChildFemale = new LinkedHashMap<>();
+
+    private final Set<UUID> disinheritedRoyalChildren = new LinkedHashSet<>();
+    private final Set<UUID> legitimizedRoyalChildren = new LinkedHashSet<>();
+    private final Map<UUID, Boolean> legitimizedRoyalChildFemale = new LinkedHashMap<>();
+    private final List<UUID> royalSuccessionOrder = new ArrayList<>();
+
+    private final Set<UUID> dukes = new LinkedHashSet<>();
+    private final Map<UUID, Boolean> dukeFemale = new LinkedHashMap<>();
+
+    private final Set<UUID> lords = new LinkedHashSet<>();
+    private final Map<UUID, Boolean> lordFemale = new LinkedHashMap<>();
+
+    private final Set<UUID> knights = new LinkedHashSet<>();
+    private final Map<UUID, Boolean> knightFemale = new LinkedHashMap<>();
+
+    private boolean playerSovereign;
+    private UUID playerSovereignId;
+    private String playerSovereignName;
+
+    private boolean playerConsort;
+    private UUID playerConsortId;
+    private String playerConsortName;
 
     private boolean monarchyRejected;
 
     private boolean mourningActive;
     private long mourningEndDay;
-
     private final List<String> chronicleEntries = new ArrayList<>();
-    private final Map<UUID, String> mourningOriginalClothes = new HashMap<>();
+    private final Map<UUID, String> mourningOriginalClothes = new LinkedHashMap<>();
 
-    private final Set<UUID> royalChildren = new LinkedHashSet<>();
-    private final List<UUID> royalSuccessionOrder = new ArrayList<>();
-    private final Set<UUID> legitimizedRoyalChildren = new LinkedHashSet<>();
-    private final Set<UUID> disinheritedRoyalChildren = new LinkedHashSet<>();
+    private UUID commander;
+    private boolean commanderFemale;
+    private long lastCommanderRaidBlessingGameTime;
+    private long lastCommanderRandomBlessingDay;
 
-    private final Set<UUID> dukes = new LinkedHashSet<>();
-    private final Set<UUID> lords = new LinkedHashSet<>();
-    private final Set<UUID> knights = new LinkedHashSet<>();
+    private final Set<UUID> royalGuards = new LinkedHashSet<>();
+    private final Map<UUID, Boolean> royalGuardFemale = new LinkedHashMap<>();
+    private final Set<UUID> disgracedRoyalGuards = new LinkedHashSet<>();
+    private UUID royalGuardLiege;
+    private final Set<UUID> royalGuardPatrolling = new LinkedHashSet<>();
+    private final Map<UUID, BlockPos> royalGuardPatrolAnchors = new LinkedHashMap<>();
+    private final Map<UUID, GuardDutyMode> royalGuardDutyModes = new LinkedHashMap<>();
+    private long lastRoyalGuardPromptDay;
+    private UUID pendingPlayerGuardSelectionRequester;
 
-    private final Map<UUID, Boolean> royalChildFemale = new HashMap<>();
-    private final Map<UUID, Boolean> dukeFemale = new HashMap<>();
-    private final Map<UUID, Boolean> lordFemale = new HashMap<>();
-    private final Map<UUID, Boolean> knightFemale = new HashMap<>();
-
-    private CapitalState state;
-
-    public CapitalRecord(UUID capitalId, UUID sovereign, boolean sovereignFemale) {
-        this(capitalId, null, sovereign, sovereignFemale);
+    public CapitalRecord(UUID capitalId, Integer villageId) {
+        this(capitalId, villageId, null, false);
     }
 
     public CapitalRecord(UUID capitalId, Integer villageId, UUID sovereign, boolean sovereignFemale) {
@@ -57,270 +85,530 @@ public class CapitalRecord {
         this.villageId = villageId;
         this.sovereign = sovereign;
         this.sovereignFemale = sovereignFemale;
-        this.state = CapitalState.PENDING;
-        this.monarchyRejected = false;
-        this.mourningActive = false;
-        this.mourningEndDay = 0L;
+        this.state = CapitalState.ACTIVE;
     }
 
-    public synchronized UUID getCapitalId() {
+    public UUID getCapitalId() {
         return capitalId;
     }
 
-    public synchronized Integer getVillageId() {
+    public Integer getVillageId() {
         return villageId;
     }
 
-    public synchronized void setVillageId(Integer villageId) {
+    public void setVillageId(Integer villageId) {
         this.villageId = villageId;
     }
 
-    public synchronized UUID getSovereign() {
-        return sovereign;
-    }
-
-    public synchronized void setSovereign(UUID sovereign) {
-        this.sovereign = sovereign;
-    }
-
-    public synchronized boolean isSovereignFemale() {
-        return sovereignFemale;
-    }
-
-    public synchronized void setSovereignFemale(boolean sovereignFemale) {
-        this.sovereignFemale = sovereignFemale;
-    }
-
-    public synchronized UUID getConsort() {
-        return consort;
-    }
-
-    public synchronized void setConsort(UUID consort) {
-        this.consort = consort;
-    }
-
-    public synchronized boolean isConsortFemale() {
-        return consortFemale;
-    }
-
-    public synchronized void setConsortFemale(boolean consortFemale) {
-        this.consortFemale = consortFemale;
-    }
-
-    public synchronized UUID getDowager() {
-        return dowager;
-    }
-
-    public synchronized void setDowager(UUID dowager) {
-        this.dowager = dowager;
-    }
-
-    public synchronized boolean isDowagerFemale() {
-        return dowagerFemale;
-    }
-
-    public synchronized void setDowagerFemale(boolean dowagerFemale) {
-        this.dowagerFemale = dowagerFemale;
-    }
-
-    public synchronized UUID getHeir() {
-        return heir;
-    }
-
-    public synchronized void setHeir(UUID heir) {
-        this.heir = heir;
-    }
-
-    public synchronized boolean isMonarchyRejected() {
-        return monarchyRejected;
-    }
-
-    public synchronized void setMonarchyRejected(boolean monarchyRejected) {
-        this.monarchyRejected = monarchyRejected;
-    }
-
-    public synchronized boolean isMourningActive() {
-        return mourningActive;
-    }
-
-    public synchronized void setMourningActive(boolean mourningActive) {
-        this.mourningActive = mourningActive;
-    }
-
-    public synchronized long getMourningEndDay() {
-        return mourningEndDay;
-    }
-
-    public synchronized void setMourningEndDay(long mourningEndDay) {
-        this.mourningEndDay = mourningEndDay;
-    }
-
-    public synchronized List<String> getChronicleEntries() {
-        return chronicleEntries;
-    }
-
-    public synchronized void addChronicleEntry(String entry) {
-        if (entry == null || entry.isBlank()) {
-            return;
-        }
-        chronicleEntries.add(entry);
-        if (chronicleEntries.size() > 200) {
-            chronicleEntries.remove(0);
-        }
-    }
-
-    public synchronized Map<UUID, String> getMourningOriginalClothes() {
-        return mourningOriginalClothes;
-    }
-
-    public synchronized Set<UUID> getRoyalChildren() {
-        return royalChildren;
-    }
-
-    public synchronized List<UUID> getRoyalSuccessionOrder() {
-        return royalSuccessionOrder;
-    }
-
-    public synchronized Set<UUID> getLegitimizedRoyalChildren() {
-        return legitimizedRoyalChildren;
-    }
-
-    public synchronized Set<UUID> getDisinheritedRoyalChildren() {
-        return disinheritedRoyalChildren;
-    }
-
-    public synchronized Set<UUID> getDukes() {
-        return dukes;
-    }
-
-    public synchronized Set<UUID> getLords() {
-        return lords;
-    }
-
-    public synchronized Set<UUID> getKnights() {
-        return knights;
-    }
-
-    public synchronized Map<UUID, Boolean> getRoyalChildFemale() {
-        return royalChildFemale;
-    }
-
-    public synchronized Map<UUID, Boolean> getDukeFemale() {
-        return dukeFemale;
-    }
-
-    public synchronized Map<UUID, Boolean> getLordFemale() {
-        return lordFemale;
-    }
-
-    public synchronized Map<UUID, Boolean> getKnightFemale() {
-        return knightFemale;
-    }
-
-    public synchronized CapitalState getState() {
+    public CapitalState getState() {
         return state;
     }
 
-    public synchronized void setState(CapitalState state) {
+    public void setState(CapitalState state) {
         this.state = state;
     }
 
-    public synchronized void addRoyalChild(UUID villagerId, boolean female) {
-        if (villagerId != null && !disinheritedRoyalChildren.contains(villagerId)) {
-            royalChildren.add(villagerId);
-            royalChildFemale.put(villagerId, female);
-            if (!royalSuccessionOrder.contains(villagerId)) {
-                royalSuccessionOrder.add(villagerId);
+    public UUID getSovereign() {
+        return sovereign;
+    }
+
+    public void setSovereign(UUID sovereign) {
+        this.sovereign = sovereign;
+    }
+
+    public boolean isSovereignFemale() {
+        return sovereignFemale;
+    }
+
+    public void setSovereignFemale(boolean sovereignFemale) {
+        this.sovereignFemale = sovereignFemale;
+    }
+
+    public UUID getConsort() {
+        return consort;
+    }
+
+    public void setConsort(UUID consort) {
+        this.consort = consort;
+    }
+
+    public boolean isConsortFemale() {
+        return consortFemale;
+    }
+
+    public void setConsortFemale(boolean consortFemale) {
+        this.consortFemale = consortFemale;
+    }
+
+    public UUID getDowager() {
+        return dowager;
+    }
+
+    public void setDowager(UUID dowager) {
+        this.dowager = dowager;
+    }
+
+    public boolean isDowagerFemale() {
+        return dowagerFemale;
+    }
+
+    public void setDowagerFemale(boolean dowagerFemale) {
+        this.dowagerFemale = dowagerFemale;
+    }
+
+    public UUID getHeir() {
+        return heir;
+    }
+
+    public void setHeir(UUID heir) {
+        this.heir = heir;
+    }
+
+    public boolean isHeirFemale() {
+        return heirFemale;
+    }
+
+    public void setHeirFemale(boolean heirFemale) {
+        this.heirFemale = heirFemale;
+    }
+
+    public HeirMode getHeirMode() {
+        return heirMode;
+    }
+
+    public void setHeirMode(HeirMode heirMode) {
+        this.heirMode = heirMode == null ? HeirMode.DYNASTIC : heirMode;
+    }
+
+    public Set<UUID> getRoyalChildren() {
+        return royalChildren;
+    }
+
+    public Map<UUID, Boolean> getRoyalChildFemale() {
+        return royalChildFemale;
+    }
+
+    public boolean isRoyalChild(UUID id) {
+        return id != null && royalChildren.contains(id);
+    }
+
+    public boolean isRoyalChildFemale(UUID id) {
+        return royalChildFemale.getOrDefault(id, false);
+    }
+
+    public void addRoyalChild(UUID id) {
+        addRoyalChild(id, false);
+    }
+
+    public void addRoyalChild(UUID id, boolean female) {
+        if (id != null) {
+            royalChildren.add(id);
+            royalChildFemale.put(id, female);
+            disinheritedRoyalChildren.remove(id);
+        }
+    }
+
+    public void removeRoyalChild(UUID id) {
+        if (id != null) {
+            royalChildren.remove(id);
+            royalChildFemale.remove(id);
+        }
+    }
+
+    public Set<UUID> getDisinheritedRoyalChildren() {
+        return disinheritedRoyalChildren;
+    }
+
+    public void addDisinheritedRoyalChild(UUID id) {
+        if (id != null) {
+            disinheritedRoyalChildren.add(id);
+            removeRoyalChild(id);
+            royalSuccessionOrder.remove(id);
+            if (id.equals(heir)) {
+                heir = null;
+                heirFemale = false;
             }
         }
     }
 
-    public synchronized void addLegitimizedRoyalChild(UUID villagerId, boolean female) {
-        if (villagerId != null) {
-            disinheritedRoyalChildren.remove(villagerId);
-            legitimizedRoyalChildren.add(villagerId);
-            addRoyalChild(villagerId, female);
+    public void disinheritRoyalChild(UUID id) {
+        addDisinheritedRoyalChild(id);
+    }
+
+    public void removeDisinheritedRoyalChild(UUID id) {
+        if (id != null) {
+            disinheritedRoyalChildren.remove(id);
         }
     }
 
-    public synchronized void disinheritRoyalChild(UUID villagerId) {
-        if (villagerId == null) {
-            return;
-        }
-
-        if (villagerId.equals(heir)) {
-            heir = null;
-        }
-
-        disinheritedRoyalChildren.add(villagerId);
-        legitimizedRoyalChildren.remove(villagerId);
-        royalChildren.remove(villagerId);
-        royalSuccessionOrder.removeIf(villagerId::equals);
-        royalChildFemale.remove(villagerId);
+    public boolean isDisinheritedRoyalChild(UUID id) {
+        return id != null && disinheritedRoyalChildren.contains(id);
     }
 
-    public synchronized void addDuke(UUID villagerId, boolean female) {
-        if (villagerId != null) {
-            dukes.add(villagerId);
-            dukeFemale.put(villagerId, female);
-        }
+    public Set<UUID> getLegitimizedRoyalChildren() {
+        return legitimizedRoyalChildren;
     }
 
-    public synchronized void addLord(UUID villagerId, boolean female) {
-        if (villagerId != null) {
-            lords.add(villagerId);
-            lordFemale.put(villagerId, female);
+    public Map<UUID, Boolean> getLegitimizedRoyalChildFemale() {
+        return legitimizedRoyalChildFemale;
+    }
+
+    public void addLegitimizedRoyalChild(UUID id) {
+        addLegitimizedRoyalChild(id, false);
+    }
+
+    public void addLegitimizedRoyalChild(UUID id, boolean female) {
+        if (id != null) {
+            legitimizedRoyalChildren.add(id);
+            legitimizedRoyalChildFemale.put(id, female);
         }
     }
 
-    public synchronized void addKnight(UUID villagerId, boolean female) {
-        if (villagerId != null) {
-            knights.add(villagerId);
-            knightFemale.put(villagerId, female);
+    public void removeLegitimizedRoyalChild(UUID id) {
+        if (id != null) {
+            legitimizedRoyalChildren.remove(id);
+            legitimizedRoyalChildFemale.remove(id);
         }
     }
 
-    public synchronized boolean isRoyalChild(UUID villagerId) {
-        return villagerId != null && royalChildren.contains(villagerId);
+    public boolean isLegitimizedRoyalChild(UUID id) {
+        return id != null && legitimizedRoyalChildren.contains(id);
     }
 
-    public synchronized boolean isLegitimizedRoyalChild(UUID villagerId) {
-        return villagerId != null && legitimizedRoyalChildren.contains(villagerId);
+    public List<UUID> getRoyalSuccessionOrder() {
+        return royalSuccessionOrder;
     }
 
-    public synchronized boolean isDisinheritedRoyalChild(UUID villagerId) {
-        return villagerId != null && disinheritedRoyalChildren.contains(villagerId);
+    public void setRoyalSuccessionOrder(List<UUID> order) {
+        royalSuccessionOrder.clear();
+        if (order != null) {
+            royalSuccessionOrder.addAll(order);
+        }
     }
 
-    public synchronized boolean isDuke(UUID villagerId) {
-        return villagerId != null && dukes.contains(villagerId);
+    public Set<UUID> getDukes() {
+        return dukes;
     }
 
-    public synchronized boolean isLord(UUID villagerId) {
-        return villagerId != null && lords.contains(villagerId);
+    public Map<UUID, Boolean> getDukeFemale() {
+        return dukeFemale;
     }
 
-    public synchronized boolean isKnight(UUID villagerId) {
-        return villagerId != null && knights.contains(villagerId);
+    public boolean isDuke(UUID id) {
+        return id != null && dukes.contains(id);
     }
 
-    public synchronized boolean isRoyalChildFemale(UUID villagerId) {
-        return villagerId != null && royalChildFemale.getOrDefault(villagerId, false);
+    public boolean isDukeFemale(UUID id) {
+        return dukeFemale.getOrDefault(id, false);
     }
 
-    public synchronized boolean isDukeFemale(UUID villagerId) {
-        return villagerId != null && dukeFemale.getOrDefault(villagerId, false);
+    public void addDuke(UUID id, boolean female) {
+        if (id != null) {
+            dukes.add(id);
+            dukeFemale.put(id, female);
+        }
     }
 
-    public synchronized boolean isLordFemale(UUID villagerId) {
-        return villagerId != null && lordFemale.getOrDefault(villagerId, false);
+    public void removeDuke(UUID id) {
+        if (id != null) {
+            dukes.remove(id);
+            dukeFemale.remove(id);
+        }
     }
 
-    public synchronized boolean isKnightFemale(UUID villagerId) {
-        return villagerId != null && knightFemale.getOrDefault(villagerId, false);
+    public Set<UUID> getLords() {
+        return lords;
     }
 
-    public synchronized boolean containsEntity(UUID entityId) {
+    public Map<UUID, Boolean> getLordFemale() {
+        return lordFemale;
+    }
+
+    public boolean isLord(UUID id) {
+        return id != null && lords.contains(id);
+    }
+
+    public boolean isLordFemale(UUID id) {
+        return lordFemale.getOrDefault(id, false);
+    }
+
+    public void addLord(UUID id, boolean female) {
+        if (id != null) {
+            lords.add(id);
+            lordFemale.put(id, female);
+        }
+    }
+
+    public void removeLord(UUID id) {
+        if (id != null) {
+            lords.remove(id);
+            lordFemale.remove(id);
+        }
+    }
+
+    public Set<UUID> getKnights() {
+        return knights;
+    }
+
+    public Map<UUID, Boolean> getKnightFemale() {
+        return knightFemale;
+    }
+
+    public boolean isKnight(UUID id) {
+        return id != null && knights.contains(id);
+    }
+
+    public boolean isKnightFemale(UUID id) {
+        return knightFemale.getOrDefault(id, false);
+    }
+
+    public void addKnight(UUID id, boolean female) {
+        if (id != null) {
+            knights.add(id);
+            knightFemale.put(id, female);
+        }
+    }
+
+    public void removeKnight(UUID id) {
+        if (id != null) {
+            knights.remove(id);
+            knightFemale.remove(id);
+        }
+    }
+
+    public boolean isPlayerSovereign() {
+        return playerSovereign;
+    }
+
+    public void setPlayerSovereign(boolean playerSovereign) {
+        this.playerSovereign = playerSovereign;
+    }
+
+    public UUID getPlayerSovereignId() {
+        return playerSovereignId;
+    }
+
+    public void setPlayerSovereignId(UUID playerSovereignId) {
+        this.playerSovereignId = playerSovereignId;
+    }
+
+    public String getPlayerSovereignName() {
+        return playerSovereignName;
+    }
+
+    public void setPlayerSovereignName(String playerSovereignName) {
+        this.playerSovereignName = playerSovereignName;
+    }
+
+    public boolean isPlayerConsort() {
+        return playerConsort;
+    }
+
+    public void setPlayerConsort(boolean playerConsort) {
+        this.playerConsort = playerConsort;
+    }
+
+    public UUID getPlayerConsortId() {
+        return playerConsortId;
+    }
+
+    public void setPlayerConsortId(UUID playerConsortId) {
+        this.playerConsortId = playerConsortId;
+    }
+
+    public String getPlayerConsortName() {
+        return playerConsortName;
+    }
+
+    public void setPlayerConsortName(String playerConsortName) {
+        this.playerConsortName = playerConsortName;
+    }
+
+    public boolean isMonarchyRejected() {
+        return monarchyRejected;
+    }
+
+    public void setMonarchyRejected(boolean monarchyRejected) {
+        this.monarchyRejected = monarchyRejected;
+    }
+
+    public boolean isMourningActive() {
+        return mourningActive;
+    }
+
+    public void setMourningActive(boolean mourningActive) {
+        this.mourningActive = mourningActive;
+    }
+
+    public long getMourningEndDay() {
+        return mourningEndDay;
+    }
+
+    public void setMourningEndDay(long mourningEndDay) {
+        this.mourningEndDay = mourningEndDay;
+    }
+
+    public List<String> getChronicleEntries() {
+        return chronicleEntries;
+    }
+
+    public void addChronicleEntry(String entry) {
+        if (entry != null && !entry.isBlank()) {
+            chronicleEntries.add(entry);
+        }
+    }
+
+    public Map<UUID, String> getMourningOriginalClothes() {
+        return mourningOriginalClothes;
+    }
+
+    public UUID getCommander() {
+        return commander;
+    }
+
+    public void setCommander(UUID commander) {
+        this.commander = commander;
+    }
+
+    public boolean isCommanderFemale() {
+        return commanderFemale;
+    }
+
+    public void setCommanderFemale(boolean commanderFemale) {
+        this.commanderFemale = commanderFemale;
+    }
+
+    public long getLastCommanderRaidBlessingGameTime() {
+        return lastCommanderRaidBlessingGameTime;
+    }
+
+    public void setLastCommanderRaidBlessingGameTime(long lastCommanderRaidBlessingGameTime) {
+        this.lastCommanderRaidBlessingGameTime = lastCommanderRaidBlessingGameTime;
+    }
+
+    public long getLastCommanderRandomBlessingDay() {
+        return lastCommanderRandomBlessingDay;
+    }
+
+    public void setLastCommanderRandomBlessingDay(long lastCommanderRandomBlessingDay) {
+        this.lastCommanderRandomBlessingDay = lastCommanderRandomBlessingDay;
+    }
+
+    public Set<UUID> getRoyalGuards() {
+        return royalGuards;
+    }
+
+    public Map<UUID, Boolean> getRoyalGuardFemale() {
+        return royalGuardFemale;
+    }
+
+    public boolean isRoyalGuard(UUID id) {
+        return id != null && royalGuards.contains(id);
+    }
+
+    public boolean isRoyalGuardFemale(UUID id) {
+        return royalGuardFemale.getOrDefault(id, false);
+    }
+
+    public void addRoyalGuard(UUID id, boolean female, UUID liege) {
+        if (id != null) {
+            royalGuards.add(id);
+            royalGuardFemale.put(id, female);
+            royalGuardLiege = liege;
+        }
+    }
+
+    public void removeRoyalGuard(UUID id) {
+        if (id != null) {
+            royalGuards.remove(id);
+            royalGuardFemale.remove(id);
+            royalGuardPatrolling.remove(id);
+            royalGuardPatrolAnchors.remove(id);
+            royalGuardDutyModes.remove(id);
+        }
+    }
+
+    public Set<UUID> getDisgracedRoyalGuards() {
+        return disgracedRoyalGuards;
+    }
+
+    public boolean isDisgracedRoyalGuard(UUID id) {
+        return id != null && disgracedRoyalGuards.contains(id);
+    }
+
+    public void disgraceRoyalGuard(UUID id) {
+        if (id != null) {
+            removeRoyalGuard(id);
+            disgracedRoyalGuards.add(id);
+        }
+    }
+
+    public UUID getRoyalGuardLiege() {
+        return royalGuardLiege;
+    }
+
+    public void setRoyalGuardLiege(UUID royalGuardLiege) {
+        this.royalGuardLiege = royalGuardLiege;
+    }
+
+    public Set<UUID> getRoyalGuardPatrolling() {
+        return royalGuardPatrolling;
+    }
+
+    public Map<UUID, GuardDutyMode> getRoyalGuardDutyModes() {
+        return royalGuardDutyModes;
+    }
+
+    public GuardDutyMode getRoyalGuardDutyMode(UUID id) {
+        return id == null ? GuardDutyMode.FOLLOW_SOVEREIGN : royalGuardDutyModes.getOrDefault(id, GuardDutyMode.FOLLOW_SOVEREIGN);
+    }
+
+    public void setRoyalGuardDutyMode(UUID id, GuardDutyMode mode) {
+        if (id != null) {
+            royalGuardDutyModes.put(id, mode == null ? GuardDutyMode.FOLLOW_SOVEREIGN : mode);
+            if (mode == GuardDutyMode.PATROL_ANCHOR) {
+                royalGuardPatrolling.add(id);
+            } else {
+                royalGuardPatrolling.remove(id);
+            }
+        }
+    }
+
+    public Map<UUID, BlockPos> getRoyalGuardPatrolAnchors() {
+        return royalGuardPatrolAnchors;
+    }
+
+    public BlockPos getRoyalGuardPatrolAnchor(UUID id) {
+        return id == null ? null : royalGuardPatrolAnchors.get(id);
+    }
+
+    public void setRoyalGuardPatrolAnchor(UUID id, BlockPos anchor) {
+        if (id != null) {
+            if (anchor == null) {
+                royalGuardPatrolAnchors.remove(id);
+            } else {
+                royalGuardPatrolAnchors.put(id, anchor);
+            }
+        }
+    }
+
+    public long getLastRoyalGuardPromptDay() {
+        return lastRoyalGuardPromptDay;
+    }
+
+    public void setLastRoyalGuardPromptDay(long lastRoyalGuardPromptDay) {
+        this.lastRoyalGuardPromptDay = lastRoyalGuardPromptDay;
+    }
+
+    public UUID getPendingPlayerGuardSelectionRequester() {
+        return pendingPlayerGuardSelectionRequester;
+    }
+
+    public void setPendingPlayerGuardSelectionRequester(UUID pendingPlayerGuardSelectionRequester) {
+        this.pendingPlayerGuardSelectionRequester = pendingPlayerGuardSelectionRequester;
+    }
+
+    public boolean containsEntity(UUID entityId) {
         if (entityId == null) {
             return false;
         }
@@ -330,51 +618,76 @@ public class CapitalRecord {
                 || entityId.equals(dowager)
                 || entityId.equals(heir)
                 || royalChildren.contains(entityId)
+                || disinheritedRoyalChildren.contains(entityId)
+                || legitimizedRoyalChildren.contains(entityId)
                 || dukes.contains(entityId)
                 || lords.contains(entityId)
-                || knights.contains(entityId);
+                || knights.contains(entityId)
+                || royalGuards.contains(entityId)
+                || disgracedRoyalGuards.contains(entityId)
+                || entityId.equals(commander)
+                || entityId.equals(playerSovereignId)
+                || entityId.equals(playerConsortId);
     }
 
-    public synchronized void replaceDynamicRoles(
-            UUID newConsort,
-            boolean newConsortFemale,
-            UUID newHeir,
-            Set<UUID> newRoyalChildren,
-            Map<UUID, Boolean> newRoyalChildFemale,
-            Set<UUID> newLords,
-            Map<UUID, Boolean> newLordFemale,
-            Set<UUID> newKnights,
-            Map<UUID, Boolean> newKnightFemale
+    public void replaceDynamicRoles(
+            UUID sovereign, boolean sovereignFemale,
+            UUID heir,
+            Set<UUID> royalChildren, Map<UUID, Boolean> royalChildFemale,
+            Set<UUID> dukes, Map<UUID, Boolean> dukeFemale,
+            Set<UUID> lords, Map<UUID, Boolean> lordFemale
     ) {
-        this.consort = newConsort;
-        this.consortFemale = newConsortFemale;
-        this.heir = newHeir;
+        replaceDynamicRoles(
+                sovereign, sovereignFemale, heir,
+                royalChildren, royalChildFemale,
+                dukes, dukeFemale,
+                lords, lordFemale,
+                this.knights, new LinkedHashMap<>(this.knightFemale)
+        );
+    }
+
+    public void replaceDynamicRoles(
+            UUID sovereign, boolean sovereignFemale,
+            UUID heir,
+            Set<UUID> royalChildren, Map<UUID, Boolean> royalChildFemale,
+            Set<UUID> dukes, Map<UUID, Boolean> dukeFemale,
+            Set<UUID> lords, Map<UUID, Boolean> lordFemale,
+            Set<UUID> knights, Map<UUID, Boolean> knightFemale
+    ) {
+        this.sovereign = sovereign;
+        this.sovereignFemale = sovereignFemale;
+        this.heir = heir;
+        this.heirFemale = heir != null && royalChildFemale.getOrDefault(heir, false);
 
         this.royalChildren.clear();
-        this.royalChildren.addAll(newRoyalChildren);
-
+        this.royalChildren.addAll(royalChildren);
         this.royalChildFemale.clear();
-        this.royalChildFemale.putAll(newRoyalChildFemale);
+        this.royalChildFemale.putAll(royalChildFemale);
 
-        this.royalSuccessionOrder.removeIf(id -> !this.royalChildren.contains(id));
-        for (UUID childId : this.royalChildren) {
-            if (!this.royalSuccessionOrder.contains(childId)) {
-                this.royalSuccessionOrder.add(childId);
-            }
-        }
-
-        this.legitimizedRoyalChildren.retainAll(this.royalChildren);
+        this.dukes.clear();
+        this.dukes.addAll(dukes);
+        this.dukeFemale.clear();
+        this.dukeFemale.putAll(dukeFemale);
 
         this.lords.clear();
-        this.lords.addAll(newLords);
-
+        this.lords.addAll(lords);
         this.lordFemale.clear();
-        this.lordFemale.putAll(newLordFemale);
+        this.lordFemale.putAll(lordFemale);
 
         this.knights.clear();
-        this.knights.addAll(newKnights);
-
+        this.knights.addAll(knights);
         this.knightFemale.clear();
-        this.knightFemale.putAll(newKnightFemale);
+        this.knightFemale.putAll(knightFemale);
+    }
+
+    public enum HeirMode {
+        DYNASTIC,
+        MANUAL,
+        NONE
+    }
+
+    public enum GuardDutyMode {
+        FOLLOW_SOVEREIGN,
+        PATROL_ANCHOR
     }
 }
