@@ -1,7 +1,11 @@
 package com.example.mcacapitals.capital;
 
+import com.example.mcacapitals.MCACapitals;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 
@@ -11,6 +15,7 @@ import java.util.List;
 public class CapitalChronicleService {
 
     private static final int CHARS_PER_PAGE = 220;
+    private static final int MAX_PAGES = 100;
 
     private CapitalChronicleService() {
     }
@@ -35,6 +40,44 @@ public class CapitalChronicleService {
         tag.putString("VillageName", MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
     }
 
+    public static void writeChronicleBook(ServerLevel level, CapitalRecord capital, ItemStack stack) {
+        if (level == null || capital == null || stack == null) {
+            return;
+        }
+
+        List<String> pages = createPages(level, capital);
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putString("title", "Chronicle of " + villageName);
+        tag.putString("author", "The Royal Chancery");
+        tag.putBoolean("resolved", true);
+        tag.putInt("generation", 0);
+
+        ListTag pageList = new ListTag();
+        int count = 0;
+        for (String page : pages) {
+            if (count >= MAX_PAGES) {
+                break;
+            }
+            String json = Component.Serializer.toJson(Component.literal(page));
+            pageList.add(StringTag.valueOf(json));
+            count++;
+        }
+
+        if (pageList.isEmpty()) {
+            pageList.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal("No entries."))));
+        }
+
+        tag.put("pages", pageList);
+
+        MCACapitals.LOGGER.info(
+                "[CapitalChronicle] Wrote book for village '{}' with {} pages.",
+                villageName,
+                pageList.size()
+        );
+    }
+
     public static List<String> createPages(ServerLevel level, CapitalRecord capital) {
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
@@ -52,6 +95,7 @@ public class CapitalChronicleService {
 
         for (String block : blocks) {
             String addition = current.length() == 0 ? block : "\n\n" + block;
+
             if (current.length() + addition.length() > CHARS_PER_PAGE && current.length() > 0) {
                 pages.add(current.toString());
                 current = new StringBuilder(block);
@@ -66,6 +110,10 @@ public class CapitalChronicleService {
 
         if (pages.isEmpty()) {
             pages.add("No entries.");
+        }
+
+        if (pages.size() > MAX_PAGES) {
+            return new ArrayList<>(pages.subList(0, MAX_PAGES));
         }
 
         return pages;

@@ -1,12 +1,12 @@
 package com.example.mcacapitals;
 
 import com.example.mcacapitals.capital.CapitalPopulationScanner;
-import com.example.mcacapitals.item.CapitalChronicleItem;
 import com.example.mcacapitals.item.DeclarationOfAbdicationHandler;
 import com.example.mcacapitals.item.HeirScepterHandler;
 import com.example.mcacapitals.item.LegitimizationDecreeHandler;
 import com.example.mcacapitals.item.ModItems;
 import com.example.mcacapitals.item.RoyalDisinheritanceHandler;
+import com.example.mcacapitals.network.ModNetwork;
 import com.example.mcacapitals.util.AbdicationPromptCommands;
 import com.example.mcacapitals.util.CapitalDebugCommands;
 import com.example.mcacapitals.util.CapitalFoundingCommands;
@@ -14,6 +14,7 @@ import com.example.mcacapitals.util.CapitalLifecycleHandler;
 import com.example.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.example.mcacapitals.util.CapitalTestCommands;
 import com.example.mcacapitals.util.RoyalGuardInteractionHandler;
+import com.example.mcacapitals.util.RoyalScepterCommands;
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.common.MinecraftForge;
@@ -59,9 +60,11 @@ public class MCACapitals {
         AbdicationPromptCommands.register(event.getDispatcher());
         CapitalFoundingCommands.register(event.getDispatcher());
         CapitalRoyalGuardCommands.register(event.getDispatcher());
+        RoyalScepterCommands.register(event.getDispatcher());
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+        event.enqueueWork(ModNetwork::register);
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {

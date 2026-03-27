@@ -1,25 +1,26 @@
 package com.example.mcacapitals.item;
 
+import com.example.mcacapitals.MCACapitals;
 import com.example.mcacapitals.capital.CapitalChronicleService;
 import com.example.mcacapitals.capital.CapitalManager;
 import com.example.mcacapitals.capital.CapitalRecord;
+import com.example.mcacapitals.network.ModNetwork;
+import com.example.mcacapitals.network.OpenCapitalChroniclePacket;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.WrittenBookItem;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.UUID;
 
-public class CapitalChronicleItem extends WrittenBookItem {
+public class CapitalChronicleItem extends Item {
 
     private static final double MAX_BIND_DISTANCE_SQR = 128.0D * 128.0D;
 
@@ -28,38 +29,37 @@ public class CapitalChronicleItem extends WrittenBookItem {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, net.minecraft.world.entity.player.Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack heldStack = player.getItemInHand(hand);
+
+        if (level.isClientSide) {
+            return InteractionResultHolder.success(heldStack);
+        }
 
         if (!(player instanceof ServerPlayer serverPlayer)) {
-            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+            return InteractionResultHolder.fail(heldStack);
         }
 
-        CapitalRecord capital = resolveCapital(serverPlayer, stack);
+        CapitalRecord capital = resolveCapital(serverPlayer, heldStack);
         if (capital == null) {
             serverPlayer.sendSystemMessage(Component.literal("No capital chronicle can be found from here."));
-            return InteractionResultHolder.fail(stack);
+            return InteractionResultHolder.fail(heldStack);
         }
 
-        CapitalChronicleService.bindChronicleItem(serverPlayer.serverLevel(), capital, stack);
-        writeChroniclePages(serverPlayer, stack, capital);
+        CapitalChronicleService.bindChronicleItem(serverPlayer.serverLevel(), capital, heldStack);
 
-        return super.use(level, player, hand);
-    }
+        ItemStack previewBook = new ItemStack(Items.WRITTEN_BOOK);
+        CapitalChronicleService.bindChronicleItem(serverPlayer.serverLevel(), capital, previewBook);
+        CapitalChronicleService.writeChronicleBook(serverPlayer.serverLevel(), capital, previewBook);
 
-    private void writeChroniclePages(ServerPlayer player, ItemStack stack, CapitalRecord capital) {
-        List<String> pages = CapitalChronicleService.createPages(player.serverLevel(), capital);
+        MCACapitals.LOGGER.info(
+                "[CapitalChronicle] Sending preview book to client for village '{}' with {} page entries.",
+                previewBook.getOrCreateTag().getString("VillageName"),
+                previewBook.getOrCreateTag().contains("pages") ? previewBook.getOrCreateTag().getList("pages", 8).size() : 0
+        );
 
-        CompoundTag tag = stack.getOrCreateTag();
-        tag.putString("title", "Chronicle of " + MCAIntegrationBridge.getVillageName(player.serverLevel(), capital.getVillageId()));
-        tag.putString("author", "The Royal Chancery");
-        tag.putBoolean("resolved", true);
-
-        ListTag pageList = new ListTag();
-        for (String page : pages) {
-            pageList.add(StringTag.valueOf(page));
-        }
-        tag.put("pages", pageList);
+        ModNetwork.sendToPlayer(serverPlayer, new OpenCapitalChroniclePacket(previewBook));
+        return InteractionResultHolder.consume(heldStack);
     }
 
     private CapitalRecord resolveCapital(ServerPlayer player, ItemStack stack) {
@@ -84,16 +84,21 @@ public class CapitalChronicleItem extends WrittenBookItem {
 
         return CapitalManager.getAllCapitals().values().stream()
                 .filter(capital -> capital.getVillageId() != null)
-                .min(Comparator.comparingDouble(capital -> player.distanceToSqr(
-                        MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()).getX() + 0.5D,
-                        MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()).getY() + 0.5D,
-                        MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()).getZ() + 0.5D
-                )))
+                .filter(capital -> MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()) != null)
+                .min(Comparator.comparingDouble(capital -> {
+                    var center = MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId());
+                    return player.distanceToSqr(
+                            center.getX() + 0.5D,
+                            center.getY() + 0.5D,
+                            center.getZ() + 0.5D
+                    );
+                }))
                 .filter(capital -> {
+                    var center = MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId());
                     double distance = player.distanceToSqr(
-                            MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()).getX() + 0.5D,
-                            MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()).getY() + 0.5D,
-                            MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()).getZ() + 0.5D
+                            center.getX() + 0.5D,
+                            center.getY() + 0.5D,
+                            center.getZ() + 0.5D
                     );
                     return distance <= MAX_BIND_DISTANCE_SQR;
                 })
