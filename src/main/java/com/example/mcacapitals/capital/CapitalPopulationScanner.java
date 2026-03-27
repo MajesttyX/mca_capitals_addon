@@ -21,7 +21,7 @@ import java.util.UUID;
 
 public class CapitalPopulationScanner {
 
-    private static final int REQUIRED_POPULATION = 30;
+    private static final int REQUIRED_POPULATION = 25;
     private static final int FOUNDING_RADIUS = 96;
     private static int tickCounter = 0;
 

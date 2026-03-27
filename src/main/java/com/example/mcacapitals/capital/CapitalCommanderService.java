@@ -20,7 +20,7 @@ import java.util.UUID;
 
 public class CapitalCommanderService {
 
-    public static final int REQUIRED_POPULATION = 40;
+    public static final int REQUIRED_POPULATION = 30;
     private static final int AURA_RADIUS = 16;
     private static final int REGEN_DURATION_TICKS = 20 * 180;
     private static final int RAID_BLESSING_COOLDOWN_TICKS = 20 * 60;

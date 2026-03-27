@@ -17,7 +17,7 @@ import java.util.UUID;
 
 public class CapitalRoyalGuardService {
 
-    public static final int REQUIRED_POPULATION = 45;
+    public static final int REQUIRED_POPULATION = 35;
     public static final int MAX_ROYAL_GUARDS = 3;
     public static final int PATROL_RADIUS = 3;
 
@@ -178,8 +178,8 @@ public class CapitalRoyalGuardService {
             double targetX = x + Math.cos(angle) * 1.8D;
             double targetZ = z + Math.sin(angle) * 1.8D;
 
-            if (guard.distanceToSqr(targetX, y, targetZ) > 6.0D) {
-                MCAIntegrationBridge.moveTo(guard, targetX, y, targetZ, 1.0D);
+            if (guard.distanceToSqr(targetX, y, targetZ) > 4.0D) {
+                MCAIntegrationBridge.moveTo(guard, targetX, y, targetZ, 1.1D);
             }
         }
     }
