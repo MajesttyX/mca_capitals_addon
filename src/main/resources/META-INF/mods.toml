@@ -31,4 +31,4 @@ ordering="AFTER"
 side="BOTH"
 
 [[mixins]]
-config="examplemod.mixins.json"
+config="mcacapitals.mixins.json"

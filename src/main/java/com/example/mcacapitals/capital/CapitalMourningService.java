@@ -11,12 +11,12 @@ import java.util.UUID;
 
 public class CapitalMourningService {
 
-    private static final String FEMALE_ROYAL_PREFIX = "examplemod:skins/clothing/normal/female/mourning_royal/";
-    private static final String MALE_ROYAL_PREFIX = "examplemod:skins/clothing/normal/male/mourning_royal/";
-    private static final String FEMALE_NOBLE_PREFIX = "examplemod:skins/clothing/normal/female/mourning_noble/";
-    private static final String MALE_NOBLE_PREFIX = "examplemod:skins/clothing/normal/male/mourning_noble/";
-    private static final String FEMALE_COMMONER_PREFIX = "examplemod:skins/clothing/normal/female/mourning_commoner/";
-    private static final String MALE_COMMONER_PREFIX = "examplemod:skins/clothing/normal/male/mourning_commoner/";
+    private static final String FEMALE_ROYAL_PREFIX = "mcacapitals:skins/clothing/normal/female/mourning_royal/";
+    private static final String MALE_ROYAL_PREFIX = "mcacapitals:skins/clothing/normal/male/mourning_royal/";
+    private static final String FEMALE_NOBLE_PREFIX = "mcacapitals:skins/clothing/normal/female/mourning_noble/";
+    private static final String MALE_NOBLE_PREFIX = "mcacapitals:skins/clothing/normal/male/mourning_noble/";
+    private static final String FEMALE_COMMONER_PREFIX = "mcacapitals:skins/clothing/normal/female/mourning_commoner/";
+    private static final String MALE_COMMONER_PREFIX = "mcacapitals:skins/clothing/normal/male/mourning_commoner/";
 
     private static final int FEMALE_ROYAL_COUNT = 4;
     private static final int MALE_ROYAL_COUNT = 3;

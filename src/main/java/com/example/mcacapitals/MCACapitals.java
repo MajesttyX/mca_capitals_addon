@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 @Mod(MCACapitals.MODID)
 public class MCACapitals {
 
-    public static final String MODID = "examplemod";
+    public static final String MODID = "mcacapitals";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public MCACapitals() {

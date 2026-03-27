@@ -1,0 +1,17 @@
+{
+  "mcacapitals:skins/clothing/normal/female/mourning_royal/%d.png": {
+    "count": 4,
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  "mcacapitals:skins/clothing/normal/female/mourning_noble/%d.png": {
+    "count": 3,
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  "mcacapitals:skins/clothing/normal/female/mourning_commoner/%d.png": {
+    "count": 2,
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  }
+}

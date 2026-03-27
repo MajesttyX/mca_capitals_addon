@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack;
 public class RoyalCharterDecisionScreen extends Screen {
 
     private static final ResourceLocation BACKGROUND =
-            new ResourceLocation("examplemod", "textures/gui/declaration_paper.png");
+            new ResourceLocation("mcacapitals", "textures/gui/declaration_paper.png");
 
     private static final int BG_WIDTH = 160;
     private static final int BG_HEIGHT = 160;

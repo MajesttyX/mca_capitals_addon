@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "examplemod:item/royal_disinheritance"
+    "layer0": "mcacapitals:item/legitimization_decree"
   }
 }

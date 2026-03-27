@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "com.example.mcacapitals.mixin",
   "compatibilityLevel": "JAVA_17",
-  "refmap": "examplemod.refmap.json",
+  "refmap": "mcacapitals.refmap.json",
   "mixins": [
     "InteractionDialogueInitMessageMixin"
   ],

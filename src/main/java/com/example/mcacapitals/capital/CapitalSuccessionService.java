@@ -313,12 +313,16 @@ public class CapitalSuccessionService {
             return false;
         }
 
-        if (MCAIntegrationBridge.isMCAVillager(level, entityId)) {
-            return MCAIntegrationBridge.isAliveAdultOrChildVillager(level, entityId);
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
+        if (entity != null) {
+            return entity.isAlive() && !entity.isRemoved();
         }
 
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        return entity != null && entity.isAlive() && !entity.isRemoved();
+        if (MCAIntegrationBridge.isMCAVillager(level, entityId)) {
+            return MCAIntegrationBridge.hasFamilyNode(level, entityId);
+        }
+
+        return false;
     }
 
     private static boolean isValidSuccessionCandidate(ServerLevel level, UUID entityId) {
