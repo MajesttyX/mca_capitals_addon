@@ -241,10 +241,6 @@ public class CapitalCourtBuilder {
         for (UUID lordId : new LinkedHashSet<>(lords)) {
             addSpouse(level, residents, capital, lordId, lords, lordFemale);
         }
-
-        for (UUID knightId : new LinkedHashSet<>(knights)) {
-            addSpouse(level, residents, capital, knightId, knights, knightFemale);
-        }
     }
 
     private static void addSpouse(

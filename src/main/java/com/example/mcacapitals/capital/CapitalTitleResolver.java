@@ -61,10 +61,6 @@ public class CapitalTitleResolver {
             return female ? "Dame" : "Sir";
         }
 
-        if (isMarriageKnight(level, capital, entityId)) {
-            return female ? "Dame" : "Sir";
-        }
-
         if (capital.isLord(entityId)) {
             return female ? "Lady" : "Lord";
         }
@@ -107,7 +103,6 @@ public class CapitalTitleResolver {
             if (level != null && (
                     isMarriageDuke(level, capital, entityId)
                             || isMarriageLord(level, capital, entityId)
-                            || isMarriageKnight(level, capital, entityId)
             )) {
                 return capital;
             }
@@ -216,23 +211,6 @@ public class CapitalTitleResolver {
 
         for (UUID lordId : capital.getLords()) {
             UUID spouse = MCAIntegrationBridge.getSpouse(level, lordId);
-            if (entityId.equals(spouse)
-                    && !entityId.equals(capital.getConsort())
-                    && !entityId.equals(capital.getSovereign())
-                    && !entityId.equals(capital.getDowager())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean isMarriageKnight(ServerLevel level, CapitalRecord capital, UUID entityId) {
-        if (level == null || capital == null || entityId == null) {
-            return false;
-        }
-
-        for (UUID knightId : capital.getKnights()) {
-            UUID spouse = MCAIntegrationBridge.getSpouse(level, knightId);
             if (entityId.equals(spouse)
                     && !entityId.equals(capital.getConsort())
                     && !entityId.equals(capital.getSovereign())

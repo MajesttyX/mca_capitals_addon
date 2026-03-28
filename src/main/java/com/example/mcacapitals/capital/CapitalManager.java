@@ -1,10 +1,12 @@
 package com.example.mcacapitals.capital;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class CapitalManager {
+public final class CapitalManager {
 
     private static final Map<UUID, CapitalRecord> CAPITALS = new LinkedHashMap<>();
 
@@ -15,13 +17,84 @@ public class CapitalManager {
         return CAPITALS;
     }
 
-    public static CapitalRecord getCapital(UUID capitalId) {
-        return CAPITALS.get(capitalId);
+    public static Map<UUID, CapitalRecord> getAllCapitalsView() {
+        return Collections.unmodifiableMap(CAPITALS);
     }
 
-    public static CapitalRecord getCapitalBySovereign(UUID sovereignId) {
+    public static Map<UUID, CapitalRecord> getAllCapitalsSnapshot() {
+        return new LinkedHashMap<>(CAPITALS);
+    }
+
+    public static Collection<CapitalRecord> getAllCapitalRecords() {
+        return Collections.unmodifiableCollection(CAPITALS.values());
+    }
+
+    public static CapitalRecord getCapital(UUID capitalId) {
+        return capitalId == null ? null : CAPITALS.get(capitalId);
+    }
+
+    public static boolean containsCapital(UUID capitalId) {
+        return capitalId != null && CAPITALS.containsKey(capitalId);
+    }
+
+    public static CapitalRecord putCapital(CapitalRecord capital) {
+        if (capital == null || capital.getCapitalId() == null) {
+            return null;
+        }
+        return CAPITALS.put(capital.getCapitalId(), capital);
+    }
+
+    public static CapitalRecord putCapital(UUID capitalId, CapitalRecord capital) {
+        if (capitalId == null || capital == null) {
+            return null;
+        }
+        return CAPITALS.put(capitalId, capital);
+    }
+
+    public static CapitalRecord removeCapital(UUID capitalId) {
+        if (capitalId == null) {
+            return null;
+        }
+        return CAPITALS.remove(capitalId);
+    }
+
+    public static void replaceAll(Map<UUID, CapitalRecord> capitals) {
+        CAPITALS.clear();
+        if (capitals != null && !capitals.isEmpty()) {
+            CAPITALS.putAll(capitals);
+        }
+    }
+
+    public static void clear() {
+        CAPITALS.clear();
+    }
+
+    public static void clearAll() {
+        clear();
+    }
+
+    public static boolean isEmpty() {
+        return CAPITALS.isEmpty();
+    }
+
+    public static int size() {
+        return CAPITALS.size();
+    }
+
+    public static boolean hasCapitalForVillageId(int villageId) {
         for (CapitalRecord capital : CAPITALS.values()) {
-            if (capital.getSovereign() != null && capital.getSovereign().equals(sovereignId)) {
+            Integer existingVillageId = capital.getVillageId();
+            if (existingVillageId != null && existingVillageId == villageId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static CapitalRecord getCapitalForVillageId(int villageId) {
+        for (CapitalRecord capital : CAPITALS.values()) {
+            Integer existingVillageId = capital.getVillageId();
+            if (existingVillageId != null && existingVillageId == villageId) {
                 return capital;
             }
         }
@@ -32,28 +105,46 @@ public class CapitalManager {
         if (villageId == null) {
             return null;
         }
+        return getCapitalForVillageId(villageId);
+    }
+
+    public static CapitalRecord getCapitalForSovereign(UUID sovereignId) {
+        if (sovereignId == null) {
+            return null;
+        }
 
         for (CapitalRecord capital : CAPITALS.values()) {
-            if (villageId.equals(capital.getVillageId())) {
+            if (sovereignId.equals(capital.getSovereign())) {
                 return capital;
             }
         }
         return null;
     }
 
-    public static boolean hasCapitalForVillageId(Integer villageId) {
-        return getCapitalByVillageId(villageId) != null;
+    public static CapitalRecord getCapitalBySovereign(UUID sovereignId) {
+        return getCapitalForSovereign(sovereignId);
     }
 
-    public static boolean hasCapitalId(UUID capitalId) {
-        return CAPITALS.containsKey(capitalId);
-    }
+    public static CapitalRecord getCapitalForResident(UUID residentId) {
+        if (residentId == null) {
+            return null;
+        }
 
-    public static void removeCapital(UUID capitalId) {
-        CAPITALS.remove(capitalId);
-    }
-
-    public static void clearAll() {
-        CAPITALS.clear();
+        for (CapitalRecord capital : CAPITALS.values()) {
+            if (residentId.equals(capital.getSovereign())
+                    || residentId.equals(capital.getConsort())
+                    || residentId.equals(capital.getDowager())
+                    || residentId.equals(capital.getHeir())
+                    || capital.getRoyalChildren().contains(residentId)
+                    || capital.getDukes().contains(residentId)
+                    || capital.getLords().contains(residentId)
+                    || capital.getKnights().contains(residentId)
+                    || residentId.equals(capital.getCommander())
+                    || capital.getRoyalGuards().contains(residentId)
+                    || capital.getDisgracedRoyalGuards().contains(residentId)) {
+                return capital;
+            }
+        }
+        return null;
     }
 }
