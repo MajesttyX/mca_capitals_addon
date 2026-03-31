@@ -1,16 +1,15 @@
 package com.example.mcacapitals.util;
 
 import com.example.mcacapitals.capital.CapitalChronicleService;
-import com.example.mcacapitals.capital.CapitalCommanderService;
 import com.example.mcacapitals.capital.CapitalCourtWatcher;
-import com.example.mcacapitals.capital.CapitalFoundationService;
 import com.example.mcacapitals.capital.CapitalManager;
 import com.example.mcacapitals.capital.CapitalNameService;
 import com.example.mcacapitals.capital.CapitalRecord;
 import com.example.mcacapitals.capital.CapitalResidentScanner;
 import com.example.mcacapitals.capital.CapitalRoyalGuardService;
 import com.example.mcacapitals.data.CapitalDataAccess;
-import com.example.mcacapitals.util.MCAIntegrationBridge;
+import com.example.mcacapitals.player.PlayerCapitalTitleRecord;
+import com.example.mcacapitals.player.PlayerCapitalTitleService;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
@@ -137,6 +136,35 @@ public class RoyalScepterCommands {
             return 0;
         }
 
+        UUID previousVillagerCommander = capital.getCommander();
+        UUID previousPlayerCommander = PlayerCapitalTitleService.getCommanderHolder(level, capital);
+
+        if (villagerId.equals(previousVillagerCommander)) {
+            source.sendFailure(Component.literal(resolveName(level, villagerId) + " already holds the office of Commander of the Army."));
+            return 0;
+        }
+
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+
+        if (previousPlayerCommander != null) {
+            String formerPlayerName = resolvePlayerCommanderName(level, capital, previousPlayerCommander);
+            PlayerCapitalTitleService.revokeCommander(level, capital, previousPlayerCommander);
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    formerPlayerName + " was relieved of the office of Commander of the Army of " + villageName + "."
+            );
+        }
+
+        if (previousVillagerCommander != null && !previousVillagerCommander.equals(villagerId)) {
+            String formerVillagerName = resolveName(level, previousVillagerCommander);
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    formerVillagerName + " was relieved of the office of Commander of the Army of " + villageName + "."
+            );
+        }
+
         capital.setCommander(villagerId);
         capital.setCommanderFemale(MCAIntegrationBridge.isFemale(level, villagerId));
 
@@ -146,7 +174,7 @@ public class RoyalScepterCommands {
 
         String name = resolveName(level, villagerId);
         CapitalChronicleService.addEntry(level, capital,
-                name + " was appointed Commander of the Army of " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+                name + " was appointed Commander of the Army of " + villageName + ".");
 
         source.sendSuccess(() -> Component.literal(name + " has been named Commander of the Army."), false);
         return 1;
@@ -223,44 +251,86 @@ public class RoyalScepterCommands {
             return 0;
         }
 
-        CapitalFoundationService.assignDuke(level, capital, villagerId);
-        source.sendSuccess(() -> Component.literal(resolveName(level, villagerId) + " has been raised to ducal rank."), false);
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        if (!residents.contains(villagerId)) {
+            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
+            return 0;
+        }
+
+        capital.addDuke(villagerId, MCAIntegrationBridge.isFemale(level, villagerId));
+
+        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
+
+        String name = resolveName(level, villagerId);
+        CapitalChronicleService.addEntry(level, capital,
+                name + " was elevated to the ducal rank in " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+
+        source.sendSuccess(() -> Component.literal(name + " has been named Duke/Duchess."), false);
         return 1;
     }
 
     private static ServerPlayer getPlayer(CommandSourceStack source) {
-        return source.getEntity() instanceof ServerPlayer player ? player : null;
+        try {
+            return source.getPlayerOrException();
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
-    private static UUID parseUuid(CommandSourceStack source, String raw) {
+    private static UUID parseUuid(CommandSourceStack source, String rawVillagerId) {
         try {
-            return UUID.fromString(raw);
+            return UUID.fromString(rawVillagerId);
         } catch (IllegalArgumentException ex) {
-            source.sendFailure(Component.literal("Invalid villager UUID."));
+            source.sendFailure(Component.literal("Invalid UUID."));
             return null;
         }
     }
 
     private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {
-        CapitalRecord byRole = com.example.mcacapitals.capital.CapitalTitleResolver.findCapitalForEntity(villagerId);
-        if (byRole != null) {
-            return byRole;
+        CapitalRecord capital = CapitalManager.getCapitalBySovereign(villagerId);
+        if (capital != null) {
+            return capital;
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-        if (villageId != null) {
-            return CapitalManager.getCapitalByVillageId(villageId);
+        if (villageId == null) {
+            return null;
         }
 
-        return null;
+        return CapitalManager.getCapitalByVillageId(villageId);
     }
 
     private static boolean canManageCapital(ServerPlayer player, CapitalRecord capital) {
-        return player.hasPermissions(2) || player.getUUID().equals(capital.getSovereign());
+        if (player == null || capital == null) {
+            return false;
+        }
+
+        if (player.hasPermissions(2)) {
+            return true;
+        }
+
+        UUID sovereign = capital.getSovereign();
+        return sovereign != null && sovereign.equals(player.getUUID());
     }
 
     private static String resolveName(ServerLevel level, UUID entityId) {
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
         return entity != null ? entity.getName().getString() : entityId.toString();
+    }
+
+    private static String resolvePlayerCommanderName(ServerLevel level, CapitalRecord capital, UUID playerId) {
+        ServerPlayer online = level.getServer().getPlayerList().getPlayer(playerId);
+        if (online != null) {
+            return online.getName().getString();
+        }
+
+        PlayerCapitalTitleRecord record = PlayerCapitalTitleService.get(level, playerId, capital.getCapitalId());
+        if (record != null && record.getCachedPlayerName() != null && !record.getCachedPlayerName().isBlank()) {
+            return record.getCachedPlayerName();
+        }
+
+        return playerId.toString();
     }
 }

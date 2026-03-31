@@ -13,8 +13,30 @@
       ]
     },
     {
-      "name": "mcacapitals_petition_back",
+      "name": "mcacapitals_petition_noble",
       "priority": 1,
+      "results": [
+        {
+          "actions": {
+            "next": "mcacapitals_petition_noble_menu"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition_commander",
+      "priority": 2,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_petition_commander"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition_back",
+      "priority": 3,
       "results": [
         {
           "actions": {

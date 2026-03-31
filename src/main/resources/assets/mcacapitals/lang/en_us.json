@@ -8,5 +8,11 @@
   "dialogue.main.mcacapitals_petition": "Petition",
   "dialogue.mcacapitals_petition_menu": "What do you petition the sovereign for?",
   "dialogue.mcacapitals_petition_menu.mcacapitals_petition_throne": "Petition for the Throne",
-  "dialogue.mcacapitals_petition_menu.mcacapitals_petition_back": "Return"
+  "dialogue.mcacapitals_petition_menu.mcacapitals_petition_noble": "Petition for Noble Title",
+  "dialogue.mcacapitals_petition_menu.mcacapitals_petition_commander": "Petition for Commander of the Royal Army",
+  "dialogue.mcacapitals_petition_menu.mcacapitals_petition_back": "Return",
+  "dialogue.mcacapitals_petition_noble_menu": "What noble dignity do you seek?",
+  "dialogue.mcacapitals_petition_noble_menu.mcacapitals_petition_noble_lord": "Petition for Lordship",
+  "dialogue.mcacapitals_petition_noble_menu.mcacapitals_petition_noble_duke": "Petition for Dukedom",
+  "dialogue.mcacapitals_petition_noble_menu.mcacapitals_petition_noble_back": "Return"
 }

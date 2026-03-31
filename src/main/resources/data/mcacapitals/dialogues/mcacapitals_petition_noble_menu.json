@@ -1,0 +1,38 @@
+{
+  "silent": true,
+  "answers": [
+    {
+      "name": "mcacapitals_petition_noble_lord",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_petition_noble_lord"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition_noble_duke",
+      "priority": 1,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_petition_noble_duke"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition_noble_back",
+      "priority": 2,
+      "results": [
+        {
+          "actions": {
+            "next": "mcacapitals_petition_menu"
+          }
+        }
+      ]
+    }
+  ]
+}

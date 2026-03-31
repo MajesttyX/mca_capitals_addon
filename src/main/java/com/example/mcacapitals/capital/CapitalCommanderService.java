@@ -1,6 +1,7 @@
 package com.example.mcacapitals.capital;
 
 import com.example.mcacapitals.data.CapitalDataAccess;
+import com.example.mcacapitals.player.PlayerCapitalTitleService;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -34,6 +35,7 @@ public class CapitalCommanderService {
         }
 
         boolean changed = false;
+        UUID playerCommander = PlayerCapitalTitleService.getCommanderHolder(level, capital);
 
         UUID previousCommander = capital.getCommander();
         if (!isValidCommander(level, capital, previousCommander, residents)) {
@@ -44,7 +46,13 @@ public class CapitalCommanderService {
             }
         }
 
-        if (capital.getCommander() == null && isEligibleForNewCommander(level, capital)) {
+        if (playerCommander != null && capital.getCommander() != null) {
+            capital.setCommander(null);
+            capital.setCommanderFemale(false);
+            changed = true;
+        }
+
+        if (playerCommander == null && capital.getCommander() == null && isEligibleForNewCommander(level, capital)) {
             UUID newCommander = findBestCommanderCandidate(level, capital, residents);
             if (newCommander != null) {
                 capital.setCommander(newCommander);
@@ -61,14 +69,15 @@ public class CapitalCommanderService {
             }
         }
 
-        if (previousCommander != null && capital.getCommander() == null) {
+        if (previousCommander != null && capital.getCommander() == null && playerCommander == null) {
             CapitalChronicleService.addEntry(level, capital,
                     "The office of Commander of the Royal Guard stands vacant in "
                             + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
         }
 
-        if (capital.getCommander() != null) {
-            tickCommanderAura(level, capital);
+        Entity activeCommander = resolveActiveCommanderEntity(level, capital);
+        if (activeCommander != null) {
+            tickCommanderAura(level, capital, activeCommander);
         }
 
         if (changed) {
@@ -80,13 +89,71 @@ public class CapitalCommanderService {
         return changed;
     }
 
-    private static void tickCommanderAura(ServerLevel level, CapitalRecord capital) {
-        UUID commanderId = capital.getCommander();
-        Entity commander = MCAIntegrationBridge.getEntityByUuid(level, commanderId);
-        if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(commander)) {
-            return;
+    public static UUID getPlayerCommander(ServerLevel level, CapitalRecord capital) {
+        return PlayerCapitalTitleService.getCommanderHolder(level, capital);
+    }
+
+    public static boolean hasOtherPlayerCommander(ServerLevel level, CapitalRecord capital, UUID playerId) {
+        UUID holder = getPlayerCommander(level, capital);
+        return holder != null && !holder.equals(playerId);
+    }
+
+    public static boolean appointPlayerCommander(ServerLevel level, CapitalRecord capital, ServerPlayer player) {
+        if (level == null || capital == null || player == null) {
+            return false;
         }
 
+        UUID existingPlayerCommander = getPlayerCommander(level, capital);
+        if (existingPlayerCommander != null && !existingPlayerCommander.equals(player.getUUID())) {
+            return false;
+        }
+
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+
+        if (capital.getCommander() != null && !capital.getCommander().equals(player.getUUID())) {
+            String formerName = resolveDisplayName(level, capital, capital.getCommander());
+            capital.setCommander(null);
+            capital.setCommanderFemale(false);
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    formerName + " was relieved of the office of Commander of the Royal Guard of " + villageName + "."
+            );
+        }
+
+        PlayerCapitalTitleService.revokeCommanderForCapital(level, capital);
+        PlayerCapitalTitleService.grantCommander(level, capital, player.getUUID());
+
+        String commanderName = resolveDisplayName(level, capital, player.getUUID());
+        CapitalChronicleService.addEntry(
+                level,
+                capital,
+                commanderName + " was appointed Commander of the Royal Guard of " + villageName + "."
+        );
+
+        broadcastCommanderAppointment(level, capital, villageName, commanderName);
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
+        return true;
+    }
+
+    private static Entity resolveActiveCommanderEntity(ServerLevel level, CapitalRecord capital) {
+        if (capital.getCommander() != null) {
+            Entity villagerCommander = MCAIntegrationBridge.getEntityByUuid(level, capital.getCommander());
+            if (villagerCommander != null) {
+                return villagerCommander;
+            }
+        }
+
+        UUID playerCommander = PlayerCapitalTitleService.getCommanderHolder(level, capital);
+        if (playerCommander != null) {
+            return level.getServer().getPlayerList().getPlayer(playerCommander);
+        }
+
+        return null;
+    }
+
+    private static void tickCommanderAura(ServerLevel level, CapitalRecord capital, Entity commander) {
         long gameTime = level.getGameTime();
         long currentDay = Math.max(1L, level.getDayTime() / 24000L + 1L);
 
@@ -205,6 +272,13 @@ public class CapitalCommanderService {
 
     private static String resolveDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId) {
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
+        if (entity == null && level != null) {
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(entityId);
+            if (player != null) {
+                entity = player;
+            }
+        }
+
         String baseName = entity != null ? entity.getName().getString() : entityId.toString();
         String strippedName = stripKnownTitles(baseName);
 

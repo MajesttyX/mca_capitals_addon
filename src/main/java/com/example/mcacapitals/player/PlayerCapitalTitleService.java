@@ -83,6 +83,33 @@ public final class PlayerCapitalTitleService {
         }
     }
 
+    public static UUID getCommanderHolder(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null || capital.getCapitalId() == null) {
+            return null;
+        }
+
+        for (PlayerCapitalTitleRecord record : PlayerCapitalTitleSavedData.get(level).getRecords().values()) {
+            if (record == null) {
+                continue;
+            }
+            if (!capital.getCapitalId().equals(record.getCapitalId())) {
+                continue;
+            }
+            if (record.isCommander()) {
+                return record.getPlayerId();
+            }
+        }
+
+        return null;
+    }
+
+    public static void revokeCommanderForCapital(ServerLevel level, CapitalRecord capital) {
+        UUID holder = getCommanderHolder(level, capital);
+        if (holder != null) {
+            revokeCommander(level, capital, holder);
+        }
+    }
+
     public static NobleTitle getGrantedTitle(ServerLevel level, CapitalRecord capital, UUID playerId) {
         if (level == null || capital == null || playerId == null || capital.getCapitalId() == null) {
             return NobleTitle.COMMONER;
