@@ -57,12 +57,18 @@ public class CapitalSuccessionService {
 
                 String dowagerName = resolveName(level, oldConsort);
 
-                CapitalChronicleService.addEntry(level, capital,
-                        deadName + " died. " + dowagerName + " was left as surviving consort while the throne stood vacant.");
+                CapitalChronicleService.addEntry(
+                        level,
+                        capital,
+                        deadName + " died. " + dowagerName + " was left as surviving consort while the throne stood vacant."
+                );
             } else {
-                CapitalChronicleService.addEntry(level, capital,
+                CapitalChronicleService.addEntry(
+                        level,
+                        capital,
                         deadName + " died and no valid successor remained. "
-                                + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + " fell vacant.");
+                                + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + " fell vacant."
+                );
             }
 
             capital.getRoyalChildren().clear();
@@ -140,9 +146,12 @@ public class CapitalSuccessionService {
 
         String successorName = resolveName(level, successor);
 
-        CapitalChronicleService.addEntry(level, capital,
+        CapitalChronicleService.addEntry(
+                level,
+                capital,
                 deadName + " died. " + successorName + " inherited the throne of "
-                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+        );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
@@ -204,11 +213,11 @@ public class CapitalSuccessionService {
         }
 
         if (capital.getRoyalChildren().contains(heir) || capital.isLegitimizedRoyalChild(heir)) {
-            return MCAIntegrationBridge.hasFamilyNode(level, heir);
+            return isValidSuccessionCandidate(level, heir);
         }
 
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        return residents.contains(heir) && MCAIntegrationBridge.hasFamilyNode(level, heir);
+        return residents.contains(heir) && isValidSuccessionCandidate(level, heir);
     }
 
     private static UUID findSuccessor(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
@@ -318,22 +327,25 @@ public class CapitalSuccessionService {
             return entity.isAlive() && !entity.isRemoved();
         }
 
-        if (MCAIntegrationBridge.isMCAVillager(level, entityId)) {
-            return MCAIntegrationBridge.hasFamilyNode(level, entityId);
+        if (!MCAIntegrationBridge.hasPersistentFamilyNode(level, entityId)) {
+            return false;
         }
 
-        return false;
+        return !MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId);
     }
 
     private static boolean isValidSuccessionCandidate(ServerLevel level, UUID entityId) {
-        return entityId != null && MCAIntegrationBridge.hasFamilyNode(level, entityId);
+        return entityId != null
+                && MCAIntegrationBridge.hasPersistentFamilyNode(level, entityId)
+                && !MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId);
     }
 
     private static boolean isValidAbdicationCandidate(ServerLevel level, CapitalRecord capital, UUID entityId) {
         return entityId != null
                 && !entityId.equals(capital.getSovereign())
                 && !capital.isDisinheritedRoyalChild(entityId)
-                && MCAIntegrationBridge.hasFamilyNode(level, entityId);
+                && MCAIntegrationBridge.hasPersistentFamilyNode(level, entityId)
+                && !MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId);
     }
 
     private static boolean isValidRelationshipPerson(ServerLevel level, UUID entityId) {
@@ -346,7 +358,8 @@ public class CapitalSuccessionService {
             return entity.isAlive() && !entity.isRemoved();
         }
 
-        return MCAIntegrationBridge.hasFamilyNode(level, entityId);
+        return MCAIntegrationBridge.hasPersistentFamilyNode(level, entityId)
+                && !MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId);
     }
 
     private static String resolveName(ServerLevel level, UUID id) {

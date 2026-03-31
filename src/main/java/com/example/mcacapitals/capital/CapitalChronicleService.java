@@ -2,6 +2,7 @@ package com.example.mcacapitals.capital;
 
 import com.example.mcacapitals.MCACapitals;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
+import com.example.mcacapitals.util.ModDataKeys;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -35,9 +36,9 @@ public class CapitalChronicleService {
         }
 
         CompoundTag tag = stack.getOrCreateTag();
-        tag.putString("CapitalId", capital.getCapitalId().toString());
-        tag.putInt("VillageId", capital.getVillageId() == null ? -1 : capital.getVillageId());
-        tag.putString("VillageName", MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+        tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
+        tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId() == null ? -1 : capital.getVillageId());
+        tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
     }
 
     public static void writeChronicleBook(ServerLevel level, CapitalRecord capital, ItemStack stack) {
@@ -49,10 +50,10 @@ public class CapitalChronicleService {
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
         CompoundTag tag = stack.getOrCreateTag();
-        tag.putString("title", "Chronicle of " + villageName);
-        tag.putString("author", "The Royal Chancery");
-        tag.putBoolean("resolved", true);
-        tag.putInt("generation", 0);
+        tag.putString(ModDataKeys.BOOK_TITLE, "Chronicle of " + villageName);
+        tag.putString(ModDataKeys.BOOK_AUTHOR, "The Royal Chancery");
+        tag.putBoolean(ModDataKeys.BOOK_RESOLVED, true);
+        tag.putInt(ModDataKeys.BOOK_GENERATION, 0);
 
         ListTag pageList = new ListTag();
         int count = 0;
@@ -69,7 +70,7 @@ public class CapitalChronicleService {
             pageList.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal("No entries."))));
         }
 
-        tag.put("pages", pageList);
+        tag.put(ModDataKeys.BOOK_PAGES, pageList);
 
         MCACapitals.LOGGER.info(
                 "[CapitalChronicle] Wrote book for village '{}' with {} pages.",

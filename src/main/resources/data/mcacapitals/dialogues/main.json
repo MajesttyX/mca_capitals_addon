@@ -1,0 +1,15 @@
+{
+  "answers": [
+    {
+      "name": "mcacapitals_petition",
+      "priority": 999,
+      "results": [
+        {
+          "actions": {
+            "next": "mcacapitals_petition_menu"
+          }
+        }
+      ]
+    }
+  ]
+}

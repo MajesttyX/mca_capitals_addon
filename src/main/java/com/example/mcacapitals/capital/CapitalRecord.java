@@ -189,11 +189,11 @@ public class CapitalRecord {
     }
 
     public boolean isRoyalChild(UUID id) {
-        return id != null && royalChildren.contains(id);
+        return containsMember(royalChildren, id);
     }
 
     public boolean isRoyalChildFemale(UUID id) {
-        return royalChildFemale.getOrDefault(id, false);
+        return isFlaggedFemale(royalChildFemale, id);
     }
 
     public void addRoyalChild(UUID id) {
@@ -202,17 +202,13 @@ public class CapitalRecord {
 
     public void addRoyalChild(UUID id, boolean female) {
         if (id != null) {
-            royalChildren.add(id);
-            royalChildFemale.put(id, female);
+            putMember(royalChildren, royalChildFemale, id, female);
             disinheritedRoyalChildren.remove(id);
         }
     }
 
     public void removeRoyalChild(UUID id) {
-        if (id != null) {
-            royalChildren.remove(id);
-            royalChildFemale.remove(id);
-        }
+        removeMember(royalChildren, royalChildFemale, id);
     }
 
     public Set<UUID> getDisinheritedRoyalChildren() {
@@ -242,7 +238,7 @@ public class CapitalRecord {
     }
 
     public boolean isDisinheritedRoyalChild(UUID id) {
-        return id != null && disinheritedRoyalChildren.contains(id);
+        return containsMember(disinheritedRoyalChildren, id);
     }
 
     public Set<UUID> getLegitimizedRoyalChildren() {
@@ -258,21 +254,15 @@ public class CapitalRecord {
     }
 
     public void addLegitimizedRoyalChild(UUID id, boolean female) {
-        if (id != null) {
-            legitimizedRoyalChildren.add(id);
-            legitimizedRoyalChildFemale.put(id, female);
-        }
+        putMember(legitimizedRoyalChildren, legitimizedRoyalChildFemale, id, female);
     }
 
     public void removeLegitimizedRoyalChild(UUID id) {
-        if (id != null) {
-            legitimizedRoyalChildren.remove(id);
-            legitimizedRoyalChildFemale.remove(id);
-        }
+        removeMember(legitimizedRoyalChildren, legitimizedRoyalChildFemale, id);
     }
 
     public boolean isLegitimizedRoyalChild(UUID id) {
-        return id != null && legitimizedRoyalChildren.contains(id);
+        return containsMember(legitimizedRoyalChildren, id);
     }
 
     public List<UUID> getRoyalSuccessionOrder() {
@@ -295,25 +285,19 @@ public class CapitalRecord {
     }
 
     public boolean isDuke(UUID id) {
-        return id != null && dukes.contains(id);
+        return containsMember(dukes, id);
     }
 
     public boolean isDukeFemale(UUID id) {
-        return dukeFemale.getOrDefault(id, false);
+        return isFlaggedFemale(dukeFemale, id);
     }
 
     public void addDuke(UUID id, boolean female) {
-        if (id != null) {
-            dukes.add(id);
-            dukeFemale.put(id, female);
-        }
+        putMember(dukes, dukeFemale, id, female);
     }
 
     public void removeDuke(UUID id) {
-        if (id != null) {
-            dukes.remove(id);
-            dukeFemale.remove(id);
-        }
+        removeMember(dukes, dukeFemale, id);
     }
 
     public Set<UUID> getLords() {
@@ -325,25 +309,19 @@ public class CapitalRecord {
     }
 
     public boolean isLord(UUID id) {
-        return id != null && lords.contains(id);
+        return containsMember(lords, id);
     }
 
     public boolean isLordFemale(UUID id) {
-        return lordFemale.getOrDefault(id, false);
+        return isFlaggedFemale(lordFemale, id);
     }
 
     public void addLord(UUID id, boolean female) {
-        if (id != null) {
-            lords.add(id);
-            lordFemale.put(id, female);
-        }
+        putMember(lords, lordFemale, id, female);
     }
 
     public void removeLord(UUID id) {
-        if (id != null) {
-            lords.remove(id);
-            lordFemale.remove(id);
-        }
+        removeMember(lords, lordFemale, id);
     }
 
     public Set<UUID> getKnights() {
@@ -355,25 +333,19 @@ public class CapitalRecord {
     }
 
     public boolean isKnight(UUID id) {
-        return id != null && knights.contains(id);
+        return containsMember(knights, id);
     }
 
     public boolean isKnightFemale(UUID id) {
-        return knightFemale.getOrDefault(id, false);
+        return isFlaggedFemale(knightFemale, id);
     }
 
     public void addKnight(UUID id, boolean female) {
-        if (id != null) {
-            knights.add(id);
-            knightFemale.put(id, female);
-        }
+        putMember(knights, knightFemale, id, female);
     }
 
     public void removeKnight(UUID id) {
-        if (id != null) {
-            knights.remove(id);
-            knightFemale.remove(id);
-        }
+        removeMember(knights, knightFemale, id);
     }
 
     public boolean isPlayerSovereign() {
@@ -503,25 +475,23 @@ public class CapitalRecord {
     }
 
     public boolean isRoyalGuard(UUID id) {
-        return id != null && royalGuards.contains(id);
+        return containsMember(royalGuards, id);
     }
 
     public boolean isRoyalGuardFemale(UUID id) {
-        return royalGuardFemale.getOrDefault(id, false);
+        return isFlaggedFemale(royalGuardFemale, id);
     }
 
     public void addRoyalGuard(UUID id, boolean female, UUID liege) {
         if (id != null) {
-            royalGuards.add(id);
-            royalGuardFemale.put(id, female);
+            putMember(royalGuards, royalGuardFemale, id, female);
             royalGuardLiege = liege;
         }
     }
 
     public void removeRoyalGuard(UUID id) {
         if (id != null) {
-            royalGuards.remove(id);
-            royalGuardFemale.remove(id);
+            removeMember(royalGuards, royalGuardFemale, id);
             royalGuardPatrolling.remove(id);
             royalGuardPatrolAnchors.remove(id);
             royalGuardDutyModes.remove(id);
@@ -533,7 +503,7 @@ public class CapitalRecord {
     }
 
     public boolean isDisgracedRoyalGuard(UUID id) {
-        return id != null && disgracedRoyalGuards.contains(id);
+        return containsMember(disgracedRoyalGuards, id);
     }
 
     public void disgraceRoyalGuard(UUID id) {
@@ -565,8 +535,9 @@ public class CapitalRecord {
 
     public void setRoyalGuardDutyMode(UUID id, GuardDutyMode mode) {
         if (id != null) {
-            royalGuardDutyModes.put(id, mode == null ? GuardDutyMode.FOLLOW_SOVEREIGN : mode);
-            if (mode == GuardDutyMode.PATROL_ANCHOR) {
+            GuardDutyMode resolvedMode = mode == null ? GuardDutyMode.FOLLOW_SOVEREIGN : mode;
+            royalGuardDutyModes.put(id, resolvedMode);
+            if (resolvedMode == GuardDutyMode.PATROL_ANCHOR) {
                 royalGuardPatrolling.add(id);
             } else {
                 royalGuardPatrolling.remove(id);
@@ -659,25 +630,51 @@ public class CapitalRecord {
         this.heir = heir;
         this.heirFemale = heir != null && royalChildFemale.getOrDefault(heir, false);
 
-        this.royalChildren.clear();
-        this.royalChildren.addAll(royalChildren);
-        this.royalChildFemale.clear();
-        this.royalChildFemale.putAll(royalChildFemale);
+        replaceMembers(this.royalChildren, this.royalChildFemale, royalChildren, royalChildFemale);
+        replaceMembers(this.dukes, this.dukeFemale, dukes, dukeFemale);
+        replaceMembers(this.lords, this.lordFemale, lords, lordFemale);
+        replaceMembers(this.knights, this.knightFemale, knights, knightFemale);
+    }
 
-        this.dukes.clear();
-        this.dukes.addAll(dukes);
-        this.dukeFemale.clear();
-        this.dukeFemale.putAll(dukeFemale);
+    private static boolean containsMember(Set<UUID> members, UUID id) {
+        return id != null && members.contains(id);
+    }
 
-        this.lords.clear();
-        this.lords.addAll(lords);
-        this.lordFemale.clear();
-        this.lordFemale.putAll(lordFemale);
+    private static boolean isFlaggedFemale(Map<UUID, Boolean> femaleFlags, UUID id) {
+        return femaleFlags.getOrDefault(id, false);
+    }
 
-        this.knights.clear();
-        this.knights.addAll(knights);
-        this.knightFemale.clear();
-        this.knightFemale.putAll(knightFemale);
+    private static void putMember(Set<UUID> members, Map<UUID, Boolean> femaleFlags, UUID id, boolean female) {
+        if (id != null) {
+            members.add(id);
+            femaleFlags.put(id, female);
+        }
+    }
+
+    private static void removeMember(Set<UUID> members, Map<UUID, Boolean> femaleFlags, UUID id) {
+        if (id != null) {
+            members.remove(id);
+            femaleFlags.remove(id);
+        }
+    }
+
+    private static void replaceMembers(
+            Set<UUID> targetMembers,
+            Map<UUID, Boolean> targetFemaleFlags,
+            Set<UUID> sourceMembers,
+            Map<UUID, Boolean> sourceFemaleFlags
+    ) {
+        targetMembers.clear();
+        targetFemaleFlags.clear();
+
+        if (sourceMembers == null || sourceMembers.isEmpty()) {
+            return;
+        }
+
+        targetMembers.addAll(sourceMembers);
+        for (UUID id : sourceMembers) {
+            targetFemaleFlags.put(id, sourceFemaleFlags != null && sourceFemaleFlags.getOrDefault(id, false));
+        }
     }
 
     public enum HeirMode {

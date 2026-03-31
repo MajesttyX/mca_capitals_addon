@@ -17,7 +17,7 @@ final class MCAEntityBridge {
     private MCAEntityBridge() {
     }
 
-    static Entity getEntityByUuid(ServerLevel level, UUID entityId) {
+    static Entity findLoadedEntityByUuid(ServerLevel level, UUID entityId) {
         if (level == null || entityId == null) {
             return null;
         }
@@ -31,8 +31,22 @@ final class MCAEntityBridge {
         return null;
     }
 
+    static Entity getEntityByUuid(ServerLevel level, UUID entityId) {
+        return findLoadedEntityByUuid(level, entityId);
+    }
+
+    static Entity findLoadedMCAVillagerByUuid(ServerLevel level, UUID entityId) {
+        Entity entity = findLoadedEntityByUuid(level, entityId);
+        return isMCAVillagerEntity(entity) ? entity : null;
+    }
+
+    static boolean isLoadedAndAlive(ServerLevel level, UUID entityId) {
+        Entity entity = findLoadedEntityByUuid(level, entityId);
+        return entity != null && entity.isAlive() && !entity.isRemoved();
+    }
+
     static boolean isMCAVillager(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         return isMCAVillagerEntity(entity);
     }
 
@@ -46,7 +60,7 @@ final class MCAEntityBridge {
     }
 
     static boolean isAliveMCAVillager(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         return isAliveMCAVillagerEntity(entity);
     }
 
@@ -55,7 +69,7 @@ final class MCAEntityBridge {
     }
 
     static boolean isFemale(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         if (!isMCAVillagerEntity(entity)) {
             return false;
         }
@@ -80,7 +94,7 @@ final class MCAEntityBridge {
     }
 
     static String getAgeState(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         if (!isMCAVillagerEntity(entity)) {
             return "UNASSIGNED";
         }
@@ -98,7 +112,7 @@ final class MCAEntityBridge {
     }
 
     static boolean isTeenOrAdultVillager(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         if (!isMCAVillagerEntity(entity)) {
             return false;
         }
@@ -112,27 +126,27 @@ final class MCAEntityBridge {
     }
 
     static boolean isMCAGuard(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         if (!isMCAVillagerEntity(entity)) {
             return false;
         }
 
         String profession = MCAReflectionHelper.getProfessionName(entity);
-        return profession.contains("guard") || profession.contains("archer");
+        return profession.contains(McaProfessionKeys.GUARD) || profession.contains(McaProfessionKeys.ARCHER);
     }
 
     static boolean isMCAFootGuard(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         if (!isMCAVillagerEntity(entity)) {
             return false;
         }
 
         String profession = MCAReflectionHelper.getProfessionName(entity);
-        return profession.contains("guard") && !profession.contains("archer");
+        return profession.contains(McaProfessionKeys.GUARD) && !profession.contains(McaProfessionKeys.ARCHER);
     }
 
     static boolean isMasterProfessionVillager(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         if (!isMCAVillagerEntity(entity)) {
             return false;
         }
@@ -142,12 +156,12 @@ final class MCAEntityBridge {
     }
 
     static boolean isAliveAdultOrChildVillager(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         return isMCAVillagerEntity(entity) && entity.isAlive() && !entity.isRemoved();
     }
 
     static String describeProfession(ServerLevel level, UUID entityId) {
-        Entity entity = getEntityByUuid(level, entityId);
+        Entity entity = findLoadedEntityByUuid(level, entityId);
         if (!isMCAVillagerEntity(entity)) {
             return "non_mca";
         }
@@ -158,7 +172,7 @@ final class MCAEntityBridge {
     }
 
     static int getHeartsWithPlayer(ServerLevel level, UUID villagerId, UUID playerId) {
-        Entity entity = getEntityByUuid(level, villagerId);
+        Entity entity = findLoadedEntityByUuid(level, villagerId);
         if (!isMCAVillagerEntity(entity) || playerId == null) {
             return 0;
         }

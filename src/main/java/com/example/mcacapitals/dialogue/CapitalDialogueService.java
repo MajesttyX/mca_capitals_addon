@@ -13,6 +13,7 @@ import net.mca.resources.data.dialogue.Question;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,8 +48,12 @@ public class CapitalDialogueService {
     private CapitalDialogueService() {
     }
 
-    public static boolean tryOpenCapitalNewsDialogue(ServerPlayer player, VillagerEntityMCA villager) {
-        if (player == null || villager == null) {
+    public static boolean tryOpenCapitalNewsDialogue(ServerPlayer player, Entity villagerEntity) {
+        if (player == null || villagerEntity == null || !MCAIntegrationBridge.isMCAVillagerEntity(villagerEntity)) {
+            return false;
+        }
+
+        if (!(villagerEntity instanceof VillagerEntityMCA villager)) {
             return false;
         }
 
@@ -82,8 +87,14 @@ public class CapitalDialogueService {
             return false;
         }
 
-        NetworkHandler.sendToPlayer(new InteractionDialogueQuestionResponse(false, Component.literal(line)), player);
         NetworkHandler.sendToPlayer(new InteractionDialogueResponse(mainQuestion, player, villager), player);
+        NetworkHandler.sendToPlayer(
+                new InteractionDialogueQuestionResponse(
+                        mainQuestion.isSilent(),
+                        Component.literal(line)
+                ),
+                player
+        );
         return true;
     }
 

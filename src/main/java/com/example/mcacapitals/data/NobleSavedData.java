@@ -2,6 +2,7 @@ package com.example.mcacapitals.data;
 
 import com.example.mcacapitals.noble.NobleRecord;
 import com.example.mcacapitals.noble.NobleTitle;
+import com.example.mcacapitals.util.ModDataKeys;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -46,41 +47,41 @@ public class NobleSavedData extends SavedData {
         for (NobleRecord record : nobles.values()) {
             CompoundTag nobleTag = new CompoundTag();
 
-            nobleTag.putUUID("VillagerId", record.getVillagerId());
-            nobleTag.putString("DirectTitle", record.getDirectTitle().name());
+            nobleTag.putUUID(ModDataKeys.VILLAGER_ID, record.getVillagerId());
+            nobleTag.putString(ModDataKeys.DIRECT_TITLE, record.getDirectTitle().name());
 
             if (record.getCapitalId() != null) {
-                nobleTag.putUUID("CapitalId", record.getCapitalId());
+                nobleTag.putUUID(ModDataKeys.CAPITAL_ID, record.getCapitalId());
             }
 
-            nobleTag.putBoolean("TitleGrantedByMarriage", record.isTitleGrantedByMarriage());
-            nobleTag.putInt("SuccessionOrder", record.getSuccessionOrder());
+            nobleTag.putBoolean(ModDataKeys.TITLE_GRANTED_BY_MARRIAGE, record.isTitleGrantedByMarriage());
+            nobleTag.putInt(ModDataKeys.SUCCESSION_ORDER, record.getSuccessionOrder());
 
             nobleList.add(nobleTag);
         }
 
-        tag.put("Nobles", nobleList);
+        tag.put(ModDataKeys.NOBLES, nobleList);
         return tag;
     }
 
     public static NobleSavedData load(CompoundTag tag) {
         NobleSavedData data = new NobleSavedData();
 
-        ListTag nobleList = tag.getList("Nobles", Tag.TAG_COMPOUND);
+        ListTag nobleList = tag.getList(ModDataKeys.NOBLES, Tag.TAG_COMPOUND);
         for (Tag rawTag : nobleList) {
             CompoundTag nobleTag = (CompoundTag) rawTag;
 
-            UUID villagerId = nobleTag.getUUID("VillagerId");
-            NobleTitle title = NobleTitle.valueOf(nobleTag.getString("DirectTitle"));
+            UUID villagerId = nobleTag.getUUID(ModDataKeys.VILLAGER_ID);
+            NobleTitle title = NobleTitle.valueOf(nobleTag.getString(ModDataKeys.DIRECT_TITLE));
 
             NobleRecord record = new NobleRecord(villagerId, title);
 
-            if (nobleTag.hasUUID("CapitalId")) {
-                record.setCapitalId(nobleTag.getUUID("CapitalId"));
+            if (nobleTag.hasUUID(ModDataKeys.CAPITAL_ID)) {
+                record.setCapitalId(nobleTag.getUUID(ModDataKeys.CAPITAL_ID));
             }
 
-            record.setTitleGrantedByMarriage(nobleTag.getBoolean("TitleGrantedByMarriage"));
-            record.setSuccessionOrder(nobleTag.getInt("SuccessionOrder"));
+            record.setTitleGrantedByMarriage(nobleTag.getBoolean(ModDataKeys.TITLE_GRANTED_BY_MARRIAGE));
+            record.setSuccessionOrder(nobleTag.getInt(ModDataKeys.SUCCESSION_ORDER));
 
             data.nobles.put(villagerId, record);
         }

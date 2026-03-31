@@ -6,5 +6,5 @@ package com.example.mcacapitals.mixin;
  * Petition handling is intercepted at MCA's native dialogue answer-selection layer
  * in DialoguesSelectAnswerMixin.
  */
-public class InteractionDialogueInitMessageMixin {
+public class InteractionDialogueMessageMixin {
 }

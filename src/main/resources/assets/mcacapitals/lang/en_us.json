@@ -4,5 +4,9 @@
   "item.mcacapitals.legitimization_decree": "Legitimization Decree",
   "item.mcacapitals.declaration_of_abdication": "Declaration of Abdication",
   "item.mcacapitals.royal_charter": "Royal Charter",
-  "item.mcacapitals.capital_chronicle": "Capital Chronicle"
+  "item.mcacapitals.capital_chronicle": "Capital Chronicle",
+  "dialogue.main.mcacapitals_petition": "Petition",
+  "dialogue.mcacapitals_petition_menu": "What do you petition the sovereign for?",
+  "dialogue.mcacapitals_petition_menu.mcacapitals_petition_throne": "Petition for the Throne",
+  "dialogue.mcacapitals_petition_menu.mcacapitals_petition_back": "Return"
 }

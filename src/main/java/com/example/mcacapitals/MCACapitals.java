@@ -11,6 +11,7 @@ import com.example.mcacapitals.util.AbdicationPromptCommands;
 import com.example.mcacapitals.util.CapitalDebugCommands;
 import com.example.mcacapitals.util.CapitalFoundingCommands;
 import com.example.mcacapitals.util.CapitalLifecycleHandler;
+import com.example.mcacapitals.util.CapitalPetitionCommands;
 import com.example.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.example.mcacapitals.util.CapitalTestCommands;
 import com.example.mcacapitals.util.RoyalGuardInteractionHandler;
@@ -60,6 +61,7 @@ public class MCACapitals {
         AbdicationPromptCommands.register(event.getDispatcher());
         CapitalFoundingCommands.register(event.getDispatcher());
         CapitalRoyalGuardCommands.register(event.getDispatcher());
+        CapitalPetitionCommands.register(event.getDispatcher());
         RoyalScepterCommands.register(event.getDispatcher());
     }
 

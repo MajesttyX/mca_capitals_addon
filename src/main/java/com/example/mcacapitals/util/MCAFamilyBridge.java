@@ -12,8 +12,22 @@ final class MCAFamilyBridge {
     private MCAFamilyBridge() {
     }
 
-    static boolean hasFamilyNode(ServerLevel level, UUID entityId) {
+    static boolean hasPersistentFamilyNode(ServerLevel level, UUID entityId) {
         return getFamilyNode(level, entityId).isPresent();
+    }
+
+    static boolean hasFamilyNode(ServerLevel level, UUID entityId) {
+        return hasPersistentFamilyNode(level, entityId);
+    }
+
+    static boolean isFamilyNodeDeceased(ServerLevel level, UUID entityId) {
+        Optional<Object> nodeOpt = getFamilyNode(level, entityId);
+        if (nodeOpt.isEmpty()) {
+            return false;
+        }
+
+        Object value = MCAReflectionHelper.invoke(nodeOpt.get(), "isDeceased");
+        return value instanceof Boolean b && b;
     }
 
     static UUID getSpouse(ServerLevel level, UUID entityId) {

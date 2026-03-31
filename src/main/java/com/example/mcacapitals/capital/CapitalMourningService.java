@@ -11,20 +11,6 @@ import java.util.UUID;
 
 public class CapitalMourningService {
 
-    private static final String FEMALE_ROYAL_PREFIX = "mcacapitals:skins/clothing/normal/female/mourning_royal/";
-    private static final String MALE_ROYAL_PREFIX = "mcacapitals:skins/clothing/normal/male/mourning_royal/";
-    private static final String FEMALE_NOBLE_PREFIX = "mcacapitals:skins/clothing/normal/female/mourning_noble/";
-    private static final String MALE_NOBLE_PREFIX = "mcacapitals:skins/clothing/normal/male/mourning_noble/";
-    private static final String FEMALE_COMMONER_PREFIX = "mcacapitals:skins/clothing/normal/female/mourning_commoner/";
-    private static final String MALE_COMMONER_PREFIX = "mcacapitals:skins/clothing/normal/male/mourning_commoner/";
-
-    private static final int FEMALE_ROYAL_COUNT = 4;
-    private static final int MALE_ROYAL_COUNT = 3;
-    private static final int FEMALE_NOBLE_COUNT = 3;
-    private static final int MALE_NOBLE_COUNT = 2;
-    private static final int FEMALE_COMMONER_COUNT = 2;
-    private static final int MALE_COMMONER_COUNT = 2;
-
     private CapitalMourningService() {
     }
 
@@ -134,23 +120,23 @@ public class CapitalMourningService {
 
         if (isRoyalTier(capital, villagerId)) {
             return buildPath(
-                    female ? FEMALE_ROYAL_PREFIX : MALE_ROYAL_PREFIX,
-                    female ? FEMALE_ROYAL_COUNT : MALE_ROYAL_COUNT,
+                    female ? MourningClothingPaths.FEMALE_ROYAL_PREFIX : MourningClothingPaths.MALE_ROYAL_PREFIX,
+                    female ? MourningClothingPaths.FEMALE_ROYAL_COUNT : MourningClothingPaths.MALE_ROYAL_COUNT,
                     villagerId
             );
         }
 
         if (isNobleTier(capital, villagerId)) {
             return buildPath(
-                    female ? FEMALE_NOBLE_PREFIX : MALE_NOBLE_PREFIX,
-                    female ? FEMALE_NOBLE_COUNT : MALE_NOBLE_COUNT,
+                    female ? MourningClothingPaths.FEMALE_NOBLE_PREFIX : MourningClothingPaths.MALE_NOBLE_PREFIX,
+                    female ? MourningClothingPaths.FEMALE_NOBLE_COUNT : MourningClothingPaths.MALE_NOBLE_COUNT,
                     villagerId
             );
         }
 
         return buildPath(
-                female ? FEMALE_COMMONER_PREFIX : MALE_COMMONER_PREFIX,
-                female ? FEMALE_COMMONER_COUNT : MALE_COMMONER_COUNT,
+                female ? MourningClothingPaths.FEMALE_COMMONER_PREFIX : MourningClothingPaths.MALE_COMMONER_PREFIX,
+                female ? MourningClothingPaths.FEMALE_COMMONER_COUNT : MourningClothingPaths.MALE_COMMONER_COUNT,
                 villagerId
         );
     }

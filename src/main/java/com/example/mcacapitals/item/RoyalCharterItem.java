@@ -2,9 +2,9 @@ package com.example.mcacapitals.item;
 
 import com.example.mcacapitals.capital.CapitalRecord;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
+import com.example.mcacapitals.util.ModDataKeys;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -43,9 +43,9 @@ public class RoyalCharterItem extends Item {
         ItemStack stack = new ItemStack(ModItems.ROYAL_CHARTER.get());
         CompoundTag tag = stack.getOrCreateTag();
 
-        tag.putString("CapitalId", capital.getCapitalId().toString());
-        tag.putInt("VillageId", capital.getVillageId());
-        tag.putString("VillageName", MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+        tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
+        tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId());
+        tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
 
         ListTag candidates = new ListTag();
         MCAIntegrationBridge.getVillageResidents(level, capital.getVillageId()).stream()
@@ -57,12 +57,12 @@ public class RoyalCharterItem extends Item {
                     }
 
                     CompoundTag candidateTag = new CompoundTag();
-                    candidateTag.putString("VillagerId", villagerId.toString());
-                    candidateTag.putString("VillagerName", entity.getName().getString());
+                    candidateTag.putString(ModDataKeys.VILLAGER_ID, villagerId.toString());
+                    candidateTag.putString(ModDataKeys.VILLAGER_NAME, entity.getName().getString());
                     candidates.add(candidateTag);
                 });
 
-        tag.put("Candidates", candidates);
+        tag.put(ModDataKeys.CANDIDATES, candidates);
         return stack;
     }
 }

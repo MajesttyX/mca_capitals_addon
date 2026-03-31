@@ -1,8 +1,10 @@
 package com.example.mcacapitals.capital;
 
 import com.example.mcacapitals.data.CapitalDataAccess;
+import com.example.mcacapitals.player.PlayerCapitalTitleService;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,6 +23,9 @@ public class CapitalFoundationService {
         }
 
         UUID previous = capital.getSovereign();
+        UUID previousPlayerSovereignId = capital.getPlayerSovereignId();
+
+        clearPlayerSovereignState(capital);
 
         capital.setSovereign(villagerId);
         capital.setSovereignFemale(female);
@@ -28,6 +33,10 @@ public class CapitalFoundationService {
         capital.setMonarchyRejected(false);
 
         refreshCourt(level, capital);
+
+        if (previousPlayerSovereignId != null && capital.getCapitalId() != null) {
+            PlayerCapitalTitleService.clear(level, previousPlayerSovereignId, capital.getCapitalId());
+        }
 
         if (!villagerId.equals(previous)) {
             String title = female ? "Queen" : "King";
@@ -51,19 +60,35 @@ public class CapitalFoundationService {
         }
 
         UUID previous = capital.getSovereign();
+        UUID previousPlayerSovereignId = capital.getPlayerSovereignId();
 
         capital.setSovereign(playerId);
         capital.setSovereignFemale(female);
         capital.setState(CapitalState.ACTIVE);
         capital.setMonarchyRejected(false);
 
+        capital.setPlayerSovereign(true);
+        capital.setPlayerSovereignId(playerId);
+        capital.setPlayerSovereignName(resolvePlayerName(level, playerId));
+        capital.setPlayerConsort(false);
+        capital.setPlayerConsortId(null);
+        capital.setPlayerConsortName(null);
+
         refreshCourt(level, capital);
+
+        if (previousPlayerSovereignId != null
+                && !previousPlayerSovereignId.equals(playerId)
+                && capital.getCapitalId() != null) {
+            PlayerCapitalTitleService.clear(level, previousPlayerSovereignId, capital.getCapitalId());
+        }
+
+        if (capital.getCapitalId() != null) {
+            PlayerCapitalTitleService.clear(level, playerId, capital.getCapitalId());
+        }
 
         if (!playerId.equals(previous)) {
             String title = female ? "Queen" : "King";
-            String name = level.getServer().getPlayerList().getPlayer(playerId) != null
-                    ? level.getServer().getPlayerList().getPlayer(playerId).getName().getString()
-                    : playerId.toString();
+            String name = resolvePlayerName(level, playerId);
 
             CapitalChronicleService.addEntry(level, capital,
                     name + " claimed the throne as " + title + " of "
@@ -117,6 +142,8 @@ public class CapitalFoundationService {
 
         UUID oldSovereign = capital.getSovereign();
         UUID oldConsort = capital.getConsort();
+        boolean oldPlayerSovereign = capital.isPlayerSovereign();
+        UUID oldPlayerSovereignId = capital.getPlayerSovereignId();
 
         String oldName = MCAIntegrationBridge.getEntityByUuid(level, oldSovereign) != null
                 ? MCAIntegrationBridge.getEntityByUuid(level, oldSovereign).getName().getString()
@@ -139,7 +166,13 @@ public class CapitalFoundationService {
         capital.setConsortFemale(false);
         capital.setState(CapitalState.ACTIVE);
 
+        clearPlayerSovereignState(capital);
+
         refreshCourt(level, capital);
+
+        if (oldPlayerSovereign && oldPlayerSovereignId != null && capital.getCapitalId() != null) {
+            PlayerCapitalTitleService.clear(level, oldPlayerSovereignId, capital.getCapitalId());
+        }
 
         for (UUID childId : oldRoyalChildren) {
             if (childId == null || childId.equals(successor) || childId.equals(oldSovereign) || childId.equals(oldConsort)) {
@@ -213,6 +246,14 @@ public class CapitalFoundationService {
         UUID dowager = capital.getDowager();
         boolean dowagerFemale = capital.isDowagerFemale();
 
+        boolean playerSovereign = capital.isPlayerSovereign();
+        UUID playerSovereignId = capital.getPlayerSovereignId();
+        String playerSovereignName = capital.getPlayerSovereignName();
+
+        boolean playerConsort = capital.isPlayerConsort();
+        UUID playerConsortId = capital.getPlayerConsortId();
+        String playerConsortName = capital.getPlayerConsortName();
+
         Set<UUID> directDukes = new HashSet<>(capital.getDukes());
         HashMap<UUID, Boolean> directDukeFemale = new HashMap<>(capital.getDukeFemale());
 
@@ -225,6 +266,14 @@ public class CapitalFoundationService {
         capital.setDowager(dowager);
         capital.setDowagerFemale(dowagerFemale);
 
+        capital.setPlayerSovereign(playerSovereign);
+        capital.setPlayerSovereignId(playerSovereignId);
+        capital.setPlayerSovereignName(playerSovereignName);
+
+        capital.setPlayerConsort(playerConsort);
+        capital.setPlayerConsortId(playerConsortId);
+        capital.setPlayerConsortName(playerConsortName);
+
         for (UUID dukeId : directDukes) {
             capital.addDuke(dukeId, directDukeFemale.getOrDefault(dukeId, MCAIntegrationBridge.isFemale(level, dukeId)));
         }
@@ -232,11 +281,22 @@ public class CapitalFoundationService {
         CapitalCourtBuilder.rebuildCourt(level, capital, residents);
         CapitalNameService.refreshCapitalNames(level, capital, residents);
 
-        if (capital.getSovereign() != null) {
-            capital.setState(CapitalState.ACTIVE);
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
+    }
+
+    private static void clearPlayerSovereignState(CapitalRecord capital) {
+        capital.setPlayerSovereign(false);
+        capital.setPlayerSovereignId(null);
+        capital.setPlayerSovereignName(null);
+    }
+
+    private static String resolvePlayerName(ServerLevel level, UUID playerId) {
+        if (level == null || playerId == null) {
+            return "";
         }
 
-        CapitalManager.getAllCapitals().put(capital.getCapitalId(), capital);
-        CapitalDataAccess.markDirty(level);
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(playerId);
+        return player != null ? player.getName().getString() : playerId.toString();
     }
 }

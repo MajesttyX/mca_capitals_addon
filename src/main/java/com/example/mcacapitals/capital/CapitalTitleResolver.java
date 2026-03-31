@@ -1,5 +1,7 @@
 package com.example.mcacapitals.capital;
 
+import com.example.mcacapitals.noble.NobleTitle;
+import com.example.mcacapitals.player.PlayerCapitalTitleService;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 
@@ -29,7 +31,7 @@ public class CapitalTitleResolver {
             return female ? "Queen Dowager" : "Prince Consort";
         }
 
-        if (entityId.equals(capital.getCommander())) {
+        if (entityId.equals(capital.getCommander()) || PlayerCapitalTitleService.isCommander(level, capital, entityId)) {
             return "Commander";
         }
 
@@ -57,6 +59,11 @@ public class CapitalTitleResolver {
             return female ? "Duchess" : "Duke";
         }
 
+        NobleTitle grantedTitle = PlayerCapitalTitleService.getGrantedTitle(level, capital, entityId);
+        if (grantedTitle == NobleTitle.DUKE || grantedTitle == NobleTitle.DUCHESS) {
+            return female ? "Duchess" : "Duke";
+        }
+
         if (capital.isKnight(entityId)) {
             return female ? "Dame" : "Sir";
         }
@@ -66,6 +73,10 @@ public class CapitalTitleResolver {
         }
 
         if (isMarriageLord(level, capital, entityId)) {
+            return female ? "Lady" : "Lord";
+        }
+
+        if (grantedTitle == NobleTitle.LORD || grantedTitle == NobleTitle.LADY) {
             return female ? "Lady" : "Lord";
         }
 
@@ -103,6 +114,7 @@ public class CapitalTitleResolver {
             if (level != null && (
                     isMarriageDuke(level, capital, entityId)
                             || isMarriageLord(level, capital, entityId)
+                            || PlayerCapitalTitleService.hasAnyOffice(level, capital, entityId)
             )) {
                 return capital;
             }
@@ -218,6 +230,7 @@ public class CapitalTitleResolver {
                 return true;
             }
         }
+
         return false;
     }
 }

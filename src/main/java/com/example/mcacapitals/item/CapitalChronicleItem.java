@@ -7,6 +7,7 @@ import com.example.mcacapitals.capital.CapitalRecord;
 import com.example.mcacapitals.network.ModNetwork;
 import com.example.mcacapitals.network.OpenCapitalChroniclePacket;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
+import com.example.mcacapitals.util.ModDataKeys;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -54,8 +55,10 @@ public class CapitalChronicleItem extends Item {
 
         MCACapitals.LOGGER.info(
                 "[CapitalChronicle] Sending preview book to client for village '{}' with {} page entries.",
-                previewBook.getOrCreateTag().getString("VillageName"),
-                previewBook.getOrCreateTag().contains("pages") ? previewBook.getOrCreateTag().getList("pages", 8).size() : 0
+                previewBook.getOrCreateTag().getString(ModDataKeys.VILLAGE_NAME),
+                previewBook.getOrCreateTag().contains(ModDataKeys.BOOK_PAGES)
+                        ? previewBook.getOrCreateTag().getList(ModDataKeys.BOOK_PAGES, 8).size()
+                        : 0
         );
 
         ModNetwork.sendToPlayer(serverPlayer, new OpenCapitalChroniclePacket(previewBook));
@@ -64,7 +67,7 @@ public class CapitalChronicleItem extends Item {
 
     private CapitalRecord resolveCapital(ServerPlayer player, ItemStack stack) {
         if (stack.hasTag()) {
-            String raw = stack.getTag().getString("CapitalId");
+            String raw = stack.getTag().getString(ModDataKeys.CAPITAL_ID);
             if (!raw.isBlank()) {
                 try {
                     UUID capitalId = UUID.fromString(raw);

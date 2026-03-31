@@ -1,0 +1,27 @@
+{
+  "silent": true,
+  "answers": [
+    {
+      "name": "mcacapitals_petition_throne",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_petition_throne"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition_back",
+      "priority": 1,
+      "results": [
+        {
+          "actions": {
+            "next": "main"
+          }
+        }
+      ]
+    }
+  ]
+}

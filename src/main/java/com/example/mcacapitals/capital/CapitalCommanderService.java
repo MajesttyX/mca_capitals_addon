@@ -56,7 +56,7 @@ public class CapitalCommanderService {
                 CapitalChronicleService.addEntry(level, capital,
                         commanderName + " was appointed Commander of the Royal Guard of " + villageName + ".");
 
-                broadcastCommanderAppointment(level, villageName, commanderName);
+                broadcastCommanderAppointment(level, capital, villageName, commanderName);
                 changed = true;
             }
         }
@@ -192,7 +192,7 @@ public class CapitalCommanderService {
                 && MCAIntegrationBridge.isMCAGuard(level, commanderId);
     }
 
-    private static void broadcastCommanderAppointment(ServerLevel level, String villageName, String commanderName) {
+    private static void broadcastCommanderAppointment(ServerLevel level, CapitalRecord capital, String villageName, String commanderName) {
         Component message = Component.literal(
                 "Due to their unwavering commitment to " + villageName
                         + " and years of service to the crown, "
@@ -200,9 +200,7 @@ public class CapitalCommanderService {
                         + " has been appointed as Commander of the Royal Guard!"
         );
 
-        for (ServerPlayer player : level.players()) {
-            player.sendSystemMessage(message);
-        }
+        CapitalPlayerNotificationService.notifyPlayersInCapital(level, capital, message);
     }
 
     private static String resolveDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId) {

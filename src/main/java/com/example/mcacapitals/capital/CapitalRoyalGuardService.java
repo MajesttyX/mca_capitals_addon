@@ -71,6 +71,40 @@ public class CapitalRoyalGuardService {
         return changed;
     }
 
+    public static boolean clearRoyalGuardsForTransfer(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null) {
+            return false;
+        }
+
+        if (capital.getRoyalGuards().isEmpty() && capital.getRoyalGuardLiege() == null) {
+            return false;
+        }
+
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        boolean changed = false;
+
+        for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
+            String guardName = buildRoyalGuardHistoryName(level, guardId);
+            capital.removeRoyalGuard(guardId);
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    guardName + " was released from the royal guard of " + villageName + " after the transfer of power."
+            );
+            changed = true;
+        }
+
+        capital.setRoyalGuardLiege(capital.getSovereign());
+        capital.setLastRoyalGuardPromptDay(0L);
+
+        if (changed) {
+            CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+            CapitalDataAccess.markDirty(level);
+        }
+
+        return changed;
+    }
+
     public static List<UUID> getValidCandidates(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         List<UUID> result = new ArrayList<>();
         for (UUID residentId : residents) {
@@ -94,11 +128,11 @@ public class CapitalRoyalGuardService {
         CapitalChronicleService.addEntry(level, capital,
                 guardName + " was named to the royal guard of " + villageName + ".");
 
-        for (ServerPlayer player : level.players()) {
-            player.sendSystemMessage(Component.literal(
-                    guardName + " has been named to the royal guard of " + villageName + "."
-            ));
-        }
+        CapitalPlayerNotificationService.notifyPlayersInCapital(
+                level,
+                capital,
+                Component.literal(guardName + " has been named to the royal guard of " + villageName + ".")
+        );
 
         return true;
     }
@@ -246,14 +280,14 @@ public class CapitalRoyalGuardService {
         List<UUID> candidates = getValidCandidates(level, capital, residents);
         if (candidates.isEmpty()) return;
 
+        if (!CapitalPlayerNotificationService.isPlayerWithinCapital(level, capital, player)) return;
+
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String guardName = capital.isSovereignFemale() ? "Queensguard" : "Kingsguard";
+
         player.sendSystemMessage(Component.literal(
-                "Valid royal guard candidates for " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
-                        + " are listed below. Use /capitalguard appoint <uuid> to choose one."
+                "As sovereign of " + villageName + ", you may now appoint loyal defenders to your " + guardName + "."
         ));
-        for (UUID candidate : candidates) {
-            String name = buildRoyalGuardDisplayName(level, capital, candidate);
-            player.sendSystemMessage(Component.literal("- " + name + " [" + candidate + "]"));
-        }
 
         capital.setLastRoyalGuardPromptDay(currentDay);
         CapitalDataAccess.markDirty(level);
@@ -263,6 +297,13 @@ public class CapitalRoyalGuardService {
         String guardName = buildRoyalGuardDisplayName(level, capital, guardId);
         CapitalChronicleService.addEntry(level, capital,
                 guardName + " was disgraced and stripped of royal guard honors after the fall of their sovereign.");
+    }
+
+    private static String buildRoyalGuardHistoryName(ServerLevel level, UUID entityId) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
+        String baseName = entity != null ? entity.getName().getString() : entityId.toString();
+        baseName = baseName.replace(" of the Kingsguard", "").replace(" of the Queensguard", "");
+        return baseName.trim();
     }
 
     public static String buildRoyalGuardDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId) {

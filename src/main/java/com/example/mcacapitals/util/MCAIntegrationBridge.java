@@ -5,8 +5,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -15,8 +17,20 @@ public final class MCAIntegrationBridge {
     private MCAIntegrationBridge() {
     }
 
+    public static Entity findLoadedEntityByUuid(ServerLevel level, UUID entityId) {
+        return MCAEntityBridge.findLoadedEntityByUuid(level, entityId);
+    }
+
     public static Entity getEntityByUuid(ServerLevel level, UUID entityId) {
         return MCAEntityBridge.getEntityByUuid(level, entityId);
+    }
+
+    public static Entity findLoadedMCAVillagerByUuid(ServerLevel level, UUID entityId) {
+        return MCAEntityBridge.findLoadedMCAVillagerByUuid(level, entityId);
+    }
+
+    public static boolean isLoadedAndAlive(ServerLevel level, UUID entityId) {
+        return MCAEntityBridge.isLoadedAndAlive(level, entityId);
     }
 
     public static boolean isMCAVillager(ServerLevel level, UUID entityId) {
@@ -25,6 +39,22 @@ public final class MCAIntegrationBridge {
 
     public static boolean isMCAVillagerEntity(Object entity) {
         return MCAEntityBridge.isMCAVillagerEntity(entity);
+    }
+
+    public static boolean isFamilyNodeDeceased(ServerLevel level, UUID entityId) {
+        return MCAFamilyBridge.isFamilyNodeDeceased(level, entityId);
+    }
+
+    public static Optional<Integer> getLastSeenVillageId(ServerLevel level, ServerPlayer player) {
+        return MCAPlayerBridge.getLastSeenVillageId(level, player);
+    }
+
+    public static boolean isPlayerInVillage(ServerLevel level, ServerPlayer player, Integer villageId) {
+        return MCAPlayerBridge.isPlayerInVillage(level, player, villageId);
+    }
+
+    public static boolean isPlayerFemale(ServerLevel level, ServerPlayer player) {
+        return MCAPlayerBridge.isPlayerFemale(level, player);
     }
 
     public static boolean isAliveMCAVillager(ServerLevel level, UUID entityId) {
@@ -45,6 +75,10 @@ public final class MCAIntegrationBridge {
 
     public static boolean isTeenOrAdultVillager(ServerLevel level, UUID entityId) {
         return MCAEntityBridge.isTeenOrAdultVillager(level, entityId);
+    }
+
+    public static boolean hasPersistentFamilyNode(ServerLevel level, UUID entityId) {
+        return MCAFamilyBridge.hasPersistentFamilyNode(level, entityId);
     }
 
     public static boolean hasFamilyNode(ServerLevel level, UUID entityId) {
