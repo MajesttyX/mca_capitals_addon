@@ -27,7 +27,7 @@ public class CapitalLifecycleHandler {
             if (capital == null || capital.getCapitalId() == null) {
                 continue;
             }
-            CapitalManager.getAllCapitals().put(capital.getCapitalId(), capital);
+            CapitalManager.putCapital(capital);
         }
     }
 

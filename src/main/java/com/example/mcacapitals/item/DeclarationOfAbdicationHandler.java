@@ -110,10 +110,9 @@ public class DeclarationOfAbdicationHandler {
             }
         }
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
-            if (targetId.equals(capital.getSovereign())) {
-                return capital;
-            }
+        CapitalRecord bySovereign = CapitalManager.getCapitalBySovereign(targetId);
+        if (bySovereign != null) {
+            return bySovereign;
         }
 
         return null;

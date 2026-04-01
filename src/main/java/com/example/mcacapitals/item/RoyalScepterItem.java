@@ -4,9 +4,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
-public class HeirScepterItem extends Item {
+public class RoyalScepterItem extends Item {
 
-    public HeirScepterItem() {
+    public RoyalScepterItem() {
         super(new Item.Properties().stacksTo(1));
     }
 

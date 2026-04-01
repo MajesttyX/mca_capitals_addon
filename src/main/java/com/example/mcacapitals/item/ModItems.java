@@ -12,8 +12,8 @@ public class ModItems {
     private static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, MCACapitals.MODID);
 
-    public static final RegistryObject<Item> HEIR_SCEPTER =
-            ITEMS.register("heir_scepter", HeirScepterItem::new);
+    public static final RegistryObject<Item> ROYAL_SCEPTER =
+            ITEMS.register("heir_scepter", RoyalScepterItem::new);
 
     public static final RegistryObject<Item> ROYAL_DISINHERITANCE =
             ITEMS.register("royal_disinheritance", RoyalDisinheritanceItem::new);

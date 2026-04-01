@@ -19,7 +19,7 @@ public class ModCreativeTabs {
                     .title(Component.translatable("creativetab.mcacapitals.main"))
                     .icon(() -> new ItemStack(ModItems.RED_ROYAL_SEAL.get()))
                     .displayItems((parameters, output) -> {
-                        output.accept(ModItems.HEIR_SCEPTER.get());
+                        output.accept(ModItems.ROYAL_SCEPTER.get());
                         output.accept(ModItems.ROYAL_DISINHERITANCE.get());
                         output.accept(ModItems.LEGITIMIZATION_DECREE.get());
                         output.accept(ModItems.DECLARATION_OF_ABDICATION.get());

@@ -5,7 +5,6 @@ import com.example.mcacapitals.capital.CapitalRecord;
 import com.example.mcacapitals.capital.CapitalResidentScanner;
 import com.example.mcacapitals.capital.CapitalRoyalGuardService;
 import com.example.mcacapitals.data.CapitalDataAccess;
-import com.example.mcacapitals.util.MCAIntegrationBridge;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
@@ -32,10 +31,7 @@ public class CapitalRoyalGuardCommands {
                                         return 0;
                                     }
 
-                                    CapitalRecord capital = CapitalManager.getAllCapitals().values().stream()
-                                            .filter(c -> player.getUUID().equals(c.getSovereign()))
-                                            .findFirst()
-                                            .orElse(null);
+                                    CapitalRecord capital = CapitalManager.getCapitalBySovereign(player.getUUID());
 
                                     if (capital == null) {
                                         ctx.getSource().sendFailure(Component.literal("You are not the sovereign of a capital."));
@@ -66,10 +62,7 @@ public class CapitalRoyalGuardCommands {
                                                 return 0;
                                             }
 
-                                            CapitalRecord capital = CapitalManager.getAllCapitals().values().stream()
-                                                    .filter(c -> player.getUUID().equals(c.getSovereign()))
-                                                    .findFirst()
-                                                    .orElse(null);
+                                            CapitalRecord capital = CapitalManager.getCapitalBySovereign(player.getUUID());
 
                                             if (capital == null) {
                                                 ctx.getSource().sendFailure(Component.literal("You are not the sovereign of a capital."));

@@ -85,7 +85,7 @@ public class CapitalChronicleItem extends Item {
             return bySovereign;
         }
 
-        return CapitalManager.getAllCapitals().values().stream()
+        return CapitalManager.getAllCapitalRecords().stream()
                 .filter(capital -> capital.getVillageId() != null)
                 .filter(capital -> MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()) != null)
                 .min(Comparator.comparingDouble(capital -> {

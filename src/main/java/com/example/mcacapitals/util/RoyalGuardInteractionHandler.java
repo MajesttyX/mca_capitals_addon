@@ -2,10 +2,8 @@ package com.example.mcacapitals.util;
 
 import com.example.mcacapitals.capital.CapitalManager;
 import com.example.mcacapitals.capital.CapitalRecord;
-import com.example.mcacapitals.capital.CapitalResidentScanner;
 import com.example.mcacapitals.capital.CapitalRoyalGuardService;
 import com.example.mcacapitals.data.CapitalDataAccess;
-import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
@@ -15,7 +13,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-import java.util.Set;
 import java.util.UUID;
 
 public class RoyalGuardInteractionHandler {
@@ -34,11 +31,8 @@ public class RoyalGuardInteractionHandler {
         UUID targetId = target.getUUID();
         if (!MCAIntegrationBridge.isMCAVillager(level, targetId)) return;
 
-        CapitalRecord capital = CapitalManager.getAllCapitals().values().stream()
-                .filter(c -> c.isRoyalGuard(targetId))
-                .findFirst()
-                .orElse(null);
-        if (capital == null) return;
+        CapitalRecord capital = CapitalManager.getCapitalForResident(targetId);
+        if (capital == null || !capital.isRoyalGuard(targetId)) return;
 
         boolean allowed = player.hasPermissions(2) || player.getUUID().equals(capital.getSovereign());
         if (!allowed) {

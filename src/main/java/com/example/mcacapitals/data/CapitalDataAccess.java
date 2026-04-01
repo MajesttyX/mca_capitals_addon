@@ -20,7 +20,7 @@ public class CapitalDataAccess {
         CapitalSavedData data = get(level);
         data.getCapitals().clear();
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital != null) {
                 data.getCapitals().add(capital);
             }

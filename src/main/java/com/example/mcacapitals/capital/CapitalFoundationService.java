@@ -49,7 +49,7 @@ public class CapitalFoundationService {
                             + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
         }
 
-        CapitalManager.getAllCapitals().put(capital.getCapitalId(), capital);
+        CapitalManager.putCapital(capital);
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
     }
@@ -95,7 +95,7 @@ public class CapitalFoundationService {
                             + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
         }
 
-        CapitalManager.getAllCapitals().put(capital.getCapitalId(), capital);
+        CapitalManager.putCapital(capital);
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
     }
@@ -130,7 +130,7 @@ public class CapitalFoundationService {
                             + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
         }
 
-        CapitalManager.getAllCapitals().put(capital.getCapitalId(), capital);
+        CapitalManager.putCapital(capital);
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
     }

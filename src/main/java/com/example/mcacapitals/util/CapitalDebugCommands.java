@@ -8,10 +8,6 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-
 public class CapitalDebugCommands {
 
     private CapitalDebugCommands() {
@@ -27,12 +23,12 @@ public class CapitalDebugCommands {
                                     CommandSourceStack source = ctx.getSource();
                                     ServerLevel level = source.getLevel();
 
-                                    if (CapitalManager.getAllCapitals().isEmpty()) {
+                                    if (CapitalManager.isEmpty()) {
                                         source.sendSuccess(() -> Component.literal("No capitals found."), false);
                                         return 1;
                                     }
 
-                                    for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+                                    for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
                                         source.sendSuccess(() -> Component.literal(
                                                 "Capital " + capital.getCapitalId()
                                                         + " villageId=" + capital.getVillageId()
@@ -40,7 +36,7 @@ public class CapitalDebugCommands {
                                                         + " sovereign=" + capital.getSovereign()
                                                         + " consort=" + capital.getConsort()
                                                         + " heir=" + capital.getHeir()
-                                                        + " heirMode=" + describeHeirMode(level, capital)
+                                                        + " heirMode=" + CapitalDebugFormatters.describeHeirMode(level, capital)
                                                         + " royalChildren=" + capital.getRoyalChildren().size()
                                                         + " disinherited=" + capital.getDisinheritedRoyalChildren().size()
                                                         + " legitimized=" + capital.getLegitimizedRoyalChildren().size()
@@ -50,15 +46,15 @@ public class CapitalDebugCommands {
                                         ), false);
 
                                         source.sendSuccess(() -> Component.literal(
-                                                "Royal Succession Order: " + formatUuidList(capital.getRoyalSuccessionOrder())
+                                                "Royal Succession Order: " + CapitalDebugFormatters.formatUuidCollection(capital.getRoyalSuccessionOrder())
                                         ), false);
 
                                         source.sendSuccess(() -> Component.literal(
-                                                "Disinherited Royals: " + formatUuidSet(capital.getDisinheritedRoyalChildren())
+                                                "Disinherited Royals: " + CapitalDebugFormatters.formatUuidCollection(capital.getDisinheritedRoyalChildren())
                                         ), false);
 
                                         source.sendSuccess(() -> Component.literal(
-                                                "Legitimized Royals: " + formatUuidSet(capital.getLegitimizedRoyalChildren())
+                                                "Legitimized Royals: " + CapitalDebugFormatters.formatUuidCollection(capital.getLegitimizedRoyalChildren())
                                         ), false);
                                     }
 
@@ -93,72 +89,5 @@ public class CapitalDebugCommands {
                                     return 1;
                                 }))
         );
-    }
-
-    private static String formatUuidList(List<UUID> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return "[]";
-        }
-        return ids.toString();
-    }
-
-    private static String formatUuidSet(Set<UUID> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return "[]";
-        }
-        return ids.toString();
-    }
-
-    private static String describeHeirMode(ServerLevel level, CapitalRecord capital) {
-        UUID heir = capital.getHeir();
-        if (heir == null) {
-            return "none";
-        }
-
-        UUID expectedDynasticHeir = firstDynasticHeir(level, capital);
-        if (expectedDynasticHeir == null) {
-            return "manual";
-        }
-
-        if (heir.equals(expectedDynasticHeir)) {
-            return "dynastic";
-        }
-
-        return "manual";
-    }
-
-    private static UUID firstDynasticHeir(ServerLevel level, CapitalRecord capital) {
-        UUID sovereign = capital.getSovereign();
-        if (sovereign == null) {
-            return null;
-        }
-
-        Set<UUID> residents = com.example.mcacapitals.capital.CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-
-        for (UUID childId : capital.getRoyalSuccessionOrder()) {
-            if (childId == null || childId.equals(sovereign) || capital.isDisinheritedRoyalChild(childId)) {
-                continue;
-            }
-            if (!capital.getRoyalChildren().contains(childId)) {
-                continue;
-            }
-            if (residents.contains(childId) && MCAIntegrationBridge.hasFamilyNode(level, childId)) {
-                return childId;
-            }
-        }
-
-        for (UUID childId : capital.getRoyalSuccessionOrder()) {
-            if (childId == null || childId.equals(sovereign) || capital.isDisinheritedRoyalChild(childId)) {
-                continue;
-            }
-            if (!capital.getRoyalChildren().contains(childId)) {
-                continue;
-            }
-            if (MCAIntegrationBridge.hasFamilyNode(level, childId)) {
-                return childId;
-            }
-        }
-
-        return null;
     }
 }

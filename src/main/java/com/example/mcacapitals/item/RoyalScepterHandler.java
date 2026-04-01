@@ -10,14 +10,14 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
 
-public class HeirScepterHandler {
+public class RoyalScepterHandler {
 
     @SubscribeEvent
     public void onEntityInteract(PlayerInteractEvent.EntityInteractSpecific event) {
         Player player = event.getEntity();
         ItemStack held = player.getItemInHand(event.getHand());
 
-        if (!held.is(ModItems.HEIR_SCEPTER.get())) {
+        if (!held.is(ModItems.ROYAL_SCEPTER.get())) {
             return;
         }
 

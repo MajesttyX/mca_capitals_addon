@@ -113,7 +113,7 @@ public class RoyalDisinheritanceHandler {
             }
         }
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital.isRoyalChild(targetId) || targetId.equals(capital.getHeir())) {
                 return capital;
             }

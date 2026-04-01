@@ -2,10 +2,10 @@ package com.example.mcacapitals.util;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
 import java.util.Optional;
@@ -157,6 +157,10 @@ public final class MCAIntegrationBridge {
         return MCAEntityBridge.getHeartsWithPlayer(level, villagerId, playerId);
     }
 
+    public static boolean adjustHearts(ServerLevel level, UUID villagerId, UUID playerId, int delta) {
+        return MCASocialBridge.adjustHearts(level, villagerId, playerId, delta);
+    }
+
     public static String getClothes(ServerLevel level, UUID entityId) {
         return MCAClothingBridge.getClothes(level, entityId);
     }
@@ -183,6 +187,10 @@ public final class MCAIntegrationBridge {
 
     public static boolean moveTo(Entity entity, double x, double y, double z, double speed) {
         return MCAEntityBridge.moveTo(entity, x, y, z, speed);
+    }
+
+    public static boolean stopInteracting(Entity villagerEntity) {
+        return MCASocialBridge.stopInteracting(villagerEntity);
     }
 
     public static String describeEntity(ServerLevel level, UUID entityId) {

@@ -28,13 +28,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -808,50 +805,11 @@ public final class CapitalPetitionService {
     }
 
     private static void adjustHearts(ServerLevel level, UUID villagerId, UUID playerId, int delta) {
-        try {
-            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, villagerId);
-            if (!MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
-                return;
-            }
-
-            Object brain = entity.getClass().getMethod("getVillagerBrain").invoke(entity);
-            if (brain == null) {
-                return;
-            }
-
-            Object memoriesObj = brain.getClass().getMethod("getMemories").invoke(brain);
-            if (!(memoriesObj instanceof Map<?, ?> memories)) {
-                return;
-            }
-
-            Object memory = memories.get(playerId);
-            if (memory == null) {
-                return;
-            }
-
-            Object heartsObj = memory.getClass().getMethod("getHearts").invoke(memory);
-            int currentHearts = heartsObj instanceof Integer i ? i : 0;
-            int newHearts = currentHearts + delta;
-
-            try {
-                Method setter = memory.getClass().getMethod("setHearts", int.class);
-                setter.invoke(memory, newHearts);
-                return;
-            } catch (NoSuchMethodException ignored) {
-            }
-
-            try {
-                Field heartsField = memory.getClass().getDeclaredField("hearts");
-                heartsField.setAccessible(true);
-                heartsField.setInt(memory, newHearts);
-            } catch (Throwable ignored) {
-            }
-        } catch (Throwable t) {
+        if (!MCAIntegrationBridge.adjustHearts(level, villagerId, playerId, delta)) {
             MCACapitals.LOGGER.warn(
-                    "[MCACapitals] Failed to adjust hearts for villager='{}' player='{}' ({})",
+                    "[MCACapitals] Failed to adjust hearts for villager='{}' player='{}'",
                     villagerId,
-                    playerId,
-                    t.toString()
+                    playerId
             );
         }
     }
@@ -971,15 +929,8 @@ public final class CapitalPetitionService {
     }
 
     private static void tryStopInteracting(Entity villagerEntity) {
-        try {
-            Method getInteractions = villagerEntity.getClass().getMethod("getInteractions");
-            Object interactions = getInteractions.invoke(villagerEntity);
-            if (interactions != null) {
-                Method stopInteracting = interactions.getClass().getMethod("stopInteracting");
-                stopInteracting.invoke(interactions);
-            }
-        } catch (Throwable t) {
-            MCACapitals.LOGGER.warn("[MCACapitals] Failed to stop MCA interaction cleanly", t);
+        if (!MCAIntegrationBridge.stopInteracting(villagerEntity)) {
+            MCACapitals.LOGGER.warn("[MCACapitals] Failed to stop MCA interaction cleanly");
         }
     }
 }

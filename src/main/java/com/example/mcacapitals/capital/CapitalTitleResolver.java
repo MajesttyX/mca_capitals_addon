@@ -88,7 +88,7 @@ public class CapitalTitleResolver {
             return null;
         }
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital != null && capital.containsEntity(entityId)) {
                 return capital;
             }
@@ -102,7 +102,7 @@ public class CapitalTitleResolver {
             return null;
         }
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital == null) {
                 continue;
             }
@@ -165,11 +165,29 @@ public class CapitalTitleResolver {
             return capital.isLordFemale(entityId);
         }
 
-        return level != null && MCAIntegrationBridge.isFemale(level, entityId);
+        return MCAIntegrationBridge.isFemale(level, entityId);
+    }
+
+    private static boolean isMarriageDuke(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (capital == null || entityId == null) {
+            return false;
+        }
+
+        UUID spouse = MCAIntegrationBridge.getSpouse(level, entityId);
+        return spouse != null && capital.isDuke(spouse);
+    }
+
+    private static boolean isMarriageLord(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (capital == null || entityId == null) {
+            return false;
+        }
+
+        UUID spouse = MCAIntegrationBridge.getSpouse(level, entityId);
+        return spouse != null && capital.isLord(spouse);
     }
 
     private static boolean isDynasticPrinceOrPrincess(ServerLevel level, CapitalRecord capital, UUID entityId) {
-        if (level == null || capital == null || entityId == null) {
+        if (capital == null || entityId == null) {
             return false;
         }
 
@@ -182,53 +200,14 @@ public class CapitalTitleResolver {
             return true;
         }
 
-        UUID dowager = capital.getDowager();
-        if (dowager != null && MCAIntegrationBridge.isChildOf(level, entityId, dowager)) {
-            return true;
-        }
-
         UUID consort = capital.getConsort();
         if (consort != null && MCAIntegrationBridge.isChildOf(level, entityId, consort)) {
             return true;
         }
 
-        if (entityId.equals(capital.getHeir()) && capital.getHeirMode() != CapitalRecord.HeirMode.MANUAL) {
+        UUID dowager = capital.getDowager();
+        if (dowager != null && MCAIntegrationBridge.isChildOf(level, entityId, dowager)) {
             return true;
-        }
-
-        return false;
-    }
-
-    private static boolean isMarriageDuke(ServerLevel level, CapitalRecord capital, UUID entityId) {
-        if (level == null || capital == null || entityId == null) {
-            return false;
-        }
-
-        for (UUID dukeId : capital.getDukes()) {
-            UUID spouse = MCAIntegrationBridge.getSpouse(level, dukeId);
-            if (entityId.equals(spouse)
-                    && !entityId.equals(capital.getConsort())
-                    && !entityId.equals(capital.getSovereign())
-                    && !entityId.equals(capital.getDowager())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean isMarriageLord(ServerLevel level, CapitalRecord capital, UUID entityId) {
-        if (level == null || capital == null || entityId == null) {
-            return false;
-        }
-
-        for (UUID lordId : capital.getLords()) {
-            UUID spouse = MCAIntegrationBridge.getSpouse(level, lordId);
-            if (entityId.equals(spouse)
-                    && !entityId.equals(capital.getConsort())
-                    && !entityId.equals(capital.getSovereign())
-                    && !entityId.equals(capital.getDowager())) {
-                return true;
-            }
         }
 
         return false;

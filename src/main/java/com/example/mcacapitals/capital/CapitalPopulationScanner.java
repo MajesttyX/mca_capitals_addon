@@ -13,7 +13,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +23,7 @@ public class CapitalPopulationScanner {
 
     private static final int REQUIRED_POPULATION = 25;
     private static final int FOUNDING_RADIUS = 96;
-    private static int tickCounter = 0;
+    private static final int SCAN_INTERVAL_TICKS = 20;
 
     @SubscribeEvent
     public void onLevelTick(TickEvent.LevelTickEvent event) {
@@ -39,7 +38,7 @@ public class CapitalPopulationScanner {
         changed |= scanForNewCapitals(level);
         markDirtyIfNeeded(level, changed);
 
-        for (CapitalRecord capital : new ArrayList<>(CapitalManager.getAllCapitals().values())) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalsSnapshot().values()) {
             processCapital(level, capital);
         }
     }
@@ -48,17 +47,12 @@ public class CapitalPopulationScanner {
         if (event.phase != TickEvent.Phase.END) {
             return false;
         }
-        if (!(event.level instanceof ServerLevel)) {
+        if (!(event.level instanceof ServerLevel level)) {
             return false;
         }
 
-        tickCounter++;
-        if (tickCounter < 20) {
-            return false;
-        }
-
-        tickCounter = 0;
-        return true;
+        long gameTime = level.getGameTime();
+        return gameTime % SCAN_INTERVAL_TICKS == 0L;
     }
 
     private boolean normalizeCapitalsPhase(ServerLevel level) {
@@ -77,7 +71,7 @@ public class CapitalPopulationScanner {
             UUID capitalId = UUID.randomUUID();
             CapitalRecord capital = new CapitalRecord(capitalId, villageId, null, false);
             capital.setState(CapitalState.PENDING);
-            CapitalManager.getAllCapitals().put(capitalId, capital);
+            CapitalManager.putCapital(capital);
             CapitalChronicleService.addEntry(
                     level,
                     capital,
@@ -216,7 +210,7 @@ public class CapitalPopulationScanner {
     private boolean normalizeCapitals(ServerLevel level) {
         boolean changed = false;
 
-        for (CapitalRecord capital : new ArrayList<>(CapitalManager.getAllCapitals().values())) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalsSnapshot().values()) {
             if (capital.getVillageId() == null) {
                 Integer resolvedVillageId = null;
                 if (capital.getSovereign() != null) {
@@ -233,7 +227,7 @@ public class CapitalPopulationScanner {
         }
 
         Map<Integer, CapitalRecord> preferredByVillage = new HashMap<>();
-        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             Integer villageId = capital.getVillageId();
             if (villageId == null) continue;
             CapitalRecord existing = preferredByVillage.get(villageId);
@@ -242,13 +236,13 @@ public class CapitalPopulationScanner {
             }
         }
 
-        for (CapitalRecord capital : new ArrayList<>(CapitalManager.getAllCapitals().values())) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalsSnapshot().values()) {
             Integer villageId = capital.getVillageId();
             if (villageId == null) continue;
 
             CapitalRecord preferred = preferredByVillage.get(villageId);
             if (preferred != capital) {
-                CapitalManager.getAllCapitals().remove(capital.getCapitalId());
+                CapitalManager.removeCapital(capital.getCapitalId());
                 CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
                 changed = true;
             }

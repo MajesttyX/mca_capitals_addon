@@ -140,7 +140,7 @@ public class LegitimizationDecreeHandler {
             }
         }
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitals().values()) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (isEligibleDynasticChild(level, capital, targetId)) {
                 return capital;
             }
