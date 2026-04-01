@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "mcacapitals.refmap.json",
   "mixins": [
-    "VillagerCommandHandlerMixin"
+    "VillagerCommandHandlerMixin",
+    "DialogueChatFallbackMixin"
   ],
   "client": [],
   "injectors": {

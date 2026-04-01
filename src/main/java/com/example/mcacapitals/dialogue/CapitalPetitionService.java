@@ -25,6 +25,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 
 import java.lang.reflect.Field;
@@ -131,12 +132,12 @@ public final class CapitalPetitionService {
         }
 
         if (capital.getVillageId() == null) {
-            player.sendSystemMessage(Component.literal("That capital is missing its village record."));
+            sendCapitalDialogue(player, level, capital, CapitalDialogueKey.BETROTHAL_SELECTION_MISSING_VILLAGE);
             return false;
         }
 
         if (!isPlayerBetrothalCandidate(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("Only an eligible teen or adult noble of the capital may be chosen for betrothal."));
+            sendCapitalDialogue(player, level, capital, CapitalDialogueKey.BETROTHAL_SELECTION_INVALID_TARGET);
             return false;
         }
 
@@ -144,7 +145,7 @@ public final class CapitalPetitionService {
                 MCARelationshipBridge.promise(player, MCAIntegrationBridge.getEntityByUuid(level, targetId));
 
         if (!result.success()) {
-            player.sendSystemMessage(Component.literal(result.message()));
+            sendCapitalDialogue(player, level, capital, CapitalDialogueKey.BETROTHAL_SELECTION_FAILED, result.message());
             return false;
         }
 
@@ -161,9 +162,7 @@ public final class CapitalPetitionService {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        player.sendSystemMessage(Component.literal(
-                "Your petition is accepted. " + targetName + " is now betrothed to you."
-        ));
+        sendCapitalDialogue(player, level, capital, CapitalDialogueKey.BETROTHAL_SELECTION_SUCCESS, targetName);
         return true;
     }
 
@@ -185,12 +184,12 @@ public final class CapitalPetitionService {
         }
 
         if (capital.getVillageId() == null) {
-            player.sendSystemMessage(Component.literal("That capital is missing its village record."));
+            sendCapitalDialogue(player, level, capital, CapitalDialogueKey.BETROTHAL_SELECTION_MISSING_VILLAGE);
             return false;
         }
 
         if (!isRecommendedBetrothalCandidate(level, capital, firstId) || !isRecommendedBetrothalCandidate(level, capital, secondId)) {
-            player.sendSystemMessage(Component.literal("Only residents of the capital may be named in a betrothal recommendation."));
+            sendCapitalDialogue(player, level, capital, CapitalDialogueKey.BETROTHAL_RECOMMEND_INVALID_TARGET);
             return false;
         }
 
@@ -201,7 +200,7 @@ public final class CapitalPetitionService {
                 MCARelationshipBridge.promiseVillagerToVillager(firstVillager, secondVillager);
 
         if (!result.success()) {
-            player.sendSystemMessage(Component.literal(result.message()));
+            sendCapitalDialogue(player, level, capital, CapitalDialogueKey.BETROTHAL_RECOMMEND_FAILED, result.message());
             return false;
         }
 
@@ -219,9 +218,7 @@ public final class CapitalPetitionService {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        player.sendSystemMessage(Component.literal(
-                "Your recommendation is accepted. " + firstName + " and " + secondName + " are now betrothed."
-        ));
+        sendCapitalDialogue(player, level, capital, CapitalDialogueKey.BETROTHAL_RECOMMEND_SUCCESS, firstName, secondName);
         return true;
     }
 
@@ -230,42 +227,43 @@ public final class CapitalPetitionService {
         CapitalRecord capital = resolveSovereignCapital(level, villagerEntity);
 
         if (capital == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "Only a reigning sovereign can hear this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_SOVEREIGN_ONLY);
             return;
         }
 
         if (capital.getVillageId() == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "This capital is missing its village record.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_MISSING_VILLAGE);
             return;
         }
 
         if (capital.getSovereign() == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "This capital has no reigning sovereign.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.THRONE_NO_SOVEREIGN);
             return;
         }
 
         if (!villagerEntity.getUUID().equals(capital.getSovereign())) {
-            sendDialogueLineAndClose(player, villagerEntity, "That villager is no longer the reigning sovereign.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.THRONE_NOT_REIGNING);
             return;
         }
 
         if (capital.isPlayerSovereign()) {
-            sendDialogueLineAndClose(player, villagerEntity, "That throne is already held by a player sovereign.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.THRONE_PLAYER_HELD);
             return;
         }
 
         if (!isAudienceValid(player, villagerEntity)) {
-            sendDialogueLineAndClose(player, villagerEntity, "You must stand before the sovereign to present this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED);
             return;
         }
 
         int population = MCAIntegrationBridge.getVillagePopulation(level, capital.getVillageId());
         if (population < THRONE_PETITION_MIN_POPULATION) {
-            sendDialogueLineAndClose(
+            sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
-                    "The sovereign will not consider surrendering the throne until the capital reaches a population of "
-                            + THRONE_PETITION_MIN_POPULATION + "."
+                    CapitalDialogueKey.THRONE_POPULATION_TOO_LOW,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    THRONE_PETITION_MIN_POPULATION
             );
             return;
         }
@@ -273,28 +271,28 @@ public final class CapitalPetitionService {
         Set<UUID> residents = MCAIntegrationBridge.getVillageResidents(level, capital.getVillageId());
         int hearts = MCAReputationBridge.getCapitalHeartsScore(level, residents, player.getUUID());
         if (hearts < THRONE_PETITION_MIN_HEARTS) {
-            sendDialogueLineAndClose(
+            sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
-                    "You do not yet have the standing to claim the throne of "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                    CapitalDialogueKey.THRONE_LOW_STANDING,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
             );
             return;
         }
 
         CapitalRecord existingPlayerCapital = CapitalManager.getCapitalBySovereign(player.getUUID());
         if (existingPlayerCapital != null && !capital.getCapitalId().equals(existingPlayerCapital.getCapitalId())) {
-            sendDialogueLineAndClose(player, villagerEntity, "You already rule another capital and cannot petition for this throne.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.THRONE_ALREADY_RULES_OTHER);
             return;
         }
 
         peacefulTransferByPetition(level, capital, player, villagerEntity.getUUID());
 
-        sendDialogueLineAndClose(
+        sendDialogueKeyAndClose(
                 player,
                 villagerEntity,
-                "Your petition is accepted. The throne of "
-                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + " passes peacefully to you."
+                CapitalDialogueKey.THRONE_SUCCESS,
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
         );
     }
 
@@ -303,17 +301,17 @@ public final class CapitalPetitionService {
         CapitalRecord capital = resolveSovereignCapital(level, villagerEntity);
 
         if (capital == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "Only a reigning sovereign may be challenged for the throne.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_SOVEREIGN);
             return;
         }
 
         if (capital.getVillageId() == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "This capital is missing its village record.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_MISSING_VILLAGE);
             return;
         }
 
         if (!isAudienceValid(player, villagerEntity)) {
-            sendDialogueLineAndClose(player, villagerEntity, "You must stand before the sovereign to attempt a seizure of the throne.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NOT_IN_AUDIENCE);
             return;
         }
 
@@ -321,13 +319,13 @@ public final class CapitalPetitionService {
         int reputation = MCAReputationBridge.getCapitalHeartsScore(level, residents, player.getUUID());
         if (reputation < SEIZURE_MIN_REPUTATION) {
             applyCapitalPenalty(level, residents, player.getUUID(), -50);
-            sendDialogueLineAndClose(player, villagerEntity, "Your bid for the throne fails. The capital turns against you for your insolence.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_LOW_REPUTATION);
             return;
         }
 
         if (!hasCoverMeInDiamonds(player)) {
             applyCapitalPenalty(level, residents, player.getUUID(), -50);
-            sendDialogueLineAndClose(player, villagerEntity, "Your bid for the throne fails. You have not yet proven the might expected of a usurper.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_ADVANCEMENT);
             return;
         }
 
@@ -336,18 +334,17 @@ public final class CapitalPetitionService {
 
         if (!playerIsCommander && !commanderAligned) {
             applyCapitalPenalty(level, residents, player.getUUID(), -50);
-            sendDialogueLineAndClose(player, villagerEntity, "Your bid for the throne fails. Neither the Commander nor the army stands with you.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_COMMANDER_SUPPORT);
             return;
         }
 
         performCoup(level, capital, player);
 
-        sendDialogueLineAndClose(
+        sendDialogueKeyAndClose(
                 player,
                 villagerEntity,
-                "Your coup succeeds. The throne of "
-                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
-                        + " is now yours."
+                CapitalDialogueKey.SEIZE_THRONE_SUCCESS,
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
         );
     }
 
@@ -356,27 +353,27 @@ public final class CapitalPetitionService {
         CapitalRecord capital = resolveSovereignCapital(level, villagerEntity);
 
         if (capital == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "Only a reigning sovereign can hear this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_SOVEREIGN_ONLY);
             return;
         }
 
         if (capital.getVillageId() == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "This capital is missing its village record.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_MISSING_VILLAGE);
             return;
         }
 
         if (!isAudienceValid(player, villagerEntity)) {
-            sendDialogueLineAndClose(player, villagerEntity, "You must stand before the sovereign to present this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED);
             return;
         }
 
         int population = MCAIntegrationBridge.getVillagePopulation(level, capital.getVillageId());
         if (population < COMMANDER_PETITION_MIN_POPULATION) {
-            sendDialogueLineAndClose(
+            sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
-                    "The office of Commander of the Royal Army will not be granted until the capital reaches a population of "
-                            + COMMANDER_PETITION_MIN_POPULATION + "."
+                    CapitalDialogueKey.COMMANDER_POPULATION_TOO_LOW,
+                    COMMANDER_PETITION_MIN_POPULATION
             );
             return;
         }
@@ -384,41 +381,37 @@ public final class CapitalPetitionService {
         Set<UUID> residents = MCAIntegrationBridge.getVillageResidents(level, capital.getVillageId());
         int hearts = MCAReputationBridge.getCapitalHeartsScore(level, residents, player.getUUID());
         if (hearts < COMMANDER_PETITION_MIN_HEARTS) {
-            sendDialogueLineAndClose(
+            sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
-                    "You do not yet have the standing to be entrusted with command in "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                    CapitalDialogueKey.COMMANDER_LOW_STANDING,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
             );
             return;
         }
 
         if (CapitalCommanderService.hasOtherPlayerCommander(level, capital, player.getUUID())) {
-            sendDialogueLineAndClose(
-                    player,
-                    villagerEntity,
-                    "The office of Commander of the Royal Army has already been granted and cannot be taken from another sworn player."
-            );
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.COMMANDER_ALREADY_GRANTED);
             return;
         }
 
         UUID currentPlayerCommander = CapitalCommanderService.getPlayerCommander(level, capital);
         if (currentPlayerCommander != null && currentPlayerCommander.equals(player.getUUID())) {
-            sendDialogueLineAndClose(player, villagerEntity, "You already hold the office of Commander of the Royal Army.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.COMMANDER_ALREADY_HELD);
             return;
         }
 
         boolean appointed = CapitalCommanderService.appointPlayerCommander(level, capital, player);
         if (!appointed) {
-            sendDialogueLineAndClose(player, villagerEntity, "The office of Commander of the Royal Army could not be reassigned.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.COMMANDER_REASSIGN_FAILED);
             return;
         }
 
-        sendDialogueLineAndClose(
+        sendDialogueKeyAndClose(
                 player,
                 villagerEntity,
-                "Your petition is accepted. You are now Commander of the Royal Army of "
-                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                CapitalDialogueKey.COMMANDER_SUCCESS,
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
         );
     }
 
@@ -427,45 +420,44 @@ public final class CapitalPetitionService {
         CapitalRecord capital = resolveSovereignCapital(level, villagerEntity);
 
         if (capital == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "Only a reigning sovereign can hear this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_SOVEREIGN_ONLY);
             return;
         }
 
         if (!isAudienceValid(player, villagerEntity)) {
-            sendDialogueLineAndClose(player, villagerEntity, "You must stand before the sovereign to present this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED);
             return;
         }
 
         NobleTitle currentTitle = PlayerCapitalTitleService.getGrantedTitle(level, capital, player.getUUID());
         if (currentTitle == NobleTitle.DUKE || currentTitle == NobleTitle.DUCHESS) {
-            sendDialogueLineAndClose(player, villagerEntity, "You already hold a higher noble dignity than Lord or Lady.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.LORD_ALREADY_HIGHER);
             return;
         }
         if (currentTitle == NobleTitle.LORD || currentTitle == NobleTitle.LADY) {
-            sendDialogueLineAndClose(player, villagerEntity, "You already hold the dignity of Lord or Lady.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.LORD_ALREADY_HELD);
             return;
         }
 
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         int hearts = MCAReputationBridge.getCapitalHeartsScore(level, residents, player.getUUID());
         if (hearts < LORD_PETITION_MIN_HEARTS) {
-            sendDialogueLineAndClose(
+            sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
-                    "You have not yet earned the standing required to be raised to the lesser nobility of "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                    CapitalDialogueKey.LORD_LOW_STANDING,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
             );
             return;
         }
 
         int masters = countMasterProfessionVillagers(level, residents);
         if (masters < LORD_PETITION_MIN_MASTER_VILLAGERS) {
-            sendDialogueLineAndClose(
+            sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
-                    "The sovereign will not grant this petition until at least "
-                            + LORD_PETITION_MIN_MASTER_VILLAGERS
-                            + " master villagers strengthen the standing of the capital."
+                    CapitalDialogueKey.LORD_NOT_ENOUGH_MASTERS,
+                    LORD_PETITION_MIN_MASTER_VILLAGERS
             );
             return;
         }
@@ -485,11 +477,12 @@ public final class CapitalPetitionService {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        sendDialogueLineAndClose(
+        sendDialogueKeyAndClose(
                 player,
                 villagerEntity,
-                "Your petition is accepted. You are now "
-                        + (female ? "Lady" : "Lord") + " of " + villageName + "."
+                CapitalDialogueKey.LORD_SUCCESS,
+                female ? "Lady" : "Lord",
+                villageName
         );
     }
 
@@ -498,28 +491,28 @@ public final class CapitalPetitionService {
         CapitalRecord capital = resolveSovereignCapital(level, villagerEntity);
 
         if (capital == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "Only a reigning sovereign can hear this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_SOVEREIGN_ONLY);
             return;
         }
 
         if (!isAudienceValid(player, villagerEntity)) {
-            sendDialogueLineAndClose(player, villagerEntity, "You must stand before the sovereign to present this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED);
             return;
         }
 
         NobleTitle currentTitle = PlayerCapitalTitleService.getGrantedTitle(level, capital, player.getUUID());
         if (currentTitle == NobleTitle.DUKE || currentTitle == NobleTitle.DUCHESS) {
-            sendDialogueLineAndClose(player, villagerEntity, "You already hold the dignity of Duke or Duchess.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.DUKE_ALREADY_HELD);
             return;
         }
 
         int population = MCAIntegrationBridge.getVillagePopulation(level, capital.getVillageId());
         if (population < DUKE_PETITION_MIN_POPULATION) {
-            sendDialogueLineAndClose(
+            sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
-                    "The sovereign will not grant ducal rank until the capital reaches a population of "
-                            + DUKE_PETITION_MIN_POPULATION + "."
+                    CapitalDialogueKey.DUKE_POPULATION_TOO_LOW,
+                    DUKE_PETITION_MIN_POPULATION
             );
             return;
         }
@@ -527,11 +520,11 @@ public final class CapitalPetitionService {
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         int hearts = MCAReputationBridge.getCapitalHeartsScore(level, residents, player.getUUID());
         if (hearts < DUKE_PETITION_MIN_HEARTS) {
-            sendDialogueLineAndClose(
+            sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
-                    "You have not yet earned the standing required to be raised to ducal rank in "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                    CapitalDialogueKey.DUKE_LOW_STANDING,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
             );
             return;
         }
@@ -551,11 +544,12 @@ public final class CapitalPetitionService {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        sendDialogueLineAndClose(
+        sendDialogueKeyAndClose(
                 player,
                 villagerEntity,
-                "Your petition is accepted. You are now "
-                        + (female ? "Duchess" : "Duke") + " of " + villageName + "."
+                CapitalDialogueKey.DUKE_SUCCESS,
+                female ? "Duchess" : "Duke",
+                villageName
         );
     }
 
@@ -564,12 +558,12 @@ public final class CapitalPetitionService {
         CapitalRecord capital = resolveSovereignCapital(level, villagerEntity);
 
         if (capital == null) {
-            sendDialogueLineAndClose(player, villagerEntity, "Only a reigning sovereign can hear this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_SOVEREIGN_ONLY);
             return;
         }
 
         if (!isAudienceValid(player, villagerEntity)) {
-            sendDialogueLineAndClose(player, villagerEntity, "You must stand before the sovereign to present this petition.");
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED);
             return;
         }
 
@@ -583,11 +577,7 @@ public final class CapitalPetitionService {
         );
 
         if (playerCandidates.isEmpty() && recommendationCandidates.size() < 2) {
-            sendDialogueLineAndClose(
-                    player,
-                    villagerEntity,
-                    "There is no eligible match in this capital who may presently be named in a betrothal petition."
-            );
+            sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.BETROTHAL_NO_ELIGIBLE_MATCH);
             return;
         }
 
@@ -941,10 +931,43 @@ public final class CapitalPetitionService {
         return entity != null ? entity.getName().getString() : entityId.toString();
     }
 
-    private static void sendDialogueLineAndClose(ServerPlayer player, Entity villagerEntity, String line) {
+    private static Entity resolveCapitalSpeakerEntity(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null || capital.getSovereign() == null) {
+            return null;
+        }
+        return MCAIntegrationBridge.getEntityByUuid(level, capital.getSovereign());
+    }
+
+    private static void sendCapitalDialogue(ServerPlayer player, ServerLevel level, CapitalRecord capital, CapitalDialogueKey key, Object... args) {
+        Entity speaker = resolveCapitalSpeakerEntity(level, capital);
+        RandomSource random = level != null ? level.random : RandomSource.create();
+        String line = CapitalDialogueLibrary.getRandomLine(key, random, args);
+
+        if (speaker != null) {
+            String spokenLine = CapitalDialogueSpeaker.formatVillagerSpeech(speaker, line);
+            MCACapitals.LOGGER.info("[MCACapitals] Petition response: {}", spokenLine);
+            player.sendSystemMessage(Component.literal(spokenLine));
+            return;
+        }
+
         MCACapitals.LOGGER.info("[MCACapitals] Petition response: {}", line);
         player.sendSystemMessage(Component.literal(line));
+    }
+
+    private static void sendDialogueLineAndClose(ServerPlayer player, Entity villagerEntity, String line) {
+        String spokenLine = CapitalDialogueSpeaker.formatVillagerSpeech(villagerEntity, line);
+        MCACapitals.LOGGER.info("[MCACapitals] Petition response: {}", spokenLine);
+        player.sendSystemMessage(Component.literal(spokenLine));
         tryStopInteracting(villagerEntity);
+    }
+
+    private static void sendDialogueKeyAndClose(ServerPlayer player, Entity villagerEntity, CapitalDialogueKey key, Object... args) {
+        String line = CapitalDialogueLibrary.getRandomLine(
+                key,
+                villagerEntity != null && villagerEntity.level() != null ? villagerEntity.level().random : null,
+                args
+        );
+        sendDialogueLineAndClose(player, villagerEntity, line);
     }
 
     private static void tryStopInteracting(Entity villagerEntity) {

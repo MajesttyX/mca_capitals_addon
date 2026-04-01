@@ -4,13 +4,6 @@ import com.example.mcacapitals.capital.CapitalManager;
 import com.example.mcacapitals.capital.CapitalRecord;
 import com.example.mcacapitals.capital.CapitalTitleResolver;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
-import net.mca.cobalt.network.NetworkHandler;
-import net.mca.entity.VillagerEntityMCA;
-import net.mca.network.s2c.InteractionDialogueQuestionResponse;
-import net.mca.network.s2c.InteractionDialogueResponse;
-import net.mca.resources.Dialogues;
-import net.mca.resources.data.dialogue.Question;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -48,53 +41,70 @@ public class CapitalDialogueService {
     private CapitalDialogueService() {
     }
 
-    public static boolean tryOpenCapitalNewsDialogue(ServerPlayer player, Entity villagerEntity) {
-        if (player == null || villagerEntity == null || !MCAIntegrationBridge.isMCAVillagerEntity(villagerEntity)) {
-            return false;
+    public static String maybeBuildCapitalNewsSpeech(ServerPlayer player, Entity villagerEntity, String originalMessageKey) {
+        if (player == null || villagerEntity == null || originalMessageKey == null || originalMessageKey.isBlank()) {
+            return null;
         }
 
-        if (!(villagerEntity instanceof VillagerEntityMCA villager)) {
-            return false;
+        if (!MCAIntegrationBridge.isMCAVillagerEntity(villagerEntity)) {
+            return null;
+        }
+
+        if (!isLikelyGeneralDialogueKey(originalMessageKey)) {
+            return null;
         }
 
         ServerLevel level = player.serverLevel();
-        CapitalRecord capital = resolveCapital(level, villager.getUUID());
+        CapitalRecord capital = resolveCapital(level, villagerEntity.getUUID());
         if (capital == null) {
-            return false;
+            return null;
         }
 
         List<ChronicleEvent> candidates = findRecentNotableEvents(level, capital);
         if (candidates.isEmpty()) {
-            return false;
+            return null;
         }
 
-        ChronicleEvent event = pickEventForVillager(level, villager.getUUID(), candidates);
+        ChronicleEvent event = pickEventForVillager(level, villagerEntity.getUUID(), candidates);
         if (event == null) {
-            return false;
+            return null;
         }
 
-        if (!shouldSpeakEvent(level, villager.getUUID(), event.day(), event.type())) {
-            return false;
+        if (!shouldSpeakEvent(level, villagerEntity.getUUID(), event.day(), event.type())) {
+            return null;
         }
 
-        String line = buildVillagerLine(villager.getUUID(), event);
+        String line = buildVillagerLine(villagerEntity.getUUID(), event);
         if (line == null || line.isBlank()) {
+            return null;
+        }
+
+        return CapitalDialogueSpeaker.formatVillagerSpeech(villagerEntity, line);
+    }
+
+    private static boolean isLikelyGeneralDialogueKey(String messageKey) {
+        String key = messageKey.toLowerCase(Locale.ROOT);
+
+        if (!key.startsWith("dialogue.")) {
             return false;
         }
 
-        Question mainQuestion = Dialogues.getInstance().getQuestion("main");
-        if (mainQuestion == null) {
+        if (key.startsWith("dialogue.location.")) {
             return false;
         }
 
-        NetworkHandler.sendToPlayer(new InteractionDialogueResponse(mainQuestion, player, villager), player);
-        NetworkHandler.sendToPlayer(
-                new InteractionDialogueQuestionResponse(
-                        mainQuestion.isSilent(),
-                        Component.literal(line)
-                ),
-                player
-        );
+        if (key.contains(".warning")
+                || key.contains(".hurt")
+                || key.contains(".badly_hurt")
+                || key.contains(".divorce")
+                || key.contains(".procreate")
+                || key.contains(".armor")
+                || key.contains(".profession")
+                || key.contains(".adopt")
+                || key.contains(".ridehorse")) {
+            return false;
+        }
+
         return true;
     }
 
@@ -213,88 +223,34 @@ public class CapitalDialogueService {
 
     private static String buildVillagerLine(UUID villagerId, ChronicleEvent event) {
         String eventText = ensureSentence(event.text());
-        String[] templates = templatesFor(event.type());
-        if (templates.length == 0) {
+        CapitalDialogueKey key = dialogueKeyFor(event.type());
+        int count = CapitalDialogueLibrary.getLineCount(key);
+
+        if (count <= 0) {
             return eventText;
         }
 
-        int index = Math.floorMod((villagerId.toString() + "|" + event.day() + "|" + event.type().name()).hashCode(), templates.length);
-        return String.format(Locale.ROOT, templates[index], eventText);
+        int index = Math.floorMod(
+                (villagerId.toString() + "|" + event.day() + "|" + event.type().name()).hashCode(),
+                count
+        );
+
+        return CapitalDialogueLibrary.getIndexedLine(key, index, eventText);
     }
 
-    private static String[] templatesFor(EventType type) {
+    private static CapitalDialogueKey dialogueKeyFor(EventType type) {
         return switch (type) {
-            case MARRIAGE -> new String[]{
-                    "Have you heard the happy news? %s",
-                    "The whole capital has been speaking of the wedding. %s",
-                    "There has been much celebration of late. %s",
-                    "Word around the capital is joyful for once. %s",
-                    "People can talk of little else just now. %s"
-            };
-            case DEATH_OR_SUCCESSION -> new String[]{
-                    "Word travels fast here. %s",
-                    "The whole realm has been unsettled of late. %s",
-                    "There has been grave talk throughout the capital. %s",
-                    "Everyone has been whispering of it. %s",
-                    "No one in the capital can ignore it. %s"
-            };
-            case MOURNING_DECLARED -> new String[]{
-                    "A hush has fallen over the capital. %s",
-                    "You can feel the sorrow in every street. %s",
-                    "The whole court is dressed in mourning now. %s",
-                    "There has been sombre talk all through the capital. %s",
-                    "No one has been in good spirits since it happened. %s"
-            };
-            case MOURNING_ENDED -> new String[]{
-                    "It seems the capital is beginning to breathe again. %s",
-                    "Folk say the mourning has finally passed. %s",
-                    "The mood in the capital has begun to lift. %s",
-                    "There has been quieter talk now that the mourning is over. %s",
-                    "At last, the capital has stepped out from its mourning. %s"
-            };
-            case HEIR_NAMED -> new String[]{
-                    "The court has been speaking of succession again. %s",
-                    "Everyone seems to know who stands next in line now. %s",
-                    "There has been much talk over the naming of an heir. %s",
-                    "The capital is full of whispers about the future of the crown. %s",
-                    "That bit of royal news has travelled very quickly. %s"
-            };
-            case DISINHERITED -> new String[]{
-                    "The court has been restless ever since. %s",
-                    "There has been scandal enough for a month. %s",
-                    "No shortage of whispers after that decree. %s",
-                    "The realm does love its gossip when succession is involved. %s",
-                    "That news spread through the capital like wildfire. %s"
-            };
-            case LEGITIMIZED -> new String[]{
-                    "The court has been full of talk about bloodlines and claims. %s",
-                    "That royal decree has given everyone something to chatter over. %s",
-                    "There has been no end of whispering since the proclamation. %s",
-                    "People are already debating what it means for the realm. %s",
-                    "The capital has taken keen interest in that decision. %s"
-            };
-            case THRONE_CHANGE -> new String[]{
-                    "The capital has had no shortage of talk about the crown. %s",
-                    "The whole realm seems to be discussing the throne. %s",
-                    "That change at court has everyone murmuring. %s",
-                    "No one here has stopped talking about the crown since it happened. %s",
-                    "All eyes have been on the royal court of late. %s"
-            };
-            case CAPITAL_FOUNDED -> new String[]{
-                    "This place has risen in standing. %s",
-                    "There has been proud talk all around the capital. %s",
-                    "Folk here have been speaking boldly since the news. %s",
-                    "You can tell the people here stand a little taller now. %s",
-                    "The whole settlement has taken pride in that news. %s"
-            };
-            case GENERIC_NOTABLE -> new String[]{
-                    "Have you heard? %s",
-                    "Word travels fast here. %s",
-                    "There has been much talk of late. %s",
-                    "The whole capital is speaking of it. %s",
-                    "That has certainly given people something to talk about. %s"
-            };
-            case NONE -> new String[0];
+            case MARRIAGE -> CapitalDialogueKey.NEWS_MARRIAGE;
+            case DEATH_OR_SUCCESSION -> CapitalDialogueKey.NEWS_DEATH_OR_SUCCESSION;
+            case MOURNING_DECLARED -> CapitalDialogueKey.NEWS_MOURNING_DECLARED;
+            case MOURNING_ENDED -> CapitalDialogueKey.NEWS_MOURNING_ENDED;
+            case HEIR_NAMED -> CapitalDialogueKey.NEWS_HEIR_NAMED;
+            case DISINHERITED -> CapitalDialogueKey.NEWS_DISINHERITED;
+            case LEGITIMIZED -> CapitalDialogueKey.NEWS_LEGITIMIZED;
+            case THRONE_CHANGE -> CapitalDialogueKey.NEWS_THRONE_CHANGE;
+            case CAPITAL_FOUNDED -> CapitalDialogueKey.NEWS_CAPITAL_FOUNDED;
+            case GENERIC_NOTABLE -> CapitalDialogueKey.NEWS_GENERIC_NOTABLE;
+            case NONE -> CapitalDialogueKey.NEWS_GENERIC_NOTABLE;
         };
     }
 
