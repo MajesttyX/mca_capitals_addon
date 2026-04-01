@@ -103,6 +103,7 @@ public class CapitalPopulationScanner {
         }
 
         refreshCourtState(level, capital);
+        tickRecommendedBetrothals(level, capital);
         tickRoyalGuards(level, capital);
         tickMourning(level, capital);
     }
@@ -134,6 +135,12 @@ public class CapitalPopulationScanner {
 
     private void refreshCourtState(ServerLevel level, CapitalRecord capital) {
         if (CapitalCourtWatcher.refreshIfChanged(level, capital)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickRecommendedBetrothals(ServerLevel level, CapitalRecord capital) {
+        if (CapitalRecommendedBetrothalService.tick(level, capital)) {
             CapitalDataAccess.markDirty(level);
         }
     }
@@ -237,19 +244,11 @@ public class CapitalPopulationScanner {
 
         for (CapitalRecord capital : new ArrayList<>(CapitalManager.getAllCapitals().values())) {
             Integer villageId = capital.getVillageId();
-
-            if (villageId == null) {
-                if (capital.getSovereign() == null && capital.getConsort() == null && capital.getDowager() == null) {
-                    CapitalManager.removeCapital(capital.getCapitalId());
-                    CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
-                    changed = true;
-                }
-                continue;
-            }
+            if (villageId == null) continue;
 
             CapitalRecord preferred = preferredByVillage.get(villageId);
-            if (preferred != null && !preferred.getCapitalId().equals(capital.getCapitalId())) {
-                CapitalManager.removeCapital(capital.getCapitalId());
+            if (preferred != capital) {
+                CapitalManager.getAllCapitals().remove(capital.getCapitalId());
                 CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
                 changed = true;
             }
@@ -258,16 +257,17 @@ public class CapitalPopulationScanner {
         return changed;
     }
 
-    private boolean isPreferred(CapitalRecord candidate, CapitalRecord existing) {
-        if (candidate.getSovereign() != null && existing.getSovereign() == null) return true;
-        if (candidate.getSovereign() == null && existing.getSovereign() != null) return false;
-        if (candidate.getState() == CapitalState.ACTIVE && existing.getState() != CapitalState.ACTIVE) return true;
-        if (candidate.getState() != CapitalState.ACTIVE && existing.getState() == CapitalState.ACTIVE) return false;
+    private boolean isPreferred(CapitalRecord challenger, CapitalRecord incumbent) {
+        if (challenger == incumbent) return false;
+        if (incumbent == null) return true;
+        if (challenger == null) return false;
 
-        int candidateWeight = candidate.getRoyalChildren().size() + candidate.getDukes().size() + candidate.getLords().size() + candidate.getKnights().size();
-        int existingWeight = existing.getRoyalChildren().size() + existing.getDukes().size() + existing.getLords().size() + existing.getKnights().size();
+        if (challenger.getSovereign() != null && incumbent.getSovereign() == null) return true;
+        if (challenger.getSovereign() == null && incumbent.getSovereign() != null) return false;
 
-        if (candidateWeight != existingWeight) return candidateWeight > existingWeight;
-        return candidate.getCapitalId().toString().compareTo(existing.getCapitalId().toString()) < 0;
+        if (challenger.getState() == CapitalState.ACTIVE && incumbent.getState() != CapitalState.ACTIVE) return true;
+        if (challenger.getState() != CapitalState.ACTIVE && incumbent.getState() == CapitalState.ACTIVE) return false;
+
+        return challenger.getCapitalId().compareTo(incumbent.getCapitalId()) < 0;
     }
 }

@@ -24,8 +24,30 @@
       ]
     },
     {
-      "name": "mcacapitals_petition_commander",
+      "name": "mcacapitals_petition_betrothal",
       "priority": 2,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_petition_betrothal"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition_betrothal_recommend",
+      "priority": 3,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_petition_betrothal_recommend"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition_commander",
+      "priority": 4,
       "results": [
         {
           "actions": {
@@ -36,7 +58,7 @@
     },
     {
       "name": "mcacapitals_petition_back",
-      "priority": 3,
+      "priority": 5,
       "results": [
         {
           "actions": {

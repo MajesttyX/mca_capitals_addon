@@ -36,10 +36,22 @@ public class ModNetwork {
                 OpenCapitalChroniclePacket::handle
         );
 
+        CHANNEL.registerMessage(
+                nextId++,
+                OpenBetrothalSelectionPacket.class,
+                OpenBetrothalSelectionPacket::encode,
+                OpenBetrothalSelectionPacket::decode,
+                OpenBetrothalSelectionPacket::handle
+        );
+
         registered = true;
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenCapitalChroniclePacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenBetrothalSelectionPacket packet) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 }

@@ -1,7 +1,9 @@
 package com.example.mcacapitals.capital;
 
 import com.example.mcacapitals.util.MCAIntegrationBridge;
+import com.example.mcacapitals.util.MCARelationshipBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 import java.util.LinkedHashMap;
@@ -45,7 +47,7 @@ public class CapitalCourtBuilder {
         Map<UUID, Boolean> newKnightFemale = new LinkedHashMap<>();
 
         UUID spouse = MCAIntegrationBridge.getSpouse(level, sovereign);
-        if (isValidRelationshipPerson(level, spouse)) {
+        if (isValidRelationshipPerson(level, spouse) && isValidMarriedConsort(level, sovereign, spouse)) {
             newConsort = spouse;
             newConsortFemale = MCAIntegrationBridge.isFemale(level, spouse);
         }
@@ -207,7 +209,7 @@ public class CapitalCourtBuilder {
         }
 
         UUID spouse = MCAIntegrationBridge.getSpouse(level, sovereign);
-        UUID validConsort = isValidRelationshipPerson(level, spouse) ? spouse : null;
+        UUID validConsort = (isValidRelationshipPerson(level, spouse) && isValidMarriedConsort(level, sovereign, spouse)) ? spouse : null;
         boolean spouseFemale = validConsort != null && MCAIntegrationBridge.isFemale(level, validConsort);
 
         capital.setConsort(validConsort);
@@ -221,6 +223,24 @@ public class CapitalCourtBuilder {
         if (capital.getSovereign() != null) {
             capital.setState(CapitalState.ACTIVE);
         }
+    }
+
+    private static boolean isValidMarriedConsort(ServerLevel level, UUID sovereignId, UUID spouseId) {
+        if (level == null || sovereignId == null || spouseId == null) {
+            return false;
+        }
+
+        Entity sovereignEntity = MCAIntegrationBridge.getEntityByUuid(level, sovereignId);
+        if (sovereignEntity instanceof ServerPlayer playerSovereign) {
+            return MCARelationshipBridge.isActuallyMarriedToPlayer(playerSovereign, spouseId);
+        }
+
+        Entity spouseEntity = MCAIntegrationBridge.getEntityByUuid(level, spouseId);
+        if (spouseEntity instanceof ServerPlayer playerSpouse) {
+            return MCARelationshipBridge.isActuallyMarriedToPlayer(playerSpouse, sovereignId);
+        }
+
+        return true;
     }
 
     private static void addMarriageDerivedTitles(
@@ -253,6 +273,9 @@ public class CapitalCourtBuilder {
     ) {
         UUID spouse = MCAIntegrationBridge.getSpouse(level, sourceId);
         if (!isValidRelationshipPerson(level, spouse)) {
+            return;
+        }
+        if (!isValidMarriedConsort(level, sourceId, spouse)) {
             return;
         }
         if (residents != null && !residents.contains(spouse)) {
