@@ -30,6 +30,18 @@ public class ModItems {
     public static final RegistryObject<Item> CAPITAL_CHRONICLE =
             ITEMS.register("capital_chronicle", CapitalChronicleItem::new);
 
+    public static final RegistryObject<Item> RED_ROYAL_SEAL =
+            ITEMS.register("red_royal_seal", RoyalSealItem::new);
+
+    public static final RegistryObject<Item> BLACK_ROYAL_SEAL =
+            ITEMS.register("black_royal_seal", RoyalSealItem::new);
+
+    public static final RegistryObject<Item> BLUE_ROYAL_SEAL =
+            ITEMS.register("blue_royal_seal", RoyalSealItem::new);
+
+    public static final RegistryObject<Item> GREEN_ROYAL_SEAL =
+            ITEMS.register("green_royal_seal", RoyalSealItem::new);
+
     private ModItems() {
     }
 
