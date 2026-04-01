@@ -584,21 +584,12 @@ public class CapitalRecord {
             return false;
         }
 
-        return entityId.equals(sovereign)
-                || entityId.equals(consort)
-                || entityId.equals(dowager)
-                || entityId.equals(heir)
-                || royalChildren.contains(entityId)
-                || disinheritedRoyalChildren.contains(entityId)
-                || legitimizedRoyalChildren.contains(entityId)
-                || dukes.contains(entityId)
-                || lords.contains(entityId)
-                || knights.contains(entityId)
-                || royalGuards.contains(entityId)
-                || disgracedRoyalGuards.contains(entityId)
-                || entityId.equals(commander)
-                || entityId.equals(playerSovereignId)
-                || entityId.equals(playerConsortId);
+        return hasCourtIdentity(entityId)
+                || hasRoyalChildState(entityId)
+                || hasNobleOffice(entityId)
+                || hasGuardOffice(entityId)
+                || hasCommanderState(entityId)
+                || hasPlayerCourtState(entityId);
     }
 
     public void replaceDynamicRoles(
@@ -628,12 +619,45 @@ public class CapitalRecord {
         this.sovereign = sovereign;
         this.sovereignFemale = sovereignFemale;
         this.heir = heir;
-        this.heirFemale = heir != null && royalChildFemale.getOrDefault(heir, false);
+        this.heirFemale = resolveHeirFemale(heir, royalChildFemale);
 
         replaceMembers(this.royalChildren, this.royalChildFemale, royalChildren, royalChildFemale);
         replaceMembers(this.dukes, this.dukeFemale, dukes, dukeFemale);
         replaceMembers(this.lords, this.lordFemale, lords, lordFemale);
         replaceMembers(this.knights, this.knightFemale, knights, knightFemale);
+    }
+
+    private boolean hasCourtIdentity(UUID entityId) {
+        return entityId.equals(sovereign)
+                || entityId.equals(consort)
+                || entityId.equals(dowager)
+                || entityId.equals(heir);
+    }
+
+    private boolean hasRoyalChildState(UUID entityId) {
+        return royalChildren.contains(entityId)
+                || disinheritedRoyalChildren.contains(entityId)
+                || legitimizedRoyalChildren.contains(entityId);
+    }
+
+    private boolean hasNobleOffice(UUID entityId) {
+        return dukes.contains(entityId)
+                || lords.contains(entityId)
+                || knights.contains(entityId);
+    }
+
+    private boolean hasGuardOffice(UUID entityId) {
+        return royalGuards.contains(entityId)
+                || disgracedRoyalGuards.contains(entityId);
+    }
+
+    private boolean hasCommanderState(UUID entityId) {
+        return entityId.equals(commander);
+    }
+
+    private boolean hasPlayerCourtState(UUID entityId) {
+        return entityId.equals(playerSovereignId)
+                || entityId.equals(playerConsortId);
     }
 
     private static boolean containsMember(Set<UUID> members, UUID id) {
@@ -656,6 +680,10 @@ public class CapitalRecord {
             members.remove(id);
             femaleFlags.remove(id);
         }
+    }
+
+    private static boolean resolveHeirFemale(UUID heir, Map<UUID, Boolean> royalChildFemale) {
+        return heir != null && royalChildFemale != null && royalChildFemale.getOrDefault(heir, false);
     }
 
     private static void replaceMembers(
