@@ -13,9 +13,9 @@ public final class MourningClothingPaths {
     public static final String MALE_COMMONER_PREFIX = "mcacapitals:skins/clothing/normal/male/mourning_commoner/";
 
     public static final int FEMALE_ROYAL_COUNT = 4;
-    public static final int MALE_ROYAL_COUNT = 3;
-    public static final int FEMALE_NOBLE_COUNT = 3;
-    public static final int MALE_NOBLE_COUNT = 2;
-    public static final int FEMALE_COMMONER_COUNT = 2;
-    public static final int MALE_COMMONER_COUNT = 2;
+    public static final int MALE_ROYAL_COUNT = 5;
+    public static final int FEMALE_NOBLE_COUNT = 6;
+    public static final int MALE_NOBLE_COUNT = 5;
+    public static final int FEMALE_COMMONER_COUNT = 7;
+    public static final int MALE_COMMONER_COUNT = 4;
 }

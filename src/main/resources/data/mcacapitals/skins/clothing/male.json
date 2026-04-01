@@ -1,16 +1,16 @@
 {
   "mcacapitals:skins/clothing/normal/male/mourning_royal/%d.png": {
-    "count": 3,
+    "count": 4,
     "profession": "mcacapitals.mourning",
     "exclude": true
   },
   "mcacapitals:skins/clothing/normal/male/mourning_noble/%d.png": {
-    "count": 2,
+    "count": 5,
     "profession": "mcacapitals.mourning",
     "exclude": true
   },
   "mcacapitals:skins/clothing/normal/male/mourning_commoner/%d.png": {
-    "count": 2,
+    "count": 5,
     "profession": "mcacapitals.mourning",
     "exclude": true
   }
