@@ -32,6 +32,8 @@ public class CapitalRecord {
     private final Set<UUID> royalChildren = new LinkedHashSet<>();
     private final Map<UUID, Boolean> royalChildFemale = new LinkedHashMap<>();
 
+    private final Set<UUID> royalHousehold = new LinkedHashSet<>();
+
     private final Set<UUID> disinheritedRoyalChildren = new LinkedHashSet<>();
     private final Set<UUID> legitimizedRoyalChildren = new LinkedHashSet<>();
     private final Map<UUID, Boolean> legitimizedRoyalChildFemale = new LinkedHashMap<>();
@@ -194,6 +196,30 @@ public class CapitalRecord {
 
     public boolean isRoyalChildFemale(UUID id) {
         return isFlaggedFemale(royalChildFemale, id);
+    }
+
+    public Set<UUID> getRoyalHousehold() {
+        return royalHousehold;
+    }
+
+    public boolean isRoyalHouseholdMember(UUID id) {
+        return containsMember(royalHousehold, id);
+    }
+
+    public void addRoyalHouseholdMember(UUID id) {
+        if (id != null) {
+            royalHousehold.add(id);
+        }
+    }
+
+    public void removeRoyalHouseholdMember(UUID id) {
+        if (id != null) {
+            royalHousehold.remove(id);
+        }
+    }
+
+    public void clearRoyalHousehold() {
+        royalHousehold.clear();
     }
 
     public void addRoyalChild(UUID id) {
@@ -585,6 +611,7 @@ public class CapitalRecord {
         }
 
         return hasCourtIdentity(entityId)
+                || hasRoyalHouseholdState(entityId)
                 || hasRoyalChildState(entityId)
                 || hasNobleOffice(entityId)
                 || hasGuardOffice(entityId)
@@ -632,6 +659,10 @@ public class CapitalRecord {
                 || entityId.equals(consort)
                 || entityId.equals(dowager)
                 || entityId.equals(heir);
+    }
+
+    private boolean hasRoyalHouseholdState(UUID entityId) {
+        return royalHousehold.contains(entityId);
     }
 
     private boolean hasRoyalChildState(UUID entityId) {

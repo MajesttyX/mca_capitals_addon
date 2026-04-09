@@ -7,8 +7,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 final class CapitalSavedDataReader {
@@ -18,66 +16,74 @@ final class CapitalSavedDataReader {
 
     static CapitalSavedData loadCapitals(CompoundTag tag) {
         CapitalSavedData data = new CapitalSavedData();
+
         ListTag capitalList = tag.getList(CapitalSavedData.KEY_CAPITALS, Tag.TAG_COMPOUND);
+        for (Tag base : capitalList) {
+            if (!(base instanceof CompoundTag capitalTag)) {
+                continue;
+            }
 
-        for (Tag baseTag : capitalList) {
-            CompoundTag capitalTag = (CompoundTag) baseTag;
+            UUID capitalId;
+            try {
+                capitalId = capitalTag.getUUID(CapitalSavedData.KEY_CAPITAL_ID);
+            } catch (Exception ignored) {
+                continue;
+            }
 
-            UUID capitalId = capitalTag.getUUID(CapitalSavedData.KEY_CAPITAL_ID);
-            Integer villageId = capitalTag.contains(CapitalSavedData.KEY_VILLAGE_ID)
+            Integer villageId = capitalTag.contains(CapitalSavedData.KEY_VILLAGE_ID, Tag.TAG_INT)
                     ? capitalTag.getInt(CapitalSavedData.KEY_VILLAGE_ID)
                     : null;
 
-            CapitalRecord capital = new CapitalRecord(capitalId, villageId);
+            UUID sovereign = capitalTag.hasUUID(CapitalSavedData.KEY_SOVEREIGN)
+                    ? capitalTag.getUUID(CapitalSavedData.KEY_SOVEREIGN)
+                    : null;
 
-            if (capitalTag.contains(CapitalSavedData.KEY_STATE)) {
+            boolean sovereignFemale = capitalTag.getBoolean(CapitalSavedData.KEY_SOVEREIGN_FEMALE);
+
+            CapitalRecord capital = new CapitalRecord(capitalId, villageId, sovereign, sovereignFemale);
+
+            if (capitalTag.contains(CapitalSavedData.KEY_STATE, Tag.TAG_STRING)) {
                 try {
                     capital.setState(CapitalState.valueOf(capitalTag.getString(CapitalSavedData.KEY_STATE)));
                 } catch (IllegalArgumentException ignored) {
-                    capital.setState(CapitalState.ACTIVE);
                 }
             }
 
-            if (capitalTag.contains(CapitalSavedData.KEY_SOVEREIGN)) {
-                capital.setSovereign(capitalTag.getUUID(CapitalSavedData.KEY_SOVEREIGN));
-            }
-            capital.setSovereignFemale(capitalTag.getBoolean(CapitalSavedData.KEY_SOVEREIGN_FEMALE));
-
-            if (capitalTag.contains(CapitalSavedData.KEY_CONSORT)) {
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_CONSORT)) {
                 capital.setConsort(capitalTag.getUUID(CapitalSavedData.KEY_CONSORT));
             }
             capital.setConsortFemale(capitalTag.getBoolean(CapitalSavedData.KEY_CONSORT_FEMALE));
 
-            if (capitalTag.contains(CapitalSavedData.KEY_DOWAGER)) {
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_DOWAGER)) {
                 capital.setDowager(capitalTag.getUUID(CapitalSavedData.KEY_DOWAGER));
             }
             capital.setDowagerFemale(capitalTag.getBoolean(CapitalSavedData.KEY_DOWAGER_FEMALE));
 
-            if (capitalTag.contains(CapitalSavedData.KEY_HEIR)) {
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_HEIR)) {
                 capital.setHeir(capitalTag.getUUID(CapitalSavedData.KEY_HEIR));
             }
             capital.setHeirFemale(capitalTag.getBoolean(CapitalSavedData.KEY_HEIR_FEMALE));
-            if (capitalTag.contains(CapitalSavedData.KEY_HEIR_MODE)) {
+
+            if (capitalTag.contains(CapitalSavedData.KEY_HEIR_MODE, Tag.TAG_STRING)) {
                 try {
                     capital.setHeirMode(CapitalRecord.HeirMode.valueOf(capitalTag.getString(CapitalSavedData.KEY_HEIR_MODE)));
                 } catch (IllegalArgumentException ignored) {
-                    capital.setHeirMode(CapitalRecord.HeirMode.DYNASTIC);
                 }
             }
 
             capital.setPlayerSovereign(capitalTag.getBoolean(CapitalSavedData.KEY_PLAYER_SOVEREIGN));
-            if (capitalTag.contains(CapitalSavedData.KEY_PLAYER_SOVEREIGN_ID)) {
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_PLAYER_SOVEREIGN_ID)) {
                 capital.setPlayerSovereignId(capitalTag.getUUID(CapitalSavedData.KEY_PLAYER_SOVEREIGN_ID));
             }
-            if (capitalTag.contains(CapitalSavedData.KEY_PLAYER_SOVEREIGN_NAME)) {
+            if (capitalTag.contains(CapitalSavedData.KEY_PLAYER_SOVEREIGN_NAME, Tag.TAG_STRING)) {
                 capital.setPlayerSovereignName(capitalTag.getString(CapitalSavedData.KEY_PLAYER_SOVEREIGN_NAME));
             }
 
             capital.setPlayerConsort(capitalTag.getBoolean(CapitalSavedData.KEY_PLAYER_CONSORT));
-            if (capitalTag.contains(CapitalSavedData.KEY_PLAYER_CONSORT_ID)) {
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_PLAYER_CONSORT_ID)) {
                 capital.setPlayerConsortId(capitalTag.getUUID(CapitalSavedData.KEY_PLAYER_CONSORT_ID));
             }
-            if (capitalTag.contains(CapitalSavedData.KEY_PLAYER_CONSORT_NAME)) {
+            if (capitalTag.contains(CapitalSavedData.KEY_PLAYER_CONSORT_NAME, Tag.TAG_STRING)) {
                 capital.setPlayerConsortName(capitalTag.getString(CapitalSavedData.KEY_PLAYER_CONSORT_NAME));
             }
 
@@ -88,6 +94,7 @@ final class CapitalSavedDataReader {
 
             readUuidSet(capitalTag.getList(CapitalSavedData.KEY_ROYAL_CHILDREN, Tag.TAG_STRING), capital.getRoyalChildren());
             readUuidBooleanMap(capitalTag.getList(CapitalSavedData.KEY_ROYAL_CHILD_FEMALE, Tag.TAG_COMPOUND), capital.getRoyalChildFemale());
+            readUuidSet(capitalTag.getList(CapitalSavedData.KEY_ROYAL_HOUSEHOLD, Tag.TAG_STRING), capital.getRoyalHousehold());
 
             readUuidSet(capitalTag.getList(CapitalSavedData.KEY_DISINHERITED_ROYAL_CHILDREN, Tag.TAG_STRING), capital.getDisinheritedRoyalChildren());
             readUuidSet(capitalTag.getList(CapitalSavedData.KEY_LEGITIMIZED_ROYAL_CHILDREN, Tag.TAG_STRING), capital.getLegitimizedRoyalChildren());
@@ -104,19 +111,24 @@ final class CapitalSavedDataReader {
             readUuidBooleanMap(capitalTag.getList(CapitalSavedData.KEY_KNIGHT_FEMALE, Tag.TAG_COMPOUND), capital.getKnightFemale());
 
             ListTag chronicleTag = capitalTag.getList(CapitalSavedData.KEY_CHRONICLE_ENTRIES, Tag.TAG_STRING);
-            for (Tag entryTag : chronicleTag) {
-                capital.getChronicleEntries().add(entryTag.getAsString());
+            for (Tag entry : chronicleTag) {
+                capital.getChronicleEntries().add(entry.getAsString());
             }
 
             ListTag mourningClothesTag = capitalTag.getList(CapitalSavedData.KEY_MOURNING_ORIGINAL_CLOTHES, Tag.TAG_COMPOUND);
             for (Tag entryBase : mourningClothesTag) {
-                CompoundTag entryTag = (CompoundTag) entryBase;
-                UUID entityId = entryTag.getUUID(CapitalSavedData.KEY_ENTITY_ID);
-                String clothes = entryTag.getString(CapitalSavedData.KEY_CLOTHES);
-                capital.getMourningOriginalClothes().put(entityId, clothes);
+                if (!(entryBase instanceof CompoundTag entryTag)) {
+                    continue;
+                }
+                try {
+                    UUID id = entryTag.getUUID(CapitalSavedData.KEY_ENTITY_ID);
+                    String clothes = entryTag.getString(CapitalSavedData.KEY_CLOTHES);
+                    capital.getMourningOriginalClothes().put(id, clothes);
+                } catch (Exception ignored) {
+                }
             }
 
-            if (capitalTag.contains(CapitalSavedData.KEY_COMMANDER)) {
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_COMMANDER)) {
                 capital.setCommander(capitalTag.getUUID(CapitalSavedData.KEY_COMMANDER));
             }
             capital.setCommanderFemale(capitalTag.getBoolean(CapitalSavedData.KEY_COMMANDER_FEMALE));
@@ -127,7 +139,7 @@ final class CapitalSavedDataReader {
             readUuidBooleanMap(capitalTag.getList(CapitalSavedData.KEY_ROYAL_GUARD_FEMALE, Tag.TAG_COMPOUND), capital.getRoyalGuardFemale());
             readUuidSet(capitalTag.getList(CapitalSavedData.KEY_DISGRACED_ROYAL_GUARDS, Tag.TAG_STRING), capital.getDisgracedRoyalGuards());
 
-            if (capitalTag.contains(CapitalSavedData.KEY_ROYAL_GUARD_LIEGE)) {
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_ROYAL_GUARD_LIEGE)) {
                 capital.setRoyalGuardLiege(capitalTag.getUUID(CapitalSavedData.KEY_ROYAL_GUARD_LIEGE));
             }
 
@@ -135,28 +147,37 @@ final class CapitalSavedDataReader {
 
             ListTag guardAnchorsTag = capitalTag.getList(CapitalSavedData.KEY_ROYAL_GUARD_PATROL_ANCHORS, Tag.TAG_COMPOUND);
             for (Tag entryBase : guardAnchorsTag) {
-                CompoundTag entryTag = (CompoundTag) entryBase;
-                UUID guardId = entryTag.getUUID(CapitalSavedData.KEY_GUARD_ID);
-                capital.setRoyalGuardPatrolAnchor(
-                        guardId,
-                        new BlockPos(entryTag.getInt(CapitalSavedData.KEY_X), entryTag.getInt(CapitalSavedData.KEY_Y), entryTag.getInt(CapitalSavedData.KEY_Z))
-                );
+                if (!(entryBase instanceof CompoundTag entryTag)) {
+                    continue;
+                }
+                try {
+                    UUID guardId = entryTag.getUUID(CapitalSavedData.KEY_GUARD_ID);
+                    BlockPos pos = new BlockPos(
+                            entryTag.getInt(CapitalSavedData.KEY_X),
+                            entryTag.getInt(CapitalSavedData.KEY_Y),
+                            entryTag.getInt(CapitalSavedData.KEY_Z)
+                    );
+                    capital.getRoyalGuardPatrolAnchors().put(guardId, pos);
+                } catch (Exception ignored) {
+                }
             }
 
             ListTag guardModesTag = capitalTag.getList(CapitalSavedData.KEY_ROYAL_GUARD_DUTY_MODES, Tag.TAG_COMPOUND);
             for (Tag entryBase : guardModesTag) {
-                CompoundTag entryTag = (CompoundTag) entryBase;
-                UUID guardId = entryTag.getUUID(CapitalSavedData.KEY_GUARD_ID);
+                if (!(entryBase instanceof CompoundTag entryTag)) {
+                    continue;
+                }
                 try {
-                    capital.setRoyalGuardDutyMode(guardId, CapitalRecord.GuardDutyMode.valueOf(entryTag.getString(CapitalSavedData.KEY_MODE)));
-                } catch (IllegalArgumentException ignored) {
-                    capital.setRoyalGuardDutyMode(guardId, CapitalRecord.GuardDutyMode.FOLLOW_SOVEREIGN);
+                    UUID guardId = entryTag.getUUID(CapitalSavedData.KEY_GUARD_ID);
+                    CapitalRecord.GuardDutyMode mode = CapitalRecord.GuardDutyMode.valueOf(entryTag.getString(CapitalSavedData.KEY_MODE));
+                    capital.getRoyalGuardDutyModes().put(guardId, mode);
+                } catch (Exception ignored) {
                 }
             }
 
             capital.setLastRoyalGuardPromptDay(capitalTag.getLong(CapitalSavedData.KEY_LAST_ROYAL_GUARD_PROMPT_DAY));
 
-            if (capitalTag.contains(CapitalSavedData.KEY_PENDING_PLAYER_GUARD_SELECTION_REQUESTER)) {
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_PENDING_PLAYER_GUARD_SELECTION_REQUESTER)) {
                 capital.setPendingPlayerGuardSelectionRequester(capitalTag.getUUID(CapitalSavedData.KEY_PENDING_PLAYER_GUARD_SELECTION_REQUESTER));
             }
 
@@ -175,7 +196,7 @@ final class CapitalSavedDataReader {
         }
     }
 
-    private static void readUuidList(ListTag listTag, List<UUID> target) {
+    private static void readUuidList(ListTag listTag, java.util.List<UUID> target) {
         for (Tag tag : listTag) {
             try {
                 target.add(UUID.fromString(tag.getAsString()));
@@ -184,7 +205,7 @@ final class CapitalSavedDataReader {
         }
     }
 
-    private static void readUuidBooleanMap(ListTag listTag, Map<UUID, Boolean> target) {
+    private static void readUuidBooleanMap(ListTag listTag, java.util.Map<UUID, Boolean> target) {
         for (Tag base : listTag) {
             if (!(base instanceof CompoundTag tag)) {
                 continue;

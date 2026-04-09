@@ -91,6 +91,7 @@ public class CapitalSuccessionService {
                 }
             }
 
+            CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
             CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
             CapitalDataAccess.markDirty(level);
             return true;
@@ -144,6 +145,8 @@ public class CapitalSuccessionService {
             capital.setHeirFemale(false);
         }
 
+        CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
+
         String successorName = resolveName(level, successor);
 
         CapitalChronicleService.addEntry(
@@ -161,7 +164,7 @@ public class CapitalSuccessionService {
 
     public static UUID findAbdicationSuccessor(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         UUID heir = capital.getHeir();
-        if (isValidAbdicationCandidate(level, capital, heir)) {
+        if (isValidAbdicationHeir(level, capital, heir)) {
             return heir;
         }
 
@@ -212,17 +215,22 @@ public class CapitalSuccessionService {
             return false;
         }
 
-        if (capital.getRoyalChildren().contains(heir) || capital.isLegitimizedRoyalChild(heir)) {
-            return isValidSuccessionCandidate(level, heir);
+        if (capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
+            if (capital.getRoyalChildren().contains(heir) || capital.isLegitimizedRoyalChild(heir)) {
+                return isValidSuccessionCandidate(level, heir);
+            }
+
+            Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+            return residents.contains(heir) && isValidSuccessionCandidate(level, heir);
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        return residents.contains(heir) && isValidSuccessionCandidate(level, heir);
+        return (capital.getRoyalChildren().contains(heir) || capital.isLegitimizedRoyalChild(heir))
+                && isValidSuccessionCandidate(level, heir);
     }
 
     private static UUID findSuccessor(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         UUID heir = capital.getHeir();
-        if (isValidSuccessionCandidate(level, heir) && !capital.isDisinheritedRoyalChild(heir)) {
+        if (isValidSuccessionHeir(level, capital, heir)) {
             return heir;
         }
 
@@ -346,6 +354,32 @@ public class CapitalSuccessionService {
                 && !capital.isDisinheritedRoyalChild(entityId)
                 && MCAIntegrationBridge.hasPersistentFamilyNode(level, entityId)
                 && !MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId);
+    }
+
+    private static boolean isValidSuccessionHeir(ServerLevel level, CapitalRecord capital, UUID heir) {
+        if (heir == null || capital.isDisinheritedRoyalChild(heir)) {
+            return false;
+        }
+
+        if (capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
+            return isValidSuccessionCandidate(level, heir);
+        }
+
+        return (capital.getRoyalChildren().contains(heir) || capital.isLegitimizedRoyalChild(heir))
+                && isValidSuccessionCandidate(level, heir);
+    }
+
+    private static boolean isValidAbdicationHeir(ServerLevel level, CapitalRecord capital, UUID heir) {
+        if (heir == null || heir.equals(capital.getSovereign()) || capital.isDisinheritedRoyalChild(heir)) {
+            return false;
+        }
+
+        if (capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
+            return isValidAbdicationCandidate(level, capital, heir);
+        }
+
+        return (capital.getRoyalChildren().contains(heir) || capital.isLegitimizedRoyalChild(heir))
+                && isValidAbdicationCandidate(level, capital, heir);
     }
 
     private static boolean isValidRelationshipPerson(ServerLevel level, UUID entityId) {

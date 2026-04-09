@@ -73,6 +73,7 @@ final class CapitalSavedDataWriter {
 
             writeUuidSet(capitalTag, CapitalSavedData.KEY_ROYAL_CHILDREN, capital.getRoyalChildren());
             writeUuidBooleanMap(capitalTag, CapitalSavedData.KEY_ROYAL_CHILD_FEMALE, capital.getRoyalChildFemale());
+            writeUuidSet(capitalTag, CapitalSavedData.KEY_ROYAL_HOUSEHOLD, capital.getRoyalHousehold());
 
             writeUuidSet(capitalTag, CapitalSavedData.KEY_DISINHERITED_ROYAL_CHILDREN, capital.getDisinheritedRoyalChildren());
             writeUuidSet(capitalTag, CapitalSavedData.KEY_LEGITIMIZED_ROYAL_CHILDREN, capital.getLegitimizedRoyalChildren());

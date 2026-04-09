@@ -6,6 +6,7 @@ import com.example.mcacapitals.capital.CapitalCourtWatcher;
 import com.example.mcacapitals.capital.CapitalFoundationService;
 import com.example.mcacapitals.capital.CapitalRecord;
 import com.example.mcacapitals.capital.CapitalRoyalGuardService;
+import com.example.mcacapitals.capital.CapitalRoyalHouseholdService;
 import com.example.mcacapitals.capital.CapitalState;
 import com.example.mcacapitals.data.CapitalDataAccess;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
@@ -43,6 +44,7 @@ final class CapitalPetitionOutcomes {
         capital.setPlayerConsortId(null);
         capital.setPlayerConsortName(null);
         capital.setState(CapitalState.ACTIVE);
+        CapitalRoyalHouseholdService.beginNewRegime(capital);
 
         applyHeartsPenaltyToFamily(level, formerRoyalFamily, player.getUUID(), -200);
 
@@ -76,6 +78,8 @@ final class CapitalPetitionOutcomes {
         CapitalFoundationService.appointPlayerSovereign(level, capital, player.getUUID(), female);
         CapitalRoyalGuardService.clearRoyalGuardsForTransfer(level, capital);
 
+        stripFormerRoyalFamily(capital);
+
         capital.setPlayerSovereign(true);
         capital.setPlayerSovereignId(player.getUUID());
         capital.setPlayerSovereignName(playerName);
@@ -83,6 +87,7 @@ final class CapitalPetitionOutcomes {
         capital.setPlayerConsortId(null);
         capital.setPlayerConsortName(null);
         capital.setState(CapitalState.ACTIVE);
+        CapitalRoyalHouseholdService.beginNewRegime(capital);
 
         CapitalChronicleService.addEntry(
                 level,
@@ -132,6 +137,7 @@ final class CapitalPetitionOutcomes {
         capital.getLegitimizedRoyalChildren().clear();
         capital.getLegitimizedRoyalChildFemale().clear();
         capital.getRoyalSuccessionOrder().clear();
+        capital.clearRoyalHousehold();
     }
 
     private static void applyHeartsPenaltyToFamily(ServerLevel level, Set<UUID> familyIds, UUID playerId, int delta) {

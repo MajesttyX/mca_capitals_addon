@@ -57,19 +57,39 @@ public class CapitalMourningService {
 
         Map<UUID, String> originals = capital.getMourningOriginalClothes();
         for (Map.Entry<UUID, String> entry : originals.entrySet()) {
-            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entry.getKey());
+            UUID villagerId = entry.getKey();
+            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, villagerId);
             if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
                 continue;
             }
 
             String original = entry.getValue();
             if (original == null || original.isBlank()) {
-                MCAIntegrationBridge.randomizeClothes(level, entry.getKey());
-            } else if (MCAIntegrationBridge.clothingExists(original)) {
-                MCAIntegrationBridge.setClothes(level, entry.getKey(), original);
-            } else {
-                MCAIntegrationBridge.randomizeClothes(level, entry.getKey());
+                MCAIntegrationBridge.randomizeClothes(level, villagerId);
+                continue;
             }
+
+            String beforeRestore = MCAIntegrationBridge.getClothes(level, villagerId);
+            MCAIntegrationBridge.setClothes(level, villagerId, original);
+            String afterRestore = MCAIntegrationBridge.getClothes(level, villagerId);
+
+            if (sameClothingId(original, afterRestore)) {
+                continue;
+            }
+
+            if (!sameClothingId(beforeRestore, afterRestore) && afterRestore != null && !afterRestore.isBlank()) {
+                continue;
+            }
+
+            if (MCAIntegrationBridge.clothingExists(original)) {
+                MCAIntegrationBridge.setClothes(level, villagerId, original);
+                afterRestore = MCAIntegrationBridge.getClothes(level, villagerId);
+                if (sameClothingId(original, afterRestore)) {
+                    continue;
+                }
+            }
+
+            MCAIntegrationBridge.randomizeClothes(level, villagerId);
         }
 
         originals.clear();
@@ -83,24 +103,45 @@ public class CapitalMourningService {
     }
 
     private static void applyMourning(ServerLevel level, CapitalRecord capital) {
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> targets = new java.util.LinkedHashSet<>(CapitalResidentScanner.scanResidents(level, capital.getCapitalId()));
 
-        for (UUID residentId : residents) {
+        if (capital.getSovereign() != null) {
+            targets.add(capital.getSovereign());
+        }
+        if (capital.getConsort() != null) {
+            targets.add(capital.getConsort());
+        }
+        if (capital.getDowager() != null) {
+            targets.add(capital.getDowager());
+        }
+        if (capital.getHeir() != null) {
+            targets.add(capital.getHeir());
+        }
+
+        targets.addAll(capital.getRoyalChildren());
+        targets.addAll(capital.getDukes());
+        targets.addAll(capital.getLords());
+        targets.addAll(capital.getKnights());
+
+        for (UUID residentId : targets) {
             Entity entity = MCAIntegrationBridge.getEntityByUuid(level, residentId);
             if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
                 continue;
             }
 
-            if (!MCAIntegrationBridge.isTeenOrAdultVillager(level, residentId)) {
+            boolean explicitRoyalTarget =
+                    residentId.equals(capital.getSovereign())
+                            || residentId.equals(capital.getConsort())
+                            || residentId.equals(capital.getDowager())
+                            || residentId.equals(capital.getHeir())
+                            || capital.isRoyalChild(residentId);
+
+            if (!explicitRoyalTarget && !MCAIntegrationBridge.isTeenOrAdultVillager(level, residentId)) {
                 continue;
             }
 
             String targetClothes = pickMourningClothes(level, capital, residentId);
-            if (targetClothes == null) {
-                continue;
-            }
-
-            if (!MCAIntegrationBridge.clothingExists(targetClothes)) {
+            if (targetClothes == null || !MCAIntegrationBridge.clothingExists(targetClothes)) {
                 continue;
             }
 
@@ -161,5 +202,25 @@ public class CapitalMourningService {
     private static String buildPath(String prefix, int count, UUID villagerId) {
         int variant = Math.floorMod(villagerId.hashCode(), count);
         return prefix + variant + ".png";
+    }
+
+    private static boolean sameClothingId(String a, String b) {
+        if (a == null || b == null) {
+            return false;
+        }
+
+        if (a.equals(b)) {
+            return true;
+        }
+
+        return normalizeClothingId(a).equals(normalizeClothingId(b));
+    }
+
+    private static String normalizeClothingId(String value) {
+        String normalized = value.trim().replace('\\', '/');
+        if (normalized.endsWith(".png")) {
+            normalized = normalized.substring(0, normalized.length() - 4);
+        }
+        return normalized;
     }
 }

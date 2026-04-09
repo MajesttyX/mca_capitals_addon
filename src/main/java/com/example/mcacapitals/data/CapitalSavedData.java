@@ -46,6 +46,7 @@ public class CapitalSavedData extends SavedData {
 
     static final String KEY_ROYAL_CHILDREN = "RoyalChildren";
     static final String KEY_ROYAL_CHILD_FEMALE = "RoyalChildFemale";
+    static final String KEY_ROYAL_HOUSEHOLD = "RoyalHousehold";
     static final String KEY_DISINHERITED_ROYAL_CHILDREN = "DisinheritedRoyalChildren";
     static final String KEY_LEGITIMIZED_ROYAL_CHILDREN = "LegitimizedRoyalChildren";
     static final String KEY_LEGITIMIZED_ROYAL_CHILD_FEMALE = "LegitimizedRoyalChildFemale";
