@@ -30,6 +30,16 @@ final class CapitalCourtApplier {
         capital.setConsort(newConsort);
         capital.setConsortFemale(newConsortFemale);
 
+        if (newConsort != null && !MCAIntegrationBridge.isMCAVillager(level, newConsort)) {
+            capital.setPlayerConsort(true);
+            capital.setPlayerConsortId(newConsort);
+            capital.setPlayerConsortName(CapitalFoundationInternal.resolvePlayerName(level, newConsort));
+        } else {
+            capital.setPlayerConsort(false);
+            capital.setPlayerConsortId(null);
+            capital.setPlayerConsortName(null);
+        }
+
         capital.getRoyalChildren().clear();
         capital.getRoyalChildFemale().clear();
         for (UUID childId : newRoyalChildren) {

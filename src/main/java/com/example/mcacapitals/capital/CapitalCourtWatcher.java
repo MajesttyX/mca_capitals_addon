@@ -3,6 +3,7 @@ package com.example.mcacapitals.capital;
 import com.example.mcacapitals.data.CapitalDataAccess;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 import java.util.HashMap;
@@ -42,7 +43,7 @@ public class CapitalCourtWatcher {
         CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), newFingerprint);
 
         if (capital.getSovereign() != null) {
-            UUID sovereignSpouse = MCAIntegrationBridge.getSpouse(level, capital.getSovereign());
+            UUID sovereignSpouse = CapitalCourtMarriageResolver.findActualSpouse(level, capital.getSovereign());
             if (!Objects.equals(sovereignSpouse, capital.getConsort())) {
                 CapitalCourtBuilder.applySovereignMarriage(level, capital);
             }
@@ -112,7 +113,7 @@ public class CapitalCourtWatcher {
                 continue;
             }
 
-            UUID currentSpouse = MCAIntegrationBridge.getSpouse(level, nobleId);
+            UUID currentSpouse = CapitalCourtMarriageResolver.findActualSpouse(level, nobleId);
             currentSnapshot.put(nobleId, currentSpouse);
 
             if (previousSnapshot == null) {
@@ -124,7 +125,18 @@ public class CapitalCourtWatcher {
                 continue;
             }
 
-            if (currentSpouse == null || !residents.contains(currentSpouse)) {
+            if (currentSpouse == null) {
+                continue;
+            }
+
+            boolean spouseIsResident = residents != null && residents.contains(currentSpouse);
+            boolean spouseIsPlayer = !MCAIntegrationBridge.isMCAVillager(level, currentSpouse);
+
+            if (!spouseIsResident && !spouseIsPlayer) {
+                continue;
+            }
+
+            if (!CapitalCourtMarriageResolver.isValidMarriedConsort(level, nobleId, currentSpouse)) {
                 continue;
             }
 
@@ -184,7 +196,7 @@ public class CapitalCourtWatcher {
             sb.append("isGuard=").append(MCAIntegrationBridge.isMCAGuard(level, entityId)).append(',');
             sb.append("isMaster=").append(MCAIntegrationBridge.isMasterProfessionVillager(level, entityId)).append(',');
 
-            UUID spouse = MCAIntegrationBridge.getSpouse(level, entityId);
+            UUID spouse = CapitalCourtMarriageResolver.findActualSpouse(level, entityId);
             sb.append("spouse=").append(spouse == null ? "none" : spouse).append(',');
 
             sb.append("childCount=").append(MCAIntegrationBridge.getChildren(level, entityId).size()).append(',');
@@ -206,7 +218,7 @@ public class CapitalCourtWatcher {
             return "Unknown";
         }
 
-        String baseName = stripKnownTitles(resolveBaseName(level, id));
+        String baseName = stripKnownTitles(resolveBaseName(level, capital, id));
         String title = CapitalTitleResolver.getDisplayTitle(level, capital, id);
 
         if (title == null || title.isBlank() || "Commoner".equalsIgnoreCase(title) || "None".equalsIgnoreCase(title)) {
@@ -216,9 +228,31 @@ public class CapitalCourtWatcher {
         return title + " " + baseName;
     }
 
-    private static String resolveBaseName(ServerLevel level, UUID id) {
+    private static String resolveBaseName(ServerLevel level, CapitalRecord capital, UUID id) {
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
-        return entity != null ? entity.getName().getString() : id.toString();
+        if (entity != null) {
+            String name = entity.getName().getString();
+            if (name != null && !name.isBlank()) {
+                return name;
+            }
+        }
+
+        if (capital != null && capital.isPlayerConsort() && id.equals(capital.getPlayerConsortId())) {
+            String storedName = capital.getPlayerConsortName();
+            if (storedName != null && !storedName.isBlank()) {
+                return storedName;
+            }
+        }
+
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(id);
+        if (player != null) {
+            String profileName = player.getGameProfile().getName();
+            if (profileName != null && !profileName.isBlank()) {
+                return profileName;
+            }
+        }
+
+        return "Unknown";
     }
 
     private static String stripKnownTitles(String name) {
@@ -245,19 +279,13 @@ public class CapitalCourtWatcher {
                 "King"
         };
 
-        boolean changed = true;
-        while (changed) {
-            changed = false;
-            for (String title : knownTitles) {
-                String prefix = title + " ";
-                if (result.startsWith(prefix)) {
-                    result = result.substring(prefix.length()).trim();
-                    changed = true;
-                    break;
-                }
+        for (String knownTitle : knownTitles) {
+            String prefix = knownTitle + " ";
+            if (result.startsWith(prefix)) {
+                return result.substring(prefix.length()).trim();
             }
         }
 
-        return result.isBlank() ? "Unnamed" : result;
+        return result;
     }
 }

@@ -20,6 +20,8 @@ public class PlayerCapitalTitleSavedData extends SavedData {
     private static final String KEY_PLAYER_ID = "PlayerId";
     private static final String KEY_CAPITAL_ID = "CapitalId";
     private static final String KEY_GRANTED_TITLE = "GrantedTitle";
+    private static final String KEY_MARRIAGE_TITLE = "MarriageTitle";
+    private static final String KEY_MARRIAGE_SOURCE_SPOUSE_ID = "MarriageSourceSpouseId";
     private static final String KEY_COMMANDER = "Commander";
     private static final String KEY_CACHED_PLAYER_NAME = "CachedPlayerName";
 
@@ -70,7 +72,12 @@ public class PlayerCapitalTitleSavedData extends SavedData {
             entry.putUUID(KEY_PLAYER_ID, record.getPlayerId());
             entry.putUUID(KEY_CAPITAL_ID, record.getCapitalId());
             entry.putString(KEY_GRANTED_TITLE, record.getGrantedTitle().name());
+            entry.putString(KEY_MARRIAGE_TITLE, record.getMarriageTitle().name());
             entry.putBoolean(KEY_COMMANDER, record.isCommander());
+
+            if (record.getMarriageSourceSpouseId() != null) {
+                entry.putUUID(KEY_MARRIAGE_SOURCE_SPOUSE_ID, record.getMarriageSourceSpouseId());
+            }
 
             if (record.getCachedPlayerName() != null && !record.getCachedPlayerName().isBlank()) {
                 entry.putString(KEY_CACHED_PLAYER_NAME, record.getCachedPlayerName());
@@ -105,6 +112,18 @@ public class PlayerCapitalTitleSavedData extends SavedData {
                 } catch (IllegalArgumentException ignored) {
                     record.setGrantedTitle(NobleTitle.COMMONER);
                 }
+            }
+
+            if (entry.contains(KEY_MARRIAGE_TITLE, Tag.TAG_STRING)) {
+                try {
+                    record.setMarriageTitle(NobleTitle.valueOf(entry.getString(KEY_MARRIAGE_TITLE)));
+                } catch (IllegalArgumentException ignored) {
+                    record.setMarriageTitle(NobleTitle.COMMONER);
+                }
+            }
+
+            if (entry.hasUUID(KEY_MARRIAGE_SOURCE_SPOUSE_ID)) {
+                record.setMarriageSourceSpouseId(entry.getUUID(KEY_MARRIAGE_SOURCE_SPOUSE_ID));
             }
 
             record.setCommander(entry.getBoolean(KEY_COMMANDER));

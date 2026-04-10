@@ -49,6 +49,7 @@ public class CapitalSuccessionService {
             capital.setConsortFemale(false);
             capital.setHeir(null);
             capital.setHeirFemale(false);
+            capital.setHeirMode(CapitalRecord.HeirMode.NONE);
             capital.setState(CapitalState.PENDING);
 
             if (isValidRelationshipPerson(level, oldConsort)) {
@@ -97,6 +98,8 @@ public class CapitalSuccessionService {
             return true;
         }
 
+        boolean successorWasManualHeir = successor.equals(capital.getHeir()) && capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL;
+
         capital.setSovereign(successor);
         capital.setSovereignFemale(MCAIntegrationBridge.isFemale(level, successor));
 
@@ -141,20 +144,31 @@ public class CapitalSuccessionService {
             } else {
                 capital.setHeirFemale(MCAIntegrationBridge.isFemale(level, nextHeir));
             }
+            capital.setHeirMode(CapitalRecord.HeirMode.DYNASTIC);
         } else {
             capital.setHeirFemale(false);
+            capital.setHeirMode(CapitalRecord.HeirMode.NONE);
         }
 
         CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
 
         String successorName = resolveName(level, successor);
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                deadName + " died. " + successorName + " inherited the throne of "
-                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
-        );
+        if (successorWasManualHeir) {
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    deadName + " died. " + successorName + ", previously named Heir Apparent, inherited the throne of "
+                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+            );
+        } else {
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    deadName + " died. " + successorName + " inherited the throne of "
+                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+            );
+        }
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);

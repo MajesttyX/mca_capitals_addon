@@ -6,7 +6,8 @@
   "refmap": "mcacapitals.refmap.json",
   "mixins": [
     "VillagerCommandHandlerMixin",
-    "DialogueChatFallbackMixin"
+    "DialogueChatFallbackMixin",
+    "PlayerSaveDataMarriageMixin"
   ],
   "client": [],
   "injectors": {

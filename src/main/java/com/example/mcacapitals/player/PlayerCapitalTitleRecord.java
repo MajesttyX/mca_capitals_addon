@@ -10,6 +10,8 @@ public class PlayerCapitalTitleRecord {
     private final UUID capitalId;
 
     private NobleTitle grantedTitle;
+    private NobleTitle marriageTitle;
+    private UUID marriageSourceSpouseId;
     private boolean commander;
     private String cachedPlayerName;
 
@@ -17,6 +19,7 @@ public class PlayerCapitalTitleRecord {
         this.playerId = playerId;
         this.capitalId = capitalId;
         this.grantedTitle = NobleTitle.COMMONER;
+        this.marriageTitle = NobleTitle.COMMONER;
     }
 
     public UUID getPlayerId() {
@@ -33,6 +36,22 @@ public class PlayerCapitalTitleRecord {
 
     public void setGrantedTitle(NobleTitle grantedTitle) {
         this.grantedTitle = grantedTitle == null ? NobleTitle.COMMONER : grantedTitle;
+    }
+
+    public NobleTitle getMarriageTitle() {
+        return marriageTitle;
+    }
+
+    public void setMarriageTitle(NobleTitle marriageTitle) {
+        this.marriageTitle = marriageTitle == null ? NobleTitle.COMMONER : marriageTitle;
+    }
+
+    public UUID getMarriageSourceSpouseId() {
+        return marriageSourceSpouseId;
+    }
+
+    public void setMarriageSourceSpouseId(UUID marriageSourceSpouseId) {
+        this.marriageSourceSpouseId = marriageSourceSpouseId;
     }
 
     public boolean isCommander() {
@@ -53,6 +72,10 @@ public class PlayerCapitalTitleRecord {
 
     public boolean isCommoner() {
         return grantedTitle == null || grantedTitle == NobleTitle.COMMONER;
+    }
+
+    public boolean hasMarriageTitle() {
+        return marriageTitle != null && marriageTitle != NobleTitle.COMMONER;
     }
 
     public boolean hasAnyCapitalOffice() {

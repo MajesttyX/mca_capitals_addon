@@ -55,6 +55,11 @@ public class CapitalTitleResolver {
             return female ? "Duchess" : "Duke";
         }
 
+        NobleTitle marriageTitle = PlayerCapitalTitleService.getMarriageTitle(level, capital, entityId);
+        if (marriageTitle == NobleTitle.DUKE || marriageTitle == NobleTitle.DUCHESS) {
+            return female ? "Duchess" : "Duke";
+        }
+
         if (isMarriageDuke(level, capital, entityId)) {
             return female ? "Duchess" : "Duke";
         }
@@ -69,6 +74,10 @@ public class CapitalTitleResolver {
         }
 
         if (capital.isLord(entityId)) {
+            return female ? "Lady" : "Lord";
+        }
+
+        if (marriageTitle == NobleTitle.LORD || marriageTitle == NobleTitle.LADY) {
             return female ? "Lady" : "Lord";
         }
 
@@ -111,9 +120,15 @@ public class CapitalTitleResolver {
                 return capital;
             }
 
+            NobleTitle marriageTitle = level == null ? NobleTitle.COMMONER : PlayerCapitalTitleService.getMarriageTitle(level, capital, entityId);
+
             if (level != null && (
                     isMarriageDuke(level, capital, entityId)
                             || isMarriageLord(level, capital, entityId)
+                            || marriageTitle == NobleTitle.DUKE
+                            || marriageTitle == NobleTitle.DUCHESS
+                            || marriageTitle == NobleTitle.LORD
+                            || marriageTitle == NobleTitle.LADY
                             || PlayerCapitalTitleService.hasAnyOffice(level, capital, entityId)
             )) {
                 return capital;

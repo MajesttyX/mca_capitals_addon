@@ -3,6 +3,7 @@ package com.example.mcacapitals.player;
 import com.example.mcacapitals.capital.CapitalRecord;
 import com.example.mcacapitals.data.PlayerCapitalTitleSavedData;
 import com.example.mcacapitals.noble.NobleTitle;
+import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -47,6 +48,55 @@ public final class PlayerCapitalTitleService {
         record.setGrantedTitle(title);
         cachePlayerName(level, record, playerId);
         PlayerCapitalTitleSavedData.get(level).setDirty();
+    }
+
+    public static void grantMarriageTitle(ServerLevel level, CapitalRecord capital, UUID playerId, UUID spouseId, NobleTitle title) {
+        if (level == null || capital == null || playerId == null || spouseId == null || capital.getCapitalId() == null) {
+            return;
+        }
+
+        PlayerCapitalTitleRecord record = getOrCreate(level, playerId, capital.getCapitalId());
+        if (record == null) {
+            return;
+        }
+
+        record.setMarriageTitle(title);
+        record.setMarriageSourceSpouseId(spouseId);
+        cachePlayerName(level, record, playerId);
+        PlayerCapitalTitleSavedData.get(level).setDirty();
+    }
+
+    public static NobleTitle getMarriageTitle(ServerLevel level, CapitalRecord capital, UUID playerId) {
+        if (level == null || capital == null || playerId == null || capital.getCapitalId() == null) {
+            return NobleTitle.COMMONER;
+        }
+
+        PlayerCapitalTitleRecord record = get(level, playerId, capital.getCapitalId());
+        if (record == null || !record.hasMarriageTitle()) {
+            return NobleTitle.COMMONER;
+        }
+
+        UUID sourceSpouseId = record.getMarriageSourceSpouseId();
+        if (sourceSpouseId == null) {
+            return NobleTitle.COMMONER;
+        }
+
+        UUID currentSpouseId = MCAIntegrationBridge.getSpouse(level, playerId);
+        if (currentSpouseId == null || !currentSpouseId.equals(sourceSpouseId)) {
+            return NobleTitle.COMMONER;
+        }
+
+        NobleTitle marriageTitle = record.getMarriageTitle();
+
+        if ((marriageTitle == NobleTitle.DUKE || marriageTitle == NobleTitle.DUCHESS) && capital.isDuke(sourceSpouseId)) {
+            return marriageTitle;
+        }
+
+        if ((marriageTitle == NobleTitle.LORD || marriageTitle == NobleTitle.LADY) && capital.isLord(sourceSpouseId)) {
+            return marriageTitle;
+        }
+
+        return NobleTitle.COMMONER;
     }
 
     public static void grantCommander(ServerLevel level, CapitalRecord capital, UUID playerId) {

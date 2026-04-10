@@ -2,6 +2,7 @@ package com.example.mcacapitals.capital;
 
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 import java.util.ArrayList;
@@ -22,6 +23,8 @@ public class CapitalCourtBuilder {
         if (sovereign == null) {
             return;
         }
+
+        UUID previousConsort = capital.getConsort();
 
         Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
         Set<UUID> preservedDirectDukes = new LinkedHashSet<>(capital.getDukes());
@@ -47,7 +50,7 @@ public class CapitalCourtBuilder {
         Set<UUID> newKnights = new LinkedHashSet<>();
         Map<UUID, Boolean> newKnightFemale = new LinkedHashMap<>();
 
-        UUID spouse = MCAIntegrationBridge.getSpouse(level, sovereign);
+        UUID spouse = CapitalCourtMarriageResolver.findActualSpouse(level, sovereign);
         if (isValidRelationshipPerson(level, spouse)
                 && CapitalCourtMarriageResolver.isValidMarriedConsort(level, sovereign, spouse)) {
             newConsort = spouse;
@@ -101,6 +104,34 @@ public class CapitalCourtBuilder {
                 newKnightFemale
         );
 
+        if (newConsort != null && !newConsort.equals(previousConsort)) {
+            ServerPlayer livePlayerSpouse = CapitalCourtMarriageResolver.findActualPlayerSpouse(level, sovereign);
+
+            if (livePlayerSpouse != null) {
+                capital.setPlayerConsort(true);
+                capital.setPlayerConsortId(livePlayerSpouse.getUUID());
+                capital.setPlayerConsortName(livePlayerSpouse.getGameProfile().getName());
+                capital.setConsort(livePlayerSpouse.getUUID());
+                capital.setConsortFemale(false);
+                newConsort = livePlayerSpouse.getUUID();
+            } else if (!MCAIntegrationBridge.isMCAVillager(level, newConsort)) {
+                capital.setPlayerConsort(true);
+                capital.setPlayerConsortId(newConsort);
+                capital.setPlayerConsortName(resolveBestOnlinePlayerName(level));
+            }
+
+            if (MCAIntegrationBridge.isMCAVillager(level, newConsort)) {
+                String sovereignName = resolveName(level, sovereign);
+                String consortName = resolveConsortName(level, capital, sovereign, newConsort);
+
+                CapitalChronicleService.addEntry(
+                        level,
+                        capital,
+                        sovereignName + " was married to " + consortName + "."
+                );
+            }
+        }
+
         restoreAndCleanDowager(capital, existingDowager, existingDowagerFemale);
         writeRoyalChildChronicleEntries(level, capital, oldRoyalChildren, newRoyalChildren);
     }
@@ -111,13 +142,35 @@ public class CapitalCourtBuilder {
             return;
         }
 
-        UUID spouse = MCAIntegrationBridge.getSpouse(level, sovereign);
+        UUID previousConsort = capital.getConsort();
+
+        UUID spouse = CapitalCourtMarriageResolver.findActualSpouse(level, sovereign);
         UUID validConsort = (isValidRelationshipPerson(level, spouse)
                 && CapitalCourtMarriageResolver.isValidMarriedConsort(level, sovereign, spouse)) ? spouse : null;
         boolean spouseFemale = validConsort != null && MCAIntegrationBridge.isFemale(level, validConsort);
 
+        ServerPlayer livePlayerSpouse = CapitalCourtMarriageResolver.findActualPlayerSpouse(level, sovereign);
+        if (livePlayerSpouse != null) {
+            validConsort = livePlayerSpouse.getUUID();
+            spouseFemale = false;
+        }
+
         capital.setConsort(validConsort);
         capital.setConsortFemale(spouseFemale);
+
+        if (livePlayerSpouse != null) {
+            capital.setPlayerConsort(true);
+            capital.setPlayerConsortId(livePlayerSpouse.getUUID());
+            capital.setPlayerConsortName(livePlayerSpouse.getGameProfile().getName());
+        } else if (validConsort != null && !MCAIntegrationBridge.isMCAVillager(level, validConsort)) {
+            capital.setPlayerConsort(true);
+            capital.setPlayerConsortId(validConsort);
+            capital.setPlayerConsortName(resolveBestOnlinePlayerName(level));
+        } else {
+            capital.setPlayerConsort(false);
+            capital.setPlayerConsortId(null);
+            capital.setPlayerConsortName(null);
+        }
 
         if (capital.getDowager() != null && capital.getDowager().equals(capital.getConsort())) {
             capital.setDowager(null);
@@ -126,6 +179,19 @@ public class CapitalCourtBuilder {
 
         if (capital.getSovereign() != null) {
             capital.setState(CapitalState.ACTIVE);
+        }
+
+        if (validConsort != null
+                && !validConsort.equals(previousConsort)
+                && MCAIntegrationBridge.isMCAVillager(level, validConsort)) {
+            String sovereignName = resolveName(level, sovereign);
+            String consortName = resolveConsortName(level, capital, sovereign, validConsort);
+
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    sovereignName + " was married to " + consortName + "."
+            );
         }
     }
 
@@ -137,6 +203,11 @@ public class CapitalCourtBuilder {
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, personId);
         if (entity != null) {
             return entity.isAlive() && !entity.isRemoved();
+        }
+
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(personId);
+        if (player != null) {
+            return true;
         }
 
         return MCAIntegrationBridge.hasFamilyNode(level, personId);
@@ -205,7 +276,8 @@ public class CapitalCourtBuilder {
         }
 
         for (UUID childId : newRoyalChildren) {
-            if (childId != null && !capital.isDisinheritedRoyalChild(childId)) {
+            if (childId != null
+                    && !capital.isDisinheritedRoyalChild(childId)) {
                 merged.add(childId);
             }
         }
@@ -459,7 +531,75 @@ public class CapitalCourtBuilder {
     }
 
     private static String resolveName(ServerLevel level, UUID id) {
+        if (id == null) {
+            return "Unknown";
+        }
+
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
-        return entity != null ? entity.getName().getString() : id.toString();
+        if (entity != null) {
+            String name = entity.getName().getString();
+            if (name != null && !name.isBlank()) {
+                return name;
+            }
+        }
+
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(id);
+        if (player != null) {
+            String profileName = player.getGameProfile().getName();
+            if (profileName != null && !profileName.isBlank()) {
+                return profileName;
+            }
+        }
+
+        return "Unknown";
+    }
+
+    private static String resolveConsortName(ServerLevel level, CapitalRecord capital, UUID sovereign, UUID consortId) {
+        ServerPlayer livePlayerSpouse = CapitalCourtMarriageResolver.findActualPlayerSpouse(level, sovereign);
+        if (livePlayerSpouse != null) {
+            String profileName = livePlayerSpouse.getGameProfile().getName();
+            if (profileName != null && !profileName.isBlank()) {
+                return profileName;
+            }
+        }
+
+        if (capital != null && capital.isPlayerConsort()) {
+            String storedName = capital.getPlayerConsortName();
+            if (storedName != null && !storedName.isBlank() && !"Unknown".equalsIgnoreCase(storedName)) {
+                return storedName;
+            }
+        }
+
+        String fallback = resolveBestOnlinePlayerName(level);
+        if (fallback != null && !fallback.isBlank()) {
+            return fallback;
+        }
+
+        return resolveName(level, consortId);
+    }
+
+    private static String resolveBestOnlinePlayerName(ServerLevel level) {
+        if (level == null || level.getServer() == null) {
+            return "Unknown";
+        }
+
+        List<ServerPlayer> players = level.getServer().getPlayerList().getPlayers();
+        if (players.isEmpty()) {
+            return "Unknown";
+        }
+
+        if (players.size() == 1) {
+            String profileName = players.get(0).getGameProfile().getName();
+            return (profileName == null || profileName.isBlank()) ? "Unknown" : profileName;
+        }
+
+        for (ServerPlayer player : players) {
+            String profileName = player.getGameProfile().getName();
+            if (profileName != null && !profileName.isBlank()) {
+                return profileName;
+            }
+        }
+
+        return "Unknown";
     }
 }
