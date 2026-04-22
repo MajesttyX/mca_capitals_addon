@@ -58,7 +58,6 @@ public class CapitalCommanderService {
                         commanderName + " was appointed Commander of the Royal Guard of " + villageName + "."
                 );
 
-                broadcastCommanderAppointment(level, capital, villageName, commanderName);
                 changed = true;
             }
         }
@@ -128,7 +127,6 @@ public class CapitalCommanderService {
                 commanderName + " was appointed Commander of the Royal Guard of " + villageName + "."
         );
 
-        broadcastCommanderAppointment(level, capital, villageName, commanderName);
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
         return true;

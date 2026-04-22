@@ -12,14 +12,29 @@ import java.util.UUID;
 public class CapitalNameService {
 
     private static final String[] KNOWN_TITLES = new String[] {
-            "Queen Dowager",
-            "Prince Consort",
+            "High Queen",
+            "High King",
+            "Dowager Queen",
+            "Dowager King",
             "Queen Consort",
             "King Consort",
             "Heir Apparent",
-            "Commander",
+            "Crown Princess",
+            "Crown Prince",
+            "Dowager Princess",
+            "Dowager Prince",
+            "Princess Consort",
+            "Prince Consort",
+            "Hand of the Queen",
+            "Hand of the King",
+            "Grand Maester",
+            "Maester",
+            "Court Herald",
             "Princess",
             "Prince",
+            "Lord Commander",
+            "Dowager Duchess",
+            "Dowager Duke",
             "Duchess",
             "Duke",
             "Lady",
@@ -51,9 +66,22 @@ public class CapitalNameService {
         if (capital.getCommander() != null) {
             allRelevant.add(capital.getCommander());
         }
+        if (capital.getHand() != null) {
+            allRelevant.add(capital.getHand());
+        }
+        if (capital.getHerald() != null) {
+            allRelevant.add(capital.getHerald());
+        }
+        if (capital.getGrandMaester() != null) {
+            allRelevant.add(capital.getGrandMaester());
+        }
 
         allRelevant.addAll(capital.getRoyalChildren());
+        allRelevant.addAll(capital.getPrinceConsortSources().keySet());
+        allRelevant.addAll(capital.getDowagerPrinceSources().keySet());
         allRelevant.addAll(capital.getDukes());
+        allRelevant.addAll(capital.getMarriageDukeSources().keySet());
+        allRelevant.addAll(capital.getDowagerDukeSources().keySet());
         allRelevant.addAll(capital.getLords());
         allRelevant.addAll(capital.getKnights());
         allRelevant.addAll(capital.getRoyalGuards());
@@ -69,45 +97,27 @@ public class CapitalNameService {
                     : entity.getName().getString();
 
             String baseName = normalizeBaseName(currentName);
-            String finalName = buildDisplayName(level, capital, entityId, baseName);
+            String finalName = buildDisplayName(level, entityId, baseName);
 
             if (!currentName.equals(finalName)) {
                 entity.setCustomName(Component.literal(finalName));
                 entity.setCustomNameVisible(true);
             }
         }
-
-        for (UUID residentId : residents) {
-            if (allRelevant.contains(residentId)) {
-                continue;
-            }
-
-            Entity entity = level.getEntity(residentId);
-            if (entity == null || !MCAIntegrationBridge.isMCAVillager(level, residentId)) {
-                continue;
-            }
-
-            String currentName = entity.getCustomName() != null
-                    ? entity.getCustomName().getString()
-                    : entity.getName().getString();
-
-            String baseName = normalizeBaseName(currentName);
-
-            if (!currentName.equals(baseName)) {
-                entity.setCustomName(Component.literal(baseName));
-                entity.setCustomNameVisible(true);
-            }
-        }
     }
 
-    private static String buildDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId, String baseName) {
-        if (capital.isRoyalGuard(entityId)) {
-            String honorific = capital.isRoyalGuardFemale(entityId) ? "Dame" : "Sir";
-            String guardType = capital.isSovereignFemale() ? "Queensguard" : "Kingsguard";
-            return honorific + " " + baseName + " of the " + guardType;
+    private static String buildDisplayName(ServerLevel level, UUID entityId, String baseName) {
+        CapitalRecord displayCapital = CapitalTitleResolver.findCapitalForEntity(level, entityId);
+        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, entityId);
+
+        if (displayCapital != null && displayCapital.isRoyalGuard(entityId)) {
+            if ("Sir".equals(title) || "Dame".equals(title)) {
+                String honorific = "Dame".equals(title) ? "Dame" : "Sir";
+                String guardType = displayCapital.isSovereignFemale() ? "Queensguard" : "Kingsguard";
+                return honorific + " " + baseName + " of the " + guardType;
+            }
         }
 
-        String title = CapitalTitleResolver.getDisplayTitle(level, capital, entityId);
         if (title == null || title.isBlank() || "Commoner".equals(title) || "None".equals(title)) {
             return baseName;
         }

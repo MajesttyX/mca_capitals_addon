@@ -7,6 +7,9 @@ import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public final class PlayerCapitalTitleService {
@@ -60,6 +63,7 @@ public final class PlayerCapitalTitleService {
             return;
         }
 
+        record.clearDowagerTitle();
         record.setMarriageTitle(title);
         record.setMarriageSourceSpouseId(spouseId);
         cachePlayerName(level, record, playerId);
@@ -78,17 +82,21 @@ public final class PlayerCapitalTitleService {
 
         UUID sourceSpouseId = record.getMarriageSourceSpouseId();
         if (sourceSpouseId == null) {
+            record.clearMarriageTitle();
+            cleanupRecordIfEmpty(level, record);
             return NobleTitle.COMMONER;
         }
 
         UUID currentSpouseId = MCAIntegrationBridge.getSpouse(level, playerId);
         if (currentSpouseId == null || !currentSpouseId.equals(sourceSpouseId)) {
+            record.clearMarriageTitle();
+            cleanupRecordIfEmpty(level, record);
             return NobleTitle.COMMONER;
         }
 
         NobleTitle marriageTitle = record.getMarriageTitle();
 
-        if ((marriageTitle == NobleTitle.DUKE || marriageTitle == NobleTitle.DUCHESS) && capital.isDuke(sourceSpouseId)) {
+        if ((marriageTitle == NobleTitle.DUKE || marriageTitle == NobleTitle.DUCHESS) && isValidDukeMarriageSource(capital, sourceSpouseId)) {
             return marriageTitle;
         }
 
@@ -96,7 +104,114 @@ public final class PlayerCapitalTitleService {
             return marriageTitle;
         }
 
+        if ((marriageTitle == NobleTitle.PRINCE || marriageTitle == NobleTitle.PRINCESS) && isValidPrinceMarriageSource(capital, sourceSpouseId)) {
+            return marriageTitle;
+        }
+
+        record.clearMarriageTitle();
+        cleanupRecordIfEmpty(level, record);
         return NobleTitle.COMMONER;
+    }
+
+    public static NobleTitle getDowagerBaseTitle(ServerLevel level, CapitalRecord capital, UUID playerId) {
+        if (level == null || capital == null || playerId == null || capital.getCapitalId() == null) {
+            return NobleTitle.COMMONER;
+        }
+
+        PlayerCapitalTitleRecord record = get(level, playerId, capital.getCapitalId());
+        if (record == null || !record.hasDowagerTitle()) {
+            return NobleTitle.COMMONER;
+        }
+
+        return record.getDowagerBaseTitle();
+    }
+
+    public static void transitionMarriageToDowager(ServerLevel level, CapitalRecord capital, UUID playerId, UUID deadSpouseId) {
+        if (level == null || capital == null || playerId == null || deadSpouseId == null || capital.getCapitalId() == null) {
+            return;
+        }
+
+        PlayerCapitalTitleRecord record = get(level, playerId, capital.getCapitalId());
+        if (record == null || !record.hasMarriageTitle()) {
+            return;
+        }
+
+        if (!deadSpouseId.equals(record.getMarriageSourceSpouseId())) {
+            return;
+        }
+
+        NobleTitle marriageTitle = record.getMarriageTitle();
+        if (!isDowagerEligibleMarriageTitle(marriageTitle)) {
+            record.clearMarriageTitle();
+            cleanupRecordIfEmpty(level, record);
+            return;
+        }
+
+        record.clearMarriageTitle();
+        record.setDowagerBaseTitle(marriageTitle);
+        record.setDowagerSourceSpouseId(deadSpouseId);
+        cachePlayerName(level, record, playerId);
+        PlayerCapitalTitleSavedData.get(level).setDirty();
+    }
+
+    public static void clearMarriageTitlesFromDeadSpouse(ServerLevel level, UUID deadSpouseId) {
+        if (level == null || deadSpouseId == null) {
+            return;
+        }
+
+        PlayerCapitalTitleSavedData data = PlayerCapitalTitleSavedData.get(level);
+        boolean changed = false;
+        List<PlayerCapitalTitleRecord> records = new ArrayList<>(data.getRecords().values());
+
+        for (PlayerCapitalTitleRecord record : records) {
+            if (record == null || !deadSpouseId.equals(record.getMarriageSourceSpouseId())) {
+                continue;
+            }
+
+            record.clearMarriageTitle();
+            changed = true;
+            if (!record.hasAnyCapitalOffice()) {
+                data.remove(record.getPlayerId(), record.getCapitalId());
+            }
+        }
+
+        if (changed) {
+            data.setDirty();
+        }
+    }
+
+    public static void clearAllMarriageDerivedStateForRemarriage(ServerLevel level, UUID playerId) {
+        if (level == null || playerId == null) {
+            return;
+        }
+
+        PlayerCapitalTitleSavedData data = PlayerCapitalTitleSavedData.get(level);
+        boolean changed = false;
+        List<PlayerCapitalTitleRecord> records = new ArrayList<>(data.getRecords().values());
+
+        for (PlayerCapitalTitleRecord record : records) {
+            if (record == null || !playerId.equals(record.getPlayerId())) {
+                continue;
+            }
+
+            if (record.hasMarriageTitle()) {
+                record.clearMarriageTitle();
+                changed = true;
+            }
+
+            if (record.hasDowagerTitle()) {
+                record.clearDowagerTitle();
+                changed = true;
+            }
+
+            if (!record.hasAnyCapitalOffice()) {
+                data.remove(record.getPlayerId(), record.getCapitalId());
+            }
+        }
+
+        if (changed) {
+            data.setDirty();
+        }
     }
 
     public static void grantCommander(ServerLevel level, CapitalRecord capital, UUID playerId) {
@@ -195,6 +310,45 @@ public final class PlayerCapitalTitleService {
         ServerPlayer player = level.getServer().getPlayerList().getPlayer(playerId);
         if (player != null) {
             record.setCachedPlayerName(player.getName().getString());
+        }
+    }
+
+    private static boolean isValidPrinceMarriageSource(CapitalRecord capital, UUID sourceSpouseId) {
+        if (capital == null || sourceSpouseId == null) {
+            return false;
+        }
+
+        if (sourceSpouseId.equals(capital.getHeir())) {
+            return true;
+        }
+
+        return capital.isRoyalChild(sourceSpouseId) || capital.isLegitimizedRoyalChild(sourceSpouseId);
+    }
+
+    private static boolean isValidDukeMarriageSource(CapitalRecord capital, UUID sourceSpouseId) {
+        if (capital == null || sourceSpouseId == null) {
+            return false;
+        }
+
+        return capital.isDuke(sourceSpouseId);
+    }
+
+    private static boolean isDowagerEligibleMarriageTitle(NobleTitle title) {
+        return title == NobleTitle.PRINCE
+                || title == NobleTitle.PRINCESS
+                || title == NobleTitle.DUKE
+                || title == NobleTitle.DUCHESS;
+    }
+
+    private static void cleanupRecordIfEmpty(ServerLevel level, PlayerCapitalTitleRecord record) {
+        if (level == null || record == null) {
+            return;
+        }
+
+        if (!record.hasAnyCapitalOffice()) {
+            PlayerCapitalTitleSavedData.get(level).remove(record.getPlayerId(), record.getCapitalId());
+        } else {
+            PlayerCapitalTitleSavedData.get(level).setDirty();
         }
     }
 }

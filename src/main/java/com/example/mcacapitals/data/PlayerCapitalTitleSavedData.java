@@ -22,6 +22,8 @@ public class PlayerCapitalTitleSavedData extends SavedData {
     private static final String KEY_GRANTED_TITLE = "GrantedTitle";
     private static final String KEY_MARRIAGE_TITLE = "MarriageTitle";
     private static final String KEY_MARRIAGE_SOURCE_SPOUSE_ID = "MarriageSourceSpouseId";
+    private static final String KEY_DOWAGER_BASE_TITLE = "DowagerBaseTitle";
+    private static final String KEY_DOWAGER_SOURCE_SPOUSE_ID = "DowagerSourceSpouseId";
     private static final String KEY_COMMANDER = "Commander";
     private static final String KEY_CACHED_PLAYER_NAME = "CachedPlayerName";
 
@@ -50,8 +52,15 @@ public class PlayerCapitalTitleSavedData extends SavedData {
     }
 
     public PlayerCapitalTitleRecord getOrCreate(UUID playerId, UUID capitalId) {
+        PlayerCapitalTitleRecord existing = get(playerId, capitalId);
+        if (existing != null) {
+            return existing;
+        }
+
+        PlayerCapitalTitleRecord created = new PlayerCapitalTitleRecord(playerId, capitalId);
+        records.put(key(playerId, capitalId), created);
         setDirty();
-        return records.computeIfAbsent(key(playerId, capitalId), ignored -> new PlayerCapitalTitleRecord(playerId, capitalId));
+        return created;
     }
 
     public void remove(UUID playerId, UUID capitalId) {
@@ -73,10 +82,15 @@ public class PlayerCapitalTitleSavedData extends SavedData {
             entry.putUUID(KEY_CAPITAL_ID, record.getCapitalId());
             entry.putString(KEY_GRANTED_TITLE, record.getGrantedTitle().name());
             entry.putString(KEY_MARRIAGE_TITLE, record.getMarriageTitle().name());
+            entry.putString(KEY_DOWAGER_BASE_TITLE, record.getDowagerBaseTitle().name());
             entry.putBoolean(KEY_COMMANDER, record.isCommander());
 
             if (record.getMarriageSourceSpouseId() != null) {
                 entry.putUUID(KEY_MARRIAGE_SOURCE_SPOUSE_ID, record.getMarriageSourceSpouseId());
+            }
+
+            if (record.getDowagerSourceSpouseId() != null) {
+                entry.putUUID(KEY_DOWAGER_SOURCE_SPOUSE_ID, record.getDowagerSourceSpouseId());
             }
 
             if (record.getCachedPlayerName() != null && !record.getCachedPlayerName().isBlank()) {
@@ -107,23 +121,23 @@ public class PlayerCapitalTitleSavedData extends SavedData {
             PlayerCapitalTitleRecord record = new PlayerCapitalTitleRecord(playerId, capitalId);
 
             if (entry.contains(KEY_GRANTED_TITLE, Tag.TAG_STRING)) {
-                try {
-                    record.setGrantedTitle(NobleTitle.valueOf(entry.getString(KEY_GRANTED_TITLE)));
-                } catch (IllegalArgumentException ignored) {
-                    record.setGrantedTitle(NobleTitle.COMMONER);
-                }
+                record.setGrantedTitle(parseTitle(entry.getString(KEY_GRANTED_TITLE)));
             }
 
             if (entry.contains(KEY_MARRIAGE_TITLE, Tag.TAG_STRING)) {
-                try {
-                    record.setMarriageTitle(NobleTitle.valueOf(entry.getString(KEY_MARRIAGE_TITLE)));
-                } catch (IllegalArgumentException ignored) {
-                    record.setMarriageTitle(NobleTitle.COMMONER);
-                }
+                record.setMarriageTitle(parseTitle(entry.getString(KEY_MARRIAGE_TITLE)));
+            }
+
+            if (entry.contains(KEY_DOWAGER_BASE_TITLE, Tag.TAG_STRING)) {
+                record.setDowagerBaseTitle(parseTitle(entry.getString(KEY_DOWAGER_BASE_TITLE)));
             }
 
             if (entry.hasUUID(KEY_MARRIAGE_SOURCE_SPOUSE_ID)) {
                 record.setMarriageSourceSpouseId(entry.getUUID(KEY_MARRIAGE_SOURCE_SPOUSE_ID));
+            }
+
+            if (entry.hasUUID(KEY_DOWAGER_SOURCE_SPOUSE_ID)) {
+                record.setDowagerSourceSpouseId(entry.getUUID(KEY_DOWAGER_SOURCE_SPOUSE_ID));
             }
 
             record.setCommander(entry.getBoolean(KEY_COMMANDER));
@@ -136,6 +150,14 @@ public class PlayerCapitalTitleSavedData extends SavedData {
         }
 
         return data;
+    }
+
+    private static NobleTitle parseTitle(String value) {
+        try {
+            return NobleTitle.valueOf(value);
+        } catch (IllegalArgumentException ignored) {
+            return NobleTitle.COMMONER;
+        }
     }
 
     private static String key(UUID playerId, UUID capitalId) {

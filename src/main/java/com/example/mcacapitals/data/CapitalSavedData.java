@@ -52,8 +52,19 @@ public class CapitalSavedData extends SavedData {
     static final String KEY_LEGITIMIZED_ROYAL_CHILD_FEMALE = "LegitimizedRoyalChildFemale";
     static final String KEY_ROYAL_SUCCESSION_ORDER = "RoyalSuccessionOrder";
 
+    static final String KEY_PRINCE_CONSORT_SOURCES = "PrinceConsortSources";
+    static final String KEY_PRINCE_CONSORT_FEMALE = "PrinceConsortFemale";
+
     static final String KEY_DUKES = "Dukes";
     static final String KEY_DUKE_FEMALE = "DukeFemale";
+    static final String KEY_MARRIAGE_DUKE_SOURCES = "MarriageDukeSources";
+    static final String KEY_MARRIAGE_DUKE_FEMALE = "MarriageDukeFemale";
+
+    static final String KEY_DOWAGER_PRINCES = "DowagerPrinces";
+    static final String KEY_DOWAGER_PRINCE_FEMALE = "DowagerPrinceFemale";
+
+    static final String KEY_DOWAGER_DUKES = "DowagerDukes";
+    static final String KEY_DOWAGER_DUKE_FEMALE = "DowagerDukeFemale";
 
     static final String KEY_LORDS = "Lords";
     static final String KEY_LORD_FEMALE = "LordFemale";
@@ -65,6 +76,12 @@ public class CapitalSavedData extends SavedData {
 
     static final String KEY_COMMANDER = "Commander";
     static final String KEY_COMMANDER_FEMALE = "CommanderFemale";
+    static final String KEY_HAND = "Hand";
+    static final String KEY_HAND_FEMALE = "HandFemale";
+    static final String KEY_HERALD = "Herald";
+    static final String KEY_HERALD_FEMALE = "HeraldFemale";
+    static final String KEY_GRAND_MAESTER = "GrandMaester";
+    static final String KEY_GRAND_MAESTER_FEMALE = "GrandMaesterFemale";
     static final String KEY_LAST_COMMANDER_RAID_BLESSING_GAME_TIME = "LastCommanderRaidBlessingGameTime";
     static final String KEY_LAST_COMMANDER_RANDOM_BLESSING_DAY = "LastCommanderRandomBlessingDay";
 

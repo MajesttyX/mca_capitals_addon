@@ -1,13 +1,13 @@
 package com.example.mcacapitals.data;
 
 import com.example.mcacapitals.capital.CapitalRecord;
-import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 final class CapitalSavedDataWriter {
@@ -16,7 +16,7 @@ final class CapitalSavedDataWriter {
     }
 
     static CompoundTag saveCapitals(CompoundTag tag, List<CapitalRecord> capitals) {
-        ListTag capitalList = new ListTag();
+        ListTag capitalsList = new ListTag();
 
         for (CapitalRecord capital : capitals) {
             CompoundTag capitalTag = new CompoundTag();
@@ -27,7 +27,9 @@ final class CapitalSavedDataWriter {
                 capitalTag.putInt(CapitalSavedData.KEY_VILLAGE_ID, capital.getVillageId());
             }
 
-            capitalTag.putString(CapitalSavedData.KEY_STATE, capital.getState().name());
+            if (capital.getState() != null) {
+                capitalTag.putString(CapitalSavedData.KEY_STATE, capital.getState().name());
+            }
 
             if (capital.getSovereign() != null) {
                 capitalTag.putUUID(CapitalSavedData.KEY_SOVEREIGN, capital.getSovereign());
@@ -71,113 +73,163 @@ final class CapitalSavedDataWriter {
             capitalTag.putBoolean(CapitalSavedData.KEY_MOURNING_ACTIVE, capital.isMourningActive());
             capitalTag.putLong(CapitalSavedData.KEY_MOURNING_END_DAY, capital.getMourningEndDay());
 
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_ROYAL_CHILDREN, capital.getRoyalChildren());
-            writeUuidBooleanMap(capitalTag, CapitalSavedData.KEY_ROYAL_CHILD_FEMALE, capital.getRoyalChildFemale());
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_ROYAL_HOUSEHOLD, capital.getRoyalHousehold());
+            capitalTag.put(CapitalSavedData.KEY_ROYAL_CHILDREN, writeUuidSet(capital.getRoyalChildren()));
+            capitalTag.put(CapitalSavedData.KEY_ROYAL_CHILD_FEMALE, writeBooleanMap(capital.getRoyalChildFemale()));
+            capitalTag.put(CapitalSavedData.KEY_ROYAL_HOUSEHOLD, writeUuidSet(capital.getRoyalHousehold()));
+            capitalTag.put(CapitalSavedData.KEY_DISINHERITED_ROYAL_CHILDREN, writeUuidSet(capital.getDisinheritedRoyalChildren()));
+            capitalTag.put(CapitalSavedData.KEY_LEGITIMIZED_ROYAL_CHILDREN, writeUuidSet(capital.getLegitimizedRoyalChildren()));
+            capitalTag.put(CapitalSavedData.KEY_LEGITIMIZED_ROYAL_CHILD_FEMALE, writeBooleanMap(capital.getLegitimizedRoyalChildFemale()));
+            capitalTag.put(CapitalSavedData.KEY_ROYAL_SUCCESSION_ORDER, writeUuidList(capital.getRoyalSuccessionOrder()));
 
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_DISINHERITED_ROYAL_CHILDREN, capital.getDisinheritedRoyalChildren());
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_LEGITIMIZED_ROYAL_CHILDREN, capital.getLegitimizedRoyalChildren());
-            writeUuidBooleanMap(capitalTag, CapitalSavedData.KEY_LEGITIMIZED_ROYAL_CHILD_FEMALE, capital.getLegitimizedRoyalChildFemale());
-            writeUuidList(capitalTag, CapitalSavedData.KEY_ROYAL_SUCCESSION_ORDER, capital.getRoyalSuccessionOrder());
+            capitalTag.put(CapitalSavedData.KEY_DUKES, writeUuidSet(capital.getDukes()));
+            capitalTag.put(CapitalSavedData.KEY_DUKE_FEMALE, writeBooleanMap(capital.getDukeFemale()));
 
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_DUKES, capital.getDukes());
-            writeUuidBooleanMap(capitalTag, CapitalSavedData.KEY_DUKE_FEMALE, capital.getDukeFemale());
+            capitalTag.put(CapitalSavedData.KEY_DOWAGER_PRINCES, writeUuidMap(capital.getDowagerPrinceSources()));
+            capitalTag.put(CapitalSavedData.KEY_DOWAGER_PRINCE_FEMALE, writeBooleanMap(capital.getDowagerPrinceFemale()));
 
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_LORDS, capital.getLords());
-            writeUuidBooleanMap(capitalTag, CapitalSavedData.KEY_LORD_FEMALE, capital.getLordFemale());
+            capitalTag.put(CapitalSavedData.KEY_DOWAGER_DUKES, writeUuidMap(capital.getDowagerDukeSources()));
+            capitalTag.put(CapitalSavedData.KEY_DOWAGER_DUKE_FEMALE, writeBooleanMap(capital.getDowagerDukeFemale()));
 
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_KNIGHTS, capital.getKnights());
-            writeUuidBooleanMap(capitalTag, CapitalSavedData.KEY_KNIGHT_FEMALE, capital.getKnightFemale());
+            capitalTag.put(CapitalSavedData.KEY_LORDS, writeUuidSet(capital.getLords()));
+            capitalTag.put(CapitalSavedData.KEY_LORD_FEMALE, writeBooleanMap(capital.getLordFemale()));
 
-            ListTag chronicleTag = new ListTag();
-            for (String entry : capital.getChronicleEntries()) {
-                chronicleTag.add(StringTag.valueOf(entry));
+            capitalTag.put(CapitalSavedData.KEY_KNIGHTS, writeUuidSet(capital.getKnights()));
+            capitalTag.put(CapitalSavedData.KEY_KNIGHT_FEMALE, writeBooleanMap(capital.getKnightFemale()));
+
+            capitalTag.put(CapitalSavedData.KEY_CHRONICLE_ENTRIES, writeStringList(capital.getChronicleEntries()));
+            capitalTag.put(CapitalSavedData.KEY_MOURNING_ORIGINAL_CLOTHES, writeStringMap(capital.getMourningOriginalClothes()));
+
+            capitalTag.put(CapitalSavedData.KEY_ROYAL_GUARDS, writeUuidSet(capital.getRoyalGuards()));
+            capitalTag.put(CapitalSavedData.KEY_ROYAL_GUARD_FEMALE, writeBooleanMap(capital.getRoyalGuardFemale()));
+            capitalTag.put(CapitalSavedData.KEY_DISGRACED_ROYAL_GUARDS, writeUuidSet(capital.getDisgracedRoyalGuards()));
+            if (capital.getRoyalGuardLiege() != null) {
+                capitalTag.putUUID(CapitalSavedData.KEY_ROYAL_GUARD_LIEGE, capital.getRoyalGuardLiege());
             }
-            capitalTag.put(CapitalSavedData.KEY_CHRONICLE_ENTRIES, chronicleTag);
+            capitalTag.put(CapitalSavedData.KEY_ROYAL_GUARD_PATROLLING, writeUuidSet(capital.getRoyalGuardPatrolling()));
+            capitalTag.put(CapitalSavedData.KEY_ROYAL_GUARD_PATROL_ANCHORS, writeBlockPosMap(capital.getRoyalGuardPatrolAnchors()));
+            capitalTag.put(CapitalSavedData.KEY_ROYAL_GUARD_DUTY_MODES, writeGuardDutyModeMap(capital.getRoyalGuardDutyModes()));
+            capitalTag.putLong(CapitalSavedData.KEY_LAST_ROYAL_GUARD_PROMPT_DAY, capital.getLastRoyalGuardPromptDay());
+            if (capital.getPendingPlayerGuardSelectionRequester() != null) {
+                capitalTag.putUUID(CapitalSavedData.KEY_PENDING_PLAYER_GUARD_SELECTION_REQUESTER, capital.getPendingPlayerGuardSelectionRequester());
+            }
 
-            ListTag mourningClothesTag = new ListTag();
-            capital.getMourningOriginalClothes().forEach((uuid, clothes) -> {
-                CompoundTag entryTag = new CompoundTag();
-                entryTag.putUUID(CapitalSavedData.KEY_ENTITY_ID, uuid);
-                entryTag.putString(CapitalSavedData.KEY_CLOTHES, clothes == null ? "" : clothes);
-                mourningClothesTag.add(entryTag);
-            });
-            capitalTag.put(CapitalSavedData.KEY_MOURNING_ORIGINAL_CLOTHES, mourningClothesTag);
+            capitalTag.put(CapitalSavedData.KEY_PRINCE_CONSORT_SOURCES, writeUuidMap(capital.getPrinceConsortSources()));
+            capitalTag.put(CapitalSavedData.KEY_PRINCE_CONSORT_FEMALE, writeBooleanMap(capital.getPrinceConsortFemale()));
+            capitalTag.put(CapitalSavedData.KEY_MARRIAGE_DUKE_SOURCES, writeUuidMap(capital.getMarriageDukeSources()));
+            capitalTag.put(CapitalSavedData.KEY_MARRIAGE_DUKE_FEMALE, writeBooleanMap(capital.getMarriageDukeFemale()));
 
             if (capital.getCommander() != null) {
                 capitalTag.putUUID(CapitalSavedData.KEY_COMMANDER, capital.getCommander());
             }
             capitalTag.putBoolean(CapitalSavedData.KEY_COMMANDER_FEMALE, capital.isCommanderFemale());
+
+            if (capital.getHand() != null) {
+                capitalTag.putUUID(CapitalSavedData.KEY_HAND, capital.getHand());
+            }
+            capitalTag.putBoolean(CapitalSavedData.KEY_HAND_FEMALE, capital.isHandFemale());
+
+            if (capital.getHerald() != null) {
+                capitalTag.putUUID(CapitalSavedData.KEY_HERALD, capital.getHerald());
+            }
+            capitalTag.putBoolean(CapitalSavedData.KEY_HERALD_FEMALE, capital.isHeraldFemale());
+
+            if (capital.getGrandMaester() != null) {
+                capitalTag.putUUID(CapitalSavedData.KEY_GRAND_MAESTER, capital.getGrandMaester());
+            }
+            capitalTag.putBoolean(CapitalSavedData.KEY_GRAND_MAESTER_FEMALE, capital.isGrandMaesterFemale());
+
             capitalTag.putLong(CapitalSavedData.KEY_LAST_COMMANDER_RAID_BLESSING_GAME_TIME, capital.getLastCommanderRaidBlessingGameTime());
             capitalTag.putLong(CapitalSavedData.KEY_LAST_COMMANDER_RANDOM_BLESSING_DAY, capital.getLastCommanderRandomBlessingDay());
 
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_ROYAL_GUARDS, capital.getRoyalGuards());
-            writeUuidBooleanMap(capitalTag, CapitalSavedData.KEY_ROYAL_GUARD_FEMALE, capital.getRoyalGuardFemale());
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_DISGRACED_ROYAL_GUARDS, capital.getDisgracedRoyalGuards());
-
-            if (capital.getRoyalGuardLiege() != null) {
-                capitalTag.putUUID(CapitalSavedData.KEY_ROYAL_GUARD_LIEGE, capital.getRoyalGuardLiege());
-            }
-
-            writeUuidSet(capitalTag, CapitalSavedData.KEY_ROYAL_GUARD_PATROLLING, capital.getRoyalGuardPatrolling());
-
-            ListTag guardAnchorsTag = new ListTag();
-            capital.getRoyalGuardPatrolAnchors().forEach((uuid, anchor) -> {
-                CompoundTag entryTag = new CompoundTag();
-                entryTag.putUUID(CapitalSavedData.KEY_GUARD_ID, uuid);
-                entryTag.putInt(CapitalSavedData.KEY_X, anchor.getX());
-                entryTag.putInt(CapitalSavedData.KEY_Y, anchor.getY());
-                entryTag.putInt(CapitalSavedData.KEY_Z, anchor.getZ());
-                guardAnchorsTag.add(entryTag);
-            });
-            capitalTag.put(CapitalSavedData.KEY_ROYAL_GUARD_PATROL_ANCHORS, guardAnchorsTag);
-
-            ListTag guardModesTag = new ListTag();
-            capital.getRoyalGuardDutyModes().forEach((uuid, mode) -> {
-                CompoundTag entryTag = new CompoundTag();
-                entryTag.putUUID(CapitalSavedData.KEY_GUARD_ID, uuid);
-                entryTag.putString(CapitalSavedData.KEY_MODE, mode.name());
-                guardModesTag.add(entryTag);
-            });
-            capitalTag.put(CapitalSavedData.KEY_ROYAL_GUARD_DUTY_MODES, guardModesTag);
-
-            capitalTag.putLong(CapitalSavedData.KEY_LAST_ROYAL_GUARD_PROMPT_DAY, capital.getLastRoyalGuardPromptDay());
-
-            if (capital.getPendingPlayerGuardSelectionRequester() != null) {
-                capitalTag.putUUID(CapitalSavedData.KEY_PENDING_PLAYER_GUARD_SELECTION_REQUESTER, capital.getPendingPlayerGuardSelectionRequester());
-            }
-
-            capitalList.add(capitalTag);
+            capitalsList.add(capitalTag);
         }
 
-        tag.put(CapitalSavedData.KEY_CAPITALS, capitalList);
+        tag.put(CapitalSavedData.KEY_CAPITALS, capitalsList);
         return tag;
     }
 
-    private static void writeUuidSet(CompoundTag parent, String key, Iterable<UUID> values) {
+    private static ListTag writeUuidSet(Set<UUID> set) {
         ListTag list = new ListTag();
-        for (UUID id : values) {
-            list.add(StringTag.valueOf(id.toString()));
+        for (UUID id : set) {
+            CompoundTag entry = new CompoundTag();
+            entry.putUUID(CapitalSavedData.KEY_ID, id);
+            list.add(entry);
         }
-        parent.put(key, list);
+        return list;
     }
 
-    private static void writeUuidList(CompoundTag parent, String key, List<UUID> values) {
+    private static ListTag writeUuidList(List<UUID> listIn) {
         ListTag list = new ListTag();
-        for (UUID id : values) {
-            list.add(StringTag.valueOf(id.toString()));
+        for (UUID id : listIn) {
+            CompoundTag entry = new CompoundTag();
+            entry.putUUID(CapitalSavedData.KEY_ID, id);
+            list.add(entry);
         }
-        parent.put(key, list);
+        return list;
     }
 
-    private static void writeUuidBooleanMap(CompoundTag parent, String key, Map<UUID, Boolean> values) {
+    private static ListTag writeBooleanMap(Map<UUID, Boolean> map) {
         ListTag list = new ListTag();
-        values.forEach((id, flag) -> {
+        for (Map.Entry<UUID, Boolean> entry : map.entrySet()) {
             CompoundTag tag = new CompoundTag();
-            tag.putUUID(CapitalSavedData.KEY_ID, id);
-            tag.putBoolean(CapitalSavedData.KEY_FLAG, flag != null && flag);
+            tag.putUUID(CapitalSavedData.KEY_ID, entry.getKey());
+            tag.putBoolean(CapitalSavedData.KEY_FLAG, entry.getValue());
             list.add(tag);
-        });
-        parent.put(key, list);
+        }
+        return list;
+    }
+
+    private static ListTag writeUuidMap(Map<UUID, UUID> map) {
+        ListTag list = new ListTag();
+        for (Map.Entry<UUID, UUID> entry : map.entrySet()) {
+            CompoundTag tag = new CompoundTag();
+            tag.putUUID(CapitalSavedData.KEY_ID, entry.getKey());
+            tag.putUUID(CapitalSavedData.KEY_ENTITY_ID, entry.getValue());
+            list.add(tag);
+        }
+        return list;
+    }
+
+    private static ListTag writeStringList(List<String> values) {
+        ListTag list = new ListTag();
+        for (String value : values) {
+            list.add(StringTag.valueOf(value));
+        }
+        return list;
+    }
+
+    private static ListTag writeStringMap(Map<UUID, String> map) {
+        ListTag list = new ListTag();
+        for (Map.Entry<UUID, String> entry : map.entrySet()) {
+            CompoundTag tag = new CompoundTag();
+            tag.putUUID(CapitalSavedData.KEY_ENTITY_ID, entry.getKey());
+            tag.putString(CapitalSavedData.KEY_CLOTHES, entry.getValue());
+            list.add(tag);
+        }
+        return list;
+    }
+
+    private static ListTag writeBlockPosMap(Map<UUID, net.minecraft.core.BlockPos> map) {
+        ListTag list = new ListTag();
+        for (Map.Entry<UUID, net.minecraft.core.BlockPos> entry : map.entrySet()) {
+            CompoundTag tag = new CompoundTag();
+            tag.putUUID(CapitalSavedData.KEY_GUARD_ID, entry.getKey());
+            tag.putInt(CapitalSavedData.KEY_X, entry.getValue().getX());
+            tag.putInt(CapitalSavedData.KEY_Y, entry.getValue().getY());
+            tag.putInt(CapitalSavedData.KEY_Z, entry.getValue().getZ());
+            list.add(tag);
+        }
+        return list;
+    }
+
+    private static ListTag writeGuardDutyModeMap(Map<UUID, CapitalRecord.GuardDutyMode> map) {
+        ListTag list = new ListTag();
+        for (Map.Entry<UUID, CapitalRecord.GuardDutyMode> entry : map.entrySet()) {
+            CompoundTag tag = new CompoundTag();
+            tag.putUUID(CapitalSavedData.KEY_GUARD_ID, entry.getKey());
+            tag.putString(CapitalSavedData.KEY_MODE, entry.getValue().name());
+            list.add(tag);
+        }
+        return list;
     }
 }

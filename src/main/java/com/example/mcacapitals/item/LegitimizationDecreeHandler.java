@@ -22,17 +22,24 @@ import java.util.UUID;
 public class LegitimizationDecreeHandler {
 
     private static final String[] KNOWN_TITLES = new String[] {
-            "Queen Dowager",
-            "Prince Consort",
+            "High Queen",
+            "High King",
+            "Dowager Queen",
+            "Dowager King",
             "Queen Consort",
             "King Consort",
             "Heir Apparent",
+            "Crown Princess",
+            "Crown Prince",
+            "Princess Consort",
+            "Prince Consort",
             "Princess",
             "Prince",
             "Duchess",
             "Duke",
             "Lady",
             "Lord",
+            "Commander",
             "Dame",
             "Sir",
             "Queen",
@@ -119,12 +126,11 @@ public class LegitimizationDecreeHandler {
         String title = female ? "Princess" : "Prince";
 
         CapitalChronicleService.addEntry(level, capital,
-                displayName + " was legitimized as " + title + " of "
+                displayName + " was legitimized and recognized as " + title + " of "
                         + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
 
         player.sendSystemMessage(Component.literal(
-                "By royal decree, " + displayName + " is legitimized as " + title
-                        + " of " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                displayName + " has been legitimized and recognized as " + title + "."
         ));
 
         event.setCancellationResult(InteractionResult.SUCCESS);
@@ -135,13 +141,16 @@ public class LegitimizationDecreeHandler {
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, targetId);
         if (villageId != null) {
             CapitalRecord byVillage = CapitalManager.getCapitalByVillageId(villageId);
-            if (byVillage != null && isEligibleDynasticChild(level, byVillage, targetId)) {
+            if (byVillage != null) {
                 return byVillage;
             }
         }
 
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
-            if (isEligibleDynasticChild(level, capital, targetId)) {
+            if (capital.isRoyalChild(targetId)
+                    || capital.isLegitimizedRoyalChild(targetId)
+                    || MCAIntegrationBridge.isChildOf(level, targetId, capital.getSovereign())
+                    || (capital.getDowager() != null && MCAIntegrationBridge.isChildOf(level, targetId, capital.getDowager()))) {
                 return capital;
             }
         }
@@ -154,7 +163,7 @@ public class LegitimizationDecreeHandler {
             return false;
         }
 
-        if (capital.isRoyalChild(targetId) || capital.isDisinheritedRoyalChild(targetId) || capital.isLegitimizedRoyalChild(targetId)) {
+        if (capital.isRoyalChild(targetId) || capital.isLegitimizedRoyalChild(targetId)) {
             return true;
         }
 
@@ -162,30 +171,7 @@ public class LegitimizationDecreeHandler {
             return true;
         }
 
-        UUID consort = capital.getConsort();
-        if (consort != null && MCAIntegrationBridge.isChildOf(level, targetId, consort)) {
-            return true;
-        }
-
-        UUID dowager = capital.getDowager();
-        if (dowager != null && MCAIntegrationBridge.isChildOf(level, targetId, dowager)) {
-            return true;
-        }
-
-        Set<UUID> childrenOfSovereign = MCAIntegrationBridge.getChildren(level, capital.getSovereign());
-        if (childrenOfSovereign.contains(targetId)) {
-            return true;
-        }
-
-        if (consort != null && MCAIntegrationBridge.getChildren(level, consort).contains(targetId)) {
-            return true;
-        }
-
-        if (dowager != null && MCAIntegrationBridge.getChildren(level, dowager).contains(targetId)) {
-            return true;
-        }
-
-        return false;
+        return capital.getDowager() != null && MCAIntegrationBridge.isChildOf(level, targetId, capital.getDowager());
     }
 
     private String stripKnownTitles(String name) {
@@ -194,20 +180,14 @@ public class LegitimizationDecreeHandler {
         }
 
         String result = name.trim();
-        boolean changed = true;
 
-        while (changed) {
-            changed = false;
-            for (String title : KNOWN_TITLES) {
-                String prefix = title + " ";
-                if (result.startsWith(prefix)) {
-                    result = result.substring(prefix.length()).trim();
-                    changed = true;
-                    break;
-                }
+        for (String title : KNOWN_TITLES) {
+            String prefix = title + " ";
+            if (result.startsWith(prefix)) {
+                return result.substring(prefix.length()).trim();
             }
         }
 
-        return result.isBlank() ? "Unnamed" : result;
+        return result;
     }
 }

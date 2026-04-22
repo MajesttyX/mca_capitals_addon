@@ -155,6 +155,17 @@ final class MCAEntityBridge {
         return levelValue != null && levelValue >= 5;
     }
 
+    static boolean isMasterClericVillager(ServerLevel level, UUID entityId) {
+        Entity entity = findLoadedEntityByUuid(level, entityId);
+        if (!isMCAVillagerEntity(entity)) {
+            return false;
+        }
+
+        String profession = MCAReflectionHelper.getProfessionName(entity);
+        Integer levelValue = MCAReflectionHelper.getProfessionLevel(entity);
+        return profession.contains(McaProfessionKeys.CLERIC) && levelValue != null && levelValue >= 5;
+    }
+
     static boolean isAliveAdultOrChildVillager(ServerLevel level, UUID entityId) {
         Entity entity = findLoadedEntityByUuid(level, entityId);
         return isMCAVillagerEntity(entity) && entity.isAlive() && !entity.isRemoved();

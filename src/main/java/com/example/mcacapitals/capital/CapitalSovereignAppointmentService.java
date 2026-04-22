@@ -5,6 +5,7 @@ import com.example.mcacapitals.player.PlayerCapitalTitleService;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 
+import java.util.Set;
 import java.util.UUID;
 
 final class CapitalSovereignAppointmentService {
@@ -25,6 +26,8 @@ final class CapitalSovereignAppointmentService {
 
         CapitalFoundationInternal.refreshCourt(level, capital);
         CapitalRoyalHouseholdService.beginNewRegime(capital);
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        CapitalHeraldService.tickHerald(level, capital, residents);
 
         if (previousPlayerSovereignId != null && capital.getCapitalId() != null) {
             PlayerCapitalTitleService.clear(level, previousPlayerSovereignId, capital.getCapitalId());
@@ -64,6 +67,8 @@ final class CapitalSovereignAppointmentService {
 
         CapitalFoundationInternal.refreshCourt(level, capital);
         CapitalRoyalHouseholdService.beginNewRegime(capital);
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        CapitalHeraldService.tickHerald(level, capital, residents);
 
         if (previousPlayerSovereignId != null
                 && !previousPlayerSovereignId.equals(playerId)

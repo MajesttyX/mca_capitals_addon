@@ -20,8 +20,12 @@ final class CapitalCourtApplier {
             UUID newHeir,
             Set<UUID> newRoyalChildren,
             Map<UUID, Boolean> newRoyalChildFemale,
+            Map<UUID, UUID> newPrinceConsortSources,
+            Map<UUID, Boolean> newPrinceConsortFemale,
             Set<UUID> newDukes,
             Map<UUID, Boolean> newDukeFemale,
+            Map<UUID, UUID> newMarriageDukeSources,
+            Map<UUID, Boolean> newMarriageDukeFemale,
             Set<UUID> newLords,
             Map<UUID, Boolean> newLordFemale,
             Set<UUID> newKnights,
@@ -47,11 +51,25 @@ final class CapitalCourtApplier {
             capital.getRoyalChildFemale().put(childId, newRoyalChildFemale.getOrDefault(childId, false));
         }
 
+        capital.getPrinceConsortSources().clear();
+        capital.getPrinceConsortFemale().clear();
+        for (Map.Entry<UUID, UUID> entry : newPrinceConsortSources.entrySet()) {
+            capital.getPrinceConsortSources().put(entry.getKey(), entry.getValue());
+            capital.getPrinceConsortFemale().put(entry.getKey(), newPrinceConsortFemale.getOrDefault(entry.getKey(), false));
+        }
+
         capital.getDukes().clear();
         capital.getDukeFemale().clear();
         for (UUID dukeId : newDukes) {
             capital.getDukes().add(dukeId);
             capital.getDukeFemale().put(dukeId, newDukeFemale.getOrDefault(dukeId, false));
+        }
+
+        capital.getMarriageDukeSources().clear();
+        capital.getMarriageDukeFemale().clear();
+        for (Map.Entry<UUID, UUID> entry : newMarriageDukeSources.entrySet()) {
+            capital.getMarriageDukeSources().put(entry.getKey(), entry.getValue());
+            capital.getMarriageDukeFemale().put(entry.getKey(), newMarriageDukeFemale.getOrDefault(entry.getKey(), false));
         }
 
         capital.getLords().clear();

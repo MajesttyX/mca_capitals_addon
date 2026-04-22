@@ -47,11 +47,19 @@ public class PlayerSaveDataMarriageMixin {
             return;
         }
 
+        PlayerCapitalTitleService.clearAllMarriageDerivedStateForRemarriage(level, playerUuid);
+
         UUID spouseId = spouse.getUUID();
 
         CapitalRecord sovereignCapital = CapitalManager.getCapitalBySovereign(spouseId);
         if (sovereignCapital != null) {
             handleSovereignMarriage(level, sovereignCapital, spouse, player);
+            return;
+        }
+
+        CapitalRecord princeCapital = findCapitalByPrince(spouseId);
+        if (princeCapital != null) {
+            handleMarriageTitle(level, princeCapital, spouse, player, resolveMarriagePrinceTitle(level, player));
             return;
         }
 
@@ -135,12 +143,31 @@ public class PlayerSaveDataMarriageMixin {
         return false;
     }
 
+    private static NobleTitle resolveMarriagePrinceTitle(ServerLevel level, ServerPlayer player) {
+        return resolvePlayerFemale(level, player) ? NobleTitle.PRINCESS : NobleTitle.PRINCE;
+    }
+
     private static NobleTitle resolveMarriageDukeTitle(ServerLevel level, ServerPlayer player) {
         return resolvePlayerFemale(level, player) ? NobleTitle.DUCHESS : NobleTitle.DUKE;
     }
 
     private static NobleTitle resolveMarriageLordTitle(ServerLevel level, ServerPlayer player) {
         return resolvePlayerFemale(level, player) ? NobleTitle.LADY : NobleTitle.LORD;
+    }
+
+    private static CapitalRecord findCapitalByPrince(UUID spouseId) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            if (capital == null) {
+                continue;
+            }
+            if (spouseId.equals(capital.getHeir())) {
+                return capital;
+            }
+            if (capital.isRoyalChild(spouseId) || capital.isLegitimizedRoyalChild(spouseId)) {
+                return capital;
+            }
+        }
+        return null;
     }
 
     private static CapitalRecord findCapitalByDuke(UUID spouseId) {

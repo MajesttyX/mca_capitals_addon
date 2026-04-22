@@ -128,12 +128,6 @@ public class CapitalRoyalGuardService {
         CapitalChronicleService.addEntry(level, capital,
                 guardName + " was named to the royal guard of " + villageName + ".");
 
-        CapitalPlayerNotificationService.notifyPlayersInCapital(
-                level,
-                capital,
-                Component.literal(guardName + " has been named to the royal guard of " + villageName + ".")
-        );
-
         return true;
     }
 
@@ -258,16 +252,20 @@ public class CapitalRoyalGuardService {
     }
 
     private static boolean isValidRoyalGuard(ServerLevel level, CapitalRecord capital, UUID guardId, Set<UUID> residents) {
-        if (guardId == null || residents == null || !residents.contains(guardId)) return false;
+        if (guardId == null) return false;
         if (guardId.equals(capital.getSovereign())) return false;
         if (guardId.equals(capital.getConsort())) return false;
         if (guardId.equals(capital.getDowager())) return false;
         if (guardId.equals(capital.getCommander())) return false;
+        if (capital.isDisgracedRoyalGuard(guardId)) return false;
 
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, guardId);
+        if (entity == null) {
+            return true;
+        }
+
         return MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)
-                && MCAIntegrationBridge.isMCAFootGuard(level, guardId)
-                && !capital.isDisgracedRoyalGuard(guardId);
+                && MCAIntegrationBridge.isMCAFootGuard(level, guardId);
     }
 
     private static void maybePromptPlayerSovereign(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
@@ -310,7 +308,32 @@ public class CapitalRoyalGuardService {
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
         String baseName = entity != null ? entity.getName().getString() : entityId.toString();
         baseName = baseName.replace(" of the Kingsguard", "").replace(" of the Queensguard", "");
-        for (String prefix : new String[]{"Queen Dowager ", "Prince Consort ", "Queen Consort ", "King Consort ", "Heir Apparent ", "Princess ", "Prince ", "Duchess ", "Duke ", "Lady ", "Lord ", "Dame ", "Sir ", "Queen ", "King "}) {
+        for (String prefix : new String[]{
+                "High Queen ",
+                "High King ",
+                "Dowager Queen ",
+                "Dowager King ",
+                "Queen Consort ",
+                "King Consort ",
+                "Heir Apparent ",
+                "Crown Princess ",
+                "Crown Prince ",
+                "Princess Consort ",
+                "Prince Consort ",
+                "Hand of the Queen ",
+                "Hand of the King ",
+                "Princess ",
+                "Prince ",
+                "Duchess ",
+                "Duke ",
+                "Commander ",
+                "Lady ",
+                "Lord ",
+                "Dame ",
+                "Sir ",
+                "Queen ",
+                "King "
+        }) {
             if (baseName.startsWith(prefix)) {
                 baseName = baseName.substring(prefix.length()).trim();
                 break;

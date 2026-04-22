@@ -12,6 +12,10 @@ public class PlayerCapitalTitleRecord {
     private NobleTitle grantedTitle;
     private NobleTitle marriageTitle;
     private UUID marriageSourceSpouseId;
+
+    private NobleTitle dowagerBaseTitle;
+    private UUID dowagerSourceSpouseId;
+
     private boolean commander;
     private String cachedPlayerName;
 
@@ -20,6 +24,7 @@ public class PlayerCapitalTitleRecord {
         this.capitalId = capitalId;
         this.grantedTitle = NobleTitle.COMMONER;
         this.marriageTitle = NobleTitle.COMMONER;
+        this.dowagerBaseTitle = NobleTitle.COMMONER;
     }
 
     public UUID getPlayerId() {
@@ -35,7 +40,7 @@ public class PlayerCapitalTitleRecord {
     }
 
     public void setGrantedTitle(NobleTitle grantedTitle) {
-        this.grantedTitle = grantedTitle == null ? NobleTitle.COMMONER : grantedTitle;
+        this.grantedTitle = normalize(grantedTitle);
     }
 
     public NobleTitle getMarriageTitle() {
@@ -43,7 +48,7 @@ public class PlayerCapitalTitleRecord {
     }
 
     public void setMarriageTitle(NobleTitle marriageTitle) {
-        this.marriageTitle = marriageTitle == null ? NobleTitle.COMMONER : marriageTitle;
+        this.marriageTitle = normalize(marriageTitle);
     }
 
     public UUID getMarriageSourceSpouseId() {
@@ -52,6 +57,22 @@ public class PlayerCapitalTitleRecord {
 
     public void setMarriageSourceSpouseId(UUID marriageSourceSpouseId) {
         this.marriageSourceSpouseId = marriageSourceSpouseId;
+    }
+
+    public NobleTitle getDowagerBaseTitle() {
+        return dowagerBaseTitle;
+    }
+
+    public void setDowagerBaseTitle(NobleTitle dowagerBaseTitle) {
+        this.dowagerBaseTitle = normalize(dowagerBaseTitle);
+    }
+
+    public UUID getDowagerSourceSpouseId() {
+        return dowagerSourceSpouseId;
+    }
+
+    public void setDowagerSourceSpouseId(UUID dowagerSourceSpouseId) {
+        this.dowagerSourceSpouseId = dowagerSourceSpouseId;
     }
 
     public boolean isCommander() {
@@ -71,14 +92,32 @@ public class PlayerCapitalTitleRecord {
     }
 
     public boolean isCommoner() {
-        return grantedTitle == null || grantedTitle == NobleTitle.COMMONER;
+        return grantedTitle == NobleTitle.COMMONER;
     }
 
     public boolean hasMarriageTitle() {
-        return marriageTitle != null && marriageTitle != NobleTitle.COMMONER;
+        return marriageTitle != NobleTitle.COMMONER;
+    }
+
+    public boolean hasDowagerTitle() {
+        return dowagerBaseTitle != NobleTitle.COMMONER;
+    }
+
+    public void clearMarriageTitle() {
+        this.marriageTitle = NobleTitle.COMMONER;
+        this.marriageSourceSpouseId = null;
+    }
+
+    public void clearDowagerTitle() {
+        this.dowagerBaseTitle = NobleTitle.COMMONER;
+        this.dowagerSourceSpouseId = null;
     }
 
     public boolean hasAnyCapitalOffice() {
-        return !isCommoner() || commander;
+        return !isCommoner() || hasMarriageTitle() || hasDowagerTitle() || commander;
+    }
+
+    private static NobleTitle normalize(NobleTitle title) {
+        return title == null ? NobleTitle.COMMONER : title;
     }
 }

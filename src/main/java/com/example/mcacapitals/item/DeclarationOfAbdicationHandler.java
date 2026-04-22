@@ -18,17 +18,24 @@ import java.util.UUID;
 public class DeclarationOfAbdicationHandler {
 
     private static final String[] KNOWN_TITLES = new String[] {
-            "Queen Dowager",
-            "Prince Consort",
+            "High Queen",
+            "High King",
+            "Dowager Queen",
+            "Dowager King",
             "Queen Consort",
             "King Consort",
             "Heir Apparent",
+            "Crown Princess",
+            "Crown Prince",
+            "Princess Consort",
+            "Prince Consort",
             "Princess",
             "Prince",
             "Duchess",
             "Duke",
             "Lady",
             "Lord",
+            "Commander",
             "Dame",
             "Sir",
             "Queen",
@@ -124,20 +131,14 @@ public class DeclarationOfAbdicationHandler {
         }
 
         String result = name.trim();
-        boolean changed = true;
 
-        while (changed) {
-            changed = false;
-            for (String title : KNOWN_TITLES) {
-                String prefix = title + " ";
-                if (result.startsWith(prefix)) {
-                    result = result.substring(prefix.length()).trim();
-                    changed = true;
-                    break;
-                }
+        for (String title : KNOWN_TITLES) {
+            String prefix = title + " ";
+            if (result.startsWith(prefix)) {
+                return result.substring(prefix.length()).trim();
             }
         }
 
-        return result.isBlank() ? "Unnamed" : result;
+        return result;
     }
 }

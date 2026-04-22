@@ -24,7 +24,7 @@ public class RoyalScepterActionScreen extends Screen {
         clearWidgets();
 
         int centerX = this.width / 2;
-        int top = this.height / 2 - 60;
+        int top = this.height / 2 - 96;
         int buttonWidth = 180;
         int buttonHeight = 20;
         int left = centerX - buttonWidth / 2;
@@ -40,8 +40,8 @@ public class RoyalScepterActionScreen extends Screen {
 
         addRenderableWidget(
                 Button.builder(
-                                Component.literal("Name Commander of the Army"),
-                                button -> runCommand("royalscepter commander " + targetId)
+                                Component.literal("Name Hand of the Crown"),
+                                button -> runCommand("royalscepter hand " + targetId)
                         )
                         .bounds(left, top + 24, buttonWidth, buttonHeight)
                         .build()
@@ -49,8 +49,8 @@ public class RoyalScepterActionScreen extends Screen {
 
         addRenderableWidget(
                 Button.builder(
-                                Component.literal("Appoint Kingsguard / Queensguard"),
-                                button -> runCommand("royalscepter guard " + targetId)
+                                Component.literal("Name Grand Maester"),
+                                button -> runCommand("royalscepter grandmaester " + targetId)
                         )
                         .bounds(left, top + 48, buttonWidth, buttonHeight)
                         .build()
@@ -58,10 +58,28 @@ public class RoyalScepterActionScreen extends Screen {
 
         addRenderableWidget(
                 Button.builder(
-                                Component.literal("Raise to Duke / Duchess"),
-                                button -> runCommand("royalscepter duke " + targetId)
+                                Component.literal("Appoint Commander of the Royal Guard"),
+                                button -> runCommand("royalscepter commander " + targetId)
                         )
                         .bounds(left, top + 72, buttonWidth, buttonHeight)
+                        .build()
+        );
+
+        addRenderableWidget(
+                Button.builder(
+                                Component.literal("Appoint to the Royal Guard"),
+                                button -> runCommand("royalscepter guard " + targetId)
+                        )
+                        .bounds(left, top + 96, buttonWidth, buttonHeight)
+                        .build()
+        );
+
+        addRenderableWidget(
+                Button.builder(
+                                Component.literal("Bestow Dukedom"),
+                                button -> runCommand("royalscepter duke " + targetId)
+                        )
+                        .bounds(left, top + 120, buttonWidth, buttonHeight)
                         .build()
         );
 
@@ -70,7 +88,7 @@ public class RoyalScepterActionScreen extends Screen {
                                 Component.literal("Cancel"),
                                 button -> onClose()
                         )
-                        .bounds(left, top + 104, buttonWidth, buttonHeight)
+                        .bounds(left, top + 152, buttonWidth, buttonHeight)
                         .build()
         );
     }
@@ -88,7 +106,7 @@ public class RoyalScepterActionScreen extends Screen {
         renderBackground(guiGraphics);
 
         int centerX = this.width / 2;
-        int titleY = this.height / 2 - 92;
+        int titleY = this.height / 2 - 104;
 
         guiGraphics.drawCenteredString(this.font, "Royal Scepter", centerX, titleY, 0xFFFFFF);
         guiGraphics.drawCenteredString(this.font, "Choose an action for " + targetName, centerX, titleY + 14, 0xCCCCCC);

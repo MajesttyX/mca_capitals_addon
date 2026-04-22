@@ -7,4 +7,5 @@ public final class McaProfessionKeys {
 
     public static final String GUARD = "guard";
     public static final String ARCHER = "archer";
+    public static final String CLERIC = "cleric";
 }

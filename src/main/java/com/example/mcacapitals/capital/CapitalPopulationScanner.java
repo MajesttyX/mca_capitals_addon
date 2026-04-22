@@ -99,6 +99,9 @@ public class CapitalPopulationScanner {
         refreshCourtState(level, capital);
         tickRecommendedBetrothals(level, capital);
         tickRoyalGuards(level, capital);
+        tickHand(level, capital);
+        tickHerald(level, capital);
+        tickGrandMaester(level, capital);
         tickMourning(level, capital);
     }
 
@@ -142,6 +145,27 @@ public class CapitalPopulationScanner {
     private void tickRoyalGuards(ServerLevel level, CapitalRecord capital) {
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         if (CapitalRoyalGuardService.tickRoyalGuards(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickHand(ServerLevel level, CapitalRecord capital) {
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        if (CapitalHandService.tickHand(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickHerald(ServerLevel level, CapitalRecord capital) {
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        if (CapitalHeraldService.tickHerald(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickGrandMaester(ServerLevel level, CapitalRecord capital) {
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        if (CapitalMaesterService.tickGrandMaester(level, capital, residents)) {
             CapitalDataAccess.markDirty(level);
         }
     }

@@ -109,6 +109,10 @@ public final class MCAIntegrationBridge {
         return MCAEntityBridge.isMasterProfessionVillager(level, entityId);
     }
 
+    public static boolean isMasterClericVillager(ServerLevel level, UUID entityId) {
+        return MCAEntityBridge.isMasterClericVillager(level, entityId);
+    }
+
     public static boolean isAliveAdultOrChildVillager(ServerLevel level, UUID entityId) {
         return MCAEntityBridge.isAliveAdultOrChildVillager(level, entityId);
     }
@@ -199,6 +203,7 @@ public final class MCAIntegrationBridge {
                 + ", isGuard=" + isMCAGuard(level, entityId)
                 + ", isFootGuard=" + isMCAFootGuard(level, entityId)
                 + ", isMaster=" + isMasterProfessionVillager(level, entityId)
+                + ", isMasterCleric=" + isMasterClericVillager(level, entityId)
                 + ", isFemale=" + isFemale(level, entityId)
                 + ", ageState=" + getAgeState(level, entityId)
                 + ", spouse=" + (getSpouse(level, entityId) == null ? "none" : getSpouse(level, entityId))

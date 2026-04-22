@@ -38,6 +38,7 @@ public class CapitalCourtWatcher {
         UUID oldDowager = capital.getDowager();
         UUID oldHeir = capital.getHeir();
 
+        cleanupSubordinateDowagers(level, capital);
         recordRoyalMarriageEntries(level, capital, residents);
 
         CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), newFingerprint);
@@ -97,9 +98,6 @@ public class CapitalCourtWatcher {
         }
 
         Set<UUID> trackedNobles = new HashSet<>();
-        if (capital.getSovereign() != null) {
-            trackedNobles.add(capital.getSovereign());
-        }
         trackedNobles.addAll(capital.getRoyalChildren());
         trackedNobles.addAll(capital.getDukes());
         trackedNobles.addAll(capital.getLords());
@@ -140,14 +138,42 @@ public class CapitalCourtWatcher {
                 continue;
             }
 
-            String nobleName = resolveDisplayName(level, capital, nobleId);
-            String spouseName = resolveDisplayName(level, capital, currentSpouse);
+            String nobleName = stripKnownTitles(resolveBaseName(level, capital, nobleId));
+            String spouseName = stripKnownTitles(CapitalCourtMarriageResolver.resolveSpouseName(level, nobleId));
 
-            CapitalChronicleService.addEntry(level, capital,
-                    nobleName + " was married to " + spouseName + ".");
+            if (!hasMarriageEntry(capital, nobleName, spouseName)) {
+                CapitalChronicleService.addEntry(level, capital,
+                        nobleName + " was married to " + spouseName + ".");
+            }
         }
 
         ROYAL_SPOUSE_SNAPSHOTS.put(capital.getCapitalId(), currentSnapshot);
+    }
+
+    private static void cleanupSubordinateDowagers(ServerLevel level, CapitalRecord capital) {
+        for (UUID holder : new HashSet<>(capital.getDowagerPrinceSources().keySet())) {
+            if (holder == null || isConfirmedDead(level, holder)) {
+                capital.removeDowagerPrinceSource(holder);
+                continue;
+            }
+
+            UUID actualLivingSpouse = CapitalCourtMarriageResolver.findActualSpouse(level, holder);
+            if (actualLivingSpouse != null && !actualLivingSpouse.equals(capital.getDowagerPrinceSource(holder))) {
+                capital.removeDowagerPrinceSource(holder);
+            }
+        }
+
+        for (UUID holder : new HashSet<>(capital.getDowagerDukeSources().keySet())) {
+            if (holder == null || isConfirmedDead(level, holder)) {
+                capital.removeDowagerDukeSource(holder);
+                continue;
+            }
+
+            UUID actualLivingSpouse = CapitalCourtMarriageResolver.findActualSpouse(level, holder);
+            if (actualLivingSpouse != null && !actualLivingSpouse.equals(capital.getDowagerDukeSource(holder))) {
+                capital.removeDowagerDukeSource(holder);
+            }
+        }
     }
 
     private static String buildFingerprint(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
@@ -165,6 +191,10 @@ public class CapitalCourtWatcher {
         sb.append("royalOrder=").append(capital.getRoyalSuccessionOrder()).append('|');
         sb.append("disinherited=").append(capital.getDisinheritedRoyalChildren()).append('|');
         sb.append("legitimized=").append(capital.getLegitimizedRoyalChildren()).append('|');
+        sb.append("princeConsortSources=").append(capital.getPrinceConsortSources()).append('|');
+        sb.append("marriageDukeSources=").append(capital.getMarriageDukeSources()).append('|');
+        sb.append("dowagerPrinceSources=").append(capital.getDowagerPrinceSources()).append('|');
+        sb.append("dowagerDukeSources=").append(capital.getDowagerDukeSources()).append('|');
 
         Set<UUID> watchSet = new HashSet<>(residents);
 
@@ -182,7 +212,11 @@ public class CapitalCourtWatcher {
         }
 
         watchSet.addAll(capital.getRoyalChildren());
+        watchSet.addAll(capital.getPrinceConsortSources().keySet());
+        watchSet.addAll(capital.getDowagerPrinceSources().keySet());
         watchSet.addAll(capital.getDukes());
+        watchSet.addAll(capital.getMarriageDukeSources().keySet());
+        watchSet.addAll(capital.getDowagerDukeSources().keySet());
         watchSet.addAll(capital.getLords());
         watchSet.addAll(capital.getKnights());
 
@@ -198,10 +232,7 @@ public class CapitalCourtWatcher {
 
             UUID spouse = CapitalCourtMarriageResolver.findActualSpouse(level, entityId);
             sb.append("spouse=").append(spouse == null ? "none" : spouse).append(',');
-
-            sb.append("childCount=").append(MCAIntegrationBridge.getChildren(level, entityId).size()).append(',');
-            sb.append("profession=").append(MCAIntegrationBridge.describeProfession(level, entityId)).append(',');
-            sb.append("title=").append(CapitalTitleResolver.getDisplayTitle(level, capital, entityId)).append(',');
+            sb.append("title=").append(CapitalTitleResolver.getDisplayTitleForEntity(level, entityId)).append(',');
             sb.append('|');
         }
 
@@ -219,10 +250,16 @@ public class CapitalCourtWatcher {
         }
 
         String baseName = stripKnownTitles(resolveBaseName(level, capital, id));
-        String title = CapitalTitleResolver.getDisplayTitle(level, capital, id);
+        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, id);
 
         if (title == null || title.isBlank() || "Commoner".equalsIgnoreCase(title) || "None".equalsIgnoreCase(title)) {
             return baseName;
+        }
+
+        CapitalRecord sourceCapital = CapitalTitleResolver.findCapitalForEntity(level, id);
+        if (sourceCapital != null && sourceCapital.isRoyalGuard(id) && ("Sir".equals(title) || "Dame".equals(title))) {
+            String suffix = sourceCapital.isSovereignFemale() ? " of the Queensguard" : " of the Kingsguard";
+            return title + " " + baseName + suffix;
         }
 
         return title + " " + baseName;
@@ -255,6 +292,16 @@ public class CapitalCourtWatcher {
         return "Unknown";
     }
 
+    private static boolean hasMarriageEntry(CapitalRecord capital, String nobleName, String spouseName) {
+        String needle = nobleName + " was married to " + spouseName + ".";
+        for (String entry : capital.getChronicleEntries()) {
+            if (needle.equals(entry) || entry.endsWith(needle)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static String stripKnownTitles(String name) {
         if (name == null || name.isBlank()) {
             return "Unnamed";
@@ -262,15 +309,26 @@ public class CapitalCourtWatcher {
 
         String result = name.trim();
         String[] knownTitles = {
-                "Queen Dowager",
-                "Prince Consort",
+                "High Queen",
+                "High King",
+                "Dowager Queen",
+                "Dowager King",
                 "Queen Consort",
                 "King Consort",
                 "Heir Apparent",
+                "Crown Princess",
+                "Crown Prince",
+                "Dowager Princess",
+                "Dowager Prince",
+                "Princess Consort",
+                "Prince Consort",
                 "Princess",
                 "Prince",
+                "Dowager Duchess",
+                "Dowager Duke",
                 "Duchess",
                 "Duke",
+                "Commander",
                 "Lady",
                 "Lord",
                 "Dame",
