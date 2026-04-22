@@ -27,7 +27,7 @@ final class CapitalSovereignAppointmentService {
         CapitalFoundationInternal.refreshCourt(level, capital);
         CapitalRoyalHouseholdService.beginNewRegime(capital);
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        CapitalHeraldService.tickHerald(level, capital, residents);
+        CapitalHeraldService.tickHerald(level, capital, residents, false);
 
         if (previousPlayerSovereignId != null && capital.getCapitalId() != null) {
             PlayerCapitalTitleService.clear(level, previousPlayerSovereignId, capital.getCapitalId());
@@ -68,7 +68,7 @@ final class CapitalSovereignAppointmentService {
         CapitalFoundationInternal.refreshCourt(level, capital);
         CapitalRoyalHouseholdService.beginNewRegime(capital);
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        CapitalHeraldService.tickHerald(level, capital, residents);
+        CapitalHeraldService.tickHerald(level, capital, residents, false);
 
         if (previousPlayerSovereignId != null
                 && !previousPlayerSovereignId.equals(playerId)

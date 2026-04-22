@@ -14,6 +14,10 @@ public final class CapitalHeraldService {
     }
 
     public static boolean tickHerald(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        return tickHerald(level, capital, residents, true);
+    }
+
+    public static boolean tickHerald(ServerLevel level, CapitalRecord capital, Set<UUID> residents, boolean announceAppointment) {
         if (level == null || capital == null || residents == null) {
             return false;
         }
@@ -34,12 +38,14 @@ public final class CapitalHeraldService {
             if (newHerald != null) {
                 capital.setHerald(newHerald);
                 capital.setHeraldFemale(MCAIntegrationBridge.isFemale(level, newHerald));
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        resolveRawName(level, newHerald) + " was appointed Court Herald of "
-                                + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
-                );
+                if (announceAppointment) {
+                    CapitalChronicleService.addEntry(
+                            level,
+                            capital,
+                            resolveRawName(level, newHerald) + " now serves as Court Herald of "
+                                    + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                    );
+                }
                 changed = true;
             }
         }

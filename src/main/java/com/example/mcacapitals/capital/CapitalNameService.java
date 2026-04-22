@@ -107,22 +107,33 @@ public class CapitalNameService {
     }
 
     private static String buildDisplayName(ServerLevel level, UUID entityId, String baseName) {
+        CapitalRecord royalGuardCapital = findRoyalGuardCapital(entityId);
+        if (royalGuardCapital != null) {
+            return CapitalRoyalGuardService.buildRoyalGuardDisplayName(level, royalGuardCapital, entityId);
+        }
+
         CapitalRecord displayCapital = CapitalTitleResolver.findCapitalForEntity(level, entityId);
         String title = CapitalTitleResolver.getDisplayTitleForEntity(level, entityId);
-
-        if (displayCapital != null && displayCapital.isRoyalGuard(entityId)) {
-            if ("Sir".equals(title) || "Dame".equals(title)) {
-                String honorific = "Dame".equals(title) ? "Dame" : "Sir";
-                String guardType = displayCapital.isSovereignFemale() ? "Queensguard" : "Kingsguard";
-                return honorific + " " + baseName + " of the " + guardType;
-            }
-        }
 
         if (title == null || title.isBlank() || "Commoner".equals(title) || "None".equals(title)) {
             return baseName;
         }
 
         return title + " " + baseName;
+    }
+
+    private static CapitalRecord findRoyalGuardCapital(UUID entityId) {
+        if (entityId == null) {
+            return null;
+        }
+
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            if (capital != null && capital.isRoyalGuard(entityId)) {
+                return capital;
+            }
+        }
+
+        return null;
     }
 
     private static String normalizeBaseName(String name) {

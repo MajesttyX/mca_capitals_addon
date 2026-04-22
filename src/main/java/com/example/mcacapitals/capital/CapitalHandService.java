@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public final class CapitalHandService {
 
-    public static final int REQUIRED_POPULATION = 35;
+    public static final int REQUIRED_POPULATION = 20;
 
     private CapitalHandService() {
     }

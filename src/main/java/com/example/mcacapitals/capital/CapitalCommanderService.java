@@ -13,7 +13,7 @@ import java.util.UUID;
 
 public class CapitalCommanderService {
 
-    public static final int REQUIRED_POPULATION = 30;
+    public static final int REQUIRED_POPULATION = 20;
 
     private CapitalCommanderService() {
     }

@@ -21,7 +21,7 @@ import java.util.UUID;
 
 public class CapitalPopulationScanner {
 
-    private static final int REQUIRED_POPULATION = 25;
+    private static final int REQUIRED_POPULATION = 15;
     private static final int FOUNDING_RADIUS = 96;
     private static final int SCAN_INTERVAL_TICKS = 20;
 
@@ -32,6 +32,7 @@ public class CapitalPopulationScanner {
         }
 
         ServerLevel level = (ServerLevel) event.level;
+        CapitalResidentScanner.clearCache(level);
 
         boolean changed = false;
         changed |= normalizeCapitalsPhase(level);
@@ -72,11 +73,6 @@ public class CapitalPopulationScanner {
             CapitalRecord capital = new CapitalRecord(capitalId, villageId, null, false);
             capital.setState(CapitalState.PENDING);
             CapitalManager.putCapital(capital);
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    MCAIntegrationBridge.getVillageName(level, villageId) + " rose to capital status."
-            );
             CapitalCourtWatcher.clearFingerprint(capitalId);
             changed = true;
         }
@@ -96,12 +92,14 @@ public class CapitalPopulationScanner {
             return;
         }
 
-        refreshCourtState(level, capital);
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+
+        refreshCourtState(level, capital, residents);
         tickRecommendedBetrothals(level, capital);
-        tickRoyalGuards(level, capital);
-        tickHand(level, capital);
-        tickHerald(level, capital);
-        tickGrandMaester(level, capital);
+        tickRoyalGuards(level, capital, residents);
+        tickHand(level, capital, residents);
+        tickHerald(level, capital, residents);
+        tickGrandMaester(level, capital, residents);
         tickMourning(level, capital);
     }
 
@@ -130,8 +128,8 @@ public class CapitalPopulationScanner {
         return false;
     }
 
-    private void refreshCourtState(ServerLevel level, CapitalRecord capital) {
-        if (CapitalCourtWatcher.refreshIfChanged(level, capital)) {
+    private void refreshCourtState(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (CapitalCourtWatcher.refreshIfChanged(level, capital, residents)) {
             CapitalDataAccess.markDirty(level);
         }
     }
@@ -142,29 +140,25 @@ public class CapitalPopulationScanner {
         }
     }
 
-    private void tickRoyalGuards(ServerLevel level, CapitalRecord capital) {
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+    private void tickRoyalGuards(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         if (CapitalRoyalGuardService.tickRoyalGuards(level, capital, residents)) {
             CapitalDataAccess.markDirty(level);
         }
     }
 
-    private void tickHand(ServerLevel level, CapitalRecord capital) {
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+    private void tickHand(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         if (CapitalHandService.tickHand(level, capital, residents)) {
             CapitalDataAccess.markDirty(level);
         }
     }
 
-    private void tickHerald(ServerLevel level, CapitalRecord capital) {
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+    private void tickHerald(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         if (CapitalHeraldService.tickHerald(level, capital, residents)) {
             CapitalDataAccess.markDirty(level);
         }
     }
 
-    private void tickGrandMaester(ServerLevel level, CapitalRecord capital) {
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+    private void tickGrandMaester(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         if (CapitalMaesterService.tickGrandMaester(level, capital, residents)) {
             CapitalDataAccess.markDirty(level);
         }
@@ -263,11 +257,21 @@ public class CapitalPopulationScanner {
         for (CapitalRecord capital : CapitalManager.getAllCapitalsSnapshot().values()) {
             Integer villageId = capital.getVillageId();
             if (villageId == null) continue;
-
             CapitalRecord preferred = preferredByVillage.get(villageId);
-            if (preferred != capital) {
+            if (preferred != null && preferred != capital) {
                 CapitalManager.removeCapital(capital.getCapitalId());
                 CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+                changed = true;
+            }
+        }
+
+        for (CapitalRecord capital : CapitalManager.getAllCapitalsSnapshot().values()) {
+            Integer villageId = capital.getVillageId();
+            if (villageId == null) continue;
+
+            int population = MCAIntegrationBridge.getVillagePopulation(level, villageId);
+            if (population >= REQUIRED_POPULATION && capital.getState() != CapitalState.ACTIVE) {
+                capital.setState(CapitalState.ACTIVE);
                 changed = true;
             }
         }
@@ -275,17 +279,19 @@ public class CapitalPopulationScanner {
         return changed;
     }
 
-    private boolean isPreferred(CapitalRecord challenger, CapitalRecord incumbent) {
-        if (challenger == incumbent) return false;
-        if (incumbent == null) return true;
-        if (challenger == null) return false;
-
-        if (challenger.getSovereign() != null && incumbent.getSovereign() == null) return true;
-        if (challenger.getSovereign() == null && incumbent.getSovereign() != null) return false;
-
-        if (challenger.getState() == CapitalState.ACTIVE && incumbent.getState() != CapitalState.ACTIVE) return true;
-        if (challenger.getState() != CapitalState.ACTIVE && incumbent.getState() == CapitalState.ACTIVE) return false;
-
-        return challenger.getCapitalId().compareTo(incumbent.getCapitalId()) < 0;
+    private boolean isPreferred(CapitalRecord candidate, CapitalRecord existing) {
+        if (candidate.getState() == CapitalState.ACTIVE && existing.getState() != CapitalState.ACTIVE) {
+            return true;
+        }
+        if (candidate.getState() != CapitalState.ACTIVE && existing.getState() == CapitalState.ACTIVE) {
+            return false;
+        }
+        if (candidate.getSovereign() != null && existing.getSovereign() == null) {
+            return true;
+        }
+        if (candidate.getSovereign() == null && existing.getSovereign() != null) {
+            return false;
+        }
+        return candidate.getCapitalId().toString().compareTo(existing.getCapitalId().toString()) < 0;
     }
 }

@@ -25,9 +25,16 @@ public class CapitalCourtWatcher {
         if (capital == null) {
             return false;
         }
+        return refreshIfChanged(level, capital, CapitalResidentScanner.scanResidents(level, capital.getCapitalId()));
+    }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        String newFingerprint = buildFingerprint(level, capital, residents);
+    public static boolean refreshIfChanged(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (capital == null) {
+            return false;
+        }
+
+        Set<UUID> resolvedResidents = residents != null ? residents : CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        String newFingerprint = buildFingerprint(level, capital, resolvedResidents);
         String oldFingerprint = CAPITAL_FINGERPRINTS.get(capital.getCapitalId());
 
         if (Objects.equals(newFingerprint, oldFingerprint)) {
@@ -39,7 +46,7 @@ public class CapitalCourtWatcher {
         UUID oldHeir = capital.getHeir();
 
         cleanupSubordinateDowagers(level, capital);
-        recordRoyalMarriageEntries(level, capital, residents);
+        recordRoyalMarriageEntries(level, capital, resolvedResidents);
 
         CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), newFingerprint);
 
@@ -77,7 +84,7 @@ public class CapitalCourtWatcher {
             return true;
         }
 
-        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalNameService.refreshCapitalNames(level, capital, resolvedResidents);
         CapitalDataAccess.markDirty(level);
         return true;
     }

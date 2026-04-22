@@ -17,20 +17,20 @@ public final class CapitalPetitionService {
     public static final String PETITION_BETROTHAL = "mcacapitals_petition_betrothal";
     public static final String PETITION_BETROTHAL_RECOMMEND = "mcacapitals_petition_betrothal_recommend";
 
-    private static final int THRONE_PETITION_MIN_POPULATION = 35;
+    private static final int THRONE_PETITION_MIN_POPULATION = 25;
     private static final int THRONE_PETITION_MIN_HEARTS = 2500;
 
     private static final int SEIZURE_MIN_REPUTATION = 1500;
     private static final int SEIZURE_COMMANDER_HEARTS = 200;
 
-    private static final int COMMANDER_PETITION_MIN_POPULATION = 30;
+    private static final int COMMANDER_PETITION_MIN_POPULATION = 20;
     private static final int COMMANDER_PETITION_MIN_HEARTS = 1000;
 
     private static final int LORD_PETITION_MIN_HEARTS = 400;
     private static final int LORD_PETITION_MIN_MASTER_VILLAGERS = 3;
 
     private static final int DUKE_PETITION_MIN_HEARTS = 1500;
-    private static final int DUKE_PETITION_MIN_POPULATION = 30;
+    private static final int DUKE_PETITION_MIN_POPULATION = 20;
 
     private static final double MAX_AUDIENCE_DISTANCE_SQR = 12.0D * 12.0D;
     private static final ResourceLocation COVER_ME_IN_DIAMONDS_ID = new ResourceLocation("minecraft", "story/shiny_gear");

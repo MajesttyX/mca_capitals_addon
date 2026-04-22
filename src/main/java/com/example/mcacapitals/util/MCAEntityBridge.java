@@ -4,6 +4,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
@@ -230,6 +231,10 @@ final class MCAEntityBridge {
     static boolean moveTo(Entity entity, double x, double y, double z, double speed) {
         if (!isMCAVillagerEntity(entity)) {
             return false;
+        }
+
+        if (entity instanceof Mob mob) {
+            return mob.getNavigation().moveTo(x, y, z, speed);
         }
 
         Object navigation = MCAReflectionHelper.invoke(entity, "getNavigation");

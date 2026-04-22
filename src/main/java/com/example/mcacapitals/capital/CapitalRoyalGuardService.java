@@ -17,7 +17,7 @@ import java.util.UUID;
 
 public class CapitalRoyalGuardService {
 
-    public static final int REQUIRED_POPULATION = 35;
+    public static final int REQUIRED_POPULATION = 25;
     public static final int MAX_ROYAL_GUARDS = 3;
     public static final int PATROL_RADIUS = 3;
 
@@ -121,13 +121,22 @@ public class CapitalRoyalGuardService {
         if (capital.getRoyalGuards().size() >= MAX_ROYAL_GUARDS) return false;
         if (!isEligibleForNewRoyalGuard(level, capital)) return false;
 
-        capital.addRoyalGuard(villagerId, MCAIntegrationBridge.isFemale(level, villagerId), capital.getSovereign());
+        if (capital.getRoyalGuardLiege() == null) {
+            capital.setRoyalGuardLiege(capital.getSovereign());
+        }
+
+        capital.addRoyalGuard(villagerId, MCAIntegrationBridge.isFemale(level, villagerId), capital.getRoyalGuardLiege());
+        capital.setRoyalGuardDutyMode(villagerId, CapitalRecord.GuardDutyMode.FOLLOW_SOVEREIGN);
+
         String guardName = buildRoyalGuardDisplayName(level, capital, villagerId);
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
         CapitalChronicleService.addEntry(level, capital,
                 guardName + " was named to the royal guard of " + villageName + ".");
 
+        CapitalNameService.refreshCapitalNames(level, capital, CapitalResidentScanner.scanResidents(level, capital.getCapitalId()));
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
         return true;
     }
 
@@ -165,7 +174,10 @@ public class CapitalRoyalGuardService {
     }
 
     private static void tickBehaviors(ServerLevel level, CapitalRecord capital) {
-        Entity sovereignEntity = MCAIntegrationBridge.getEntityByUuid(level, capital.getSovereign());
+        Entity sovereignEntity = resolveSovereignEntity(level, capital);
+        if (sovereignEntity == null) {
+            return;
+        }
 
         int slot = 0;
         for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
@@ -187,12 +199,10 @@ public class CapitalRoyalGuardService {
                 continue;
             }
 
-            if (sovereignEntity == null) continue;
-            if (sovereignEntity.distanceToSqr(guard) > 256.0D) continue;
-
             double x = sovereignEntity.getX();
             double y = sovereignEntity.getY();
             double z = sovereignEntity.getZ();
+            double guardDistanceSqr = sovereignEntity.distanceToSqr(guard);
 
             if (sovereignEntity instanceof LivingEntity living && living.isSleeping()) {
                 double angle = (Math.PI * 2.0D / Math.max(1, capital.getRoyalGuards().size())) * slot++;
@@ -206,10 +216,24 @@ public class CapitalRoyalGuardService {
             double targetX = x + Math.cos(angle) * 1.8D;
             double targetZ = z + Math.sin(angle) * 1.8D;
 
-            if (guard.distanceToSqr(targetX, y, targetZ) > 4.0D) {
-                MCAIntegrationBridge.moveTo(guard, targetX, y, targetZ, 1.1D);
+            if (guardDistanceSqr > 4.0D) {
+                double speed = guardDistanceSqr > 100.0D ? 1.3D : 1.1D;
+                MCAIntegrationBridge.moveTo(guard, targetX, y, targetZ, speed);
             }
         }
+    }
+
+    private static Entity resolveSovereignEntity(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null || capital.getSovereign() == null) {
+            return null;
+        }
+
+        Entity sovereignEntity = MCAIntegrationBridge.getEntityByUuid(level, capital.getSovereign());
+        if (sovereignEntity != null) {
+            return sovereignEntity;
+        }
+
+        return level.getServer().getPlayerList().getPlayer(capital.getSovereign());
     }
 
     public static boolean togglePatrol(ServerLevel level, CapitalRecord capital, UUID guardId) {
@@ -269,7 +293,7 @@ public class CapitalRoyalGuardService {
     }
 
     private static void maybePromptPlayerSovereign(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
-        Entity sovereignEntity = MCAIntegrationBridge.getEntityByUuid(level, capital.getSovereign());
+        Entity sovereignEntity = resolveSovereignEntity(level, capital);
         if (!(sovereignEntity instanceof ServerPlayer player)) return;
 
         long currentDay = Math.max(1L, level.getDayTime() / 24000L + 1L);

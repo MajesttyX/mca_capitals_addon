@@ -1,6 +1,5 @@
 package com.example.mcacapitals.capital;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -56,7 +55,7 @@ public class CapitalManager {
     }
 
     public static Collection<CapitalRecord> getAllCapitalRecords() {
-        return Collections.unmodifiableCollection(new ArrayList<>(CAPITALS.values()));
+        return Collections.unmodifiableCollection(CAPITALS.values());
     }
 
     public static boolean hasCapitalForVillageId(Integer villageId) {
