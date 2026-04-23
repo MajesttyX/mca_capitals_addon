@@ -23,12 +23,14 @@ public class ModCreativeTabs {
                         output.accept(ModItems.ROYAL_DISINHERITANCE.get());
                         output.accept(ModItems.LEGITIMIZATION_DECREE.get());
                         output.accept(ModItems.DECLARATION_OF_ABDICATION.get());
+                        output.accept(ModItems.BETROTHAL_DECREE.get());
                         output.accept(ModItems.ROYAL_CHARTER.get());
                         output.accept(ModItems.CAPITAL_CHRONICLE.get());
                         output.accept(ModItems.RED_ROYAL_SEAL.get());
                         output.accept(ModItems.BLACK_ROYAL_SEAL.get());
                         output.accept(ModItems.BLUE_ROYAL_SEAL.get());
                         output.accept(ModItems.GREEN_ROYAL_SEAL.get());
+                        output.accept(ModItems.CYAN_ROYAL_SEAL.get());
                     })
                     .build());
 

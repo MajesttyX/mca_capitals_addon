@@ -1,5 +1,7 @@
 package com.example.mcacapitals.util;
 
+import com.example.mcacapitals.data.PendingVillagerBetrothalAccess;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
@@ -156,6 +158,75 @@ final class MCARelationshipOps {
         return MCARelationshipBridge.BetrothalResult.ok();
     }
 
+    static MCARelationshipBridge.BetrothalResult promiseVillagerToVillagerByDecree(Entity firstVillager, Entity secondVillager) {
+        return MCARelationshipBridge.BetrothalResult.failure("Villager decree betrothals now use pending betrothal data instead of MCA promise state.");
+    }
+
+    static MCARelationshipBridge.BetrothalResult validatePendingVillagerBetrothal(ServerLevel level, Entity firstVillager, Entity secondVillager) {
+        if (level == null || firstVillager == null || secondVillager == null) {
+            return MCARelationshipBridge.BetrothalResult.failure("That betrothal decree could not be carried out.");
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillagerEntity(firstVillager) || !MCAIntegrationBridge.isMCAVillagerEntity(secondVillager)) {
+            return MCARelationshipBridge.BetrothalResult.failure("Only MCA villagers may be joined by betrothal decree.");
+        }
+
+        if (firstVillager.getUUID().equals(secondVillager.getUUID())) {
+            return MCARelationshipBridge.BetrothalResult.failure("A villager cannot be betrothed to themself.");
+        }
+
+        if (PendingVillagerBetrothalAccess.hasPendingBetrothal(level, firstVillager.getUUID())) {
+            return MCARelationshipBridge.BetrothalResult.failure("The first villager is already betrothed elsewhere.");
+        }
+
+        if (PendingVillagerBetrothalAccess.hasPendingBetrothal(level, secondVillager.getUUID())) {
+            return MCARelationshipBridge.BetrothalResult.failure("The second villager is already betrothed elsewhere.");
+        }
+
+        Object firstRelationships = MCAReflectionHelper.invoke(firstVillager, "getRelationships");
+        Object secondRelationships = MCAReflectionHelper.invoke(secondVillager, "getRelationships");
+
+        if (firstRelationships == null || secondRelationships == null) {
+            return MCARelationshipBridge.BetrothalResult.failure("One of the villagers' relationship records could not be read.");
+        }
+
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
+            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are already married to one another.");
+        }
+
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarried")
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isMarried")) {
+            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already married.");
+        }
+
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isEngagedWith", secondVillager)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isEngagedWith", firstVillager)) {
+            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are already engaged to one another.");
+        }
+
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isPromisedTo", secondVillager)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isPromisedTo", firstVillager)) {
+            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are already betrothed to one another.");
+        }
+
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isEngaged")
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isEngaged")) {
+            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already engaged.");
+        }
+
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isPromised")
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isPromised")) {
+            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already promised elsewhere.");
+        }
+
+        if (areRelatives(firstRelationships, firstVillager, secondRelationships, secondVillager)) {
+            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are related and cannot be joined by betrothal decree.");
+        }
+
+        return MCARelationshipBridge.BetrothalResult.ok();
+    }
+
     static boolean areVillagersBetrothedToEachOther(Entity firstVillager, Entity secondVillager) {
         if (firstVillager == null || secondVillager == null) {
             return false;
@@ -225,6 +296,56 @@ final class MCARelationshipOps {
         return MCARelationshipBridge.BetrothalResult.failure("Those villagers could not yet be advanced from betrothal to marriage.");
     }
 
+    static MCARelationshipBridge.BetrothalResult marryVillagerToVillagerDirect(Entity firstVillager, Entity secondVillager) {
+        if (firstVillager == null || secondVillager == null) {
+            return MCARelationshipBridge.BetrothalResult.failure("That marriage could not be arranged.");
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillagerEntity(firstVillager) || !MCAIntegrationBridge.isMCAVillagerEntity(secondVillager)) {
+            return MCARelationshipBridge.BetrothalResult.failure("Only MCA villagers may be married by this bridge.");
+        }
+
+        ServerLevel level = resolveServerLevel(firstVillager, secondVillager);
+        if (level == null) {
+            return MCARelationshipBridge.BetrothalResult.failure("The world context for that marriage could not be resolved.");
+        }
+
+        if (!"ADULT".equalsIgnoreCase(MCAIntegrationBridge.getAgeState(level, firstVillager.getUUID()))
+                || !"ADULT".equalsIgnoreCase(MCAIntegrationBridge.getAgeState(level, secondVillager.getUUID()))) {
+            return MCARelationshipBridge.BetrothalResult.failure("Both villagers must be adults before the marriage may proceed.");
+        }
+
+        Object firstRelationships = MCAReflectionHelper.invoke(firstVillager, "getRelationships");
+        Object secondRelationships = MCAReflectionHelper.invoke(secondVillager, "getRelationships");
+        if (firstRelationships == null || secondRelationships == null) {
+            return MCARelationshipBridge.BetrothalResult.failure("One of the villagers' relationship records could not be read.");
+        }
+
+        if (areRelatives(firstRelationships, firstVillager, secondRelationships, secondVillager)) {
+            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are related and cannot be married.");
+        }
+
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
+                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
+            return MCARelationshipBridge.BetrothalResult.ok();
+        }
+
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarried")
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isMarried")) {
+            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already married.");
+        }
+
+        tryRelationshipStep(firstRelationships, firstVillager, secondVillager, "marry");
+        tryRelationshipStep(secondRelationships, secondVillager, firstVillager, "marry");
+
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
+                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
+            return MCARelationshipBridge.BetrothalResult.ok();
+        }
+
+        return MCARelationshipBridge.BetrothalResult.failure("Those villagers could not be advanced into marriage.");
+    }
+
     static boolean isActuallyMarried(ServerPlayer player, Entity villagerEntity) {
         if (player == null || villagerEntity == null) {
             return false;
@@ -254,6 +375,28 @@ final class MCARelationshipOps {
 
         Entity villager = MCAIntegrationBridge.getEntityByUuid(player.serverLevel(), villagerId);
         return isActuallyMarried(player, villager);
+    }
+
+    private static ServerLevel resolveServerLevel(Entity firstVillager, Entity secondVillager) {
+        if (firstVillager != null && firstVillager.level() instanceof ServerLevel level) {
+            return level;
+        }
+        if (secondVillager != null && secondVillager.level() instanceof ServerLevel level) {
+            return level;
+        }
+        return null;
+    }
+
+    private static boolean areRelatives(
+            Object firstRelationships,
+            Entity firstVillager,
+            Object secondRelationships,
+            Entity secondVillager
+    ) {
+        return MCARelationshipReflection.booleanCall(firstRelationships, "isRelative", secondVillager)
+                || MCARelationshipReflection.booleanCall(firstRelationships, "isRelative", secondVillager.getUUID())
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isRelative", firstVillager)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isRelative", firstVillager.getUUID());
     }
 
     private static void tryRelationshipStep(Object relationships, Entity self, Entity other, String methodName) {

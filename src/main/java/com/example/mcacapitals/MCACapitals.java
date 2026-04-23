@@ -1,6 +1,7 @@
 package com.example.mcacapitals;
 
 import com.example.mcacapitals.capital.CapitalPopulationScanner;
+import com.example.mcacapitals.item.BetrothalDecreeHandler;
 import com.example.mcacapitals.item.DeclarationOfAbdicationHandler;
 import com.example.mcacapitals.item.LegitimizationDecreeHandler;
 import com.example.mcacapitals.item.ModCreativeTabs;
@@ -45,6 +46,7 @@ public class MCACapitals {
         MinecraftForge.EVENT_BUS.register(new RoyalDisinheritanceHandler());
         MinecraftForge.EVENT_BUS.register(new LegitimizationDecreeHandler());
         MinecraftForge.EVENT_BUS.register(new DeclarationOfAbdicationHandler());
+        MinecraftForge.EVENT_BUS.register(new BetrothalDecreeHandler());
         MinecraftForge.EVENT_BUS.register(new CapitalLifecycleHandler());
         MinecraftForge.EVENT_BUS.register(new RoyalGuardInteractionHandler());
         MinecraftForge.EVENT_BUS.addListener(this::registerCommands);

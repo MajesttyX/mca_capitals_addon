@@ -8,9 +8,12 @@
     "VillagerCommandHandlerMixin",
     "DialogueChatFallbackMixin",
     "PlayerSaveDataMarriageMixin",
-    "VillagerTasksMCARoyalGuardMixin"
+    "VillagerTasksMCARoyalGuardMixin",
+    "BreedableRelationshipGiftMixin"
   ],
-  "client": [],
+  "client": [
+    "InteractScreenBetrothalMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

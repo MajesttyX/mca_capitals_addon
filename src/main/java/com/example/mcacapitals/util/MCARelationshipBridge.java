@@ -1,5 +1,6 @@
 package com.example.mcacapitals.util;
 
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
@@ -18,12 +19,24 @@ public final class MCARelationshipBridge {
         return MCARelationshipOps.promiseVillagerToVillager(firstVillager, secondVillager);
     }
 
+    public static BetrothalResult promiseVillagerToVillagerByDecree(Entity firstVillager, Entity secondVillager) {
+        return MCARelationshipOps.promiseVillagerToVillagerByDecree(firstVillager, secondVillager);
+    }
+
+    public static BetrothalResult validatePendingVillagerBetrothal(ServerLevel level, Entity firstVillager, Entity secondVillager) {
+        return MCARelationshipOps.validatePendingVillagerBetrothal(level, firstVillager, secondVillager);
+    }
+
     public static boolean areVillagersBetrothedToEachOther(Entity firstVillager, Entity secondVillager) {
         return MCARelationshipOps.areVillagersBetrothedToEachOther(firstVillager, secondVillager);
     }
 
     public static BetrothalResult marryVillagerToVillager(Entity firstVillager, Entity secondVillager) {
         return MCARelationshipOps.marryVillagerToVillager(firstVillager, secondVillager);
+    }
+
+    public static BetrothalResult marryVillagerToVillagerDirect(Entity firstVillager, Entity secondVillager) {
+        return MCARelationshipOps.marryVillagerToVillagerDirect(firstVillager, secondVillager);
     }
 
     public static boolean isActuallyMarried(ServerPlayer player, Entity villagerEntity) {
