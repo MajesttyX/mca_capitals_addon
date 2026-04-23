@@ -22,5 +22,21 @@
   "dialogue.mcacapitals_petition_noble_menu": "What noble dignity do you seek?",
   "dialogue.mcacapitals_petition_noble_menu.mcacapitals_petition_noble_lord": "Petition for Lordship",
   "dialogue.mcacapitals_petition_noble_menu.mcacapitals_petition_noble_duke": "Petition for Dukedom",
-  "dialogue.mcacapitals_petition_noble_menu.mcacapitals_petition_noble_back": "Return"
+  "dialogue.mcacapitals_petition_noble_menu.mcacapitals_petition_noble_back": "Return",
+  "dialogue.mcacapitals_chat_capital_topic_01": "There is never a true quiet day in a capital. Even silence here feels watchful.",
+  "dialogue.mcacapitals_chat_capital_topic_02": "People speak more carefully in a capital. Words tend to travel farther than footsteps.",
+  "dialogue.mcacapitals_chat_capital_topic_03": "A capital draws ambition the way lanterns draw moths.",
+  "dialogue.mcacapitals_chat_capital_topic_04": "Once a village becomes a capital, every little dispute starts sounding like state business.",
+  "dialogue.mcacapitals_chat_capital_topic_05": "A crown changes more than the ruler. It changes the whole mood of a place.",
+  "dialogue.mcacapitals_chat_capital_topic_06": "People stand a little straighter in a capital, as though history might be watching.",
+  "dialogue.mcacapitals_chat_capital_topic_07": "A capital is never short on rumours. Truth is the harder thing to come by.",
+  "dialogue.mcacapitals_chat_capital_topic_08": "Life in a capital feels busier, even when no one can quite say why.",
+  "dialogue.mcacapitals_chat_capital_topic_09": "Even celebration feels more political in a capital.",
+  "dialogue.mcacapitals_chat_capital_topic_10": "There is always the sense in a capital that someone, somewhere, is waiting for their moment.",
+  "dialogue.mcacapitals_chat_capital_fail_01": "This is not the best moment for idle talk. A capital keeps its people busy.",
+  "dialogue.mcacapitals_chat_capital_fail_02": "Another time. There is always too much happening in a capital for peace to last long.",
+  "dialogue.mcacapitals_chat_capital_fail_03": "Not now. Even small talk can feel like business in a capital.",
+  "dialogue.mcacapitals_chat_capital_fail_04": "Forgive me, but there are too many ears in a capital for careless words.",
+  "dialogue.mcacapitals_chat_capital_fail_05": "Perhaps later. People watch one another more closely in a capital.",
+  "dialogue.mcacapitals_chat_capital_fail_06": "Best not now. Capitals have a way of turning quiet moments into public ones."
 }

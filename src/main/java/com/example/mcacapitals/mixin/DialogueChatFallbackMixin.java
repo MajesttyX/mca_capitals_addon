@@ -6,7 +6,6 @@ import com.example.mcacapitals.capital.CapitalRecord;
 import com.example.mcacapitals.capital.CapitalState;
 import com.example.mcacapitals.capital.CapitalTitleResolver;
 import com.example.mcacapitals.util.MCAIntegrationBridge;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -14,103 +13,76 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-import java.util.List;
 import java.util.UUID;
 
 @Pseudo
 @Mixin(targets = "forge.net.mca.resources.data.dialogue.Actions", remap = false)
 public abstract class DialogueChatFallbackMixin {
 
-    private static final List<String> CAPITAL_CHAT_LINES = List.of(
-            "There is never a true quiet day in a capital. Even silence here feels watchful.",
-            "People speak more carefully in a capital. Words tend to travel farther than footsteps.",
-            "A capital draws ambition the way lanterns draw moths.",
-            "Once a village becomes a capital, every little dispute starts sounding like state business.",
-            "You can always tell a capital by the way everyone seems to know half a secret.",
-            "There is pride in a capital, though not always the peaceful sort.",
-            "A crown changes more than the ruler. It changes the whole mood of a place.",
-            "In a capital, even ordinary days feel like they are being observed.",
-            "People stand a little straighter in a capital, as though history might be watching.",
-            "Every capital has its gossip, its grudges, and its grand ideas. Usually all at once.",
-            "A capital is never short on rumours. Truth is the harder thing to come by.",
-            "It is strange how quickly a place begins to think itself important once it becomes a capital.",
-            "Capitals have a way of making small matters feel larger than they are.",
-            "There is always someone in a capital trying to rise, impress, or interfere.",
-            "Life in a capital feels busier, even when no one can quite say why.",
-            "The people here carry themselves differently now. A capital changes expectations.",
-            "You hear more polished smiles and quieter schemes in a capital than anywhere else.",
-            "A founded capital always seems to believe tomorrow will bring something significant.",
-            "In a capital, news reaches you quickly, though sense often arrives later.",
-            "There is a certain weight to living in a capital. Some wear it proudly, others poorly.",
-            "A capital teaches people to pay attention, whether they wish to or not.",
-            "Even celebration feels more political in a capital.",
-            "No one admits to listening for rumours here, yet everyone somehow hears them.",
-            "A capital makes people feel closer to power, even when they are nowhere near it.",
-            "There is more ceremony in a capital, but not always more wisdom.",
-            "The air in a capital always feels full of plans, promises, and suspicion.",
-            "Every capital has a pulse of its own. You feel it most when something is about to change.",
-            "People remember slights longer in a capital. Importance has a way of feeding memory.",
-            "A village may live simply, but a capital rarely allows itself that luxury.",
-            "There is always the sense in a capital that someone, somewhere, is waiting for their moment."
-    );
+    private static final String MCA_CHAT_TOPIC = "chat.topic";
+    private static final String MCA_CHAT_FAIL = "chat.fail";
+    private static final String CAPITAL_CHAT_TOPIC = "mcacapitals_chat_capital_topic";
+    private static final String CAPITAL_CHAT_FAIL = "mcacapitals_chat_capital_fail";
+    private static final int CAPITAL_TOPIC_CHANCE = 30;
+    private static final int CAPITAL_FAIL_CHANCE = 35;
 
-    @Inject(
+    @ModifyVariable(
             method = "lambda$static$0(Ljava/lang/String;Lforge/net/mca/entity/VillagerEntityMCA;Lnet/minecraft/server/level/ServerPlayer;)V",
             at = @At("HEAD"),
-            cancellable = true,
+            argsOnly = true,
+            ordinal = 0,
             remap = false
     )
-    private static void mcacapitals$replaceCapitalChatFallback(
+    private static String mcacapitals$redirectCapitalChatDialogue(
             String nextKey,
+            String ignoredCurrentQuestion,
             @Coerce Object villagerObj,
-            ServerPlayer player,
-            CallbackInfo ci
+            ServerPlayer player
     ) {
-        if (player == null || villagerObj == null || nextKey == null) {
-            return;
-        }
-
-        if (!"chat.success".equals(nextKey)) {
-            return;
+        if (nextKey == null || player == null || villagerObj == null) {
+            return nextKey;
         }
 
         if (!(villagerObj instanceof Entity villager)) {
-            return;
+            return nextKey;
+        }
+
+        if (!MCA_CHAT_TOPIC.equals(nextKey) && !MCA_CHAT_FAIL.equals(nextKey)) {
+            return nextKey;
         }
 
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = resolveCapital(level, villager.getUUID());
-        if (capital == null) {
-            return;
+        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
+            return nextKey;
         }
 
-        if (capital.getState() != CapitalState.ACTIVE) {
-            return;
+        if (MCA_CHAT_TOPIC.equals(nextKey)) {
+            if (level.random.nextInt(100) < CAPITAL_TOPIC_CHANCE) {
+                MCACapitals.LOGGER.info(
+                        "[MCACapitals] Redirected capital chat topic. villager='{}', player='{}', next='{}'",
+                        villager.getName().getString(),
+                        player.getName().getString(),
+                        CAPITAL_CHAT_TOPIC
+                );
+                return CAPITAL_CHAT_TOPIC;
+            }
+            return nextKey;
         }
 
-        if (CAPITAL_CHAT_LINES.isEmpty()) {
-            return;
+        if (level.random.nextInt(100) < CAPITAL_FAIL_CHANCE) {
+            MCACapitals.LOGGER.info(
+                    "[MCACapitals] Redirected capital chat fail. villager='{}', player='{}', next='{}'",
+                    villager.getName().getString(),
+                    player.getName().getString(),
+                    CAPITAL_CHAT_FAIL
+            );
+            return CAPITAL_CHAT_FAIL;
         }
 
-        if (level.random.nextInt(100) >= 30) {
-            return;
-        }
-
-        String line = CAPITAL_CHAT_LINES.get(level.random.nextInt(CAPITAL_CHAT_LINES.size()));
-        String spokenLine = villager.getName().getString() + ": " + line;
-
-        MCACapitals.LOGGER.info(
-                "[MCACapitals] Replaced capital chat.success fallback. villager='{}', player='{}', line='{}'",
-                villager.getName().getString(),
-                player.getName().getString(),
-                spokenLine
-        );
-
-        player.sendSystemMessage(Component.literal(spokenLine));
-        ci.cancel();
+        return nextKey;
     }
 
     private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {

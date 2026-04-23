@@ -1,0 +1,116 @@
+{
+  "silent": true,
+  "auto": true,
+  "answers": [
+    {
+      "name": "line_01",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_01"
+          }
+        }
+      ]
+    },
+    {
+      "name": "line_02",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_02"
+          }
+        }
+      ]
+    },
+    {
+      "name": "line_03",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_03"
+          }
+        }
+      ]
+    },
+    {
+      "name": "line_04",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_04"
+          }
+        }
+      ]
+    },
+    {
+      "name": "line_05",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_05"
+          }
+        }
+      ]
+    },
+    {
+      "name": "line_06",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_06"
+          }
+        }
+      ]
+    },
+    {
+      "name": "line_07",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_07"
+          }
+        }
+      ]
+    },
+    {
+      "name": "line_08",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_08"
+          }
+        }
+      ]
+    },
+    {
+      "name": "line_09",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_09"
+          }
+        }
+      ]
+    },
+    {
+      "name": "line_10",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "say": "mcacapitals_chat_capital_topic_10"
+          }
+        }
+      ]
+    }
+  ]
+}
