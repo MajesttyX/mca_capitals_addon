@@ -7,8 +7,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -20,6 +21,12 @@ public class CapitalRoyalGuardService {
     public static final int REQUIRED_POPULATION = 25;
     public static final int MAX_ROYAL_GUARDS = 3;
     public static final int PATROL_RADIUS = 3;
+
+    private static final double FOLLOW_START_DISTANCE = 4.5D;
+    private static final double MAX_IDLE_DISTANCE = 14.0D;
+    private static final double WALK_FOLLOW_SPEED = 1.1D;
+    private static final double SPRINT_FOLLOW_SPEED = 1.0D;
+    private static final double STATIONARY_CATCHUP_SPEED = 1.0D;
 
     private CapitalRoyalGuardService() {
     }
@@ -179,7 +186,10 @@ public class CapitalRoyalGuardService {
             return;
         }
 
-        int slot = 0;
+        double sovereignMoveSqr = sovereignEntity.getDeltaMovement().horizontalDistanceSqr();
+        boolean sovereignStanding = sovereignMoveSqr < 0.0009D;
+        boolean sovereignSprinting = sovereignEntity.isSprinting() || sovereignMoveSqr > 0.012D;
+
         for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
             if (guardId.equals(capital.getDowager()) || guardId.equals(capital.getConsort())) {
                 capital.removeRoyalGuard(guardId);
@@ -187,7 +197,9 @@ public class CapitalRoyalGuardService {
             }
 
             Entity guard = MCAIntegrationBridge.getEntityByUuid(level, guardId);
-            if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(guard)) continue;
+            if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(guard)) {
+                continue;
+            }
 
             if (capital.getRoyalGuardPatrolling().contains(guardId)) {
                 BlockPos anchor = capital.getRoyalGuardPatrolAnchors().getOrDefault(guardId, guard.blockPosition());
@@ -199,27 +211,93 @@ public class CapitalRoyalGuardService {
                 continue;
             }
 
-            double x = sovereignEntity.getX();
-            double y = sovereignEntity.getY();
-            double z = sovereignEntity.getZ();
-            double guardDistanceSqr = sovereignEntity.distanceToSqr(guard);
-
-            if (sovereignEntity instanceof LivingEntity living && living.isSleeping()) {
-                double angle = (Math.PI * 2.0D / Math.max(1, capital.getRoyalGuards().size())) * slot++;
-                double targetX = x + Math.cos(angle) * 2.5D;
-                double targetZ = z + Math.sin(angle) * 2.5D;
-                MCAIntegrationBridge.moveTo(guard, targetX, y, targetZ, 0.9D);
+            if (isInNativeMcaStayState(guard)) {
+                stopMovement(guard);
                 continue;
             }
 
-            double angle = (Math.PI * 2.0D / Math.max(1, capital.getRoyalGuards().size())) * slot++;
-            double targetX = x + Math.cos(angle) * 1.8D;
-            double targetZ = z + Math.sin(angle) * 1.8D;
+            double distanceToSovereignSqr = sovereignEntity.distanceToSqr(guard);
 
-            if (guardDistanceSqr > 4.0D) {
-                double speed = guardDistanceSqr > 100.0D ? 1.3D : 1.1D;
-                MCAIntegrationBridge.moveTo(guard, targetX, y, targetZ, speed);
+            if (sovereignStanding) {
+                if (distanceToSovereignSqr <= MAX_IDLE_DISTANCE * MAX_IDLE_DISTANCE) {
+                    stopMovement(guard);
+                } else {
+                    MCAIntegrationBridge.moveTo(
+                            guard,
+                            sovereignEntity.getX(),
+                            sovereignEntity.getY(),
+                            sovereignEntity.getZ(),
+                            STATIONARY_CATCHUP_SPEED
+                    );
+                }
+                continue;
             }
+
+            if (distanceToSovereignSqr <= FOLLOW_START_DISTANCE * FOLLOW_START_DISTANCE) {
+                stopMovement(guard);
+                continue;
+            }
+
+            double speed = sovereignSprinting ? SPRINT_FOLLOW_SPEED : WALK_FOLLOW_SPEED;
+            MCAIntegrationBridge.moveTo(
+                    guard,
+                    sovereignEntity.getX(),
+                    sovereignEntity.getY(),
+                    sovereignEntity.getZ(),
+                    speed
+            );
+        }
+    }
+
+    private static boolean isInNativeMcaStayState(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+
+        try {
+            Method getVillagerBrain = entity.getClass().getMethod("getVillagerBrain");
+            Object brain = getVillagerBrain.invoke(entity);
+            if (brain == null) {
+                return false;
+            }
+
+            for (Method method : brain.getClass().getMethods()) {
+                if (!method.getName().equals("getMoveState") || method.getParameterCount() != 0) {
+                    continue;
+                }
+
+                Object moveState = method.invoke(brain);
+                if (moveState instanceof Enum<?> stateEnum) {
+                    return "STAY".equals(stateEnum.name());
+                }
+                if (moveState != null) {
+                    return "STAY".equalsIgnoreCase(String.valueOf(moveState));
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        return false;
+    }
+
+    private static void stopMovement(Entity entity) {
+        if (entity == null) {
+            return;
+        }
+
+        if (entity instanceof Mob mob) {
+            mob.getNavigation().stop();
+            return;
+        }
+
+        try {
+            Method getNavigation = entity.getClass().getMethod("getNavigation");
+            Object navigation = getNavigation.invoke(entity);
+            if (navigation != null) {
+                Method stop = navigation.getClass().getMethod("stop");
+                stop.invoke(navigation);
+            }
+        } catch (Exception ignored) {
         }
     }
 
@@ -324,6 +402,10 @@ public class CapitalRoyalGuardService {
     private static String buildRoyalGuardHistoryName(ServerLevel level, UUID entityId) {
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
         String baseName = entity != null ? entity.getName().getString() : entityId.toString();
+        int stateIndex = baseName.indexOf(" (");
+        if (stateIndex >= 0) {
+            baseName = baseName.substring(0, stateIndex).trim();
+        }
         baseName = baseName.replace(" of the Kingsguard", "").replace(" of the Queensguard", "");
         return baseName.trim();
     }
@@ -331,6 +413,10 @@ public class CapitalRoyalGuardService {
     public static String buildRoyalGuardDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId) {
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
         String baseName = entity != null ? entity.getName().getString() : entityId.toString();
+        int stateIndex = baseName.indexOf(" (");
+        if (stateIndex >= 0) {
+            baseName = baseName.substring(0, stateIndex).trim();
+        }
         baseName = baseName.replace(" of the Kingsguard", "").replace(" of the Queensguard", "");
         for (String prefix : new String[]{
                 "High Queen ",
