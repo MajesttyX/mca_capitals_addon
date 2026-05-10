@@ -98,6 +98,11 @@ final class MCARelationshipOps {
             return MCARelationshipBridge.BetrothalResult.failure("A villager cannot be recommended for betrothal to themself.");
         }
 
+        ServerLevel level = resolveServerLevel(firstVillager, secondVillager);
+        if (level == null) {
+            return MCARelationshipBridge.BetrothalResult.failure("The world context for that betrothal could not be resolved.");
+        }
+
         Object firstRelationships = MCAReflectionHelper.invoke(firstVillager, "getRelationships");
         Object secondRelationships = MCAReflectionHelper.invoke(secondVillager, "getRelationships");
 
@@ -130,6 +135,10 @@ final class MCARelationshipOps {
 
         if (MCARelationshipReflection.booleanCall(firstRelationships, "isPromised") || MCARelationshipReflection.booleanCall(secondRelationships, "isPromised")) {
             return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already promised elsewhere.");
+        }
+
+        if (areRelatives(level, firstRelationships, firstVillager, secondRelationships, secondVillager)) {
+            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are related and cannot be joined by betrothal.");
         }
 
         Object firstAttracted = MCARelationshipReflection.invokeCompatible(firstVillager, "canBeAttractedTo", secondVillager);
@@ -220,7 +229,7 @@ final class MCARelationshipOps {
             return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already promised elsewhere.");
         }
 
-        if (areRelatives(firstRelationships, firstVillager, secondRelationships, secondVillager)) {
+        if (areRelatives(level, firstRelationships, firstVillager, secondRelationships, secondVillager)) {
             return MCARelationshipBridge.BetrothalResult.failure("Those villagers are related and cannot be joined by betrothal decree.");
         }
 
@@ -321,7 +330,7 @@ final class MCARelationshipOps {
             return MCARelationshipBridge.BetrothalResult.failure("One of the villagers' relationship records could not be read.");
         }
 
-        if (areRelatives(firstRelationships, firstVillager, secondRelationships, secondVillager)) {
+        if (areRelatives(level, firstRelationships, firstVillager, secondRelationships, secondVillager)) {
             return MCARelationshipBridge.BetrothalResult.failure("Those villagers are related and cannot be married.");
         }
 
@@ -388,11 +397,19 @@ final class MCARelationshipOps {
     }
 
     private static boolean areRelatives(
+            ServerLevel level,
             Object firstRelationships,
             Entity firstVillager,
             Object secondRelationships,
             Entity secondVillager
     ) {
+        if (level != null
+                && firstVillager != null
+                && secondVillager != null
+                && MCAIntegrationBridge.areCloselyRelatedForMarriage(level, firstVillager.getUUID(), secondVillager.getUUID())) {
+            return true;
+        }
+
         return MCARelationshipReflection.booleanCall(firstRelationships, "isRelative", secondVillager)
                 || MCARelationshipReflection.booleanCall(firstRelationships, "isRelative", secondVillager.getUUID())
                 || MCARelationshipReflection.booleanCall(secondRelationships, "isRelative", firstVillager)

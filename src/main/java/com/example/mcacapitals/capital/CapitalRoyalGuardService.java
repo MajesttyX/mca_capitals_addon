@@ -141,8 +141,29 @@ public class CapitalRoyalGuardService {
         CapitalChronicleService.addEntry(level, capital,
                 guardName + " was named to the royal guard of " + villageName + ".");
 
-        CapitalNameService.refreshCapitalNames(level, capital, CapitalResidentScanner.scanResidents(level, capital.getCapitalId()));
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
+        CapitalNameService.refreshCapitalNames(level, capital, residents);
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
+        return true;
+    }
+
+    public static boolean togglePatrol(ServerLevel level, CapitalRecord capital, UUID guardId) {
+        if (level == null || capital == null || guardId == null) {
+            return false;
+        }
+        if (!capital.getRoyalGuards().contains(guardId)) {
+            return false;
+        }
+
+        CapitalRecord.GuardDutyMode current = capital.getRoyalGuardDutyMode(guardId);
+        CapitalRecord.GuardDutyMode next =
+                current == CapitalRecord.GuardDutyMode.PATROL_ANCHOR
+                        ? CapitalRecord.GuardDutyMode.FOLLOW_SOVEREIGN
+                        : CapitalRecord.GuardDutyMode.PATROL_ANCHOR;
+
+        capital.setRoyalGuardDutyMode(guardId, next);
         CapitalDataAccess.markDirty(level);
         return true;
     }
@@ -180,277 +201,228 @@ public class CapitalRoyalGuardService {
         return false;
     }
 
-    private static void tickBehaviors(ServerLevel level, CapitalRecord capital) {
-        Entity sovereignEntity = resolveSovereignEntity(level, capital);
-        if (sovereignEntity == null) {
-            return;
-        }
-
-        double sovereignMoveSqr = sovereignEntity.getDeltaMovement().horizontalDistanceSqr();
-        boolean sovereignStanding = sovereignMoveSqr < 0.0009D;
-        boolean sovereignSprinting = sovereignEntity.isSprinting() || sovereignMoveSqr > 0.012D;
-
-        for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
-            if (guardId.equals(capital.getDowager()) || guardId.equals(capital.getConsort())) {
-                capital.removeRoyalGuard(guardId);
-                continue;
-            }
-
-            Entity guard = MCAIntegrationBridge.getEntityByUuid(level, guardId);
-            if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(guard)) {
-                continue;
-            }
-
-            if (capital.getRoyalGuardPatrolling().contains(guardId)) {
-                BlockPos anchor = capital.getRoyalGuardPatrolAnchors().getOrDefault(guardId, guard.blockPosition());
-                if (guard.distanceToSqr(anchor.getX() + 0.5D, anchor.getY(), anchor.getZ() + 0.5D) > 100.0D || level.random.nextInt(10) == 0) {
-                    int dx = level.random.nextInt(PATROL_RADIUS * 2 + 1) - PATROL_RADIUS;
-                    int dz = level.random.nextInt(PATROL_RADIUS * 2 + 1) - PATROL_RADIUS;
-                    MCAIntegrationBridge.moveTo(guard, anchor.getX() + 0.5D + dx, anchor.getY(), anchor.getZ() + 0.5D + dz, 0.9D);
-                }
-                continue;
-            }
-
-            if (isInNativeMcaStayState(guard)) {
-                stopMovement(guard);
-                continue;
-            }
-
-            double distanceToSovereignSqr = sovereignEntity.distanceToSqr(guard);
-
-            if (sovereignStanding) {
-                if (distanceToSovereignSqr <= MAX_IDLE_DISTANCE * MAX_IDLE_DISTANCE) {
-                    stopMovement(guard);
-                } else {
-                    MCAIntegrationBridge.moveTo(
-                            guard,
-                            sovereignEntity.getX(),
-                            sovereignEntity.getY(),
-                            sovereignEntity.getZ(),
-                            STATIONARY_CATCHUP_SPEED
-                    );
-                }
-                continue;
-            }
-
-            if (distanceToSovereignSqr <= FOLLOW_START_DISTANCE * FOLLOW_START_DISTANCE) {
-                stopMovement(guard);
-                continue;
-            }
-
-            double speed = sovereignSprinting ? SPRINT_FOLLOW_SPEED : WALK_FOLLOW_SPEED;
-            MCAIntegrationBridge.moveTo(
-                    guard,
-                    sovereignEntity.getX(),
-                    sovereignEntity.getY(),
-                    sovereignEntity.getZ(),
-                    speed
-            );
-        }
+    private static void recordDisgrace(ServerLevel level, CapitalRecord capital, UUID guardId) {
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String name = buildRoyalGuardHistoryName(level, guardId);
+        CapitalChronicleService.addEntry(
+                level,
+                capital,
+                name + " was disgraced after failing to preserve the reign of " + villageName + "."
+        );
     }
 
-    private static boolean isInNativeMcaStayState(Entity entity) {
+    public static String buildRoyalGuardDisplayName(ServerLevel level, CapitalRecord capital, UUID guardId) {
+        String title = MCAIntegrationBridge.isFemale(level, guardId) ? "Dame" : "Sir";
+        String baseName = resolveBaseName(level, guardId);
+        return title + " " + baseName + " of the " + (capital.isSovereignFemale() ? "Queensguard" : "Kingsguard");
+    }
+
+    private static String buildRoyalGuardHistoryName(ServerLevel level, UUID guardId) {
+        String title = MCAIntegrationBridge.isFemale(level, guardId) ? "Dame" : "Sir";
+        String baseName = resolveBaseName(level, guardId);
+        return title + " " + baseName;
+    }
+
+    private static String resolveBaseName(ServerLevel level, UUID entityId) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
         if (entity == null) {
-            return false;
+            return entityId.toString();
+        }
+        String currentName = entity.getName().getString();
+        currentName = currentName.replace(" of the Kingsguard", "").replace(" of the Queensguard", "").trim();
+
+        String[] prefixes = {
+                "High Queen ", "High King ",
+                "Dowager Queen ", "Dowager King ",
+                "Queen Consort ", "King Consort ",
+                "Heir Apparent ", "Crown Princess ", "Crown Prince ",
+                "Dowager Princess ", "Dowager Prince ",
+                "Princess Consort ", "Prince Consort ",
+                "Hand of the Queen ", "Hand of the King ",
+                "Grand Maester ", "Maester ", "Court Herald ",
+                "Princess ", "Prince ",
+                "Lord Commander ",
+                "Dowager Duchess ", "Dowager Duke ",
+                "Duchess ", "Duke ",
+                "Lady ", "Lord ",
+                "Dame ", "Sir ",
+                "Queen ", "King "
+        };
+
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (String prefix : prefixes) {
+                if (currentName.startsWith(prefix)) {
+                    currentName = currentName.substring(prefix.length()).trim();
+                    changed = true;
+                    break;
+                }
+            }
         }
 
-        try {
-            Method getVillagerBrain = entity.getClass().getMethod("getVillagerBrain");
-            Object brain = getVillagerBrain.invoke(entity);
-            if (brain == null) {
-                return false;
-            }
-
-            for (Method method : brain.getClass().getMethods()) {
-                if (!method.getName().equals("getMoveState") || method.getParameterCount() != 0) {
-                    continue;
-                }
-
-                Object moveState = method.invoke(brain);
-                if (moveState instanceof Enum<?> stateEnum) {
-                    return "STAY".equals(stateEnum.name());
-                }
-                if (moveState != null) {
-                    return "STAY".equalsIgnoreCase(String.valueOf(moveState));
-                }
-            }
-        } catch (Exception ignored) {
-        }
-
-        return false;
+        return currentName.isBlank() ? entityId.toString() : currentName;
     }
 
-    private static void stopMovement(Entity entity) {
-        if (entity == null) {
-            return;
-        }
-
-        if (entity instanceof Mob mob) {
-            mob.getNavigation().stop();
-            return;
-        }
-
-        try {
-            Method getNavigation = entity.getClass().getMethod("getNavigation");
-            Object navigation = getNavigation.invoke(entity);
-            if (navigation != null) {
-                Method stop = navigation.getClass().getMethod("stop");
-                stop.invoke(navigation);
-            }
-        } catch (Exception ignored) {
-        }
-    }
-
-    private static Entity resolveSovereignEntity(ServerLevel level, CapitalRecord capital) {
-        if (level == null || capital == null || capital.getSovereign() == null) {
-            return null;
-        }
-
-        Entity sovereignEntity = MCAIntegrationBridge.getEntityByUuid(level, capital.getSovereign());
-        if (sovereignEntity != null) {
-            return sovereignEntity;
-        }
-
-        return level.getServer().getPlayerList().getPlayer(capital.getSovereign());
-    }
-
-    public static boolean togglePatrol(ServerLevel level, CapitalRecord capital, UUID guardId) {
-        if (!capital.isRoyalGuard(guardId)) return false;
-        if (guardId.equals(capital.getDowager()) || guardId.equals(capital.getConsort())) return false;
-
-        if (capital.getRoyalGuardPatrolling().contains(guardId)) {
-            capital.getRoyalGuardPatrolling().remove(guardId);
-            capital.getRoyalGuardPatrolAnchors().remove(guardId);
-        } else {
-            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, guardId);
-            BlockPos anchor = entity != null ? entity.blockPosition() : BlockPos.ZERO;
-            capital.getRoyalGuardPatrolling().add(guardId);
-            capital.getRoyalGuardPatrolAnchors().put(guardId, anchor);
-        }
-        CapitalDataAccess.markDirty(level);
-        return true;
+    private static boolean isValidRoyalGuard(ServerLevel level, CapitalRecord capital, UUID villagerId, Set<UUID> residents) {
+        if (villagerId == null || capital == null || level == null) return false;
+        if (capital.getSovereign() == null) return false;
+        if (!MCAIntegrationBridge.isAliveMCAVillager(level, villagerId)) return false;
+        if (!MCAIntegrationBridge.isMCAGuard(level, villagerId)) return false;
+        if (villagerId.equals(capital.getSovereign())) return false;
+        return capital.getRoyalGuards().contains(villagerId);
     }
 
     private static boolean isEligibleForNewRoyalGuard(ServerLevel level, CapitalRecord capital) {
-        return capital.getVillageId() != null
-                && MCAIntegrationBridge.getVillagePopulation(level, capital.getVillageId()) >= REQUIRED_POPULATION
-                && capital.getRoyalGuards().size() < MAX_ROYAL_GUARDS;
-    }
-
-    private static boolean isCandidate(ServerLevel level, CapitalRecord capital, UUID residentId) {
-        if (residentId == null) return false;
-        if (capital.isRoyalGuard(residentId) || capital.isDisgracedRoyalGuard(residentId)) return false;
-        if (!MCAIntegrationBridge.isMCAFootGuard(level, residentId)) return false;
-        if (residentId.equals(capital.getSovereign())) return false;
-        if (residentId.equals(capital.getConsort())) return false;
-        if (residentId.equals(capital.getDowager())) return false;
-        if (residentId.equals(capital.getCommander())) return false;
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, residentId);
-        return MCAIntegrationBridge.isAliveMCAVillagerEntity(entity);
+        if (level == null || capital == null || capital.getVillageId() == null) return false;
+        return MCAIntegrationBridge.getVillagePopulation(level, capital.getVillageId()) >= REQUIRED_POPULATION;
     }
 
     private static UUID findBestCandidate(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
-        return getValidCandidates(level, capital, residents).stream().findFirst().orElse(null);
+        List<UUID> valid = getValidCandidates(level, capital, residents);
+        if (valid.isEmpty()) return null;
+        return valid.get(0);
     }
 
-    private static boolean isValidRoyalGuard(ServerLevel level, CapitalRecord capital, UUID guardId, Set<UUID> residents) {
-        if (guardId == null) return false;
-        if (guardId.equals(capital.getSovereign())) return false;
-        if (guardId.equals(capital.getConsort())) return false;
-        if (guardId.equals(capital.getDowager())) return false;
-        if (guardId.equals(capital.getCommander())) return false;
-        if (capital.isDisgracedRoyalGuard(guardId)) return false;
-
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, guardId);
-        if (entity == null) {
-            return true;
-        }
-
-        return MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)
-                && MCAIntegrationBridge.isMCAFootGuard(level, guardId);
+    private static boolean isCandidate(ServerLevel level, CapitalRecord capital, UUID villagerId) {
+        if (villagerId == null || capital == null || level == null) return false;
+        if (capital.getRoyalGuards().contains(villagerId)) return false;
+        if (villagerId.equals(capital.getSovereign())) return false;
+        if (villagerId.equals(capital.getCommander())) return false;
+        if (villagerId.equals(capital.getHand())) return false;
+        if (villagerId.equals(capital.getGrandMaester())) return false;
+        if (villagerId.equals(capital.getHerald())) return false;
+        if (villagerId.equals(capital.getHeir())) return false;
+        if (villagerId.equals(capital.getConsort())) return false;
+        if (villagerId.equals(capital.getDowager())) return false;
+        if (capital.isRoyalChild(villagerId)) return false;
+        if (capital.isLegitimizedRoyalChild(villagerId)) return false;
+        if (capital.isPrinceConsort(villagerId)) return false;
+        if (capital.isDowagerPrince(villagerId)) return false;
+        if (capital.isDuke(villagerId) || capital.isMarriageDuke(villagerId) || capital.isDowagerDuke(villagerId)) return false;
+        if (capital.isLord(villagerId)) return false;
+        if (!MCAIntegrationBridge.isAliveMCAVillager(level, villagerId)) return false;
+        return MCAIntegrationBridge.isMCAGuard(level, villagerId);
     }
 
     private static void maybePromptPlayerSovereign(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
-        Entity sovereignEntity = resolveSovereignEntity(level, capital);
-        if (!(sovereignEntity instanceof ServerPlayer player)) return;
-
         long currentDay = Math.max(1L, level.getDayTime() / 24000L + 1L);
-        if (capital.getLastRoyalGuardPromptDay() >= currentDay) return;
+        if (capital.getLastRoyalGuardPromptDay() == currentDay) {
+            return;
+        }
 
         List<UUID> candidates = getValidCandidates(level, capital, residents);
-        if (candidates.isEmpty()) return;
+        if (candidates.isEmpty()) {
+            return;
+        }
 
-        if (!CapitalPlayerNotificationService.isPlayerWithinCapital(level, capital, player)) return;
+        UUID playerId = capital.getPlayerSovereignId();
+        if (playerId == null) {
+            return;
+        }
 
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        String guardName = capital.isSovereignFemale() ? "Queensguard" : "Kingsguard";
-
-        player.sendSystemMessage(Component.literal(
-                "As sovereign of " + villageName + ", you may now appoint loyal defenders to your " + guardName + "."
-        ));
+        ServerPlayer sovereign = level.getServer().getPlayerList().getPlayer(playerId);
+        if (sovereign == null) {
+            return;
+        }
 
         capital.setLastRoyalGuardPromptDay(currentDay);
         CapitalDataAccess.markDirty(level);
+
+        sovereign.sendSystemMessage(Component.literal(
+                "Your capital can appoint up to " + MAX_ROYAL_GUARDS + " royal guards. "
+                        + "Use /capitaltest court or the Royal Scepter to appoint an eligible guard."
+        ));
     }
 
-    private static void recordDisgrace(ServerLevel level, CapitalRecord capital, UUID guardId) {
-        String guardName = buildRoyalGuardDisplayName(level, capital, guardId);
-        CapitalChronicleService.addEntry(level, capital,
-                guardName + " was disgraced and stripped of royal guard honors after the fall of their sovereign.");
-    }
-
-    private static String buildRoyalGuardHistoryName(ServerLevel level, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        String baseName = entity != null ? entity.getName().getString() : entityId.toString();
-        int stateIndex = baseName.indexOf(" (");
-        if (stateIndex >= 0) {
-            baseName = baseName.substring(0, stateIndex).trim();
+    private static void tickBehaviors(ServerLevel level, CapitalRecord capital) {
+        UUID sovereignId = capital.getSovereign();
+        if (sovereignId == null) {
+            return;
         }
-        baseName = baseName.replace(" of the Kingsguard", "").replace(" of the Queensguard", "");
-        return baseName.trim();
-    }
 
-    public static String buildRoyalGuardDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        String baseName = entity != null ? entity.getName().getString() : entityId.toString();
-        int stateIndex = baseName.indexOf(" (");
-        if (stateIndex >= 0) {
-            baseName = baseName.substring(0, stateIndex).trim();
+        Entity sovereign = MCAIntegrationBridge.getEntityByUuid(level, sovereignId);
+        if (sovereign == null) {
+            return;
         }
-        baseName = baseName.replace(" of the Kingsguard", "").replace(" of the Queensguard", "");
-        for (String prefix : new String[]{
-                "High Queen ",
-                "High King ",
-                "Dowager Queen ",
-                "Dowager King ",
-                "Queen Consort ",
-                "King Consort ",
-                "Heir Apparent ",
-                "Crown Princess ",
-                "Crown Prince ",
-                "Princess Consort ",
-                "Prince Consort ",
-                "Hand of the Queen ",
-                "Hand of the King ",
-                "Princess ",
-                "Prince ",
-                "Duchess ",
-                "Duke ",
-                "Commander ",
-                "Lady ",
-                "Lord ",
-                "Dame ",
-                "Sir ",
-                "Queen ",
-                "King "
-        }) {
-            if (baseName.startsWith(prefix)) {
-                baseName = baseName.substring(prefix.length()).trim();
-                break;
+
+        for (UUID guardId : capital.getRoyalGuards()) {
+            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, guardId);
+            if (!(entity instanceof Mob mob)) {
+                continue;
+            }
+
+            if (mob.isSleeping()) {
+                stopNavigation(mob);
+                continue;
+            }
+
+            if (capital.getRoyalGuardDutyMode(guardId) == CapitalRecord.GuardDutyMode.PATROL_ANCHOR) {
+                stopNavigation(mob);
+                continue;
+            }
+
+            BlockPos sovereignPos = sovereign.blockPosition();
+            double distance = mob.distanceToSqr(sovereign);
+
+            if (distance > MAX_IDLE_DISTANCE * MAX_IDLE_DISTANCE) {
+                navigateToEntity(mob, sovereign, SPRINT_FOLLOW_SPEED);
+                continue;
+            }
+
+            if (distance > FOLLOW_START_DISTANCE * FOLLOW_START_DISTANCE) {
+                double speed = sovereign.isSprinting() ? SPRINT_FOLLOW_SPEED : WALK_FOLLOW_SPEED;
+                navigateToEntity(mob, sovereign, speed);
+                continue;
+            }
+
+            BlockPos idle = findIdlePointNear(level, sovereignPos, mob.getUUID());
+            if (idle != null && mob.distanceToSqr(idle.getX() + 0.5D, idle.getY(), idle.getZ() + 0.5D) > 3.0D) {
+                navigateToBlock(mob, idle, STATIONARY_CATCHUP_SPEED);
+            } else {
+                stopNavigation(mob);
             }
         }
-        String honorific = MCAIntegrationBridge.isFemale(level, entityId) ? "Dame " : "Sir ";
-        String suffix = capital.isSovereignFemale() ? " of the Queensguard" : " of the Kingsguard";
-        return honorific + baseName + suffix;
+    }
+
+    private static BlockPos findIdlePointNear(ServerLevel level, BlockPos center, UUID seedId) {
+        List<BlockPos> positions = new ArrayList<>();
+        for (int dx = -PATROL_RADIUS; dx <= PATROL_RADIUS; dx++) {
+            for (int dz = -PATROL_RADIUS; dz <= PATROL_RADIUS; dz++) {
+                BlockPos pos = center.offset(dx, 0, dz);
+                if (level.isEmptyBlock(pos) && level.isEmptyBlock(pos.above()) && level.getBlockState(pos.below()).isSolidRender(level, pos.below())) {
+                    positions.add(pos);
+                }
+            }
+        }
+
+        if (positions.isEmpty()) {
+            return center;
+        }
+
+        positions.sort(Comparator.comparing(BlockPos::asLong));
+        int index = Math.floorMod((seedId.toString() + ":" + center.asLong()).hashCode(), positions.size());
+        return positions.get(index);
+    }
+
+    private static void navigateToEntity(Mob mob, Entity target, double speed) {
+        mob.getNavigation().moveTo(target, speed);
+        faceTargetIfPossible(mob, target);
+    }
+
+    private static void navigateToBlock(Mob mob, BlockPos pos, double speed) {
+        mob.getNavigation().moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, speed);
+    }
+
+    private static void stopNavigation(Mob mob) {
+        mob.getNavigation().stop();
+    }
+
+    private static void faceTargetIfPossible(Mob mob, Entity target) {
+        try {
+            Method lookAt = mob.getClass().getMethod("lookAt", Entity.class, float.class, float.class);
+            lookAt.invoke(mob, target, 30.0F, 30.0F);
+        } catch (ReflectiveOperationException ignored) {
+        }
     }
 }

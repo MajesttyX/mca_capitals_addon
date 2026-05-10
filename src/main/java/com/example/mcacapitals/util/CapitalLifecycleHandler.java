@@ -3,6 +3,7 @@ package com.example.mcacapitals.util;
 import com.example.mcacapitals.capital.CapitalCourtWatcher;
 import com.example.mcacapitals.capital.CapitalManager;
 import com.example.mcacapitals.capital.CapitalRecord;
+import com.example.mcacapitals.capital.CapitalResidentScanner;
 import com.example.mcacapitals.data.CapitalDataAccess;
 import com.example.mcacapitals.data.CapitalSavedData;
 import net.minecraft.server.level.ServerLevel;
@@ -15,6 +16,7 @@ public class CapitalLifecycleHandler {
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         CapitalManager.clearAll();
+        CapitalResidentScanner.clearAllCaches();
         CapitalCourtWatcher.clearAllFingerprints();
 
         ServerLevel overworld = event.getServer().overworld();
@@ -29,11 +31,19 @@ public class CapitalLifecycleHandler {
             }
             CapitalManager.putCapital(capital);
         }
+
+        for (CapitalRecord capital : data.getCapitals()) {
+            if (capital == null || capital.getCapitalId() == null) {
+                continue;
+            }
+            CapitalCourtWatcher.seedCurrentState(overworld, capital);
+        }
     }
 
     @SubscribeEvent
     public void onServerStopped(ServerStoppedEvent event) {
         CapitalManager.clearAll();
+        CapitalResidentScanner.clearAllCaches();
         CapitalCourtWatcher.clearAllFingerprints();
     }
 }

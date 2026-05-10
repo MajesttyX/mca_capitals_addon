@@ -7,15 +7,23 @@ final class CapitalDialogueEventModels {
 
     enum EventType {
         NONE,
-        MARRIAGE,
-        DEATH_OR_SUCCESSION,
-        MOURNING_DECLARED,
-        MOURNING_ENDED,
         HEIR_NAMED,
+        CAPITAL_FOUNDED,
+        ROYAL_MARRIAGE,
+        SOVEREIGN_DEATH,
+        THRONE_SEIZED,
         DISINHERITED,
         LEGITIMIZED,
-        THRONE_CHANGE,
-        CAPITAL_FOUNDED,
+        ABDICATION,
+        NEW_DUKE_OR_DUCHESS,
+        LORD_COMMANDER_APPOINTED,
+        HAND_APPOINTED,
+        GRAND_MAESTER_APPOINTED,
+        ROYAL_GUARD_APPOINTED,
+        PEACEFUL_TRANSFER,
+        ROYAL_BIRTH,
+        COURT_HERALD_APPOINTED,
+        MOURNING_ENDED,
         GENERIC_NOTABLE
     }
 

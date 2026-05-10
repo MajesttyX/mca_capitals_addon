@@ -93,8 +93,36 @@ public final class MCAIntegrationBridge {
         return MCAFamilyBridge.getChildren(level, entityId);
     }
 
+    public static UUID getFather(ServerLevel level, UUID entityId) {
+        return MCAFamilyBridge.getFather(level, entityId);
+    }
+
+    public static UUID getMother(ServerLevel level, UUID entityId) {
+        return MCAFamilyBridge.getMother(level, entityId);
+    }
+
+    public static Set<UUID> getParents(ServerLevel level, UUID entityId) {
+        return MCAFamilyBridge.getParents(level, entityId);
+    }
+
     public static boolean isChildOf(ServerLevel level, UUID childId, UUID parentId) {
         return MCAFamilyBridge.isChildOf(level, childId, parentId);
+    }
+
+    public static boolean areSiblings(ServerLevel level, UUID firstId, UUID secondId) {
+        return MCAFamilyBridge.areSiblings(level, firstId, secondId);
+    }
+
+    public static boolean isGrandparentOf(ServerLevel level, UUID possibleGrandparent, UUID possibleGrandchild) {
+        return MCAFamilyBridge.isGrandparentOf(level, possibleGrandparent, possibleGrandchild);
+    }
+
+    public static boolean isAuntOrUncleOf(ServerLevel level, UUID possibleAuntOrUncle, UUID possibleNieceOrNephew) {
+        return MCAFamilyBridge.isAuntOrUncleOf(level, possibleAuntOrUncle, possibleNieceOrNephew);
+    }
+
+    public static boolean areCloselyRelatedForMarriage(ServerLevel level, UUID firstId, UUID secondId) {
+        return MCAFamilyBridge.areCloselyRelatedForMarriage(level, firstId, secondId);
     }
 
     public static boolean isMCAGuard(ServerLevel level, UUID entityId) {

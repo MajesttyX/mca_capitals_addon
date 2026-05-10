@@ -3,12 +3,12 @@
   "auto": true,
   "answers": [
     {
-      "name": "all_ranks",
+      "name": "abdication",
       "priority": 0,
       "results": [
         {
           "actions": {
-            "next": "mcacapitals_runtime_mcacapitals_chat_capital_topic"
+            "next": "mcacapitals_runtime_mcacapitals_chat_news_abdication"
           }
         }
       ]

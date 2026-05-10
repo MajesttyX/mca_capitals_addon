@@ -43,12 +43,49 @@ public class CapitalChronicleService {
             return;
         }
 
-        long day = Math.max(1L, level.getDayTime() / 24000L + 1L);
-        capital.addChronicleEntry("Day " + day + ": " + text);
-
-        if (isProclamation(text)) {
-            broadcastProclamation(level, capital, text);
+        String trimmed = text.trim();
+        if (hasChronicleText(capital, trimmed)) {
+            return;
         }
+
+        long day = Math.max(1L, level.getDayTime() / 24000L + 1L);
+        capital.addChronicleEntry("Day " + day + ": " + trimmed);
+
+        if (isProclamation(trimmed)) {
+            broadcastProclamation(level, capital, trimmed);
+        }
+    }
+
+    private static boolean hasChronicleText(CapitalRecord capital, String text) {
+        if (capital == null || text == null || text.isBlank()) {
+            return false;
+        }
+
+        for (String entry : capital.getChronicleEntries()) {
+            if (entry == null || entry.isBlank()) {
+                continue;
+            }
+
+            String normalized = stripChroniclePrefix(entry);
+            if (text.equals(normalized)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static String stripChroniclePrefix(String entry) {
+        if (entry == null) {
+            return "";
+        }
+
+        int colon = entry.indexOf(':');
+        if (entry.startsWith("Day ") && colon >= 0 && colon + 1 < entry.length()) {
+            return entry.substring(colon + 1).trim();
+        }
+
+        return entry.trim();
     }
 
     private static boolean isProclamation(String text) {
@@ -156,45 +193,46 @@ public class CapitalChronicleService {
         if (guard.matches()) {
             return pick(trimmed,
                     "By sovereign command, " + guard.group(1) + " now stands among the royal guard of " + guard.group(2) + ".",
-                    "Let all know that " + guard.group(1) + " has taken up service in the royal guard of " + guard.group(2) + ".",
-                    guard.group(1) + " has joined the royal guard of " + guard.group(2) + ".",
+                    "Let all in " + guard.group(2) + " know: " + guard.group(1) + " has joined the royal guard.",
+                    guard.group(1) + " now serves in the royal guard of " + guard.group(2) + ".",
                     "The crown now counts " + guard.group(1) + " among the royal guard of " + guard.group(2) + ".",
-                    guard.group(1) + " now serves in the royal guard of " + guard.group(2) + ".");
+                    guard.group(1) + " has taken up sworn service in the royal guard of " + guard.group(2) + ".");
         }
 
         Matcher commander = COMMANDER_APPOINTMENT.matcher(trimmed);
         if (commander.matches()) {
             return pick(trimmed,
-                    "By command of the crown, " + commander.group(1) + " now serves as Lord Commander of the " + commander.group(2) + " of " + commander.group(3) + ".",
-                    "Let all in " + commander.group(3) + " know: " + commander.group(1) + " has been raised as Lord Commander of the " + commander.group(2) + ".",
-                    commander.group(1) + " is named Lord Commander of the " + commander.group(2) + " of " + commander.group(3) + ".",
-                    "The crown entrusts the " + commander.group(2).toLowerCase(Locale.ROOT) + " of " + commander.group(3) + " to Lord Commander " + commander.group(1) + ".",
-                    commander.group(1) + " now holds command over the " + commander.group(2).toLowerCase(Locale.ROOT) + " of " + commander.group(3) + ".");
+                    "By decree of the crown, " + commander.group(1) + " now commands the " + commander.group(2) + " of " + commander.group(3) + ".",
+                    commander.group(1) + " has been appointed Commander of the " + commander.group(2) + " in " + commander.group(3) + ".",
+                    "Let all in " + commander.group(3) + " know: " + commander.group(1) + " now bears command of the " + commander.group(2) + ".",
+                    commander.group(1) + " now holds command over the " + commander.group(2) + " of " + commander.group(3) + ".",
+                    "The court proclaims " + commander.group(1) + " Commander of the " + commander.group(2) + " of " + commander.group(3) + ".");
         }
 
         Matcher vacancy = VACANCY.matcher(trimmed);
         if (vacancy.matches()) {
             return pick(trimmed,
-                    "Let it be known that the office of " + vacancy.group(1) + " now stands vacant in " + vacancy.group(2) + ".",
-                    "This solemn notice is given: " + vacancy.group(1) + " stands vacant in " + vacancy.group(2) + ".",
-                    "By proclamation of the court, the office of " + vacancy.group(1) + " is vacant in " + vacancy.group(2) + ".",
-                    "The office of " + vacancy.group(1) + " now stands unfilled in " + vacancy.group(2) + ".");
+                    "Let all in " + vacancy.group(2) + " know: the office of " + vacancy.group(1) + " stands vacant.",
+                    "The court declares the office of " + vacancy.group(1) + " vacant in " + vacancy.group(2) + ".",
+                    "Until further decree, no holder stands in the office of " + vacancy.group(1) + " in " + vacancy.group(2) + ".",
+                    "The office of " + vacancy.group(1) + " now lies vacant in " + vacancy.group(2) + ".",
+                    "No appointment currently fills the office of " + vacancy.group(1) + " in " + vacancy.group(2) + ".");
         }
 
         Matcher creation = CAPITAL_CREATION.matcher(trimmed);
         if (creation.matches()) {
             return pick(trimmed,
-                    "Let all know that " + creation.group(1) + " now stands as a capital.",
-                    creation.group(1) + " is raised to capital standing.",
-                    "By the will of its people, " + creation.group(1) + " has become a capital.",
-                    "Mark it well: " + creation.group(1) + " now holds capital status.",
-                    creation.group(1) + " is now recognized as a capital.");
+                    creation.group(1) + " has risen to capital status.",
+                    "Let all know: " + creation.group(1) + " now stands as a capital.",
+                    "By proclamation of the court, " + creation.group(1) + " is raised to capital standing.",
+                    creation.group(1) + " is this day declared a capital.",
+                    "The village of " + creation.group(1) + " now holds capital status.");
         }
 
         Matcher acclaimed = ACCLAIMED_SOVEREIGN.matcher(trimmed);
         if (acclaimed.matches()) {
             return pick(trimmed,
-                    "Let all in " + acclaimed.group(3) + " know: " + acclaimed.group(1) + " now reigns as " + acclaimed.group(2) + ".",
+                    "Let all in " + acclaimed.group(3) + " know: " + acclaimed.group(1) + " is acclaimed as " + acclaimed.group(2) + ".",
                     "By proclamation of the court, " + acclaimed.group(1) + " has been hailed as " + acclaimed.group(2) + " of " + acclaimed.group(3) + ".",
                     acclaimed.group(1) + " is this day acclaimed " + acclaimed.group(2) + " of " + acclaimed.group(3) + ".",
                     "The crown of " + acclaimed.group(3) + " now rests upon " + acclaimed.group(1) + ", acclaimed as " + acclaimed.group(2) + ".",
@@ -258,55 +296,32 @@ public class CapitalChronicleService {
             count++;
         }
 
-        if (pageList.isEmpty()) {
-            pageList.add(StringTag.valueOf(Component.Serializer.toJson(Component.literal("No entries."))));
-        }
-
         tag.put(ModDataKeys.BOOK_PAGES, pageList);
-
-        MCACapitals.LOGGER.info(
-                "[CapitalChronicle] Wrote book for village '{}' with {} pages.",
-                villageName,
-                pageList.size()
-        );
+        bindChronicleItem(level, capital, stack);
     }
 
-    public static List<String> createPages(ServerLevel level, CapitalRecord capital) {
+    private static List<String> createPages(ServerLevel level, CapitalRecord capital) {
+        List<String> pages = new ArrayList<>();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
-        List<String> blocks = new ArrayList<>();
-        blocks.add("Chronicle of " + villageName + "\n\nState: " + capital.getState());
+        pages.add("Chronicle of " + villageName + "\n\nA record of the crown, the court, and the great events of the capital.");
 
-        if (capital.getChronicleEntries().isEmpty()) {
-            blocks.add("No major events have yet been recorded.");
-        } else {
-            blocks.addAll(capital.getChronicleEntries());
-        }
-
-        List<String> pages = new ArrayList<>();
         StringBuilder current = new StringBuilder();
-
-        for (String block : blocks) {
-            String addition = current.length() == 0 ? block : "\n\n" + block;
-
-            if (current.length() + addition.length() > CHARS_PER_PAGE && current.length() > 0) {
+        for (String entry : capital.getChronicleEntries()) {
+            String line = entry + "\n\n";
+            if (current.length() + line.length() > CHARS_PER_PAGE) {
                 pages.add(current.toString());
-                current = new StringBuilder(block);
-            } else {
-                current.append(addition);
+                current = new StringBuilder();
             }
+            current.append(line);
         }
 
-        if (current.length() > 0) {
+        if (!current.isEmpty()) {
             pages.add(current.toString());
         }
 
         if (pages.isEmpty()) {
-            pages.add("No entries.");
-        }
-
-        if (pages.size() > MAX_PAGES) {
-            return new ArrayList<>(pages.subList(0, MAX_PAGES));
+            pages.add("No entries have yet been recorded.");
         }
 
         return pages;

@@ -24,10 +24,10 @@ public class RoyalScepterActionScreen extends Screen {
         clearWidgets();
 
         int centerX = this.width / 2;
-        int top = this.height / 2 - 96;
-        int buttonWidth = 180;
+        int buttonWidth = 240;
         int buttonHeight = 20;
         int left = centerX - buttonWidth / 2;
+        int top = this.height / 2 - 60;
 
         addRenderableWidget(
                 Button.builder(
@@ -58,7 +58,7 @@ public class RoyalScepterActionScreen extends Screen {
 
         addRenderableWidget(
                 Button.builder(
-                                Component.literal("Appoint Commander of the Royal Guard"),
+                                Component.literal("Appoint Lord Commander"),
                                 button -> runCommand("royalscepter commander " + targetId)
                         )
                         .bounds(left, top + 72, buttonWidth, buttonHeight)
@@ -68,7 +68,7 @@ public class RoyalScepterActionScreen extends Screen {
         addRenderableWidget(
                 Button.builder(
                                 Component.literal("Appoint to the Royal Guard"),
-                                button -> runCommand("royalscepter guard " + targetId)
+                                button -> runCommand("royalscepter royalguard " + targetId)
                         )
                         .bounds(left, top + 96, buttonWidth, buttonHeight)
                         .build()
@@ -101,15 +101,20 @@ public class RoyalScepterActionScreen extends Screen {
         onClose();
     }
 
+    private String getTrimmedTargetName() {
+        return this.font.plainSubstrByWidth(this.targetName, 220);
+    }
+
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(guiGraphics);
 
         int centerX = this.width / 2;
-        int titleY = this.height / 2 - 104;
+        int titleY = this.height / 2 - 98;
 
         guiGraphics.drawCenteredString(this.font, "Royal Scepter", centerX, titleY, 0xFFFFFF);
-        guiGraphics.drawCenteredString(this.font, "Choose an action for " + targetName, centerX, titleY + 14, 0xCCCCCC);
+        guiGraphics.drawCenteredString(this.font, "Choose appointment for:", centerX, titleY + 14, 0xCCCCCC);
+        guiGraphics.drawCenteredString(this.font, getTrimmedTargetName(), centerX, titleY + 26, 0xCCCCCC);
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
     }

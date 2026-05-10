@@ -89,6 +89,16 @@ public class CapitalCourtWatcher {
         return true;
     }
 
+    public static void seedCurrentState(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null || capital.getCapitalId() == null) {
+            return;
+        }
+
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), buildFingerprint(level, capital, residents));
+        ROYAL_SPOUSE_SNAPSHOTS.put(capital.getCapitalId(), buildRoyalSpouseSnapshot(level, capital));
+    }
+
     public static void clearFingerprint(UUID capitalId) {
         CAPITAL_FINGERPRINTS.remove(capitalId);
         ROYAL_SPOUSE_SNAPSHOTS.remove(capitalId);
@@ -104,22 +114,12 @@ public class CapitalCourtWatcher {
             return;
         }
 
-        Set<UUID> trackedNobles = new HashSet<>();
-        trackedNobles.addAll(capital.getRoyalChildren());
-        trackedNobles.addAll(capital.getDukes());
-        trackedNobles.addAll(capital.getLords());
-        trackedNobles.addAll(capital.getKnights());
-
         Map<UUID, UUID> previousSnapshot = ROYAL_SPOUSE_SNAPSHOTS.get(capital.getCapitalId());
-        Map<UUID, UUID> currentSnapshot = new HashMap<>();
+        Map<UUID, UUID> currentSnapshot = buildRoyalSpouseSnapshot(level, capital);
 
-        for (UUID nobleId : trackedNobles) {
-            if (nobleId == null) {
-                continue;
-            }
-
-            UUID currentSpouse = CapitalCourtMarriageResolver.findActualSpouse(level, nobleId);
-            currentSnapshot.put(nobleId, currentSpouse);
+        for (Map.Entry<UUID, UUID> entry : currentSnapshot.entrySet()) {
+            UUID nobleId = entry.getKey();
+            UUID currentSpouse = entry.getValue();
 
             if (previousSnapshot == null) {
                 continue;
@@ -155,6 +155,28 @@ public class CapitalCourtWatcher {
         }
 
         ROYAL_SPOUSE_SNAPSHOTS.put(capital.getCapitalId(), currentSnapshot);
+    }
+
+    private static Map<UUID, UUID> buildRoyalSpouseSnapshot(ServerLevel level, CapitalRecord capital) {
+        Map<UUID, UUID> snapshot = new HashMap<>();
+        if (level == null || capital == null) {
+            return snapshot;
+        }
+
+        Set<UUID> trackedNobles = new HashSet<>();
+        trackedNobles.addAll(capital.getRoyalChildren());
+        trackedNobles.addAll(capital.getDukes());
+        trackedNobles.addAll(capital.getLords());
+        trackedNobles.addAll(capital.getKnights());
+
+        for (UUID nobleId : trackedNobles) {
+            if (nobleId == null) {
+                continue;
+            }
+            snapshot.put(nobleId, CapitalCourtMarriageResolver.findActualSpouse(level, nobleId));
+        }
+
+        return snapshot;
     }
 
     private static void cleanupSubordinateDowagers(ServerLevel level, CapitalRecord capital) {
@@ -239,7 +261,6 @@ public class CapitalCourtWatcher {
 
             UUID spouse = CapitalCourtMarriageResolver.findActualSpouse(level, entityId);
             sb.append("spouse=").append(spouse == null ? "none" : spouse).append(',');
-            sb.append("title=").append(CapitalTitleResolver.getDisplayTitleForEntity(level, entityId)).append(',');
             sb.append('|');
         }
 

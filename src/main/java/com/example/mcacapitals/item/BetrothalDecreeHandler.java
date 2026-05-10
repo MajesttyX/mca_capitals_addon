@@ -140,7 +140,7 @@ public class BetrothalDecreeHandler {
             UUID firstId = pair.first();
             UUID secondId = pair.second();
 
-            if (areAlreadyMarriedToEachOther(level, firstId, secondId)) {
+            if (shouldClearPendingPair(level, firstId, secondId)) {
                 PendingVillagerBetrothalAccess.removePendingBetrothal(level, firstId, secondId);
                 continue;
             }
@@ -168,6 +168,42 @@ public class BetrothalDecreeHandler {
         }
     }
 
+    private boolean shouldClearPendingPair(ServerLevel level, UUID firstId, UUID secondId) {
+        if (firstId == null || secondId == null) {
+            return true;
+        }
+
+        if (isDeadOrGone(level, firstId) || isDeadOrGone(level, secondId)) {
+            return true;
+        }
+
+        UUID firstSpouse = MCAIntegrationBridge.getSpouse(level, firstId);
+        UUID secondSpouse = MCAIntegrationBridge.getSpouse(level, secondId);
+
+        if (firstSpouse != null || secondSpouse != null) {
+            return !(secondId.equals(firstSpouse) && firstId.equals(secondSpouse));
+        }
+
+        return false;
+    }
+
+    private boolean isDeadOrGone(ServerLevel level, UUID entityId) {
+        if (entityId == null) {
+            return true;
+        }
+
+        if (MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId)) {
+            return true;
+        }
+
+        if (MCAIntegrationBridge.hasPersistentFamilyNode(level, entityId)) {
+            return false;
+        }
+
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
+        return entity == null || !entity.isAlive() || entity.isRemoved();
+    }
+
     private boolean isResolvableVillager(Entity entity) {
         return entity != null
                 && entity.isAlive()
@@ -177,13 +213,6 @@ public class BetrothalDecreeHandler {
 
     private boolean isAdult(ServerLevel level, UUID entityId) {
         return "ADULT".equalsIgnoreCase(MCAIntegrationBridge.getAgeState(level, entityId));
-    }
-
-    private boolean areAlreadyMarriedToEachOther(ServerLevel level, UUID firstId, UUID secondId) {
-        UUID firstSpouse = MCAIntegrationBridge.getSpouse(level, firstId);
-        UUID secondSpouse = MCAIntegrationBridge.getSpouse(level, secondId);
-
-        return secondId.equals(firstSpouse) && firstId.equals(secondSpouse);
     }
 
     private void handleMarriageResult(ServerLevel level, Entity firstVillager, Entity secondVillager) {

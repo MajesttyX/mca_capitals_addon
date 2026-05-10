@@ -17,6 +17,10 @@ public final class CapitalHeraldService {
         return tickHerald(level, capital, residents, true);
     }
 
+    public static boolean refreshHeraldAfterStatusChange(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        return tickHerald(level, capital, residents, true);
+    }
+
     public static boolean tickHerald(ServerLevel level, CapitalRecord capital, Set<UUID> residents, boolean announceAppointment) {
         if (level == null || capital == null || residents == null) {
             return false;
@@ -52,7 +56,6 @@ public final class CapitalHeraldService {
 
         if (changed) {
             CapitalNameService.refreshCapitalNames(level, capital, residents);
-            CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
             CapitalDataAccess.markDirty(level);
         }
 

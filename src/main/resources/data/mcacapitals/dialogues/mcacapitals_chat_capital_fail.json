@@ -3,67 +3,12 @@
   "auto": true,
   "answers": [
     {
-      "name": "line_01",
+      "name": "fail",
       "priority": 0,
       "results": [
         {
           "actions": {
-            "say": "mcacapitals_chat_capital_fail_01"
-          }
-        }
-      ]
-    },
-    {
-      "name": "line_02",
-      "priority": 0,
-      "results": [
-        {
-          "actions": {
-            "say": "mcacapitals_chat_capital_fail_02"
-          }
-        }
-      ]
-    },
-    {
-      "name": "line_03",
-      "priority": 0,
-      "results": [
-        {
-          "actions": {
-            "say": "mcacapitals_chat_capital_fail_03"
-          }
-        }
-      ]
-    },
-    {
-      "name": "line_04",
-      "priority": 0,
-      "results": [
-        {
-          "actions": {
-            "say": "mcacapitals_chat_capital_fail_04"
-          }
-        }
-      ]
-    },
-    {
-      "name": "line_05",
-      "priority": 0,
-      "results": [
-        {
-          "actions": {
-            "say": "mcacapitals_chat_capital_fail_05"
-          }
-        }
-      ]
-    },
-    {
-      "name": "line_06",
-      "priority": 0,
-      "results": [
-        {
-          "actions": {
-            "say": "mcacapitals_chat_capital_fail_06"
+            "next": "mcacapitals_runtime_mcacapitals_chat_capital_fail"
           }
         }
       ]

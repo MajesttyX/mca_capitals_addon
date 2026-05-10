@@ -35,11 +35,17 @@ final class CapitalHeraldSelection {
         if (pool.isEmpty()) {
             return null;
         }
-        return pool.get(level.random.nextInt(pool.size()));
+        return pool.get(0);
     }
 
     static boolean isValidHerald(ServerLevel level, CapitalRecord capital, UUID villagerId, Set<UUID> residents) {
-        return isEligibleHerald(level, capital, villagerId, residents);
+        if (level == null || capital == null || villagerId == null) {
+            return false;
+        }
+        if (!MCAIntegrationBridge.isAliveMCAVillager(level, villagerId)) {
+            return false;
+        }
+        return isEligibleHeraldIgnoringTransientResidentScan(level, capital, villagerId);
     }
 
     static boolean isEligibleHerald(ServerLevel level, CapitalRecord capital, UUID villagerId, Set<UUID> residents) {
@@ -52,6 +58,10 @@ final class CapitalHeraldSelection {
         if (!MCAIntegrationBridge.isAliveMCAVillager(level, villagerId)) {
             return false;
         }
+        return isEligibleHeraldIgnoringTransientResidentScan(level, capital, villagerId);
+    }
+
+    private static boolean isEligibleHeraldIgnoringTransientResidentScan(ServerLevel level, CapitalRecord capital, UUID villagerId) {
         if (MCAIntegrationBridge.isMasterProfessionVillager(level, villagerId)) {
             return false;
         }

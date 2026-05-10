@@ -1,6 +1,7 @@
 package com.example.mcacapitals.capital;
 
 import com.example.mcacapitals.data.CapitalDataAccess;
+import com.example.mcacapitals.data.PendingVillagerBetrothalAccess;
 import com.example.mcacapitals.data.PlayerCapitalTitleSavedData;
 import com.example.mcacapitals.player.PlayerCapitalTitleRecord;
 import com.example.mcacapitals.player.PlayerCapitalTitleService;
@@ -22,6 +23,8 @@ public final class CapitalDeathTransitionService {
         }
 
         boolean changedAny = false;
+
+        PendingVillagerBetrothalAccess.removeVillager(level, deadId);
 
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital == null) {
