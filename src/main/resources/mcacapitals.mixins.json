@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.example.mcacapitals.mixin",
+  "package": "com.majesttyx.mcacapitals.mixin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "mcacapitals.refmap.json",
   "mixins": [

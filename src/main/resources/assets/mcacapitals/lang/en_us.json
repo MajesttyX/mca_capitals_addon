@@ -1,5 +1,5 @@
 {
-  "item.mcacapitals.heir_scepter": "Royal Scepter",
+  "item.mcacapitals.royal_scepter": "Royal Scepter",
   "item.mcacapitals.royal_disinheritance": "Royal Disinheritance",
   "item.mcacapitals.legitimization_decree": "Legitimization Decree",
   "item.mcacapitals.declaration_of_abdication": "Declaration of Abdication",
@@ -510,7 +510,7 @@
   "dialogue.mcacapitals_chat_rank_lord_or_lady_03": "{capital_name} is my home before it is my domain. I try to remember the difference.",
   "dialogue.mcacapitals_chat_rank_lord_or_lady_04": "There are titles higher than mine. There are responsibilities greater than mine. I do not envy them.",
   "dialogue.mcacapitals_chat_rank_lord_or_lady_05": "{sovereign_name} can rely on the lords and ladies of this court. I intend to make sure that is true.",
-  "dialogue.mcacapitals_chat_rank_lord_or_Lady_06": "A lordship is an entry into the politics of this court. I went in with eyes open.",
+  "dialogue.mcacapitals_chat_rank_lord_or_lady_06": "A lordship is an entry into the politics of this court. I went in with eyes open.",
   "dialogue.mcacapitals_chat_rank_lord_or_lady_07": "People I've known for years now address me differently. It is strange to get used to.",
   "dialogue.mcacapitals_chat_rank_lord_or_lady_08": "There is real work in this role. More than people outside the court realize.",
   "dialogue.mcacapitals_chat_rank_lord_or_lady_09": "I remember what this capital was before it had titles. Some days that perspective is more useful than any rank.",

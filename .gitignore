@@ -1,25 +1,39 @@
-# eclipse
-bin
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+bin/
 *.launch
-.settings
-.metadata
+.settings/
+.metadata/
 .classpath
 .project
 
-# idea
-out
-*.ipr
-*.iws
-*.iml
-.idea
+# Gradle
+.gradle/
+build/
 
-# gradle
-build
-.gradle
+# Forge / Minecraft run folders
+run/
+run-data/
+logs/
+crash-reports/
 
-# other
-eclipse
-run
+# Generated local output
+mcmodsrepo/
 
-# Files from Forge MDK
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment files
+*.local
+.env
+.env.*
+
+# Forge MDK files
 forge*changelog.txt
