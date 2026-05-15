@@ -144,6 +144,9 @@ final class CapitalSavedDataReader {
                 capital.setHerald(capitalTag.getUUID(CapitalSavedData.KEY_HERALD));
             }
             capital.setHeraldFemale(capitalTag.getBoolean(CapitalSavedData.KEY_HERALD_FEMALE));
+            if (capitalTag.contains(CapitalSavedData.KEY_HERALD_DISPLAY_NAME)) {
+                capital.setHeraldDisplayName(capitalTag.getString(CapitalSavedData.KEY_HERALD_DISPLAY_NAME));
+            }
 
             if (capitalTag.hasUUID(CapitalSavedData.KEY_GRAND_MAESTER)) {
                 capital.setGrandMaester(capitalTag.getUUID(CapitalSavedData.KEY_GRAND_MAESTER));

@@ -143,6 +143,14 @@ final class CapitalRecordCourtOps {
         record.court.heraldFemale = heraldFemale;
     }
 
+    static String getHeraldDisplayName(CapitalRecord record) {
+        return record.court.heraldDisplayName;
+    }
+
+    static void setHeraldDisplayName(CapitalRecord record, String heraldDisplayName) {
+        record.court.heraldDisplayName = heraldDisplayName == null || heraldDisplayName.isBlank() ? null : heraldDisplayName.trim();
+    }
+
     static UUID getGrandMaester(CapitalRecord record) {
         return record.court.grandMaester;
     }

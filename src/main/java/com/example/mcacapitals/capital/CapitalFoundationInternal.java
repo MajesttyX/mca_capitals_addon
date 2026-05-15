@@ -176,7 +176,7 @@ final class CapitalFoundationInternal {
         CapitalNameService.refreshCapitalNames(level, capital, residents);
         CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
 
-        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalCourtWatcher.seedCurrentState(level, capital);
         CapitalDataAccess.markDirty(level);
     }
 

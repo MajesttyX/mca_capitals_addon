@@ -9,7 +9,8 @@
     "DialogueChatFallbackMixin",
     "PlayerSaveDataMarriageMixin",
     "VillagerTasksMCARoyalGuardMixin",
-    "BreedableRelationshipGiftMixin"
+    "BreedableRelationshipGiftMixin",
+    "EntitySprintingRoyalGuardMixin"
   ],
   "client": [
     "InteractScreenBetrothalMixin"

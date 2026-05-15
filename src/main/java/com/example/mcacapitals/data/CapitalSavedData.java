@@ -80,6 +80,7 @@ public class CapitalSavedData extends SavedData {
     static final String KEY_HAND_FEMALE = "HandFemale";
     static final String KEY_HERALD = "Herald";
     static final String KEY_HERALD_FEMALE = "HeraldFemale";
+    static final String KEY_HERALD_DISPLAY_NAME = "HeraldDisplayName";
     static final String KEY_GRAND_MAESTER = "GrandMaester";
     static final String KEY_GRAND_MAESTER_FEMALE = "GrandMaesterFemale";
     static final String KEY_LAST_COMMANDER_RAID_BLESSING_GAME_TIME = "LastCommanderRaidBlessingGameTime";

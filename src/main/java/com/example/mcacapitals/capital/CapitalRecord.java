@@ -540,6 +540,14 @@ public class CapitalRecord {
         CapitalRecordCourtOps.setHeraldFemale(this, heraldFemale);
     }
 
+    public String getHeraldDisplayName() {
+        return CapitalRecordCourtOps.getHeraldDisplayName(this);
+    }
+
+    public void setHeraldDisplayName(String heraldDisplayName) {
+        CapitalRecordCourtOps.setHeraldDisplayName(this, heraldDisplayName);
+    }
+
     public UUID getGrandMaester() {
         return CapitalRecordCourtOps.getGrandMaester(this);
     }

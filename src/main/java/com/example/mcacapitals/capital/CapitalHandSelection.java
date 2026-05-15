@@ -2,7 +2,6 @@ package com.example.mcacapitals.capital;
 
 import com.example.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 
 import java.util.Comparator;
 import java.util.Set;
@@ -48,7 +47,7 @@ final class CapitalHandSelection {
         if (level == null || capital == null || handId == null) {
             return false;
         }
-        if (!MCAIntegrationBridge.isMCAVillager(level, handId)) {
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(level, handId, residents)) {
             return false;
         }
         if (handId.equals(capital.getSovereign())
@@ -67,9 +66,12 @@ final class CapitalHandSelection {
             return false;
         }
 
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, handId);
-        if (entity != null && (!entity.isAlive() || entity.isRemoved())) {
+        if (CapitalRoleValidation.isLoadedDeadOrRemoved(level, handId)) {
             return false;
+        }
+
+        if (!CapitalRoleValidation.isCurrentlyLoaded(level, handId)) {
+            return true;
         }
 
         return capital.isDuke(handId) || capital.isLord(handId) || capital.isKnight(handId);

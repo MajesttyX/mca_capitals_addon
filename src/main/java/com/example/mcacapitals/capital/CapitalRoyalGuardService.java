@@ -19,14 +19,14 @@ import java.util.UUID;
 public class CapitalRoyalGuardService {
 
     public static final int REQUIRED_POPULATION = 25;
-    public static final int MAX_ROYAL_GUARDS = 3;
-    public static final int PATROL_RADIUS = 3;
+    public static final int MAX_ROYAL_GUARDS = 2;
+    public static final int PATROL_RADIUS = 6;
 
-    private static final double FOLLOW_START_DISTANCE = 4.5D;
-    private static final double MAX_IDLE_DISTANCE = 14.0D;
-    private static final double WALK_FOLLOW_SPEED = 1.1D;
-    private static final double SPRINT_FOLLOW_SPEED = 1.0D;
-    private static final double STATIONARY_CATCHUP_SPEED = 1.0D;
+    private static final double FOLLOW_START_DISTANCE = 12D;
+    private static final double MAX_IDLE_DISTANCE = 18.0D;
+    private static final double WALK_FOLLOW_SPEED = 0.7D;
+    private static final double FAR_FOLLOW_SPEED = 0.7D;
+    private static final double STATIONARY_CATCHUP_SPEED = 0.65D;
 
     private CapitalRoyalGuardService() {
     }
@@ -267,9 +267,10 @@ public class CapitalRoyalGuardService {
     private static boolean isValidRoyalGuard(ServerLevel level, CapitalRecord capital, UUID villagerId, Set<UUID> residents) {
         if (villagerId == null || capital == null || level == null) return false;
         if (capital.getSovereign() == null) return false;
-        if (!MCAIntegrationBridge.isAliveMCAVillager(level, villagerId)) return false;
-        if (!MCAIntegrationBridge.isMCAGuard(level, villagerId)) return false;
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(level, villagerId, residents)) return false;
         if (villagerId.equals(capital.getSovereign())) return false;
+        if (!CapitalRoleValidation.isCurrentlyLoaded(level, villagerId)) return capital.getRoyalGuards().contains(villagerId);
+        if (!MCAIntegrationBridge.isMCAGuard(level, villagerId)) return false;
         return capital.getRoyalGuards().contains(villagerId);
     }
 
@@ -352,6 +353,8 @@ public class CapitalRoyalGuardService {
                 continue;
             }
 
+            mob.setSprinting(false);
+
             if (mob.isSleeping()) {
                 stopNavigation(mob);
                 continue;
@@ -366,13 +369,12 @@ public class CapitalRoyalGuardService {
             double distance = mob.distanceToSqr(sovereign);
 
             if (distance > MAX_IDLE_DISTANCE * MAX_IDLE_DISTANCE) {
-                navigateToEntity(mob, sovereign, SPRINT_FOLLOW_SPEED);
+                navigateToEntity(mob, sovereign, FAR_FOLLOW_SPEED);
                 continue;
             }
 
             if (distance > FOLLOW_START_DISTANCE * FOLLOW_START_DISTANCE) {
-                double speed = sovereign.isSprinting() ? SPRINT_FOLLOW_SPEED : WALK_FOLLOW_SPEED;
-                navigateToEntity(mob, sovereign, speed);
+                navigateToEntity(mob, sovereign, WALK_FOLLOW_SPEED);
                 continue;
             }
 
@@ -406,12 +408,16 @@ public class CapitalRoyalGuardService {
     }
 
     private static void navigateToEntity(Mob mob, Entity target, double speed) {
+        mob.setSprinting(false);
         mob.getNavigation().moveTo(target, speed);
+        mob.setSprinting(false);
         faceTargetIfPossible(mob, target);
     }
 
     private static void navigateToBlock(Mob mob, BlockPos pos, double speed) {
+        mob.setSprinting(false);
         mob.getNavigation().moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, speed);
+        mob.setSprinting(false);
     }
 
     private static void stopNavigation(Mob mob) {

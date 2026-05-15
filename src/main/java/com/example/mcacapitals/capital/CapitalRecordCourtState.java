@@ -24,6 +24,7 @@ final class CapitalRecordCourtState {
     boolean handFemale;
     UUID herald;
     boolean heraldFemale;
+    String heraldDisplayName;
     UUID grandMaester;
     boolean grandMaesterFemale;
     long lastCommanderRaidBlessingGameTime;

@@ -9,7 +9,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -176,7 +178,7 @@ public class CapitalPopulationScanner {
 
     private boolean issueRoyalCharterIfNeeded(ServerLevel level, CapitalRecord capital) {
         if (capital.getVillageId() == null) return false;
-        if (hasOutstandingRoyalCharter(level, capital.getCapitalId())) return false;
+        if (hasOutstandingRoyalCharter(level, capital)) return false;
 
         BlockPos center = MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId());
         ServerPlayer nearest = level.players().stream()
@@ -203,7 +205,9 @@ public class CapitalPopulationScanner {
         return true;
     }
 
-    private boolean hasOutstandingRoyalCharter(ServerLevel level, UUID capitalId) {
+    private boolean hasOutstandingRoyalCharter(ServerLevel level, CapitalRecord capital) {
+        UUID capitalId = capital.getCapitalId();
+
         for (ServerPlayer player : level.players()) {
             for (ItemStack stack : player.getInventory().items) {
                 if (isRoyalCharterForCapital(stack, capitalId)) {
@@ -216,6 +220,28 @@ public class CapitalPopulationScanner {
                 }
             }
         }
+
+        return hasDroppedRoyalCharterInCapital(level, capital);
+    }
+
+    private boolean hasDroppedRoyalCharterInCapital(ServerLevel level, CapitalRecord capital) {
+        if (capital.getVillageId() == null) {
+            return false;
+        }
+
+        BlockPos center = MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId());
+        AABB searchBox = new AABB(center).inflate(FOUNDING_RADIUS);
+
+        for (ItemEntity itemEntity : level.getEntitiesOfClass(ItemEntity.class, searchBox)) {
+            if (itemEntity == null || !itemEntity.isAlive()) {
+                continue;
+            }
+
+            if (isRoyalCharterForCapital(itemEntity.getItem(), capital.getCapitalId())) {
+                return true;
+            }
+        }
+
         return false;
     }
 

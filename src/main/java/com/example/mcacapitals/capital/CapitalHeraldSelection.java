@@ -42,8 +42,11 @@ final class CapitalHeraldSelection {
         if (level == null || capital == null || villagerId == null) {
             return false;
         }
-        if (!MCAIntegrationBridge.isAliveMCAVillager(level, villagerId)) {
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(level, villagerId, residents)) {
             return false;
+        }
+        if (!CapitalRoleValidation.isCurrentlyLoaded(level, villagerId)) {
+            return true;
         }
         return isEligibleHeraldIgnoringTransientResidentScan(level, capital, villagerId);
     }

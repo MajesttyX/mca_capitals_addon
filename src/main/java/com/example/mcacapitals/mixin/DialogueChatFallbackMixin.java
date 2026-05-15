@@ -66,6 +66,10 @@ public abstract class DialogueChatFallbackMixin {
             return nextKey;
         }
 
+        if (isBabyOrToddler(level, villager)) {
+            return nextKey;
+        }
+
         if (MCA_CHAT_TOPIC.equals(nextKey)) {
             String newsDialogueId = CapitalDialogueService.maybeResolveCapitalNewsDialogueId(player, villager);
             if (newsDialogueId != null && !newsDialogueId.isBlank()) {
@@ -152,6 +156,15 @@ public abstract class DialogueChatFallbackMixin {
         player.sendSystemMessage(Component.literal(villager.getName().getString() + ": " + line));
         MCAIntegrationBridge.stopInteracting(villager);
         ci.cancel();
+    }
+
+    private static boolean isBabyOrToddler(ServerLevel level, Entity villager) {
+        if (level == null || villager == null) {
+            return false;
+        }
+
+        String ageState = MCAIntegrationBridge.getAgeState(level, villager.getUUID());
+        return "BABY".equalsIgnoreCase(ageState) || "TODDLER".equalsIgnoreCase(ageState);
     }
 
     private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {

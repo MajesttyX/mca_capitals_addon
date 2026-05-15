@@ -132,6 +132,9 @@ final class CapitalSavedDataWriter {
                 capitalTag.putUUID(CapitalSavedData.KEY_HERALD, capital.getHerald());
             }
             capitalTag.putBoolean(CapitalSavedData.KEY_HERALD_FEMALE, capital.isHeraldFemale());
+            if (capital.getHeraldDisplayName() != null) {
+                capitalTag.putString(CapitalSavedData.KEY_HERALD_DISPLAY_NAME, capital.getHeraldDisplayName());
+            }
 
             if (capital.getGrandMaester() != null) {
                 capitalTag.putUUID(CapitalSavedData.KEY_GRAND_MAESTER, capital.getGrandMaester());

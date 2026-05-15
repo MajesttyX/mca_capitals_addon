@@ -33,6 +33,7 @@ public final class CapitalHeraldService {
             if (previousHerald != null) {
                 capital.setHerald(null);
                 capital.setHeraldFemale(false);
+                capital.setHeraldDisplayName(null);
                 changed = true;
             }
         }
@@ -42,6 +43,7 @@ public final class CapitalHeraldService {
             if (newHerald != null) {
                 capital.setHerald(newHerald);
                 capital.setHeraldFemale(MCAIntegrationBridge.isFemale(level, newHerald));
+                capital.setHeraldDisplayName(resolveBaseName(level, newHerald));
                 if (announceAppointment) {
                     CapitalChronicleService.addEntry(
                             level,
@@ -69,11 +71,14 @@ public final class CapitalHeraldService {
 
         Entity herald = MCAIntegrationBridge.getEntityByUuid(level, capital.getHerald());
         if (herald != null) {
-            String currentName = herald.getName().getString();
-            if (currentName.startsWith("Court Herald ")) {
-                return currentName;
-            }
-            return "Court Herald " + currentName;
+            String baseName = resolveBaseNameFromCurrentName(herald.getName().getString(), capital.getHerald().toString());
+            capital.setHeraldDisplayName(baseName);
+            return "Court Herald " + baseName;
+        }
+
+        String storedName = capital.getHeraldDisplayName();
+        if (storedName != null && !storedName.isBlank()) {
+            return "Court Herald " + storedName.trim();
         }
 
         return "Court Herald";
@@ -82,5 +87,72 @@ public final class CapitalHeraldService {
     private static String resolveRawName(ServerLevel level, UUID entityId) {
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
         return entity != null ? entity.getName().getString() : entityId.toString();
+    }
+
+    private static String resolveBaseName(ServerLevel level, UUID entityId) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
+        return resolveBaseNameFromCurrentName(entity != null ? entity.getName().getString() : null, entityId.toString());
+    }
+
+    private static String resolveBaseNameFromCurrentName(String currentName, String fallback) {
+        if (currentName == null || currentName.isBlank()) {
+            return fallback;
+        }
+
+        String result = currentName.trim();
+        String[] prefixes = {
+                "Court Herald",
+                "High Queen",
+                "High King",
+                "Queen Consort",
+                "King Consort",
+                "Dowager Queen",
+                "Dowager King",
+                "Heir Apparent",
+                "Crown Princess",
+                "Crown Prince",
+                "Dowager Princess",
+                "Dowager Prince",
+                "Princess Consort",
+                "Prince Consort",
+                "Hand of the Queen",
+                "Hand of the King",
+                "Grand Maester",
+                "Maester",
+                "Lord Commander",
+                "Commander",
+                "Dowager Duchess",
+                "Dowager Duke",
+                "Duchess",
+                "Duke",
+                "Lady",
+                "Lord",
+                "Dame",
+                "Sir",
+                "Princess",
+                "Prince",
+                "Queen",
+                "King"
+        };
+
+        boolean stripped;
+        do {
+            stripped = false;
+            for (String prefix : prefixes) {
+                if (result.equals(prefix)) {
+                    result = "";
+                    stripped = true;
+                    break;
+                }
+                String titledPrefix = prefix + " ";
+                if (result.startsWith(titledPrefix)) {
+                    result = result.substring(titledPrefix.length()).trim();
+                    stripped = true;
+                    break;
+                }
+            }
+        } while (stripped);
+
+        return result.isBlank() ? fallback : result;
     }
 }
