@@ -3,8 +3,12 @@ package com.majesttyx.mcacapitals.dialogue;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCommanderService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
+import com.majesttyx.mcacapitals.capital.CapitalHeraldService;
+import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.item.RoyalScepterGrantService;
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
@@ -92,6 +96,125 @@ final class CapitalPetitionTitleActions {
                 CapitalDialogueKey.COMMANDER_SUCCESS,
                 MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
         );
+    }
+
+    static void handleHandPetition(
+            ServerPlayer player,
+            Entity villagerEntity,
+            int minVillageHearts,
+            int minSovereignHearts,
+            double maxAudienceDistanceSqr
+    ) {
+        ServerLevel level = player.serverLevel();
+        CapitalRecord capital = CapitalPetitionRequirements.resolveSovereignCapital(level, villagerEntity);
+
+        if (capital == null) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_SOVEREIGN_ONLY);
+            return;
+        }
+
+        if (capital.getVillageId() == null) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_MISSING_VILLAGE);
+            return;
+        }
+
+        if (!CapitalPetitionRequirements.isAudienceValid(player, villagerEntity, maxAudienceDistanceSqr)) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED);
+            return;
+        }
+
+        Set<UUID> residents = MCAIntegrationBridge.getVillageResidents(level, capital.getVillageId());
+
+        int villageHearts = MCAReputationBridge.getCapitalHeartsScore(level, residents, player.getUUID());
+        if (villageHearts < minVillageHearts) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.HAND_LOW_STANDING,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+            );
+            return;
+        }
+
+        int sovereignHearts = MCAReputationBridge.getHeartsWithVillager(level, capital.getSovereign(), player.getUUID());
+        if (sovereignHearts < minSovereignHearts) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.HAND_LOW_SOVEREIGN_STANDING,
+                    minSovereignHearts
+            );
+            return;
+        }
+
+        if (PlayerCapitalTitleService.isHand(level, capital, player.getUUID())) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.HAND_ALREADY_HELD);
+            return;
+        }
+
+        UUID existingPlayerHand = PlayerCapitalTitleService.getHandHolder(level, capital);
+        if (existingPlayerHand != null && !existingPlayerHand.equals(player.getUUID())) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.HAND_ALREADY_GRANTED);
+            return;
+        }
+
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String officeName = capital.isSovereignFemale() ? "Hand of the Queen" : "Hand of the King";
+        UUID previousHand = capital.getHand();
+
+        if (previousHand != null && !previousHand.equals(player.getUUID())) {
+            String formerName = resolveName(level, previousHand);
+            if (!formerName.isBlank()) {
+                CapitalChronicleService.addEntry(
+                        level,
+                        capital,
+                        formerName + " was relieved of the office of " + officeName + " of " + villageName + "."
+                );
+            }
+        }
+
+        PlayerCapitalTitleService.revokeHandForCapital(level, capital);
+        PlayerCapitalTitleService.grantHand(level, capital, player.getUUID());
+        capital.setHand(player.getUUID());
+        capital.setHandFemale(MCAIntegrationBridge.isPlayerFemale(level, player));
+
+        Set<UUID> scannedResidents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, scannedResidents);
+        CapitalNameService.refreshCapitalNames(level, capital, scannedResidents);
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
+
+        RoyalScepterGrantService.grantScepter(player);
+
+        CapitalChronicleService.addEntry(
+                level,
+                capital,
+                player.getName().getString() + " was appointed " + officeName + " of " + villageName + "."
+        );
+
+        CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                player,
+                villagerEntity,
+                CapitalDialogueKey.HAND_SUCCESS,
+                officeName,
+                villageName
+        );
+    }
+
+    private static String resolveName(ServerLevel level, UUID entityId) {
+        if (entityId == null) {
+            return "";
+        }
+
+        if (level.getServer() != null) {
+            ServerPlayer onlinePlayer = level.getServer().getPlayerList().getPlayer(entityId);
+            if (onlinePlayer != null) {
+                return onlinePlayer.getName().getString();
+            }
+        }
+
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
+        return entity != null ? entity.getName().getString() : entityId.toString();
     }
 
     static void handleLordPetition(

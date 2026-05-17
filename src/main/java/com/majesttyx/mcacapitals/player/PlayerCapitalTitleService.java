@@ -274,6 +274,67 @@ public final class PlayerCapitalTitleService {
         }
     }
 
+    public static void grantHand(ServerLevel level, CapitalRecord capital, UUID playerId) {
+        if (level == null || capital == null || playerId == null || capital.getCapitalId() == null) {
+            return;
+        }
+
+        PlayerCapitalTitleRecord record = getOrCreate(level, playerId, capital.getCapitalId());
+        if (record == null) {
+            return;
+        }
+
+        record.setHand(true);
+        cachePlayerName(level, record, playerId);
+        PlayerCapitalTitleSavedData.get(level).setDirty();
+    }
+
+    public static void revokeHand(ServerLevel level, CapitalRecord capital, UUID playerId) {
+        if (level == null || capital == null || playerId == null || capital.getCapitalId() == null) {
+            return;
+        }
+
+        PlayerCapitalTitleRecord record = get(level, playerId, capital.getCapitalId());
+        if (record == null) {
+            return;
+        }
+
+        record.setHand(false);
+
+        if (!record.hasAnyCapitalOffice()) {
+            clear(level, playerId, capital.getCapitalId());
+        } else {
+            PlayerCapitalTitleSavedData.get(level).setDirty();
+        }
+    }
+
+    public static UUID getHandHolder(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null || capital.getCapitalId() == null) {
+            return null;
+        }
+
+        for (PlayerCapitalTitleRecord record : PlayerCapitalTitleSavedData.get(level).getRecords().values()) {
+            if (record == null) {
+                continue;
+            }
+            if (!capital.getCapitalId().equals(record.getCapitalId())) {
+                continue;
+            }
+            if (record.isHand()) {
+                return record.getPlayerId();
+            }
+        }
+
+        return null;
+    }
+
+    public static void revokeHandForCapital(ServerLevel level, CapitalRecord capital) {
+        UUID holder = getHandHolder(level, capital);
+        if (holder != null) {
+            revokeHand(level, capital, holder);
+        }
+    }
+
     public static NobleTitle getGrantedTitle(ServerLevel level, CapitalRecord capital, UUID playerId) {
         if (level == null || capital == null || playerId == null || capital.getCapitalId() == null) {
             return NobleTitle.COMMONER;
@@ -290,6 +351,15 @@ public final class PlayerCapitalTitleService {
 
         PlayerCapitalTitleRecord record = get(level, playerId, capital.getCapitalId());
         return record != null && record.isCommander();
+    }
+
+    public static boolean isHand(ServerLevel level, CapitalRecord capital, UUID playerId) {
+        if (level == null || capital == null || playerId == null || capital.getCapitalId() == null) {
+            return false;
+        }
+
+        PlayerCapitalTitleRecord record = get(level, playerId, capital.getCapitalId());
+        return record != null && record.isHand();
     }
 
     public static boolean hasAnyOffice(ServerLevel level, CapitalRecord capital, UUID playerId) {

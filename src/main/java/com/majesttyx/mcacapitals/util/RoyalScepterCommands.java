@@ -10,6 +10,7 @@ import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.capital.CapitalRoyalGuardService;
+import com.majesttyx.mcacapitals.capital.CapitalRoyalHouseholdService;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
@@ -32,32 +33,38 @@ public final class RoyalScepterCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("royalscepter")
+                        .then(Commands.literal("heir")
+                                .then(Commands.argument("villagerId", StringArgumentType.string())
+                                        .executes(context -> appointHeir(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "villagerId")
+                                        ))))
                         .then(Commands.literal("hand")
-                                .then(Commands.argument("villagerId", StringArgumentType.word())
+                                .then(Commands.argument("villagerId", StringArgumentType.string())
                                         .executes(context -> appointHand(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "villagerId")
                                         ))))
                         .then(Commands.literal("grandmaester")
-                                .then(Commands.argument("villagerId", StringArgumentType.word())
+                                .then(Commands.argument("villagerId", StringArgumentType.string())
                                         .executes(context -> appointGrandMaester(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "villagerId")
                                         ))))
                         .then(Commands.literal("commander")
-                                .then(Commands.argument("villagerId", StringArgumentType.word())
+                                .then(Commands.argument("villagerId", StringArgumentType.string())
                                         .executes(context -> appointCommander(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "villagerId")
                                         ))))
                         .then(Commands.literal("royalguard")
-                                .then(Commands.argument("villagerId", StringArgumentType.word())
+                                .then(Commands.argument("villagerId", StringArgumentType.string())
                                         .executes(context -> appointRoyalGuard(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "villagerId")
                                         ))))
                         .then(Commands.literal("duke")
-                                .then(Commands.argument("villagerId", StringArgumentType.word())
+                                .then(Commands.argument("villagerId", StringArgumentType.string())
                                         .executes(context -> appointDuke(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "villagerId")
@@ -71,7 +78,8 @@ public final class RoyalScepterCommands {
         }
         return player.hasPermissions(2)
                 || player.getUUID().equals(capital.getPlayerSovereignId())
-                || player.getUUID().equals(capital.getSovereign());
+                || player.getUUID().equals(capital.getSovereign())
+                || PlayerCapitalTitleService.isHand(player.serverLevel(), capital, player.getUUID());
     }
 
     private static String resolveName(ServerLevel level, UUID entityId) {
@@ -142,6 +150,80 @@ public final class RoyalScepterCommands {
         }
 
         return CapitalManager.getCapitalByVillageId(villageId);
+    }
+
+    private static int appointHeir(CommandSourceStack source, String rawVillagerId) {
+        ServerPlayer player = getPlayer(source);
+        if (player == null) {
+            source.sendFailure(Component.literal("Only a player can use this."));
+            return 0;
+        }
+
+        ServerLevel level = player.serverLevel();
+        UUID villagerId = parseUuid(source, rawVillagerId);
+        if (villagerId == null) {
+            return 0;
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
+            source.sendFailure(Component.literal("Target is not an MCA villager."));
+            return 0;
+        }
+
+        CapitalRecord capital = resolveCapital(level, villagerId);
+        if (capital == null) {
+            source.sendFailure(Component.literal("That villager is not part of a capital."));
+            return 0;
+        }
+
+        if (!canManageCapital(player, capital)) {
+            source.sendFailure(Component.literal("Only the sovereign or an operator may use the Royal Scepter here."));
+            return 0;
+        }
+
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        if (!residents.contains(villagerId)) {
+            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
+            return 0;
+        }
+
+        if (villagerId.equals(capital.getSovereign())) {
+            source.sendFailure(Component.literal("The sovereign is already on the throne."));
+            return 0;
+        }
+
+        if (capital.isDisinheritedRoyalChild(villagerId)) {
+            source.sendFailure(Component.literal("A disinherited royal child cannot be named Heir Apparent."));
+            return 0;
+        }
+
+        if (!MCAIntegrationBridge.hasPersistentFamilyNode(level, villagerId)
+                || MCAIntegrationBridge.isFamilyNodeDeceased(level, villagerId)) {
+            source.sendFailure(Component.literal("That villager is not eligible to be named Heir Apparent."));
+            return 0;
+        }
+
+        if (villagerId.equals(capital.getHeir()) && capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
+            source.sendFailure(Component.literal(resolveName(level, villagerId) + " is already the named Heir Apparent."));
+            return 0;
+        }
+
+        capital.setHeir(villagerId);
+        capital.setHeirFemale(MCAIntegrationBridge.isFemale(level, villagerId));
+        capital.setHeirMode(CapitalRecord.HeirMode.MANUAL);
+
+        CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
+        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
+        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
+
+        String name = resolveName(level, villagerId);
+        CapitalChronicleService.addEntry(level, capital,
+                name + " was named Heir Apparent of "
+                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+
+        return 1;
     }
 
     private static int appointHand(CommandSourceStack source, String rawVillagerId) {

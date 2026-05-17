@@ -15,6 +15,7 @@ public final class CapitalPetitionCommandRouter {
             PetitionAction throneAction,
             PetitionAction seizeThroneAction,
             PetitionAction commanderAction,
+            PetitionAction handAction,
             PetitionAction nobleLordAction,
             PetitionAction nobleDukeAction,
             PetitionAction betrothalAction,
@@ -36,6 +37,11 @@ public final class CapitalPetitionCommandRouter {
 
         if (CapitalPetitionService.PETITION_COMMANDER.equals(command)) {
             commanderAction.run();
+            return true;
+        }
+
+        if (CapitalPetitionService.PETITION_HAND.equals(command)) {
+            handAction.run();
             return true;
         }
 

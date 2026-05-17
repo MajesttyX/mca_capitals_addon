@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.capital;
 
+import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 
@@ -47,6 +48,11 @@ final class CapitalHandSelection {
         if (level == null || capital == null || handId == null) {
             return false;
         }
+
+        if (PlayerCapitalTitleService.isHand(level, capital, handId)) {
+            return true;
+        }
+
         if (!CapitalRoleValidation.isExistingRoleStillResolvable(level, handId, residents)) {
             return false;
         }

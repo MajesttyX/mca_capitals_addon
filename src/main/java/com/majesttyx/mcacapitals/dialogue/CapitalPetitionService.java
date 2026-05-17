@@ -12,6 +12,7 @@ public final class CapitalPetitionService {
     public static final String PETITION_THRONE = "mcacapitals_petition_throne";
     public static final String PETITION_SEIZE_THRONE = "mcacapitals_seize_throne";
     public static final String PETITION_COMMANDER = "mcacapitals_petition_commander";
+    public static final String PETITION_HAND = "mcacapitals_petition_hand";
     public static final String PETITION_NOBLE_LORD = "mcacapitals_petition_noble_lord";
     public static final String PETITION_NOBLE_DUKE = "mcacapitals_petition_noble_duke";
     public static final String PETITION_BETROTHAL = "mcacapitals_petition_betrothal";
@@ -25,6 +26,9 @@ public final class CapitalPetitionService {
 
     private static final int COMMANDER_PETITION_MIN_POPULATION = 20;
     private static final int COMMANDER_PETITION_MIN_HEARTS = 1000;
+
+    private static final int HAND_PETITION_MIN_VILLAGE_HEARTS = 800;
+    private static final int HAND_PETITION_MIN_SOVEREIGN_HEARTS = 200;
 
     private static final int LORD_PETITION_MIN_HEARTS = 400;
     private static final int LORD_PETITION_MIN_MASTER_VILLAGERS = 3;
@@ -55,6 +59,7 @@ public final class CapitalPetitionService {
                 () -> handleThronePetition(player, villagerEntity),
                 () -> handleSeizeThrone(player, villagerEntity),
                 () -> handleCommanderPetition(player, villagerEntity),
+                () -> handleHandPetition(player, villagerEntity),
                 () -> handleLordPetition(player, villagerEntity),
                 () -> handleDukePetition(player, villagerEntity),
                 () -> handleBetrothalPetition(player, villagerEntity),
@@ -97,6 +102,16 @@ public final class CapitalPetitionService {
                 villagerEntity,
                 COMMANDER_PETITION_MIN_POPULATION,
                 COMMANDER_PETITION_MIN_HEARTS,
+                MAX_AUDIENCE_DISTANCE_SQR
+        );
+    }
+
+    private static void handleHandPetition(ServerPlayer player, Entity villagerEntity) {
+        CapitalPetitionTitleActions.handleHandPetition(
+                player,
+                villagerEntity,
+                HAND_PETITION_MIN_VILLAGE_HEARTS,
+                HAND_PETITION_MIN_SOVEREIGN_HEARTS,
                 MAX_AUDIENCE_DISTANCE_SQR
         );
     }

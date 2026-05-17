@@ -25,6 +25,7 @@ public class PlayerCapitalTitleSavedData extends SavedData {
     private static final String KEY_DOWAGER_BASE_TITLE = "DowagerBaseTitle";
     private static final String KEY_DOWAGER_SOURCE_SPOUSE_ID = "DowagerSourceSpouseId";
     private static final String KEY_COMMANDER = "Commander";
+    private static final String KEY_HAND = "Hand";
     private static final String KEY_CACHED_PLAYER_NAME = "CachedPlayerName";
 
     private final Map<String, PlayerCapitalTitleRecord> records = new HashMap<>();
@@ -84,6 +85,7 @@ public class PlayerCapitalTitleSavedData extends SavedData {
             entry.putString(KEY_MARRIAGE_TITLE, record.getMarriageTitle().name());
             entry.putString(KEY_DOWAGER_BASE_TITLE, record.getDowagerBaseTitle().name());
             entry.putBoolean(KEY_COMMANDER, record.isCommander());
+            entry.putBoolean(KEY_HAND, record.isHand());
 
             if (record.getMarriageSourceSpouseId() != null) {
                 entry.putUUID(KEY_MARRIAGE_SOURCE_SPOUSE_ID, record.getMarriageSourceSpouseId());
@@ -141,6 +143,7 @@ public class PlayerCapitalTitleSavedData extends SavedData {
             }
 
             record.setCommander(entry.getBoolean(KEY_COMMANDER));
+            record.setHand(entry.getBoolean(KEY_HAND));
 
             if (entry.contains(KEY_CACHED_PLAYER_NAME, Tag.TAG_STRING)) {
                 record.setCachedPlayerName(entry.getString(KEY_CACHED_PLAYER_NAME));

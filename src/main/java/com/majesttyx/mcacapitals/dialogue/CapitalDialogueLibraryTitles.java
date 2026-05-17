@@ -70,6 +70,56 @@ final class CapitalDialogueLibraryTitles {
         );
 
         lines.put(
+                CapitalDialogueKey.HAND_LOW_STANDING,
+                List.of(
+                        "You do not yet have the standing to serve as Hand in %s.",
+                        "The people of %s do not yet trust you with the authority of the Hand.",
+                        "You have not yet earned the standing required to speak with the Crown's authority in %s.",
+                        "The office of Hand in %s is not granted without stronger standing."
+                )
+        );
+
+        lines.put(
+                CapitalDialogueKey.HAND_LOW_SOVEREIGN_STANDING,
+                List.of(
+                        "The Crown does not yet know you well enough to name you Hand. You need at least %s hearts with the reigning sovereign.",
+                        "You have not yet earned the sovereign's personal trust. You need at least %s hearts with the Crown.",
+                        "The office of Hand requires the sovereign's confidence. Return when you have at least %s hearts with them.",
+                        "The Crown will not place that authority in your hands until you have at least %s hearts with the reigning sovereign."
+                )
+        );
+
+        lines.put(
+                CapitalDialogueKey.HAND_ALREADY_GRANTED,
+                List.of(
+                        "The office of Hand of the Crown has already been granted to another sworn player.",
+                        "Another player already serves as Hand of the Crown.",
+                        "That office is already held by another sworn servant of the Crown.",
+                        "The Hand's authority has already been placed in another player's hands."
+                )
+        );
+
+        lines.put(
+                CapitalDialogueKey.HAND_ALREADY_HELD,
+                List.of(
+                        "You already hold the office of Hand of the Crown.",
+                        "You are already my Hand.",
+                        "That office is already yours.",
+                        "You already speak with the Crown's authority."
+                )
+        );
+
+        lines.put(
+                CapitalDialogueKey.HAND_SUCCESS,
+                List.of(
+                        "Your petition is accepted. You are now %s of %s.",
+                        "So be it. You shall serve as %s of %s.",
+                        "The office is yours. You are now %s of %s.",
+                        "I grant it. You are now %s of %s."
+                )
+        );
+
+        lines.put(
                 CapitalDialogueKey.LORD_ALREADY_HIGHER,
                 List.of(
                         "You already hold a higher noble dignity than Lord or Lady.",

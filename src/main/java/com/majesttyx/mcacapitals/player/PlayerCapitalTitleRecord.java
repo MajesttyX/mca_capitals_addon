@@ -17,6 +17,7 @@ public class PlayerCapitalTitleRecord {
     private UUID dowagerSourceSpouseId;
 
     private boolean commander;
+    private boolean hand;
     private String cachedPlayerName;
 
     public PlayerCapitalTitleRecord(UUID playerId, UUID capitalId) {
@@ -83,6 +84,14 @@ public class PlayerCapitalTitleRecord {
         this.commander = commander;
     }
 
+    public boolean isHand() {
+        return hand;
+    }
+
+    public void setHand(boolean hand) {
+        this.hand = hand;
+    }
+
     public String getCachedPlayerName() {
         return cachedPlayerName;
     }
@@ -114,7 +123,7 @@ public class PlayerCapitalTitleRecord {
     }
 
     public boolean hasAnyCapitalOffice() {
-        return !isCommoner() || hasMarriageTitle() || hasDowagerTitle() || commander;
+        return !isCommoner() || hasMarriageTitle() || hasDowagerTitle() || commander || hand;
     }
 
     private static NobleTitle normalize(NobleTitle title) {

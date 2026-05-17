@@ -138,7 +138,7 @@ public class CapitalTitleResolver {
             return new ResolvedTitle(female ? "Dowager Princess" : "Dowager Prince", TitleRank.DOWAGER_PRINCE.rankValue(), capital);
         }
 
-        if (entityId.equals(capital.getHand())) {
+        if (entityId.equals(capital.getHand()) || PlayerCapitalTitleService.isHand(level, capital, entityId)) {
             return new ResolvedTitle(capital.isSovereignFemale() ? "Hand of the Queen" : "Hand of the King", TitleRank.HAND.rankValue(), capital);
         }
 

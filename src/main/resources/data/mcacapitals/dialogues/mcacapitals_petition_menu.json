@@ -35,8 +35,19 @@
       ]
     },
     {
-      "name": "mcacapitals_petition_back",
+      "name": "mcacapitals_petition_hand",
       "priority": 3,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_petition_hand"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition_back",
+      "priority": 4,
       "results": [
         {
           "actions": {
