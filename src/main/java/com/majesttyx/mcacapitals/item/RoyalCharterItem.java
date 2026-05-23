@@ -4,16 +4,20 @@ import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
 import com.majesttyx.mcacapitals.util.ModItemStackData;
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,6 +36,12 @@ public class RoyalCharterItem extends Item {
         }
 
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        tooltipComponents.add(Component.literal("Used to found a monarchy in an eligible village.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.literal("Right-click to choose the first sovereign.").withStyle(ChatFormatting.GRAY));
     }
 
     public static ItemStack createForCapital(ServerLevel level, CapitalRecord capital) {

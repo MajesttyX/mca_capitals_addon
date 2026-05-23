@@ -8,6 +8,7 @@ import com.majesttyx.mcacapitals.item.ModCreativeTabs;
 import com.majesttyx.mcacapitals.item.ModItems;
 import com.majesttyx.mcacapitals.item.RoyalDisinheritanceHandler;
 import com.majesttyx.mcacapitals.item.RoyalScepterHandler;
+import com.majesttyx.mcacapitals.item.SuccessionDecreeHandler;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.util.AbdicationPromptCommands;
 import com.majesttyx.mcacapitals.util.CapitalDebugCommands;
@@ -18,6 +19,7 @@ import com.majesttyx.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.majesttyx.mcacapitals.util.CapitalTestCommands;
 import com.majesttyx.mcacapitals.util.RoyalGuardInteractionHandler;
 import com.majesttyx.mcacapitals.util.RoyalScepterCommands;
+import com.majesttyx.mcacapitals.util.SuccessionDecreeCommands;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -43,6 +45,7 @@ public class MCACapitals {
         NeoForge.EVENT_BUS.register(new LegitimizationDecreeHandler());
         NeoForge.EVENT_BUS.register(new DeclarationOfAbdicationHandler());
         NeoForge.EVENT_BUS.register(new BetrothalDecreeHandler());
+        NeoForge.EVENT_BUS.register(new SuccessionDecreeHandler());
         NeoForge.EVENT_BUS.register(new CapitalLifecycleHandler());
         NeoForge.EVENT_BUS.register(new RoyalGuardInteractionHandler());
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
@@ -56,5 +59,6 @@ public class MCACapitals {
         CapitalRoyalGuardCommands.register(event.getDispatcher());
         CapitalPetitionCommands.register(event.getDispatcher());
         RoyalScepterCommands.register(event.getDispatcher());
+        SuccessionDecreeCommands.register(event.getDispatcher());
     }
 }

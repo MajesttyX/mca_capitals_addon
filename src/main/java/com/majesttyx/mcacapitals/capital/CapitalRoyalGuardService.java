@@ -332,7 +332,6 @@ public class CapitalRoyalGuardService {
 
         sovereign.sendSystemMessage(Component.literal(
                 "Your capital can appoint up to " + MAX_ROYAL_GUARDS + " royal guards. "
-                        + "Use /capitaltest court or the Royal Scepter to appoint an eligible guard."
         ));
     }
 

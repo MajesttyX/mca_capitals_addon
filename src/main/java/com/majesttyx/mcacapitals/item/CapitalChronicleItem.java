@@ -9,6 +9,7 @@ import com.majesttyx.mcacapitals.network.OpenCapitalChroniclePacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
 import com.majesttyx.mcacapitals.util.ModItemStackData;
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,9 +19,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 public class CapitalChronicleItem extends Item {
@@ -67,6 +70,12 @@ public class CapitalChronicleItem extends Item {
 
         ModNetwork.sendToPlayer(serverPlayer, new OpenCapitalChroniclePacket(previewBook));
         return InteractionResultHolder.consume(heldStack);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        tooltipComponents.add(Component.literal("A written record of royal events, appointments, and succession.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.literal("Right-click within a capital to read.").withStyle(ChatFormatting.GRAY));
     }
 
     private CapitalRecord resolveCapital(ServerPlayer player, ItemStack stack) {

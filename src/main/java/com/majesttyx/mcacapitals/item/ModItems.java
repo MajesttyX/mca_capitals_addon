@@ -1,7 +1,6 @@
 package com.majesttyx.mcacapitals.item;
 
 import com.majesttyx.mcacapitals.MCACapitals;
-import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -26,6 +25,9 @@ public class ModItems {
     public static final DeferredItem<BetrothalDecreeItem> BETROTHAL_DECREE =
             ITEMS.register("betrothal_decree", BetrothalDecreeItem::new);
 
+    public static final DeferredItem<SuccessionDecreeItem> BLANK_SUCCESSION_DECREE =
+            ITEMS.register("blank_succession_decree", SuccessionDecreeItem::new);
+
     public static final DeferredItem<RoyalCharterItem> ROYAL_CHARTER =
             ITEMS.register("royal_charter", RoyalCharterItem::new);
 
@@ -46,6 +48,9 @@ public class ModItems {
 
     public static final DeferredItem<RoyalSealItem> CYAN_ROYAL_SEAL =
             ITEMS.register("cyan_royal_seal", RoyalSealItem::new);
+
+    public static final DeferredItem<RoyalSealItem> PURPLE_ROYAL_SEAL =
+            ITEMS.register("purple_royal_seal", RoyalSealItem::new);
 
     private ModItems() {
     }
