@@ -59,7 +59,12 @@ public class CapitalFoundingCommands {
                                                             }
 
                                                             capital.setMonarchyRejected(false);
-                                                            CapitalFoundationService.appointPlayerSovereign(player.serverLevel(), capital, player.getUUID(), false);
+                                                            CapitalFoundationService.appointPlayerSovereign(
+                                                                    player.serverLevel(),
+                                                                    capital,
+                                                                    player.getUUID(),
+                                                                    MCAIntegrationBridge.isPlayerFemale(player.serverLevel(), player)
+                                                            );
                                                             consumeCharter(player, capitalId);
 
                                                             player.sendSystemMessage(Component.literal(

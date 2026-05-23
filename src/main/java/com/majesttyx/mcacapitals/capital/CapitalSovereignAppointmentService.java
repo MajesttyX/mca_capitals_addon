@@ -1,9 +1,11 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.item.RoyalScepterGrantService;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Set;
 import java.util.UUID;
@@ -69,6 +71,11 @@ final class CapitalSovereignAppointmentService {
         CapitalRoyalHouseholdService.beginNewRegime(capital);
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         CapitalHeraldService.tickHerald(level, capital, residents, false);
+
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(playerId);
+        if (player != null) {
+            RoyalScepterGrantService.grantScepter(player);
+        }
 
         if (previousPlayerSovereignId != null
                 && !previousPlayerSovereignId.equals(playerId)

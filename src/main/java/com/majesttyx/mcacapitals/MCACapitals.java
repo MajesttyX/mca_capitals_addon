@@ -8,6 +8,7 @@ import com.majesttyx.mcacapitals.item.ModCreativeTabs;
 import com.majesttyx.mcacapitals.item.ModItems;
 import com.majesttyx.mcacapitals.item.RoyalDisinheritanceHandler;
 import com.majesttyx.mcacapitals.item.RoyalScepterHandler;
+import com.majesttyx.mcacapitals.item.SuccessionDecreeHandler;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.util.AbdicationPromptCommands;
 import com.majesttyx.mcacapitals.util.CapitalDebugCommands;
@@ -18,6 +19,7 @@ import com.majesttyx.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.majesttyx.mcacapitals.util.CapitalTestCommands;
 import com.majesttyx.mcacapitals.util.RoyalGuardInteractionHandler;
 import com.majesttyx.mcacapitals.util.RoyalScepterCommands;
+import com.majesttyx.mcacapitals.util.SuccessionDecreeCommands;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -47,6 +49,7 @@ public class MCACapitals {
         MinecraftForge.EVENT_BUS.register(new LegitimizationDecreeHandler());
         MinecraftForge.EVENT_BUS.register(new DeclarationOfAbdicationHandler());
         MinecraftForge.EVENT_BUS.register(new BetrothalDecreeHandler());
+        MinecraftForge.EVENT_BUS.register(new SuccessionDecreeHandler());
         MinecraftForge.EVENT_BUS.register(new CapitalLifecycleHandler());
         MinecraftForge.EVENT_BUS.register(new RoyalGuardInteractionHandler());
         MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
@@ -60,6 +63,7 @@ public class MCACapitals {
         CapitalRoyalGuardCommands.register(event.getDispatcher());
         CapitalPetitionCommands.register(event.getDispatcher());
         RoyalScepterCommands.register(event.getDispatcher());
+        SuccessionDecreeCommands.register(event.getDispatcher());
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {

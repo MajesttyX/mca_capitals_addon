@@ -66,6 +66,13 @@ public final class MCAIntegrationBridge {
     }
 
     public static boolean isFemale(ServerLevel level, UUID entityId) {
+        if (level != null && entityId != null && level.getServer() != null) {
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(entityId);
+            if (player != null) {
+                return MCAPlayerBridge.isPlayerFemale(level, player);
+            }
+        }
+
         return MCAEntityBridge.isFemale(level, entityId);
     }
 

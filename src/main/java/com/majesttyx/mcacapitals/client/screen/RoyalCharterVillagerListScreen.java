@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class RoyalCharterVillagerListScreen extends Screen {
@@ -122,6 +123,10 @@ public class RoyalCharterVillagerListScreen extends Screen {
             CompoundTag entry = listTag.getCompound(i);
             result.add(new Candidate(entry.getString("VillagerId"), entry.getString("VillagerName")));
         }
+
+        result.sort(Comparator
+                .comparing(Candidate::name, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(Candidate::id));
 
         return result;
     }

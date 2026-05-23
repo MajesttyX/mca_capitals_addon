@@ -99,6 +99,7 @@ public class CapitalPopulationScanner {
         refreshCourtState(level, capital, residents);
         tickRecommendedBetrothals(level, capital);
         tickRoyalGuards(level, capital, residents);
+        tickCommander(level, capital, residents);
         tickHand(level, capital, residents);
         tickHerald(level, capital, residents);
         tickGrandMaester(level, capital, residents);
@@ -144,6 +145,12 @@ public class CapitalPopulationScanner {
 
     private void tickRoyalGuards(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         if (CapitalRoyalGuardService.tickRoyalGuards(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickCommander(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (CapitalCommanderService.tickCommander(level, capital, residents)) {
             CapitalDataAccess.markDirty(level);
         }
     }

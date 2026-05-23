@@ -17,13 +17,14 @@ public class ModCreativeTabs {
     public static final RegistryObject<CreativeModeTab> MAIN_TAB =
             CREATIVE_MODE_TABS.register("main", () -> CreativeModeTab.builder()
                     .title(Component.translatable("creativetab.mcacapitals.main"))
-                    .icon(() -> new ItemStack(ModItems.RED_ROYAL_SEAL.get()))
+                    .icon(() -> new ItemStack(ModItems.PURPLE_ROYAL_SEAL.get()))
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.ROYAL_SCEPTER.get());
                         output.accept(ModItems.ROYAL_DISINHERITANCE.get());
                         output.accept(ModItems.LEGITIMIZATION_DECREE.get());
                         output.accept(ModItems.DECLARATION_OF_ABDICATION.get());
                         output.accept(ModItems.BETROTHAL_DECREE.get());
+                        output.accept(ModItems.BLANK_SUCCESSION_DECREE.get());
                         output.accept(ModItems.ROYAL_CHARTER.get());
                         output.accept(ModItems.CAPITAL_CHRONICLE.get());
                         output.accept(ModItems.RED_ROYAL_SEAL.get());
@@ -31,6 +32,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.BLUE_ROYAL_SEAL.get());
                         output.accept(ModItems.GREEN_ROYAL_SEAL.get());
                         output.accept(ModItems.CYAN_ROYAL_SEAL.get());
+                        output.accept(ModItems.PURPLE_ROYAL_SEAL.get());
                     })
                     .build());
 

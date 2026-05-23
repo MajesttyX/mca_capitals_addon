@@ -27,6 +27,9 @@ public class ModItems {
     public static final RegistryObject<Item> BETROTHAL_DECREE =
             ITEMS.register("betrothal_decree", BetrothalDecreeItem::new);
 
+    public static final RegistryObject<Item> BLANK_SUCCESSION_DECREE =
+            ITEMS.register("blank_succession_decree", SuccessionDecreeItem::new);
+
     public static final RegistryObject<Item> ROYAL_CHARTER =
             ITEMS.register("royal_charter", RoyalCharterItem::new);
 
@@ -47,6 +50,9 @@ public class ModItems {
 
     public static final RegistryObject<Item> CYAN_ROYAL_SEAL =
             ITEMS.register("cyan_royal_seal", RoyalSealItem::new);
+
+    public static final RegistryObject<Item> PURPLE_ROYAL_SEAL =
+            ITEMS.register("purple_royal_seal", RoyalSealItem::new);
 
     private ModItems() {
     }

@@ -43,11 +43,6 @@ final class CapitalPetitionSovereignActions {
             return;
         }
 
-        if (!villagerEntity.getUUID().equals(capital.getSovereign())) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.THRONE_NOT_REIGNING);
-            return;
-        }
-
         if (capital.isPlayerSovereign()) {
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.THRONE_PLAYER_HELD);
             return;
@@ -88,7 +83,7 @@ final class CapitalPetitionSovereignActions {
             return;
         }
 
-        CapitalPetitionOutcomes.peacefulTransferByPetition(level, capital, player, villagerEntity.getUUID());
+        CapitalPetitionOutcomes.peacefulTransferByPetition(level, capital, player, capital.getSovereign());
 
         CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                 player,
