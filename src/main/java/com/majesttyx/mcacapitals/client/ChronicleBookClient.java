@@ -21,6 +21,6 @@ public class ChronicleBookClient {
             return;
         }
 
-        minecraft.setScreen(new BookViewScreen(new BookViewScreen.WrittenBookAccess(bookToOpen)));
+        minecraft.setScreen(new BookViewScreen(BookViewScreen.BookAccess.fromItem(bookToOpen)));
     }
 }

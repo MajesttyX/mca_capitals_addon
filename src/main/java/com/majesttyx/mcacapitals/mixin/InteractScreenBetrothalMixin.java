@@ -18,12 +18,12 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.client.gui.InteractScreen", remap = false)
+@Mixin(targets = "net.conczin.mca.client.gui.InteractScreen", remap = false)
 public abstract class InteractScreenBetrothalMixin {
 
     @Unique
     private static final ResourceLocation MCACAPITALS_BETROTHAL_DECREE_TEXTURE =
-            new ResourceLocation("mcacapitals", "textures/item/betrothal_decree.png");
+            ResourceLocation.fromNamespaceAndPath("mcacapitals", "textures/item/betrothal_decree.png");
 
     @Unique
     private static final int MCACAPITALS_SLOT_X = 23;

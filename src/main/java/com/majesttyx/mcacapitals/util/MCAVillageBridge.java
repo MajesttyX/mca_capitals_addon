@@ -3,9 +3,12 @@ package com.majesttyx.mcacapitals.util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -108,6 +111,31 @@ final class MCAVillageBridge {
         return village == null ? Collections.emptySet() : getVillageResidents(village);
     }
 
+    static Map<UUID, String> getVillageResidentNames(ServerLevel level, int villageId) {
+        Object village = getVillageObject(level, villageId);
+        if (village == null) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, String> loadedResidents = getLoadedVillageResidentNames(level, village);
+        if (!loadedResidents.isEmpty()) {
+            return loadedResidents;
+        }
+
+        Map<UUID, String> savedNames = getSavedVillageResidentNames(village);
+        if (!savedNames.isEmpty()) {
+            return savedNames;
+        }
+
+        Map<UUID, String> fallback = new LinkedHashMap<>();
+        for (UUID residentId : getVillageResidents(village)) {
+            if (residentId != null) {
+                fallback.put(residentId, residentId.toString());
+            }
+        }
+        return fallback;
+    }
+
     private static Object getVillageObject(ServerLevel level, int villageId) {
         for (Object village : getAllVillages(level)) {
             Integer id = getVillageId(village);
@@ -170,5 +198,56 @@ final class MCAVillageBridge {
     private static Set<UUID> getVillageResidents(Object village) {
         Object value = MCAReflectionHelper.invoke(village, "getResidentsUUIDs");
         return MCAReflectionHelper.extractUuidSet(value);
+    }
+
+    private static Map<UUID, String> getLoadedVillageResidentNames(ServerLevel level, Object village) {
+        if (level == null || village == null) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, String> result = new LinkedHashMap<>();
+        Object residents = MCAReflectionHelper.invoke(
+                village,
+                "getResidents",
+                new Class<?>[] {ServerLevel.class},
+                level
+        );
+
+        if (residents instanceof Iterable<?> iterable) {
+            for (Object value : iterable) {
+                if (!(value instanceof Entity entity)) {
+                    continue;
+                }
+                if (!MCAEntityBridge.isAliveMCAVillagerEntity(entity)) {
+                    continue;
+                }
+
+                result.put(entity.getUUID(), entity.getName().getString());
+            }
+        }
+
+        return result;
+    }
+
+    private static Map<UUID, String> getSavedVillageResidentNames(Object village) {
+        if (village == null) {
+            return Collections.emptyMap();
+        }
+
+        Object value = MCAReflectionHelper.invoke(village, "getResidentNames");
+        if (!(value instanceof Map<?, ?> map)) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, String> result = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (entry.getKey() instanceof UUID uuid && entry.getValue() instanceof String name) {
+                if (name != null && !name.isBlank()) {
+                    result.put(uuid, name);
+                }
+            }
+        }
+
+        return result;
     }
 }

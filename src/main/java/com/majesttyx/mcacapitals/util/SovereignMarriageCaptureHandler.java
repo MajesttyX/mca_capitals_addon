@@ -8,9 +8,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.event.entity.player.AdvancementEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 import java.util.Map;
 import java.util.UUID;
@@ -26,7 +26,7 @@ public class SovereignMarriageCaptureHandler {
             return;
         }
 
-        ResourceLocation id = event.getAdvancement() == null ? null : event.getAdvancement().getId();
+        ResourceLocation id = event.getAdvancement() == null ? null : event.getAdvancement().id();
         if (id == null) {
             return;
         }

@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.data;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -17,6 +18,9 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
 
     public static final String DATA_NAME = "mcacapitals_pending_villager_betrothals";
 
+    private static final SavedData.Factory<PendingVillagerBetrothalSavedData> FACTORY =
+            new SavedData.Factory<>(PendingVillagerBetrothalSavedData::new, PendingVillagerBetrothalSavedData::load, null);
+
     private static final String KEY_PAIRS = "Pairs";
     private static final String KEY_FIRST = "First";
     private static final String KEY_SECOND = "Second";
@@ -27,11 +31,7 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
         return level.getServer()
                 .overworld()
                 .getDataStorage()
-                .computeIfAbsent(
-                        PendingVillagerBetrothalSavedData::load,
-                        PendingVillagerBetrothalSavedData::new,
-                        DATA_NAME
-                );
+                .computeIfAbsent(FACTORY, DATA_NAME);
     }
 
     public List<PendingPair> getPairs() {
@@ -123,7 +123,7 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
 
         for (PendingPair pair : getPairs()) {
@@ -137,7 +137,7 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
         return tag;
     }
 
-    public static PendingVillagerBetrothalSavedData load(CompoundTag tag) {
+    public static PendingVillagerBetrothalSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         PendingVillagerBetrothalSavedData data = new PendingVillagerBetrothalSavedData();
         ListTag list = tag.getList(KEY_PAIRS, Tag.TAG_COMPOUND);
 

@@ -3,6 +3,7 @@ package com.majesttyx.mcacapitals.data;
 import com.majesttyx.mcacapitals.noble.NobleRecord;
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -16,6 +17,9 @@ import java.util.UUID;
 public class NobleSavedData extends SavedData {
 
     public static final String DATA_NAME = "mcacapitals_nobles";
+
+    private static final SavedData.Factory<NobleSavedData> FACTORY =
+            new SavedData.Factory<>(NobleSavedData::new, NobleSavedData::load, null);
 
     private final Map<UUID, NobleRecord> nobles = new HashMap<>();
 
@@ -33,15 +37,11 @@ public class NobleSavedData extends SavedData {
     }
 
     public static NobleSavedData get(ServerLevel level) {
-        return level.getDataStorage().computeIfAbsent(
-                NobleSavedData::load,
-                NobleSavedData::new,
-                DATA_NAME
-        );
+        return level.getDataStorage().computeIfAbsent(FACTORY, DATA_NAME);
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag nobleList = new ListTag();
 
         for (NobleRecord record : nobles.values()) {
@@ -64,7 +64,7 @@ public class NobleSavedData extends SavedData {
         return tag;
     }
 
-    public static NobleSavedData load(CompoundTag tag) {
+    public static NobleSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         NobleSavedData data = new NobleSavedData();
 
         ListTag nobleList = tag.getList(ModDataKeys.NOBLES, Tag.TAG_COMPOUND);

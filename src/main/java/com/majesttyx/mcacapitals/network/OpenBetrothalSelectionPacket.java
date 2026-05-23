@@ -1,15 +1,24 @@
 package com.majesttyx.mcacapitals.network;
 
+import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.client.BetrothalSelectionClient;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
 
-public class OpenBetrothalSelectionPacket {
+public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
+
+    public static final Type<OpenBetrothalSelectionPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(MCACapitals.MODID, "open_betrothal_selection"));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, OpenBetrothalSelectionPacket> STREAM_CODEC =
+            StreamCodec.ofMember(OpenBetrothalSelectionPacket::encode, OpenBetrothalSelectionPacket::decode);
 
     private final UUID capitalId;
     private final String villageName;
@@ -44,14 +53,14 @@ public class OpenBetrothalSelectionPacket {
         return recommendationCandidates;
     }
 
-    public static void encode(OpenBetrothalSelectionPacket packet, FriendlyByteBuf buffer) {
-        buffer.writeUUID(packet.capitalId);
-        buffer.writeUtf(packet.villageName);
-        writeCandidates(buffer, packet.playerCandidates);
-        writeCandidates(buffer, packet.recommendationCandidates);
+    private void encode(RegistryFriendlyByteBuf buffer) {
+        buffer.writeUUID(capitalId);
+        buffer.writeUtf(villageName);
+        writeCandidates(buffer, playerCandidates);
+        writeCandidates(buffer, recommendationCandidates);
     }
 
-    public static OpenBetrothalSelectionPacket decode(FriendlyByteBuf buffer) {
+    private static OpenBetrothalSelectionPacket decode(RegistryFriendlyByteBuf buffer) {
         UUID capitalId = buffer.readUUID();
         String villageName = buffer.readUtf();
         List<Candidate> playerCandidates = readCandidates(buffer);
@@ -65,13 +74,11 @@ public class OpenBetrothalSelectionPacket {
         );
     }
 
-    public static void handle(OpenBetrothalSelectionPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
+    public static void handle(OpenBetrothalSelectionPacket packet, IPayloadContext context) {
         context.enqueueWork(() -> BetrothalSelectionClient.open(packet));
-        context.setPacketHandled(true);
     }
 
-    private static void writeCandidates(FriendlyByteBuf buffer, List<Candidate> candidates) {
+    private static void writeCandidates(RegistryFriendlyByteBuf buffer, List<Candidate> candidates) {
         buffer.writeInt(candidates.size());
         for (Candidate candidate : candidates) {
             buffer.writeUUID(candidate.id);
@@ -79,13 +86,18 @@ public class OpenBetrothalSelectionPacket {
         }
     }
 
-    private static List<Candidate> readCandidates(FriendlyByteBuf buffer) {
+    private static List<Candidate> readCandidates(RegistryFriendlyByteBuf buffer) {
         int size = buffer.readInt();
         List<Candidate> candidates = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             candidates.add(new Candidate(buffer.readUUID(), buffer.readUtf()));
         }
         return candidates;
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     public static class Candidate {

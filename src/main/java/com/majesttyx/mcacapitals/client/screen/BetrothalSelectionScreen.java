@@ -189,7 +189,7 @@ public class BetrothalSelectionScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics);
+        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
 
         String title;
         if (mode == Mode.PLAYER) {
@@ -213,7 +213,7 @@ public class BetrothalSelectionScreen extends Screen {
         guiGraphics.drawString(this.font, footer, (this.width - footerWidth) / 2, this.height - 52, 0xAAAAAA, false);
 
         if (mode == Mode.PLAYER && playerCandidates.isEmpty()) {
-            String line = "No eligible teen or adult nobles are available.";
+            String line = "No eligible nobles are available.";
             int width = this.font.width(line);
             guiGraphics.drawString(this.font, line, (this.width - width) / 2, 72, 0xFFAAAA, false);
         }

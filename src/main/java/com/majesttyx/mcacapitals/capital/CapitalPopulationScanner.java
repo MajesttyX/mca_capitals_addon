@@ -5,15 +5,17 @@ import com.majesttyx.mcacapitals.item.ModItems;
 import com.majesttyx.mcacapitals.item.RoyalCharterItem;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -28,12 +30,12 @@ public class CapitalPopulationScanner {
     private static final int SCAN_INTERVAL_TICKS = 20;
 
     @SubscribeEvent
-    public void onLevelTick(TickEvent.LevelTickEvent event) {
+    public void onLevelTick(LevelTickEvent.Post event) {
         if (!shouldProcessTick(event)) {
             return;
         }
 
-        ServerLevel level = (ServerLevel) event.level;
+        ServerLevel level = (ServerLevel) event.getLevel();
         CapitalResidentScanner.clearCache(level);
 
         boolean changed = false;
@@ -46,11 +48,8 @@ public class CapitalPopulationScanner {
         }
     }
 
-    private boolean shouldProcessTick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return false;
-        }
-        if (!(event.level instanceof ServerLevel level)) {
+    private boolean shouldProcessTick(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) {
             return false;
         }
 
@@ -246,8 +245,12 @@ public class CapitalPopulationScanner {
     }
 
     private boolean isRoyalCharterForCapital(ItemStack stack, UUID capitalId) {
-        if (stack == null || !stack.is(ModItems.ROYAL_CHARTER.get()) || !stack.hasTag()) return false;
-        String raw = stack.getTag().getString(ModDataKeys.CAPITAL_ID);
+        if (stack == null || !stack.is(ModItems.ROYAL_CHARTER.get()) || !ModItemStackData.hasCustomData(stack)) {
+            return false;
+        }
+
+        CompoundTag tag = ModItemStackData.getCustomData(stack);
+        String raw = tag.getString(ModDataKeys.CAPITAL_ID);
         return capitalId.toString().equals(raw);
     }
 

@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.data;
 
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.saveddata.SavedData;
 
@@ -115,11 +116,11 @@ public class CapitalSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         return CapitalSavedDataWriter.saveCapitals(tag, capitals);
     }
 
-    public static CapitalSavedData load(CompoundTag tag) {
+    public static CapitalSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         return CapitalSavedDataReader.loadCapitals(tag);
     }
 }

@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.data;
 
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleRecord;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -15,6 +16,9 @@ import java.util.UUID;
 public class PlayerCapitalTitleSavedData extends SavedData {
 
     public static final String DATA_NAME = "mcacapitals_player_titles";
+
+    private static final SavedData.Factory<PlayerCapitalTitleSavedData> FACTORY =
+            new SavedData.Factory<>(PlayerCapitalTitleSavedData::new, PlayerCapitalTitleSavedData::load, null);
 
     private static final String KEY_RECORDS = "Records";
     private static final String KEY_PLAYER_ID = "PlayerId";
@@ -34,11 +38,7 @@ public class PlayerCapitalTitleSavedData extends SavedData {
         return level.getServer()
                 .overworld()
                 .getDataStorage()
-                .computeIfAbsent(
-                        PlayerCapitalTitleSavedData::load,
-                        PlayerCapitalTitleSavedData::new,
-                        DATA_NAME
-                );
+                .computeIfAbsent(FACTORY, DATA_NAME);
     }
 
     public Map<String, PlayerCapitalTitleRecord> getRecords() {
@@ -74,7 +74,7 @@ public class PlayerCapitalTitleSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
 
         for (PlayerCapitalTitleRecord record : records.values()) {
@@ -106,7 +106,7 @@ public class PlayerCapitalTitleSavedData extends SavedData {
         return tag;
     }
 
-    public static PlayerCapitalTitleSavedData load(CompoundTag tag) {
+    public static PlayerCapitalTitleSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         PlayerCapitalTitleSavedData data = new PlayerCapitalTitleSavedData();
         ListTag list = tag.getList(KEY_RECORDS, Tag.TAG_COMPOUND);
 

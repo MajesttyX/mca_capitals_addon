@@ -8,6 +8,8 @@ import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenCapitalChroniclePacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -53,11 +55,13 @@ public class CapitalChronicleItem extends Item {
         CapitalChronicleService.bindChronicleItem(serverPlayer.serverLevel(), capital, previewBook);
         CapitalChronicleService.writeChronicleBook(serverPlayer.serverLevel(), capital, previewBook);
 
+        CompoundTag previewData = ModItemStackData.getCustomData(previewBook);
+
         MCACapitals.LOGGER.info(
                 "[CapitalChronicle] Sending preview book to client for village '{}' with {} page entries.",
-                previewBook.getOrCreateTag().getString(ModDataKeys.VILLAGE_NAME),
-                previewBook.getOrCreateTag().contains(ModDataKeys.BOOK_PAGES)
-                        ? previewBook.getOrCreateTag().getList(ModDataKeys.BOOK_PAGES, 8).size()
+                previewData.getString(ModDataKeys.VILLAGE_NAME),
+                previewData.contains(ModDataKeys.BOOK_PAGES)
+                        ? previewData.getList(ModDataKeys.BOOK_PAGES, 8).size()
                         : 0
         );
 
@@ -66,8 +70,8 @@ public class CapitalChronicleItem extends Item {
     }
 
     private CapitalRecord resolveCapital(ServerPlayer player, ItemStack stack) {
-        if (stack.hasTag()) {
-            String raw = stack.getTag().getString(ModDataKeys.CAPITAL_ID);
+        if (ModItemStackData.hasCustomData(stack)) {
+            String raw = ModItemStackData.getCustomData(stack).getString(ModDataKeys.CAPITAL_ID);
             if (!raw.isBlank()) {
                 try {
                     UUID capitalId = UUID.fromString(raw);

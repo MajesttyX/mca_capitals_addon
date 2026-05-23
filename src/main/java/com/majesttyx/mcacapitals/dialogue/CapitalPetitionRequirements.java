@@ -6,7 +6,7 @@ import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.network.OpenBetrothalSelectionPacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -81,7 +81,7 @@ final class CapitalPetitionRequirements {
     }
 
     static boolean hasAdvancement(ServerPlayer player, ResourceLocation advancementId) {
-        Advancement advancement = player.server.getAdvancements().getAdvancement(advancementId);
+        AdvancementHolder advancement = player.server.getAdvancements().get(advancementId);
         if (advancement == null) {
             return false;
         }

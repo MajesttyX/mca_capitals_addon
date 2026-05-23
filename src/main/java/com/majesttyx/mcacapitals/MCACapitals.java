@@ -19,12 +19,10 @@ import com.majesttyx.mcacapitals.util.CapitalTestCommands;
 import com.majesttyx.mcacapitals.util.RoyalGuardInteractionHandler;
 import com.majesttyx.mcacapitals.util.RoyalScepterCommands;
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import org.slf4j.Logger;
 
 @Mod(MCACapitals.MODID)
@@ -33,23 +31,21 @@ public class MCACapitals {
     public static final String MODID = "mcacapitals";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public MCACapitals() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-
+    public MCACapitals(IEventBus modEventBus) {
         ModItems.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
 
-        modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(ModNetwork::register);
 
-        MinecraftForge.EVENT_BUS.register(new CapitalPopulationScanner());
-        MinecraftForge.EVENT_BUS.register(new RoyalScepterHandler());
-        MinecraftForge.EVENT_BUS.register(new RoyalDisinheritanceHandler());
-        MinecraftForge.EVENT_BUS.register(new LegitimizationDecreeHandler());
-        MinecraftForge.EVENT_BUS.register(new DeclarationOfAbdicationHandler());
-        MinecraftForge.EVENT_BUS.register(new BetrothalDecreeHandler());
-        MinecraftForge.EVENT_BUS.register(new CapitalLifecycleHandler());
-        MinecraftForge.EVENT_BUS.register(new RoyalGuardInteractionHandler());
-        MinecraftForge.EVENT_BUS.addListener(this::registerCommands);
+        NeoForge.EVENT_BUS.register(new CapitalPopulationScanner());
+        NeoForge.EVENT_BUS.register(new RoyalScepterHandler());
+        NeoForge.EVENT_BUS.register(new RoyalDisinheritanceHandler());
+        NeoForge.EVENT_BUS.register(new LegitimizationDecreeHandler());
+        NeoForge.EVENT_BUS.register(new DeclarationOfAbdicationHandler());
+        NeoForge.EVENT_BUS.register(new BetrothalDecreeHandler());
+        NeoForge.EVENT_BUS.register(new CapitalLifecycleHandler());
+        NeoForge.EVENT_BUS.register(new RoyalGuardInteractionHandler());
+        NeoForge.EVENT_BUS.addListener(this::registerCommands);
     }
 
     private void registerCommands(RegisterCommandsEvent event) {
@@ -60,9 +56,5 @@ public class MCACapitals {
         CapitalRoyalGuardCommands.register(event.getDispatcher());
         CapitalPetitionCommands.register(event.getDispatcher());
         RoyalScepterCommands.register(event.getDispatcher());
-    }
-
-    private void commonSetup(final FMLCommonSetupEvent event) {
-        event.enqueueWork(ModNetwork::register);
     }
 }

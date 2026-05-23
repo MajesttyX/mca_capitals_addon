@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 final class MCAReflectionHelper {
 
     static final String[] MCA_VILLAGER_CLASSES = new String[] {
+            "net.conczin.mca.entity.VillagerEntityMCA",
             "net.mca.entity.VillagerEntityMCA",
             "forge.net.mca.entity.VillagerEntityMCA",
             "fabric.net.mca.entity.VillagerEntityMCA",
@@ -24,6 +25,7 @@ final class MCAReflectionHelper {
     };
 
     static final String[] MCA_FAMILY_TREE_CLASSES = new String[] {
+            "net.conczin.mca.server.world.data.FamilyTree",
             "net.mca.server.world.data.FamilyTree",
             "forge.net.mca.server.world.data.FamilyTree",
             "fabric.net.mca.server.world.data.FamilyTree",
@@ -31,6 +33,7 @@ final class MCAReflectionHelper {
     };
 
     static final String[] MCA_VILLAGE_MANAGER_CLASSES = new String[] {
+            "net.conczin.mca.server.world.data.VillageManager",
             "net.mca.server.world.data.VillageManager",
             "forge.net.mca.server.world.data.VillageManager",
             "fabric.net.mca.server.world.data.VillageManager",
@@ -38,6 +41,7 @@ final class MCAReflectionHelper {
     };
 
     static final String[] MCA_CLOTHING_LIST_CLASSES = new String[] {
+            "net.conczin.mca.resources.ClothingList",
             "net.mca.resources.ClothingList",
             "forge.net.mca.resources.ClothingList",
             "fabric.net.mca.resources.ClothingList",

@@ -5,10 +5,8 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DistExecutor;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 public class RoyalScepterHandler {
 
@@ -40,8 +38,6 @@ public class RoyalScepterHandler {
             return;
         }
 
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                RoyalScepterClient.openScreen(livingTarget.getUUID(), livingTarget.getName().getString())
-        );
+        RoyalScepterClient.openScreen(livingTarget.getUUID(), livingTarget.getName().getString());
     }
 }

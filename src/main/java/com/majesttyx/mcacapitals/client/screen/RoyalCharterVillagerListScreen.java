@@ -1,6 +1,8 @@
 package com.majesttyx.mcacapitals.client.screen;
 
 import com.majesttyx.mcacapitals.item.ModItems;
+import com.majesttyx.mcacapitals.util.ModDataKeys;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -17,7 +19,7 @@ import java.util.List;
 public class RoyalCharterVillagerListScreen extends Screen {
 
     private static final ResourceLocation BACKGROUND =
-            new ResourceLocation("mcacapitals", "textures/gui/declaration_paper.png");
+            ResourceLocation.fromNamespaceAndPath("mcacapitals", "textures/gui/declaration_paper.png");
 
     private static final int BG_WIDTH = 160;
     private static final int BG_HEIGHT = 160;
@@ -82,7 +84,7 @@ public class RoyalCharterVillagerListScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics);
+        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
 
         int left = (this.width - BG_WIDTH) / 2;
         int top = (this.height - BG_HEIGHT) / 2;
@@ -96,12 +98,13 @@ public class RoyalCharterVillagerListScreen extends Screen {
 
     private void appoint(String villagerId) {
         ItemStack stack = getHeldCharter();
-        if (stack.isEmpty() || !stack.hasTag()) {
+        if (stack.isEmpty() || !ModItemStackData.hasCustomData(stack)) {
             onClose();
             return;
         }
 
-        String capitalId = stack.getTag().getString("CapitalId");
+        CompoundTag tag = ModItemStackData.getCustomData(stack);
+        String capitalId = tag.getString(ModDataKeys.CAPITAL_ID);
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player != null && minecraft.player.connection != null) {
             minecraft.player.connection.sendCommand("capitalfounding appoint " + capitalId + " " + villagerId);
@@ -113,14 +116,15 @@ public class RoyalCharterVillagerListScreen extends Screen {
         List<Candidate> result = new ArrayList<>();
 
         ItemStack stack = getHeldCharter();
-        if (stack.isEmpty() || !stack.hasTag()) {
+        if (stack.isEmpty() || !ModItemStackData.hasCustomData(stack)) {
             return result;
         }
 
-        ListTag listTag = stack.getTag().getList("Candidates", 10);
+        CompoundTag tag = ModItemStackData.getCustomData(stack);
+        ListTag listTag = tag.getList(ModDataKeys.CANDIDATES, 10);
         for (int i = 0; i < listTag.size(); i++) {
             CompoundTag entry = listTag.getCompound(i);
-            result.add(new Candidate(entry.getString("VillagerId"), entry.getString("VillagerName")));
+            result.add(new Candidate(entry.getString(ModDataKeys.VILLAGER_ID), entry.getString(ModDataKeys.VILLAGER_NAME)));
         }
 
         return result;

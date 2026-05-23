@@ -1,9 +1,8 @@
 package com.majesttyx.mcacapitals.mixin;
 
+import com.google.common.collect.ImmutableList;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
-import com.google.common.collect.ImmutableList;
-import com.mojang.datafixers.util.Pair;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.schedule.Activity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,11 +12,13 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.entity.ai.brain.VillagerTasksMCA", remap = false)
+@Mixin(targets = "net.conczin.mca.entity.ai.brain.VillagerTasksMCA", remap = false)
 public class VillagerTasksMCARoyalGuardMixin {
 
     @Inject(method = "initializeTasks", at = @At("TAIL"), remap = false)
@@ -43,13 +44,13 @@ public class VillagerTasksMCARoyalGuardMixin {
             return;
         }
 
-        Object minimalLookPackage = resolveMinimalLookPackage();
-        if (!(minimalLookPackage instanceof ImmutableList<?> taskList)) {
+        Object stayingPackage = resolveStayingPackage();
+        if (!(stayingPackage instanceof ImmutableList<?> taskList)) {
             return;
         }
 
-        setTaskList(brain, Activity.WORK, taskList);
-        setTaskList(brain, Activity.RAID, taskList);
+        replaceActivityPackage(brain, Activity.WORK, taskList);
+        replaceActivityPackage(brain, Activity.RAID, taskList);
         refreshActivities(brain, entity);
     }
 
@@ -67,55 +68,100 @@ public class VillagerTasksMCARoyalGuardMixin {
         return false;
     }
 
-    private static Object resolveMinimalLookPackage() {
+    private static Object resolveStayingPackage() {
         try {
-            Class<?> tasksClass = Class.forName("forge.net.mca.entity.ai.brain.VillagerTasksMCA");
-            Method method = tasksClass.getDeclaredMethod("getMinimalLookBehavior");
-            method.setAccessible(true);
-            Object pair = method.invoke(null);
-            if (pair == null) {
-                return null;
-            }
-            return ImmutableList.of((Pair<?, ?>) pair);
+            Class<?> tasksClass = Class.forName("net.conczin.mca.entity.ai.brain.VillagerTasksMCA");
+            Method method = tasksClass.getMethod("getStayingPackage");
+            return method.invoke(null);
         } catch (Throwable ignored) {
             return null;
         }
     }
 
-    private static void setTaskList(Object brain, Activity activity, ImmutableList<?> taskList) {
+    private static void replaceActivityPackage(Object brain, Activity activity, ImmutableList<?> taskList) {
+        if (brain == null || activity == null || taskList == null) {
+            return;
+        }
+
+        removeExistingActivityPackage(brain, activity);
+        addActivityPackage(brain, activity, taskList);
+    }
+
+    private static void removeExistingActivityPackage(Object brain, Activity activity) {
+        removeActivityFromAvailableBehaviors(brain, activity);
+        removeActivityFromMapField(brain, "activityRequirements", activity);
+        removeActivityFromMapField(brain, "activityMemoriesToEraseWhenStopped", activity);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void removeActivityFromAvailableBehaviors(Object brain, Activity activity) {
         try {
-            for (Method method : brain.getClass().getMethods()) {
-                if (!method.getName().equals("setTaskList") || method.getParameterCount() != 2) {
-                    continue;
-                }
+            Field field = findField(brain.getClass(), "availableBehaviorsByPriority");
+            if (field == null) {
+                return;
+            }
 
-                Class<?> first = method.getParameterTypes()[0];
-                Class<?> second = method.getParameterTypes()[1];
+            field.setAccessible(true);
+            Object value = field.get(brain);
+            if (!(value instanceof Map<?, ?> priorityMap)) {
+                return;
+            }
 
-                if (first.isAssignableFrom(Activity.class) && second.isAssignableFrom(taskList.getClass())) {
-                    method.invoke(brain, activity, taskList);
-                    return;
-                }
-
-                if (first.isAssignableFrom(Activity.class)) {
-                    method.invoke(brain, activity, taskList);
-                    return;
+            for (Object nested : priorityMap.values()) {
+                if (nested instanceof Map<?, ?> activityMap) {
+                    ((Map<Object, Object>) activityMap).remove(activity);
                 }
             }
         } catch (Throwable ignored) {
         }
     }
 
-    private static void refreshActivities(Object brain, Entity entity) {
+    @SuppressWarnings("unchecked")
+    private static void removeActivityFromMapField(Object brain, String fieldName, Activity activity) {
         try {
-            for (Method method : brain.getClass().getMethods()) {
-                if (!method.getName().equals("refreshActivities") || method.getParameterCount() != 2) {
-                    continue;
-                }
-                method.invoke(brain, entity.level().getDayTime(), entity.level().getGameTime());
+            Field field = findField(brain.getClass(), fieldName);
+            if (field == null) {
                 return;
+            }
+
+            field.setAccessible(true);
+            Object value = field.get(brain);
+            if (value instanceof Map<?, ?> map) {
+                ((Map<Object, Object>) map).remove(activity);
             }
         } catch (Throwable ignored) {
         }
+    }
+
+    private static void addActivityPackage(Object brain, Activity activity, ImmutableList<?> taskList) {
+        try {
+            Method method = brain.getClass().getMethod("addActivity", Activity.class, ImmutableList.class);
+            method.invoke(brain, activity, taskList);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void refreshActivities(Object brain, Entity entity) {
+        if (brain == null || entity == null) {
+            return;
+        }
+
+        try {
+            Method method = brain.getClass().getMethod("updateActivityFromSchedule", long.class, long.class);
+            method.invoke(brain, entity.level().getDayTime(), entity.level().getGameTime());
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static Field findField(Class<?> type, String name) {
+        Class<?> current = type;
+        while (current != null) {
+            try {
+                return current.getDeclaredField(name);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            }
+        }
+        return null;
     }
 }

@@ -2,12 +2,15 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
-import net.minecraft.nbt.CompoundTag;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.network.Filterable;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.WrittenBookContent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,39 +37,88 @@ public class CapitalChronicleService {
     private static final Pattern ACCLAIMED_SOVEREIGN = Pattern.compile("^(.*) was acclaimed as (King|Queen) of (.*)\\.$");
     private static final Pattern CLAIMED_THRONE = Pattern.compile("^(.*) claimed the throne as (King|Queen) of (.*)\\.$");
 
+    private static final String[] KNOWN_TITLE_PREFIXES = new String[] {
+            "High Queen",
+            "High King",
+            "Dowager Queen",
+            "Dowager King",
+            "Queen Consort",
+            "King Consort",
+            "Heir Apparent",
+            "Crown Princess",
+            "Crown Prince",
+            "Dowager Princess",
+            "Dowager Prince",
+            "Princess Consort",
+            "Prince Consort",
+            "Hand of the Queen",
+            "Hand of the King",
+            "Grand Maester",
+            "Maester",
+            "Court Herald",
+            "Princess",
+            "Prince",
+            "Lord Commander",
+            "Dowager Duchess",
+            "Dowager Duke",
+            "Duchess",
+            "Duke",
+            "Lady",
+            "Lord",
+            "Dame",
+            "Sir",
+            "Queen",
+            "King"
+    };
+
     private CapitalChronicleService() {
     }
 
-    public static void addEntry(ServerLevel level, CapitalRecord capital, String text) {
-        if (level == null || capital == null || text == null || text.isBlank()) {
+    public static void addEntry(ServerLevel level, CapitalRecord capital, String entry) {
+        if (level == null || capital == null || entry == null || entry.isBlank()) {
             return;
         }
 
-        String trimmed = text.trim();
-        if (hasChronicleText(capital, trimmed)) {
+        String normalized = entry.trim();
+        if (hasChronicleEntry(capital, normalized)) {
             return;
         }
 
-        long day = Math.max(1L, level.getDayTime() / 24000L + 1L);
-        capital.addChronicleEntry("Day " + day + ": " + trimmed);
-
-        if (isProclamation(trimmed)) {
-            broadcastProclamation(level, capital, trimmed);
-        }
+        capital.addChronicleEntry(normalized);
+        announceThroughHerald(level, capital, normalized);
     }
 
-    private static boolean hasChronicleText(CapitalRecord capital, String text) {
-        if (capital == null || text == null || text.isBlank()) {
+    public static void addEntryWithoutHerald(CapitalRecord capital, String entry) {
+        if (capital == null || entry == null || entry.isBlank()) {
+            return;
+        }
+
+        String normalized = entry.trim();
+        if (hasChronicleEntry(capital, normalized)) {
+            return;
+        }
+
+        capital.addChronicleEntry(normalized);
+    }
+
+    private static boolean hasChronicleEntry(CapitalRecord capital, String normalized) {
+        if (capital == null || normalized == null || normalized.isBlank()) {
             return false;
         }
 
-        for (String entry : capital.getChronicleEntries()) {
-            if (entry == null || entry.isBlank()) {
+        String canonical = canonicalChronicleEntry(normalized);
+
+        for (String existing : capital.getChronicleEntries()) {
+            if (existing == null) {
                 continue;
             }
 
-            String normalized = stripChroniclePrefix(entry);
-            if (text.equals(normalized)) {
+            String existingNormalized = existing.trim();
+            if (existingNormalized.equals(normalized)) {
+                return true;
+            }
+
+            if (canonical != null && canonical.equals(canonicalChronicleEntry(existingNormalized))) {
                 return true;
             }
         }
@@ -74,137 +126,204 @@ public class CapitalChronicleService {
         return false;
     }
 
-    private static String stripChroniclePrefix(String entry) {
-        if (entry == null) {
+    private static String canonicalChronicleEntry(String entry) {
+        if (entry == null || entry.isBlank()) {
+            return null;
+        }
+
+        String trimmed = entry.trim();
+
+        Matcher royalMarriage = ROYAL_MARRIAGE.matcher(trimmed);
+        if (royalMarriage.matches()) {
+            return canonicalMarriageEntry(
+                    "royal_marriage",
+                    royalMarriage.group(1),
+                    royalMarriage.group(2),
+                    null
+            );
+        }
+
+        Matcher capitalMarriage = CAPITAL_MARRIAGE.matcher(trimmed);
+        if (capitalMarriage.matches()) {
+            return canonicalMarriageEntry(
+                    "capital_marriage",
+                    capitalMarriage.group(1),
+                    capitalMarriage.group(2),
+                    capitalMarriage.group(3)
+            );
+        }
+
+        return null;
+    }
+
+    private static String canonicalMarriageEntry(String prefix, String firstName, String secondName, String villageName) {
+        String first = canonicalPersonName(firstName);
+        String second = canonicalPersonName(secondName);
+
+        String left = first.compareTo(second) <= 0 ? first : second;
+        String right = first.compareTo(second) <= 0 ? second : first;
+
+        if (villageName == null || villageName.isBlank()) {
+            return prefix + ":" + left + ":" + right;
+        }
+
+        return prefix + ":" + left + ":" + right + ":" + canonicalText(villageName);
+    }
+
+    private static String canonicalPersonName(String name) {
+        if (name == null || name.isBlank()) {
             return "";
         }
 
-        int colon = entry.indexOf(':');
-        if (entry.startsWith("Day ") && colon >= 0 && colon + 1 < entry.length()) {
-            return entry.substring(colon + 1).trim();
+        String result = name.trim();
+
+        if (result.endsWith(" of the Kingsguard")) {
+            result = result.substring(0, result.length() - " of the Kingsguard".length()).trim();
+        }
+        if (result.endsWith(" of the Queensguard")) {
+            result = result.substring(0, result.length() - " of the Queensguard".length()).trim();
         }
 
-        return entry.trim();
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (String title : KNOWN_TITLE_PREFIXES) {
+                String prefix = title + " ";
+                if (result.startsWith(prefix)) {
+                    result = result.substring(prefix.length()).trim();
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        return canonicalText(result);
     }
 
-    private static boolean isProclamation(String text) {
-        String normalized = text.toLowerCase(Locale.ROOT);
-        return normalized.contains("was appointed")
-                || normalized.contains("was named")
-                || normalized.contains("was raised to ducal rank")
-                || normalized.contains("was elevated to the ducal rank")
-                || normalized.contains("was married to")
-                || normalized.contains("were married in")
-                || normalized.contains("died")
-                || normalized.contains("inherited the throne")
-                || normalized.contains("claimed the throne")
-                || normalized.contains("was acclaimed as")
-                || normalized.contains("royal child")
-                || normalized.contains("entered into the dynastic record")
-                || normalized.contains("stands vacant")
-                || normalized.contains("rose to capital status");
+    private static String canonicalText(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 
-    private static void broadcastProclamation(ServerLevel level, CapitalRecord capital, String text) {
-        String speaker = CapitalHeraldService.resolveHeraldSpeakerName(level, capital);
-        String proclamation = buildProclamationLine(level, capital, text);
+    private static void announceThroughHerald(ServerLevel level, CapitalRecord capital, String entry) {
+        if (level == null || capital == null || entry == null || entry.isBlank()) {
+            return;
+        }
+
+        if (capital.getHerald() == null) {
+            return;
+        }
+
+        String news = toHeraldNews(entry);
+        if (news == null || news.isBlank()) {
+            return;
+        }
+
+        String speakerName = CapitalHeraldService.resolveHeraldSpeakerName(level, capital);
         CapitalPlayerNotificationService.notifyPlayersInCapital(
                 level,
                 capital,
-                Component.literal(speaker + ": " + proclamation)
+                Component.literal(speakerName + ": " + news.trim())
         );
     }
 
-    private static String buildProclamationLine(ServerLevel level, CapitalRecord capital, String text) {
-        String trimmed = text == null ? "" : text.trim();
+    public static String toHeraldNews(String entry) {
+        if (entry == null || entry.isBlank()) {
+            return "";
+        }
+
+        String trimmed = entry.trim();
 
         Matcher ducal = DUCAL_APPOINTMENT.matcher(trimmed);
         if (ducal.matches()) {
             return pick(trimmed,
-                    "Let all within " + ducal.group(2) + " know: " + ducal.group(1) + " now bears ducal rank.",
-                    "By decree of the crown, " + ducal.group(1) + " is this day elevated to ducal dignity in " + ducal.group(2) + ".",
-                    ducal.group(1) + " has been granted the honors of a duchy in " + ducal.group(2) + ".",
-                    "By command of the crown, " + ducal.group(1) + " is named among the dukes and duchesses of " + ducal.group(2) + ".",
-                    ducal.group(1) + " is now counted among the ducal ranks of " + ducal.group(2) + ".");
+                    "Let all in " + ducal.group(2) + " know: " + ducal.group(1) + " is raised to ducal rank.",
+                    "By decree of the crown, " + ducal.group(1) + " now holds ducal rank in " + ducal.group(2) + ".",
+                    ducal.group(1) + " has been elevated among the high nobility of " + ducal.group(2) + ".",
+                    "The court proclaims " + ducal.group(1) + " a duke of " + ducal.group(2) + ".",
+                    "A new ducal title is granted in " + ducal.group(2) + ": " + ducal.group(1) + ".");
         }
 
-        Matcher marriage = ROYAL_MARRIAGE.matcher(trimmed);
-        if (marriage.matches()) {
+        Matcher royalMarriage = ROYAL_MARRIAGE.matcher(trimmed);
+        if (royalMarriage.matches()) {
             return pick(trimmed,
-                    marriage.group(1) + " has entered into marriage with " + marriage.group(2) + ".",
-                    "By joyous proclamation, " + marriage.group(1) + " and " + marriage.group(2) + " are joined in marriage.",
-                    "Let all the capital know: " + marriage.group(1) + " has taken " + marriage.group(2) + " in marriage.",
-                    "A royal marriage is declared this day between " + marriage.group(1) + " and " + marriage.group(2) + ".",
-                    marriage.group(1) + " and " + marriage.group(2) + " are now joined in lawful marriage.");
+                    "Hear this joyous proclamation: " + royalMarriage.group(1) + " is wed to " + royalMarriage.group(2) + ".",
+                    "The court rejoices in the marriage of " + royalMarriage.group(1) + " and " + royalMarriage.group(2) + ".",
+                    royalMarriage.group(1) + " and " + royalMarriage.group(2) + " are joined in royal marriage.",
+                    "Let bells ring for the union of " + royalMarriage.group(1) + " and " + royalMarriage.group(2) + ".",
+                    "A royal marriage is proclaimed: " + royalMarriage.group(1) + " and " + royalMarriage.group(2) + ".");
         }
 
         Matcher capitalMarriage = CAPITAL_MARRIAGE.matcher(trimmed);
         if (capitalMarriage.matches()) {
             return pick(trimmed,
-                    "Let all in " + capitalMarriage.group(3) + " know: " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " are now married.",
-                    capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " have been joined in marriage in " + capitalMarriage.group(3) + ".",
-                    "By proclamation of the court, " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " are wed in " + capitalMarriage.group(3) + ".",
-                    "A marriage is declared in " + capitalMarriage.group(3) + " between " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + ".",
-                    capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " now stand joined in marriage within " + capitalMarriage.group(3) + ".");
+                    capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " were wed in " + capitalMarriage.group(3) + ".",
+                    "Joy comes to " + capitalMarriage.group(3) + ": " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " are married.",
+                    "The court records the marriage of " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " in " + capitalMarriage.group(3) + ".",
+                    "Let all in " + capitalMarriage.group(3) + " celebrate the union of " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + ".",
+                    capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " have joined houses in " + capitalMarriage.group(3) + ".");
         }
 
         Matcher child = ROYAL_CHILD.matcher(trimmed);
         if (child.matches()) {
             return pick(trimmed,
-                    child.group(1) + " now stands in the dynastic record of " + child.group(2) + ".",
-                    child.group(1) + " has been entered among the royal line of " + child.group(2) + ".",
-                    "By proclamation of the court, " + child.group(1) + " is entered into the dynastic record of " + child.group(2) + ".",
-                    "The child " + child.group(1) + " has been recorded in the dynasty of " + child.group(2) + ".",
-                    child.group(1) + " is this day acknowledged in the dynastic line of " + child.group(2) + ".");
+                    "A royal child is entered into the dynastic record: " + child.group(1) + " of " + child.group(2) + ".",
+                    "The dynasty of " + child.group(2) + " welcomes " + child.group(1) + ".",
+                    "Let the court record the royal child " + child.group(1) + " of " + child.group(2) + ".",
+                    child.group(1) + " is recognized in the royal line of " + child.group(2) + ".",
+                    "The bloodline of " + child.group(2) + " is strengthened by " + child.group(1) + ".");
         }
 
         Matcher hand = HAND_APPOINTMENT.matcher(trimmed);
         if (hand.matches()) {
             return pick(trimmed,
-                    "By sovereign decree, " + hand.group(1) + " now serves as " + hand.group(2) + " of " + hand.group(3) + ".",
-                    "Let all in " + hand.group(3) + " know: " + hand.group(1) + " has been invested as " + hand.group(2) + ".",
                     hand.group(1) + " is appointed " + hand.group(2) + " of " + hand.group(3) + ".",
-                    "The court proclaims " + hand.group(1) + " as " + hand.group(2) + " of " + hand.group(3) + ".",
-                    hand.group(1) + " now bears the office of " + hand.group(2) + " in " + hand.group(3) + ".");
+                    "The crown names " + hand.group(1) + " as " + hand.group(2) + ".",
+                    "Let all know: " + hand.group(1) + " now serves as " + hand.group(2) + " of " + hand.group(3) + ".",
+                    hand.group(1) + " takes up the office of " + hand.group(2) + ".",
+                    "The court confirms " + hand.group(1) + " as " + hand.group(2) + " of " + hand.group(3) + ".");
         }
 
-        Matcher gm = GRAND_MAESTER_APPOINTMENT.matcher(trimmed);
-        if (gm.matches()) {
+        Matcher maester = GRAND_MAESTER_APPOINTMENT.matcher(trimmed);
+        if (maester.matches()) {
             return pick(trimmed,
-                    "By decree of the court, " + gm.group(1) + " now serves as Grand Maester of " + gm.group(2) + ".",
-                    "Let all in " + gm.group(2) + " take note: " + gm.group(1) + " has been raised to Grand Maester.",
-                    gm.group(1) + " is named Grand Maester of " + gm.group(2) + ".",
-                    "The chains of learning now rest with " + gm.group(1) + ", Grand Maester of " + gm.group(2) + ".",
-                    gm.group(1) + " now holds the office of Grand Maester in " + gm.group(2) + ".");
+                    maester.group(1) + " is appointed Grand Maester of " + maester.group(2) + ".",
+                    "The court names " + maester.group(1) + " Grand Maester of " + maester.group(2) + ".",
+                    "Wisdom is called to court: " + maester.group(1) + " becomes Grand Maester.",
+                    "Let all know that " + maester.group(1) + " now serves as Grand Maester of " + maester.group(2) + ".",
+                    maester.group(1) + " takes up the chain and duties of Grand Maester in " + maester.group(2) + ".");
         }
 
         Matcher herald = HERALD_APPOINTMENT.matcher(trimmed);
         if (herald.matches()) {
             return pick(trimmed,
-                    "By decree of the court, " + herald.group(1) + " now bears the office of Court Herald of " + herald.group(2) + ".",
-                    "Let all in " + herald.group(2) + " know: " + herald.group(1) + " has been named Court Herald.",
-                    herald.group(1) + " now serves as Court Herald of " + herald.group(2) + ".",
-                    "The voice of courtly proclamation now belongs to " + herald.group(1) + " in " + herald.group(2) + ".",
-                    herald.group(1) + " has taken up the office of Court Herald in " + herald.group(2) + ".");
+                    herald.group(1) + " is appointed Court Herald of " + herald.group(2) + ".",
+                    "Let all know: " + herald.group(1) + " will speak the court's proclamations.",
+                    "The court names " + herald.group(1) + " as Herald of " + herald.group(2) + ".",
+                    herald.group(1) + " now bears the voice of the court.",
+                    "Proclamations of " + herald.group(2) + " shall be carried by " + herald.group(1) + ".");
         }
 
         Matcher guard = ROYAL_GUARD_APPOINTMENT.matcher(trimmed);
         if (guard.matches()) {
             return pick(trimmed,
-                    "By sovereign command, " + guard.group(1) + " now stands among the royal guard of " + guard.group(2) + ".",
-                    "Let all in " + guard.group(2) + " know: " + guard.group(1) + " has joined the royal guard.",
-                    guard.group(1) + " now serves in the royal guard of " + guard.group(2) + ".",
-                    "The crown now counts " + guard.group(1) + " among the royal guard of " + guard.group(2) + ".",
-                    guard.group(1) + " has taken up sworn service in the royal guard of " + guard.group(2) + ".");
+                    guard.group(1) + " is named to the royal guard of " + guard.group(2) + ".",
+                    "The crown's shield grows stronger: " + guard.group(1) + " joins the royal guard.",
+                    "Let all know: " + guard.group(1) + " now stands among the royal guard of " + guard.group(2) + ".",
+                    guard.group(1) + " takes the oath of the royal guard.",
+                    "The court names " + guard.group(1) + " to guard the crown of " + guard.group(2) + ".");
         }
 
         Matcher commander = COMMANDER_APPOINTMENT.matcher(trimmed);
         if (commander.matches()) {
             return pick(trimmed,
-                    "By decree of the crown, " + commander.group(1) + " now commands the " + commander.group(2) + " of " + commander.group(3) + ".",
-                    commander.group(1) + " has been appointed Commander of the " + commander.group(2) + " in " + commander.group(3) + ".",
-                    "Let all in " + commander.group(3) + " know: " + commander.group(1) + " now bears command of the " + commander.group(2) + ".",
-                    commander.group(1) + " now holds command over the " + commander.group(2) + " of " + commander.group(3) + ".",
+                    commander.group(1) + " is appointed Commander of the " + commander.group(2) + " of " + commander.group(3) + ".",
+                    "The crown names " + commander.group(1) + " to command the " + commander.group(2) + ".",
+                    "Let all know: " + commander.group(1) + " now commands the " + commander.group(2) + " of " + commander.group(3) + ".",
+                    commander.group(1) + " takes command in service of " + commander.group(3) + ".",
                     "The court proclaims " + commander.group(1) + " Commander of the " + commander.group(2) + " of " + commander.group(3) + ".");
         }
 
@@ -264,10 +383,11 @@ public class CapitalChronicleService {
             return;
         }
 
-        CompoundTag tag = stack.getOrCreateTag();
-        tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
-        tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId() == null ? -1 : capital.getVillageId());
-        tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+        ModItemStackData.updateCustomData(stack, tag -> {
+            tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
+            tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId() == null ? -1 : capital.getVillageId());
+            tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+        });
     }
 
     public static void writeChronicleBook(ServerLevel level, CapitalRecord capital, ItemStack stack) {
@@ -277,25 +397,37 @@ public class CapitalChronicleService {
 
         List<String> pages = createPages(level, capital);
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String title = "Chronicle of " + villageName;
+        String author = "The Royal Chancery";
 
-        CompoundTag tag = stack.getOrCreateTag();
-        tag.putString(ModDataKeys.BOOK_TITLE, "Chronicle of " + villageName);
-        tag.putString(ModDataKeys.BOOK_AUTHOR, "The Royal Chancery");
-        tag.putBoolean(ModDataKeys.BOOK_RESOLVED, true);
-        tag.putInt(ModDataKeys.BOOK_GENERATION, 0);
-
+        List<Filterable<Component>> writtenPages = new ArrayList<>();
         ListTag pageList = new ListTag();
         int count = 0;
         for (String page : pages) {
             if (count >= MAX_PAGES) {
                 break;
             }
-            String json = Component.Serializer.toJson(Component.literal(page));
-            pageList.add(StringTag.valueOf(json));
+            writtenPages.add(Filterable.passThrough(Component.literal(page)));
+            pageList.add(StringTag.valueOf(page));
             count++;
         }
 
-        tag.put(ModDataKeys.BOOK_PAGES, pageList);
+        stack.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
+                Filterable.passThrough(title),
+                author,
+                0,
+                writtenPages,
+                true
+        ));
+
+        ModItemStackData.updateCustomData(stack, tag -> {
+            tag.putString(ModDataKeys.BOOK_TITLE, title);
+            tag.putString(ModDataKeys.BOOK_AUTHOR, author);
+            tag.putBoolean(ModDataKeys.BOOK_RESOLVED, true);
+            tag.putInt(ModDataKeys.BOOK_GENERATION, 0);
+            tag.put(ModDataKeys.BOOK_PAGES, pageList);
+        });
+
         bindChronicleItem(level, capital, stack);
     }
 

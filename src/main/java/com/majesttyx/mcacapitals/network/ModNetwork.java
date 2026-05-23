@@ -1,57 +1,38 @@
 package com.majesttyx.mcacapitals.network;
 
-import com.majesttyx.mcacapitals.MCACapitals;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public class ModNetwork {
 
     private static final String PROTOCOL_VERSION = "1";
-    private static int nextId = 0;
-    private static boolean registered = false;
-
-    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(MCACapitals.MODID, "main"),
-            () -> PROTOCOL_VERSION,
-            PROTOCOL_VERSION::equals,
-            PROTOCOL_VERSION::equals
-    );
 
     private ModNetwork() {
     }
 
-    public static void register() {
-        if (registered) {
-            return;
-        }
+    public static void register(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
 
-        CHANNEL.registerMessage(
-                nextId++,
-                OpenCapitalChroniclePacket.class,
-                OpenCapitalChroniclePacket::encode,
-                OpenCapitalChroniclePacket::decode,
+        registrar.playToClient(
+                OpenCapitalChroniclePacket.TYPE,
+                OpenCapitalChroniclePacket.STREAM_CODEC,
                 OpenCapitalChroniclePacket::handle
         );
 
-        CHANNEL.registerMessage(
-                nextId++,
-                OpenBetrothalSelectionPacket.class,
-                OpenBetrothalSelectionPacket::encode,
-                OpenBetrothalSelectionPacket::decode,
+        registrar.playToClient(
+                OpenBetrothalSelectionPacket.TYPE,
+                OpenBetrothalSelectionPacket.STREAM_CODEC,
                 OpenBetrothalSelectionPacket::handle
         );
-
-        registered = true;
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenCapitalChroniclePacket packet) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenBetrothalSelectionPacket packet) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+        PacketDistributor.sendToPlayer(player, packet);
     }
 }

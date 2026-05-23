@@ -1,6 +1,5 @@
 package com.majesttyx.mcacapitals.util;
 
-import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalFoundationService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
@@ -11,6 +10,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -49,23 +49,23 @@ public class CapitalFoundingCommands {
                                                                 return 0;
                                                             }
 
-                                                            Set<UUID> residents = MCAIntegrationBridge.getVillageResidents(player.serverLevel(), capital.getVillageId());
-                                                            if (!MCAReputationBridge.canClaimThrone(player.serverLevel(), residents, player.getUUID(), CLAIM_HEARTS_REQUIRED)) {
+                                                            int hearts = countCapitalHearts(player, capital);
+                                                            if (hearts < CLAIM_HEARTS_REQUIRED) {
                                                                 player.sendSystemMessage(Component.literal(
-                                                                        "You do not yet have the standing to claim the throne of "
-                                                                                + MCAIntegrationBridge.getVillageName(player.serverLevel(), capital.getVillageId()) + "."
+                                                                        "You need " + CLAIM_HEARTS_REQUIRED + " total hearts with the people of this capital to claim the throne. Current: " + hearts + "."
                                                                 ));
                                                                 return 0;
                                                             }
 
-                                                            capital.setMonarchyRejected(false);
-                                                            CapitalFoundationService.appointPlayerSovereign(player.serverLevel(), capital, player.getUUID(), false);
-                                                            consumeCharter(player, capitalId);
+                                                            CapitalFoundationService.appointPlayerSovereign(
+                                                                    player.serverLevel(),
+                                                                    capital,
+                                                                    player.getUUID(),
+                                                                    MCAIntegrationBridge.isPlayerFemale(player.serverLevel(), player)
+                                                            );
 
-                                                            player.sendSystemMessage(Component.literal(
-                                                                    "You have claimed the throne of "
-                                                                            + MCAIntegrationBridge.getVillageName(player.serverLevel(), capital.getVillageId()) + "."
-                                                            ));
+                                                            consumeMatchingCharters(player, capitalId);
+                                                            player.sendSystemMessage(Component.literal("You have claimed the throne."));
                                                             return 1;
                                                         })
                                         )
@@ -96,32 +96,19 @@ public class CapitalFoundingCommands {
                                                                             }
 
                                                                             if (!MCAIntegrationBridge.isMCAVillager(player.serverLevel(), villagerId)) {
-                                                                                player.sendSystemMessage(Component.literal("That choice is not a valid MCA villager."));
+                                                                                player.sendSystemMessage(Component.literal("That villager is no longer available."));
                                                                                 return 0;
                                                                             }
 
-                                                                            Set<UUID> residents = MCAIntegrationBridge.getVillageResidents(player.serverLevel(), capital.getVillageId());
-                                                                            if (!residents.contains(villagerId)) {
-                                                                                player.sendSystemMessage(Component.literal("That villager does not belong to this village."));
-                                                                                return 0;
-                                                                            }
-
-                                                                            var entity = MCAIntegrationBridge.getEntityByUuid(player.serverLevel(), villagerId);
-                                                                            String displayName = entity != null ? entity.getName().getString() : "That villager";
-
-                                                                            capital.setMonarchyRejected(false);
                                                                             CapitalFoundationService.appointVillagerSovereign(
                                                                                     player.serverLevel(),
                                                                                     capital,
                                                                                     villagerId,
                                                                                     MCAIntegrationBridge.isFemale(player.serverLevel(), villagerId)
                                                                             );
-                                                                            consumeCharter(player, capitalId);
 
-                                                                            player.sendSystemMessage(Component.literal(
-                                                                                    "By acclaim of " + MCAIntegrationBridge.getVillageName(player.serverLevel(), capital.getVillageId())
-                                                                                            + ", " + displayName + " has been raised to the throne."
-                                                                            ));
+                                                                            consumeMatchingCharters(player, capitalId);
+                                                                            player.sendSystemMessage(Component.literal("The sovereign has been appointed."));
                                                                             return 1;
                                                                         })
                                                         )
@@ -143,21 +130,17 @@ public class CapitalFoundingCommands {
                                                                 return 0;
                                                             }
 
-                                                            capital.setMonarchyRejected(true);
-                                                            capital.setState(CapitalState.PENDING);
-                                                            CapitalChronicleService.addEntry(
-                                                                    player.serverLevel(),
-                                                                    capital,
-                                                                    MCAIntegrationBridge.getVillageName(player.serverLevel(), capital.getVillageId())
-                                                                            + " rejected monarchy and remained ungoverned."
-                                                            );
-                                                            CapitalDataAccess.markDirty(player.serverLevel());
-                                                            consumeCharter(player, capitalId);
+                                                            if (capital.getSovereign() != null) {
+                                                                player.sendSystemMessage(Component.literal("That capital already has a sovereign."));
+                                                                return 0;
+                                                            }
 
-                                                            player.sendSystemMessage(Component.literal(
-                                                                    MCAIntegrationBridge.getVillageName(player.serverLevel(), capital.getVillageId())
-                                                                            + " rejects monarchy and remains ungoverned."
-                                                            ));
+                                                            capital.setMonarchyRejected(true);
+                                                            capital.setState(CapitalState.ACTIVE);
+                                                            CapitalDataAccess.markDirty(player.serverLevel());
+                                                            consumeMatchingCharters(player, capitalId);
+
+                                                            player.sendSystemMessage(Component.literal("The people will remain without a crown."));
                                                             return 1;
                                                         })
                                         )
@@ -165,10 +148,21 @@ public class CapitalFoundingCommands {
         );
     }
 
-    private static void consumeCharter(ServerPlayer player, UUID capitalId) {
+    private static int countCapitalHearts(ServerPlayer player, CapitalRecord capital) {
+        Set<UUID> residents = MCAIntegrationBridge.getVillageResidents(player.serverLevel(), capital.getVillageId());
+        int total = 0;
+
+        for (UUID resident : residents) {
+            total += Math.max(0, MCAIntegrationBridge.getHeartsWithPlayer(player.serverLevel(), resident, player.getUUID()));
+        }
+
+        return total;
+    }
+
+    private static void consumeMatchingCharters(ServerPlayer player, UUID capitalId) {
         for (int i = 0; i < player.getInventory().items.size(); i++) {
             ItemStack stack = player.getInventory().items.get(i);
-            if (isCharterForCapital(stack, capitalId)) {
+            if (isMatchingCharter(stack, capitalId)) {
                 stack.shrink(1);
                 return;
             }
@@ -176,17 +170,19 @@ public class CapitalFoundingCommands {
 
         for (int i = 0; i < player.getInventory().offhand.size(); i++) {
             ItemStack stack = player.getInventory().offhand.get(i);
-            if (isCharterForCapital(stack, capitalId)) {
+            if (isMatchingCharter(stack, capitalId)) {
                 stack.shrink(1);
                 return;
             }
         }
     }
 
-    private static boolean isCharterForCapital(ItemStack stack, UUID capitalId) {
-        return stack != null
-                && stack.is(ModItems.ROYAL_CHARTER.get())
-                && stack.hasTag()
-                && capitalId.toString().equals(stack.getTag().getString(ModDataKeys.CAPITAL_ID));
+    private static boolean isMatchingCharter(ItemStack stack, UUID capitalId) {
+        if (stack == null || !stack.is(ModItems.ROYAL_CHARTER.get()) || !ModItemStackData.hasCustomData(stack)) {
+            return false;
+        }
+
+        CompoundTag tag = ModItemStackData.getCustomData(stack);
+        return capitalId.toString().equals(tag.getString(ModDataKeys.CAPITAL_ID));
     }
 }

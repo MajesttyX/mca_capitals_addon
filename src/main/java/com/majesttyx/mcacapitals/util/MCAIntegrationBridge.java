@@ -8,6 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -66,6 +67,13 @@ public final class MCAIntegrationBridge {
     }
 
     public static boolean isFemale(ServerLevel level, UUID entityId) {
+        if (level != null && entityId != null && level.getServer() != null) {
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(entityId);
+            if (player != null) {
+                return MCAPlayerBridge.isPlayerFemale(level, player);
+            }
+        }
+
         return MCAEntityBridge.isFemale(level, entityId);
     }
 
@@ -183,6 +191,10 @@ public final class MCAIntegrationBridge {
 
     public static Set<UUID> getVillageResidents(ServerLevel level, int villageId) {
         return MCAVillageBridge.getVillageResidents(level, villageId);
+    }
+
+    public static Map<UUID, String> getVillageResidentNames(ServerLevel level, int villageId) {
+        return MCAVillageBridge.getVillageResidentNames(level, villageId);
     }
 
     public static int getHeartsWithPlayer(ServerLevel level, UUID villagerId, UUID playerId) {

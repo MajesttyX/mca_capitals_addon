@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.reflect.Field;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.entity.interaction.EntityCommandHandler", remap = false)
+@Mixin(targets = "net.conczin.mca.entity.interaction.EntityCommandHandler", remap = false)
 public class VillagerCommandHandlerMixin {
 
     @Inject(method = "handle", at = @At("HEAD"), cancellable = true, remap = false)

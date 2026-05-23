@@ -1,15 +1,22 @@
 package com.majesttyx.mcacapitals.capital;
 
+import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 public class CapitalMourningService {
+
+    private static final long MOURNING_CLOTHING_DELAY_TICKS = 100L;
+    private static final Map<UUID, Long> PENDING_MOURNING_APPLICATION_TICKS = new HashMap<>();
+    private static final Set<String> LOGGED_MOURNING_APPLICATION_FAILURES = new HashSet<>();
 
     private CapitalMourningService() {
     }
@@ -30,9 +37,15 @@ public class CapitalMourningService {
             CapitalChronicleService.addEntry(level, capital,
                     "Mourning was declared in " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
                             + " for two days. " + reason);
+
+            PENDING_MOURNING_APPLICATION_TICKS.put(
+                    capital.getCapitalId(),
+                    level.getGameTime() + MOURNING_CLOTHING_DELAY_TICKS
+            );
+        } else {
+            applyMourning(level, capital);
         }
 
-        applyMourning(level, capital);
         CapitalDataAccess.markDirty(level);
     }
 
@@ -47,6 +60,15 @@ public class CapitalMourningService {
             return;
         }
 
+        Long pendingTick = PENDING_MOURNING_APPLICATION_TICKS.get(capital.getCapitalId());
+        if (pendingTick != null) {
+            if (level.getGameTime() < pendingTick) {
+                return;
+            }
+
+            PENDING_MOURNING_APPLICATION_TICKS.remove(capital.getCapitalId());
+        }
+
         applyMourning(level, capital);
     }
 
@@ -54,6 +76,9 @@ public class CapitalMourningService {
         if (level == null || capital == null) {
             return;
         }
+
+        PENDING_MOURNING_APPLICATION_TICKS.remove(capital.getCapitalId());
+        clearMourningFailureLogs(capital);
 
         Map<UUID, String> originals = capital.getMourningOriginalClothes();
         for (Map.Entry<UUID, String> entry : originals.entrySet()) {
@@ -142,17 +167,45 @@ public class CapitalMourningService {
 
             String targetClothes = pickMourningClothes(level, capital, residentId);
             if (targetClothes == null || !MCAIntegrationBridge.clothingExists(targetClothes)) {
+                logMourningApplicationFailure(level, capital, residentId, entity, targetClothes, null, null, false, "target clothing does not exist");
                 continue;
             }
-
-            capital.getMourningOriginalClothes().putIfAbsent(residentId, MCAIntegrationBridge.getClothes(level, residentId));
 
             String currentClothes = MCAIntegrationBridge.getClothes(level, residentId);
-            if (targetClothes.equals(currentClothes)) {
+            if (sameClothingId(targetClothes, currentClothes)) {
+                clearMourningFailureLog(capital, residentId, targetClothes);
                 continue;
             }
 
-            MCAIntegrationBridge.setClothes(level, residentId, targetClothes);
+            capital.getMourningOriginalClothes().putIfAbsent(residentId, currentClothes);
+
+            boolean accepted = MCAIntegrationBridge.setClothes(level, residentId, targetClothes);
+            String afterApply = MCAIntegrationBridge.getClothes(level, residentId);
+
+            if (sameClothingId(targetClothes, afterApply)) {
+                clearMourningFailureLog(capital, residentId, targetClothes);
+                continue;
+            }
+
+            boolean retryAccepted = MCAIntegrationBridge.setClothes(level, residentId, targetClothes);
+            String afterRetry = MCAIntegrationBridge.getClothes(level, residentId);
+
+            if (sameClothingId(targetClothes, afterRetry)) {
+                clearMourningFailureLog(capital, residentId, targetClothes);
+                continue;
+            }
+
+            logMourningApplicationFailure(
+                    level,
+                    capital,
+                    residentId,
+                    entity,
+                    targetClothes,
+                    currentClothes,
+                    afterRetry,
+                    accepted || retryAccepted,
+                    "MCA did not report the target clothing after apply/retry"
+            );
         }
     }
 
@@ -202,6 +255,63 @@ public class CapitalMourningService {
     private static String buildPath(String prefix, int count, UUID villagerId) {
         int variant = Math.floorMod(villagerId.hashCode(), count);
         return prefix + variant + ".png";
+    }
+
+    private static void logMourningApplicationFailure(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID villagerId,
+            Entity entity,
+            String targetClothes,
+            String before,
+            String after,
+            boolean setAccepted,
+            String reason
+    ) {
+        if (capital == null || villagerId == null) {
+            return;
+        }
+
+        String key = mourningFailureKey(capital, villagerId, targetClothes);
+        if (!LOGGED_MOURNING_APPLICATION_FAILURES.add(key)) {
+            return;
+        }
+
+        MCACapitals.LOGGER.warn(
+                "[MCACapitals] Mourning clothing did not apply. capital='{}', villager='{}', title='{}', female={}, royalTier={}, nobleTier={}, target='{}', before='{}', after='{}', setAccepted={}, reason='{}'",
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                entity != null ? entity.getName().getString() : villagerId.toString(),
+                CapitalTitleResolver.getDisplayTitleForEntity(level, villagerId),
+                MCAIntegrationBridge.isFemale(level, villagerId),
+                isRoyalTier(capital, villagerId),
+                isNobleTier(capital, villagerId),
+                targetClothes,
+                before,
+                after,
+                setAccepted,
+                reason
+        );
+    }
+
+    private static void clearMourningFailureLog(CapitalRecord capital, UUID villagerId, String targetClothes) {
+        if (capital == null || villagerId == null) {
+            return;
+        }
+
+        LOGGED_MOURNING_APPLICATION_FAILURES.remove(mourningFailureKey(capital, villagerId, targetClothes));
+    }
+
+    private static void clearMourningFailureLogs(CapitalRecord capital) {
+        if (capital == null) {
+            return;
+        }
+
+        String prefix = capital.getCapitalId() + ":";
+        LOGGED_MOURNING_APPLICATION_FAILURES.removeIf(key -> key.startsWith(prefix));
+    }
+
+    private static String mourningFailureKey(CapitalRecord capital, UUID villagerId, String targetClothes) {
+        return capital.getCapitalId() + ":" + villagerId + ":" + (targetClothes == null ? "null" : normalizeClothingId(targetClothes));
     }
 
     private static boolean sameClothingId(String a, String b) {

@@ -107,16 +107,15 @@ public class CapitalNameService {
     }
 
     private static String buildDisplayName(ServerLevel level, UUID entityId, String baseName) {
-        CapitalRecord royalGuardCapital = findRoyalGuardCapital(entityId);
-        if (royalGuardCapital != null) {
-            return CapitalRoyalGuardService.buildRoyalGuardDisplayName(level, royalGuardCapital, entityId);
-        }
-
-        CapitalRecord displayCapital = CapitalTitleResolver.findCapitalForEntity(level, entityId);
         String title = CapitalTitleResolver.getDisplayTitleForEntity(level, entityId);
 
         if (title == null || title.isBlank() || "Commoner".equals(title) || "None".equals(title)) {
             return baseName;
+        }
+
+        CapitalRecord royalGuardCapital = findRoyalGuardCapital(entityId);
+        if (royalGuardCapital != null && ("Sir".equals(title) || "Dame".equals(title))) {
+            return CapitalRoyalGuardService.buildRoyalGuardDisplayName(level, royalGuardCapital, entityId);
         }
 
         return title + " " + baseName;
