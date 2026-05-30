@@ -21,6 +21,7 @@ import com.majesttyx.mcacapitals.util.RoyalGuardInteractionHandler;
 import com.majesttyx.mcacapitals.util.RoyalScepterCommands;
 import com.majesttyx.mcacapitals.util.SuccessionDecreeCommands;
 import com.mojang.logging.LogUtils;
+import com.majesttyx.mcacapitals.dialogue.CapitalAmbientDialogueHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -44,6 +45,7 @@ public class MCACapitals {
         modEventBus.addListener(this::commonSetup);
 
         MinecraftForge.EVENT_BUS.register(new CapitalPopulationScanner());
+        MinecraftForge.EVENT_BUS.register(new CapitalAmbientDialogueHandler());
         MinecraftForge.EVENT_BUS.register(new RoyalScepterHandler());
         MinecraftForge.EVENT_BUS.register(new RoyalDisinheritanceHandler());
         MinecraftForge.EVENT_BUS.register(new LegitimizationDecreeHandler());

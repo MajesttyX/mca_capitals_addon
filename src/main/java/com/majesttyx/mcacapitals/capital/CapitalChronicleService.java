@@ -133,7 +133,7 @@ public class CapitalChronicleService {
             return pick(trimmed,
                     marriage.group(1) + " has entered into marriage with " + marriage.group(2) + ".",
                     "By joyous proclamation, " + marriage.group(1) + " and " + marriage.group(2) + " are joined in marriage.",
-                    "Let all the capital know: " + marriage.group(1) + " has taken " + marriage.group(2) + " in marriage.",
+                    "Let it be known to all: " + marriage.group(1) + " has taken " + marriage.group(2) + " in marriage.",
                     "A royal marriage is declared this day between " + marriage.group(1) + " and " + marriage.group(2) + ".",
                     marriage.group(1) + " and " + marriage.group(2) + " are now joined in lawful marriage.");
         }
@@ -144,14 +144,12 @@ public class CapitalChronicleService {
                     "Let all in " + capitalMarriage.group(3) + " know: " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " are now married.",
                     capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " have been joined in marriage in " + capitalMarriage.group(3) + ".",
                     "By proclamation of the court, " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " are wed in " + capitalMarriage.group(3) + ".",
-                    "A marriage is declared in " + capitalMarriage.group(3) + " between " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + ".",
                     capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " now stand joined in marriage within " + capitalMarriage.group(3) + ".");
         }
 
         Matcher child = ROYAL_CHILD.matcher(trimmed);
         if (child.matches()) {
             return pick(trimmed,
-                    child.group(1) + " now stands in the dynastic record of " + child.group(2) + ".",
                     child.group(1) + " has been entered among the royal line of " + child.group(2) + ".",
                     "By proclamation of the court, " + child.group(1) + " is entered into the dynastic record of " + child.group(2) + ".",
                     "The child " + child.group(1) + " has been recorded in the dynasty of " + child.group(2) + ".",
@@ -225,7 +223,7 @@ public class CapitalChronicleService {
                     "Let all know: " + creation.group(1) + " now stands as a capital.",
                     "By proclamation of the court, " + creation.group(1) + " is raised to capital standing.",
                     creation.group(1) + " is this day declared a capital.",
-                    "The village of " + creation.group(1) + " now holds capital status.");
+                    "The village of " + creation.group(1) + " is raised to capital standing.");
         }
 
         Matcher acclaimed = ACCLAIMED_SOVEREIGN.matcher(trimmed);

@@ -35,7 +35,8 @@ public final class CapitalDialogueRuntime {
     public static final String RANK_ROYAL_CONSORT = "mcacapitals_chat_rank_royal_consort";
     public static final String RANK_ROYAL_DOWAGER = "mcacapitals_chat_rank_royal_dowager";
 
-    public static final String NEWS_HEIR_NAMED = "mcacapitals_chat_news_heir_named";
+    public static final String NEWS_HEIR_APPARENT_NAMED = "mcacapitals_chat_news_heir_apparent_named";
+    public static final String NEWS_CROWN_CHILD_BORN = "mcacapitals_chat_news_crown_child_born";
     public static final String NEWS_CAPITAL_FOUNDED = "mcacapitals_chat_news_capital_founded";
     public static final String NEWS_ROYAL_MARRIAGE = "mcacapitals_chat_news_royal_marriage";
     public static final String NEWS_SOVEREIGN_DEATH = "mcacapitals_chat_news_sovereign_death";
@@ -52,6 +53,33 @@ public final class CapitalDialogueRuntime {
     public static final String NEWS_ROYAL_BIRTH = "mcacapitals_chat_news_royal_birth";
     public static final String NEWS_COURT_HERALD_APPOINTED = "mcacapitals_chat_news_court_herald_appointed";
     public static final String NEWS_MOURNING_ENDED = "mcacapitals_chat_news_mourning_ended";
+
+    public static final String MCA_VILLAGER_WARNING = "mcacapitals_villager_warning";
+    public static final String MCA_VILLAGER_CANT_FIND_BED = "mcacapitals_villager_cant_find_bed";
+    public static final String MCA_VILLAGER_HURT = "mcacapitals_villager_hurt";
+    public static final String MCA_VILLAGER_SICKNESS = "mcacapitals_villager_sickness";
+    public static final String MCA_VILLAGER_SCREAM = "mcacapitals_villager_scream";
+    public static final String MCA_VILLAGER_ATTACK = "mcacapitals_villager_attack";
+    public static final String MCA_VILLAGER_SUPPORT = "mcacapitals_villager_support";
+    public static final String MCA_VILLAGER_SUPPORT_RETREAT = "mcacapitals_villager_support_retreat";
+    public static final String MCA_VILLAGER_RETREAT = "mcacapitals_villager_retreat";
+    public static final String MCA_VILLAGER_KILL = "mcacapitals_villager_kill";
+    public static final String MCA_INTERACTION_SETHOME_SUCCESS = "mcacapitals_interaction_sethome_success";
+    public static final String MCA_INTERACTION_SETHOME_BEDFAIL_BLOCKED = "mcacapitals_interaction_sethome_bedfail_blocked";
+    public static final String MCA_INTERACTION_GOHOME_SUCCESS = "mcacapitals_interaction_gohome_success";
+    public static final String MCA_WELCOME = "mcacapitals_welcome";
+    public static final String MCA_WELCOMEFOE = "mcacapitals_welcomeFoe";
+    public static final String MCA_SPOUSE_DIALOGUE_CHAT_SUCCESS = "mcacapitals_spouse_dialogue_chat_success";
+    public static final String MCA_SPOUSE_DIALOGUE_CHAT_FAIL = "mcacapitals_spouse_dialogue_chat_fail";
+    public static final String MCA_DIALOGUE_MAIN_MORNING = "mcacapitals_dialogue_main_morning";
+    public static final String MCA_DIALOGUE_MAIN_EVENING = "mcacapitals_dialogue_main_evening";
+    public static final String MCA_DIALOGUE_MAIN_NIGHT = "mcacapitals_dialogue_main_night";
+    public static final String MCA_DIALOGUE_GOAWAY = "mcacapitals_dialogue_goaway";
+    public static final String MCA_DIALOGUE_GREET = "mcacapitals_dialogue_greet";
+    public static final String MCA_DIALOGUE_STAY_SUCCESS = "mcacapitals_dialogue_stay_success";
+    public static final String MCA_DIALOGUE_STAY_NO_SPACE = "mcacapitals_dialogue_stay_no_space";
+    public static final String MCA_VILLAGER_GRIEVING = "mcacapitals_villager_grieving";
+    public static final String MCA_CAPITAL_IDLE_EVENING_CHATTER = "mcacapitals_capital_idle_evening_chatter";
 
     private static final Map<String, Integer> BUCKET_SIZES = buildBucketSizes();
     private static final List<String> KNOWN_TITLES = List.of(
@@ -151,7 +179,8 @@ public final class CapitalDialogueRuntime {
         sizes.put(RANK_ROYAL_CONSORT, 30);
         sizes.put(RANK_ROYAL_DOWAGER, 16);
 
-        sizes.put(NEWS_HEIR_NAMED, 18);
+        sizes.put(NEWS_HEIR_APPARENT_NAMED, 15);
+        sizes.put(NEWS_CROWN_CHILD_BORN, 15);
         sizes.put(NEWS_CAPITAL_FOUNDED, 31);
         sizes.put(NEWS_ROYAL_MARRIAGE, 25);
         sizes.put(NEWS_SOVEREIGN_DEATH, 30);
@@ -169,6 +198,33 @@ public final class CapitalDialogueRuntime {
         sizes.put(NEWS_COURT_HERALD_APPOINTED, 22);
         sizes.put(NEWS_MOURNING_ENDED, 15);
 
+        sizes.put(MCA_VILLAGER_WARNING, 16);
+        sizes.put(MCA_VILLAGER_CANT_FIND_BED, 7);
+        sizes.put(MCA_VILLAGER_HURT, 7);
+        sizes.put(MCA_VILLAGER_SICKNESS, 8);
+        sizes.put(MCA_VILLAGER_SCREAM, 9);
+        sizes.put(MCA_VILLAGER_ATTACK, 13);
+        sizes.put(MCA_VILLAGER_SUPPORT, 13);
+        sizes.put(MCA_VILLAGER_SUPPORT_RETREAT, 11);
+        sizes.put(MCA_VILLAGER_RETREAT, 13);
+        sizes.put(MCA_VILLAGER_KILL, 16);
+        sizes.put(MCA_INTERACTION_SETHOME_SUCCESS, 11);
+        sizes.put(MCA_INTERACTION_SETHOME_BEDFAIL_BLOCKED, 12);
+        sizes.put(MCA_INTERACTION_GOHOME_SUCCESS, 13);
+        sizes.put(MCA_WELCOME, 14);
+        sizes.put(MCA_WELCOMEFOE, 9);
+        sizes.put(MCA_SPOUSE_DIALOGUE_CHAT_SUCCESS, 7);
+        sizes.put(MCA_SPOUSE_DIALOGUE_CHAT_FAIL, 13);
+        sizes.put(MCA_DIALOGUE_MAIN_MORNING, 10);
+        sizes.put(MCA_DIALOGUE_MAIN_EVENING, 14);
+        sizes.put(MCA_DIALOGUE_MAIN_NIGHT, 11);
+        sizes.put(MCA_DIALOGUE_GOAWAY, 11);
+        sizes.put(MCA_DIALOGUE_GREET, 16);
+        sizes.put(MCA_DIALOGUE_STAY_SUCCESS, 10);
+        sizes.put(MCA_DIALOGUE_STAY_NO_SPACE, 12);
+        sizes.put(MCA_VILLAGER_GRIEVING, 8);
+        sizes.put(MCA_CAPITAL_IDLE_EVENING_CHATTER, 90);
+
         return sizes;
     }
 
@@ -184,7 +240,7 @@ public final class CapitalDialogueRuntime {
             DialogueContext context = new DialogueContext();
 
             CapitalDialogueEventModels.ChronicleEvent latestEvent =
-                    CapitalDialogueChronicleLogic.findLatestNotableEvent(level, capital.getChronicleEntries());
+                    CapitalDialogueChronicleLogic.findLatestNotableEvent(level, capital);
 
             context.put("{capital_name}", safeVillageName(level, capital));
             context.put("{capital_population}", Integer.toString(safePopulation(level, capital)));
@@ -193,11 +249,11 @@ public final class CapitalDialogueRuntime {
             context.put("{speaker_name}", resolveEntityName(level, capital, speaker == null ? null : speaker.getUUID()));
             context.put("{speaker_title}", speaker == null ? "Commoner" : safeDisplayTitle(level, capital, speaker.getUUID()));
 
-            context.put("{sovereign_name}", resolveSovereignDisplayName(level, capital));
+            context.put("{sovereign_name}", resolveSovereignRawName(level, capital));
             context.put("{sovereign_title}", resolveSovereignTitle(level, capital));
-            context.put("{consort_name}", resolveRoyalDisplayName(level, capital, capital.getConsort()));
+            context.put("{consort_name}", resolveEntityName(level, capital, capital.getConsort()));
             context.put("{consort_title}", safeDisplayTitle(level, capital, capital.getConsort()));
-            context.put("{heir_name}", resolveRoyalDisplayName(level, capital, capital.getHeir()));
+            context.put("{heir_name}", resolveEntityName(level, capital, capital.getHeir()));
             context.put("{heir_title}", safeDisplayTitle(level, capital, capital.getHeir()));
             context.put("{hand_name}", resolveEntityName(level, capital, capital.getHand()));
             context.put("{hand_title}", safeDisplayTitle(level, capital, capital.getHand()));
@@ -263,17 +319,13 @@ public final class CapitalDialogueRuntime {
             return name == null || name.isBlank() ? "the capital" : name;
         }
 
-        private static String resolveSovereignDisplayName(ServerLevel level, CapitalRecord capital) {
+        private static String resolveSovereignRawName(ServerLevel level, CapitalRecord capital) {
             if (capital.isPlayerSovereign()
                     && capital.getPlayerSovereignName() != null
                     && !capital.getPlayerSovereignName().isBlank()) {
-                String playerName = stripKnownTitles(capital.getPlayerSovereignName());
-                String playerTitle = capital.getPlayerSovereignId() == null
-                        ? ""
-                        : safeDisplayTitle(level, capital, capital.getPlayerSovereignId());
-                return composeStyledName(playerTitle, playerName);
+                return stripKnownTitles(capital.getPlayerSovereignName());
             }
-            return resolveRoyalDisplayName(level, capital, capital.getSovereign());
+            return resolveEntityName(level, capital, capital.getSovereign());
         }
 
         private static String resolveSovereignTitle(ServerLevel level, CapitalRecord capital) {
@@ -281,28 +333,6 @@ public final class CapitalDialogueRuntime {
                 return safeDisplayTitle(level, capital, capital.getPlayerSovereignId());
             }
             return safeDisplayTitle(level, capital, capital.getSovereign());
-        }
-
-        private static String resolveRoyalDisplayName(ServerLevel level, CapitalRecord capital, UUID id) {
-            String name = resolveEntityName(level, capital, id);
-            String title = safeDisplayTitle(level, capital, id);
-            return composeStyledName(title, name);
-        }
-
-        private static String composeStyledName(String title, String name) {
-            boolean hasTitle = title != null && !title.isBlank();
-            boolean hasName = name != null && !name.isBlank();
-
-            if (hasTitle && hasName) {
-                return title + " " + name;
-            }
-            if (hasTitle) {
-                return title;
-            }
-            if (hasName) {
-                return name;
-            }
-            return "";
         }
 
         private static String resolveEntityName(ServerLevel level, CapitalRecord capital, UUID id) {
