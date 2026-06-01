@@ -5,6 +5,7 @@ import com.majesttyx.mcacapitals.config.MCACapitalsConfig;
 import com.majesttyx.mcacapitals.dialogue.CapitalAmbientDialogueHandler;
 import com.majesttyx.mcacapitals.item.BetrothalDecreeHandler;
 import com.majesttyx.mcacapitals.item.DeclarationOfAbdicationHandler;
+import com.majesttyx.mcacapitals.item.DecreeOfTheHouseHandler;
 import com.majesttyx.mcacapitals.item.LegitimizationDecreeHandler;
 import com.majesttyx.mcacapitals.item.ModCreativeTabs;
 import com.majesttyx.mcacapitals.item.ModItems;
@@ -56,6 +57,7 @@ public class MCACapitals {
         NeoForge.EVENT_BUS.register(new DeclarationOfAbdicationHandler());
         NeoForge.EVENT_BUS.register(new BetrothalDecreeHandler());
         NeoForge.EVENT_BUS.register(new SuccessionDecreeHandler());
+        NeoForge.EVENT_BUS.register(new DecreeOfTheHouseHandler());
         NeoForge.EVENT_BUS.register(new CapitalLifecycleHandler());
         NeoForge.EVENT_BUS.register(new RoyalGuardInteractionHandler());
         NeoForge.EVENT_BUS.addListener(this::registerCommands);

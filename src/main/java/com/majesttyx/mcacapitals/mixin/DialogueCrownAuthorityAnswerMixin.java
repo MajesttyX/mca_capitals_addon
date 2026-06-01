@@ -23,6 +23,7 @@ import java.util.UUID;
 public abstract class DialogueCrownAuthorityAnswerMixin {
 
     private static final String PETITION_ANSWER = "mcacapitals_petition";
+    private static final String REQUEST_ANSWER = "mcacapitals_request";
     private static final String SEIZE_THRONE_ANSWER = "mcacapitals_seize_throne";
 
     @Inject(
@@ -41,15 +42,14 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             return;
         }
 
-        if (!currentAnswers.contains(PETITION_ANSWER) && !currentAnswers.contains(SEIZE_THRONE_ANSWER)) {
+        if (!currentAnswers.contains(PETITION_ANSWER)
+                && !currentAnswers.contains(REQUEST_ANSWER)
+                && !currentAnswers.contains(SEIZE_THRONE_ANSWER)) {
             return;
         }
 
         if (player == null || villager == null) {
-            List<String> filtered = new ArrayList<>(currentAnswers);
-            filtered.remove(PETITION_ANSWER);
-            filtered.remove(SEIZE_THRONE_ANSWER);
-            cir.setReturnValue(filtered);
+            cir.setReturnValue(removeCrownAuthorityAnswers(currentAnswers));
             return;
         }
 
@@ -57,10 +57,15 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             return;
         }
 
+        cir.setReturnValue(removeCrownAuthorityAnswers(currentAnswers));
+    }
+
+    private static List<String> removeCrownAuthorityAnswers(List<String> currentAnswers) {
         List<String> filtered = new ArrayList<>(currentAnswers);
         filtered.remove(PETITION_ANSWER);
+        filtered.remove(REQUEST_ANSWER);
         filtered.remove(SEIZE_THRONE_ANSWER);
-        cir.setReturnValue(filtered);
+        return filtered;
     }
 
     private static boolean hasCrownAuthority(ServerLevel level, UUID villagerId) {

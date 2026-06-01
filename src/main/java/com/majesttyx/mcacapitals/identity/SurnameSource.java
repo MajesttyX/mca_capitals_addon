@@ -6,6 +6,7 @@ public enum SurnameSource {
     MARRIAGE,
     PLAYER_HOUSE,
     ROYAL_HOUSE,
+    LEGAL_RENAME,
     DEBUG,
     LEGACY_BACKFILL
 }

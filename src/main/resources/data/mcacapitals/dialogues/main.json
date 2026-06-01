@@ -12,8 +12,19 @@
       ]
     },
     {
-      "name": "mcacapitals_seize_throne",
+      "name": "mcacapitals_request",
       "priority": 998,
+      "results": [
+        {
+          "actions": {
+            "next": "mcacapitals_request_menu"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_seize_throne",
+      "priority": 997,
       "results": [
         {
           "actions": {

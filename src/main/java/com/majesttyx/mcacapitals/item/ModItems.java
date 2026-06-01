@@ -28,6 +28,9 @@ public class ModItems {
     public static final DeferredItem<SuccessionDecreeItem> BLANK_SUCCESSION_DECREE =
             ITEMS.register("blank_succession_decree", SuccessionDecreeItem::new);
 
+    public static final DeferredItem<DecreeOfTheHouseItem> DECREE_OF_THE_HOUSE =
+            ITEMS.register("decree_of_the_house", DecreeOfTheHouseItem::new);
+
     public static final DeferredItem<RoyalCharterItem> ROYAL_CHARTER =
             ITEMS.register("royal_charter", RoyalCharterItem::new);
 

@@ -66,6 +66,12 @@ public final class BirthIdentityService {
             return false;
         }
 
+        VillagerIdentityData existingIdentity = VillagerIdentityService.getIdentity(child);
+
+        if (existingIdentity != null && "LEGAL_RENAME".equals(existingIdentity.surnameSource())) {
+            return false;
+        }
+
         InheritedBirthIdentity pending = readPendingBirthIdentity(child);
         if (pending.isValid()) {
             boolean applied = applyInheritedIdentity(level, child, pending);
@@ -102,6 +108,10 @@ public final class BirthIdentityService {
         }
 
         VillagerIdentityData childIdentity = VillagerIdentityService.getIdentity(child);
+
+        if (childIdentity != null && "LEGAL_RENAME".equals(childIdentity.surnameSource())) {
+            return false;
+        }
 
         boolean missingSurname = !childIdentity.hasSurname();
         boolean generatedSurname = "GENERATED".equals(childIdentity.surnameSource());

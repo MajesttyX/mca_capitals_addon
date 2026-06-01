@@ -1,9 +1,12 @@
 package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.MCACapitals;
+import com.majesttyx.mcacapitals.identity.DecreeOfTheHouseService;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.UUID;
 
@@ -17,6 +20,7 @@ public final class CapitalPetitionService {
     public static final String PETITION_NOBLE_DUKE = "mcacapitals_petition_noble_duke";
     public static final String PETITION_BETROTHAL = "mcacapitals_petition_betrothal";
     public static final String PETITION_BETROTHAL_RECOMMEND = "mcacapitals_petition_betrothal_recommend";
+    public static final String REQUEST_DECREE_OF_THE_HOUSE = "mcacapitals_request_decree_of_the_house";
 
     private static final int THRONE_PETITION_MIN_POPULATION = 25;
     private static final int THRONE_PETITION_MIN_HEARTS = 2500;
@@ -64,7 +68,8 @@ public final class CapitalPetitionService {
                 () -> handleLordPetition(player, villagerEntity),
                 () -> handleDukePetition(player, villagerEntity),
                 () -> handleBetrothalPetition(player, villagerEntity),
-                () -> handleBetrothalPetition(player, villagerEntity)
+                () -> handleBetrothalPetition(player, villagerEntity),
+                () -> handleDecreeOfTheHouseRequest(player, villagerEntity)
         );
     }
 
@@ -143,5 +148,26 @@ public final class CapitalPetitionService {
                 villagerEntity,
                 MAX_AUDIENCE_DISTANCE_SQR
         );
+    }
+
+    private static void handleDecreeOfTheHouseRequest(ServerPlayer player, Entity villagerEntity) {
+        if (!CapitalPetitionRequirements.isAudienceValid(player, villagerEntity, MAX_AUDIENCE_DISTANCE_SQR)) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED
+            );
+            return;
+        }
+
+        ItemStack decree = DecreeOfTheHouseService.createFreshDecree();
+        boolean inserted = player.addItem(decree);
+        if (!inserted) {
+            player.drop(decree, false);
+        }
+
+        player.sendSystemMessage(Component.literal(
+                villagerEntity.getName().getString() + ": The records of a House are not changed lightly. Take this Decree and use it carefully."
+        ));
     }
 }

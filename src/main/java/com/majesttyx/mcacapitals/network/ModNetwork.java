@@ -40,9 +40,21 @@ public class ModNetwork {
         );
 
         registrar.playToClient(
+                OpenDecreeOfTheHousePacket.TYPE,
+                OpenDecreeOfTheHousePacket.STREAM_CODEC,
+                OpenDecreeOfTheHousePacket::handle
+        );
+
+        registrar.playToClient(
                 SyncVillagerIdentityPacket.TYPE,
                 SyncVillagerIdentityPacket.STREAM_CODEC,
                 SyncVillagerIdentityPacket::handle
+        );
+
+        registrar.playToServer(
+                SubmitDecreeOfTheHousePacket.TYPE,
+                SubmitDecreeOfTheHousePacket.STREAM_CODEC,
+                SubmitDecreeOfTheHousePacket::handle
         );
     }
 
@@ -59,6 +71,10 @@ public class ModNetwork {
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenPlayerHouseSetupPacket packet) {
+        PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenDecreeOfTheHousePacket packet) {
         PacketDistributor.sendToPlayer(player, packet);
     }
 
