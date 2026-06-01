@@ -55,14 +55,6 @@ final class CapitalPetitionRequirements {
             return null;
         }
 
-        if (!villagerEntity.getUUID().equals(capital.getSovereign())) {
-            return null;
-        }
-
-        if (capital.isPlayerSovereign()) {
-            return null;
-        }
-
         return capital;
     }
 

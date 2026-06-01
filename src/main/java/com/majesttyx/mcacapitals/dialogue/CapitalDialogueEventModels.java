@@ -7,7 +7,8 @@ final class CapitalDialogueEventModels {
 
     enum EventType {
         NONE,
-        HEIR_NAMED,
+        HEIR_APPARENT_NAMED,
+        CROWN_CHILD_BORN,
         CAPITAL_FOUNDED,
         ROYAL_MARRIAGE,
         SOVEREIGN_DEATH,

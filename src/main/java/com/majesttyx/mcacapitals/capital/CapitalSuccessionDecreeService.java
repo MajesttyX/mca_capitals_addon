@@ -27,6 +27,7 @@ public final class CapitalSuccessionDecreeService {
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
         CapitalSovereignAppointmentService.clearPlayerSovereignState(capital);
+        clearPreviousDynastyForPeacefulTransfer(capital);
 
         capital.setSovereign(targetId);
         capital.setSovereignFemale(MCAIntegrationBridge.isFemale(level, targetId));
@@ -74,6 +75,8 @@ public final class CapitalSuccessionDecreeService {
         String targetName = targetPlayer.getName().getString();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
+        clearPreviousDynastyForPeacefulTransfer(capital);
+
         capital.setSovereign(targetId);
         capital.setSovereignFemale(MCAIntegrationBridge.isPlayerFemale(level, targetPlayer));
         capital.setState(CapitalState.ACTIVE);
@@ -115,6 +118,33 @@ public final class CapitalSuccessionDecreeService {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
         return true;
+    }
+
+    private static void clearPreviousDynastyForPeacefulTransfer(CapitalRecord capital) {
+        if (capital == null) {
+            return;
+        }
+
+        capital.setHeir(null);
+        capital.setHeirFemale(false);
+        capital.setHeirMode(CapitalRecord.HeirMode.NONE);
+
+        capital.getRoyalChildren().clear();
+        capital.getRoyalChildFemale().clear();
+
+        capital.getLegitimizedRoyalChildren().clear();
+        capital.getLegitimizedRoyalChildFemale().clear();
+
+        capital.getDisinheritedRoyalChildren().clear();
+        capital.getRoyalSuccessionOrder().clear();
+
+        capital.getPrinceConsortSources().clear();
+        capital.getPrinceConsortFemale().clear();
+
+        capital.getDowagerPrinceSources().clear();
+        capital.getDowagerPrinceFemale().clear();
+
+        capital.clearRoyalHousehold();
     }
 
     private static String resolveName(ServerLevel level, UUID entityId) {

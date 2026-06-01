@@ -26,6 +26,24 @@ public class ModNetwork {
                 OpenBetrothalSelectionPacket.STREAM_CODEC,
                 OpenBetrothalSelectionPacket::handle
         );
+
+        registrar.playToClient(
+                OpenRoyalCharterDecisionPacket.TYPE,
+                OpenRoyalCharterDecisionPacket.STREAM_CODEC,
+                OpenRoyalCharterDecisionPacket::handle
+        );
+
+        registrar.playToClient(
+                OpenPlayerHouseSetupPacket.TYPE,
+                OpenPlayerHouseSetupPacket.STREAM_CODEC,
+                OpenPlayerHouseSetupPacket::handle
+        );
+
+        registrar.playToClient(
+                SyncVillagerIdentityPacket.TYPE,
+                SyncVillagerIdentityPacket.STREAM_CODEC,
+                SyncVillagerIdentityPacket::handle
+        );
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenCapitalChroniclePacket packet) {
@@ -33,6 +51,18 @@ public class ModNetwork {
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenBetrothalSelectionPacket packet) {
+        PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenRoyalCharterDecisionPacket packet) {
+        PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenPlayerHouseSetupPacket packet) {
+        PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, SyncVillagerIdentityPacket packet) {
         PacketDistributor.sendToPlayer(player, packet);
     }
 }

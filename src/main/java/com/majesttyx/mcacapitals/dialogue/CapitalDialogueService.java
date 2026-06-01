@@ -12,14 +12,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class CapitalDialogueService {
 
     private static final long NEWS_BRANCH_COOLDOWN_TICKS = 20L * 60L;
     private static final long SAME_EVENT_COOLDOWN_TICKS = 20L * 60L * 4L;
+    private static final int MCA_PHRASE_CAPITAL_LINE_CHANCE = 55;
+
+    private static final Set<String> MCA_GREET_RANK_KEYS = Set.of(
+            "dialogue.greet.mayor",
+            "dialogue.greet.monarch"
+    );
 
     private static final Map<UUID, VillagerNewsState> VILLAGER_NEWS_STATE = new HashMap<>();
+    private static final Map<String, String> MCA_PHRASE_BUCKETS = buildMcaPhraseBuckets();
 
     private CapitalDialogueService() {
     }
@@ -49,7 +57,7 @@ public class CapitalDialogueService {
         }
 
         List<CapitalDialogueEventModels.ChronicleEvent> candidates =
-                CapitalDialogueChronicleLogic.findRecentNotableEvents(level, capital.getChronicleEntries());
+                CapitalDialogueChronicleLogic.findRecentNotableEvents(level, capital);
         if (candidates.isEmpty()) {
             return null;
         }
@@ -109,6 +117,100 @@ public class CapitalDialogueService {
         }
 
         return rankDialogueBucketFor(level, capital, villagerEntity.getUUID());
+    }
+
+    public static String maybeFormatMcaPhraseLine(ServerPlayer player, Entity villagerEntity, String phraseKey) {
+        if (player == null || villagerEntity == null || phraseKey == null || phraseKey.isBlank()) {
+            return null;
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillagerEntity(villagerEntity)) {
+            return null;
+        }
+
+        ServerLevel level = player.serverLevel();
+        CapitalRecord capital = resolveCapital(level, villagerEntity.getUUID());
+        if (capital == null) {
+            return null;
+        }
+
+        String bucket = MCA_PHRASE_BUCKETS.get(phraseKey);
+        if (bucket == null) {
+            return null;
+        }
+
+        if (!MCA_GREET_RANK_KEYS.contains(phraseKey)
+                && level.random.nextInt(100) >= MCA_PHRASE_CAPITAL_LINE_CHANCE) {
+            return null;
+        }
+
+        return CapitalDialogueRuntime.formatManagedRuntimeLine(
+                CapitalDialogueRuntime.runtimeKeyForBucket(bucket),
+                player,
+                villagerEntity,
+                level,
+                capital
+        );
+    }
+
+    public static String formatCapitalIdleEveningChatter(ServerPlayer player, Entity villagerEntity, CapitalRecord capital) {
+        if (player == null || villagerEntity == null || capital == null) {
+            return null;
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillagerEntity(villagerEntity)) {
+            return null;
+        }
+
+        return CapitalDialogueRuntime.formatManagedRuntimeLine(
+                CapitalDialogueRuntime.runtimeKeyForBucket(CapitalDialogueRuntime.MCA_CAPITAL_IDLE_EVENING_CHATTER),
+                player,
+                villagerEntity,
+                player.serverLevel(),
+                capital
+        );
+    }
+
+    private static Map<String, String> buildMcaPhraseBuckets() {
+        Map<String, String> buckets = new HashMap<>();
+
+        buckets.put("villager.warning", CapitalDialogueRuntime.MCA_VILLAGER_WARNING);
+        buckets.put("villager.cant_find_bed", CapitalDialogueRuntime.MCA_VILLAGER_CANT_FIND_BED);
+        buckets.put("villager.hurt", CapitalDialogueRuntime.MCA_VILLAGER_HURT);
+        buckets.put("villager.sickness", CapitalDialogueRuntime.MCA_VILLAGER_SICKNESS);
+        buckets.put("villager.scream", CapitalDialogueRuntime.MCA_VILLAGER_SCREAM);
+        buckets.put("villager.attack", CapitalDialogueRuntime.MCA_VILLAGER_ATTACK);
+        buckets.put("villager.support", CapitalDialogueRuntime.MCA_VILLAGER_SUPPORT);
+        buckets.put("villager.support.retreat", CapitalDialogueRuntime.MCA_VILLAGER_SUPPORT_RETREAT);
+        buckets.put("villager.retreat", CapitalDialogueRuntime.MCA_VILLAGER_RETREAT);
+        buckets.put("villager.kill", CapitalDialogueRuntime.MCA_VILLAGER_KILL);
+
+        buckets.put("interaction.sethome.success", CapitalDialogueRuntime.MCA_INTERACTION_SETHOME_SUCCESS);
+        buckets.put("interaction.sethome.bedfail.blocked", CapitalDialogueRuntime.MCA_INTERACTION_SETHOME_BEDFAIL_BLOCKED);
+        buckets.put("interaction.gohome.success", CapitalDialogueRuntime.MCA_INTERACTION_GOHOME_SUCCESS);
+
+        buckets.put("welcome", CapitalDialogueRuntime.MCA_WELCOME);
+        buckets.put("welcomeFoe", CapitalDialogueRuntime.MCA_WELCOMEFOE);
+
+        buckets.put("spouse.dialogue.chat.success", CapitalDialogueRuntime.MCA_SPOUSE_DIALOGUE_CHAT_SUCCESS);
+        buckets.put("spouse.dialogue.chat.fail", CapitalDialogueRuntime.MCA_SPOUSE_DIALOGUE_CHAT_FAIL);
+
+        buckets.put("dialogue.main.morning", CapitalDialogueRuntime.MCA_DIALOGUE_MAIN_MORNING);
+        buckets.put("dialogue.main.evening", CapitalDialogueRuntime.MCA_DIALOGUE_MAIN_EVENING);
+        buckets.put("dialogue.main.night", CapitalDialogueRuntime.MCA_DIALOGUE_MAIN_NIGHT);
+
+        buckets.put("dialogue.goaway", CapitalDialogueRuntime.MCA_DIALOGUE_GOAWAY);
+        buckets.put("dialogue.greet", CapitalDialogueRuntime.MCA_DIALOGUE_GREET);
+
+        buckets.put("dialogue.stay.success", CapitalDialogueRuntime.MCA_DIALOGUE_STAY_SUCCESS);
+        buckets.put("dialogue.stay.no_space", CapitalDialogueRuntime.MCA_DIALOGUE_STAY_NO_SPACE);
+
+        buckets.put("villager.grieving", CapitalDialogueRuntime.MCA_VILLAGER_GRIEVING);
+
+        buckets.put("dialogue.greet.mayor", CapitalDialogueRuntime.MCA_DIALOGUE_GREET);
+        buckets.put("dialogue.greet.monarch", CapitalDialogueRuntime.MCA_DIALOGUE_GREET);
+
+        return Map.copyOf(buckets);
     }
 
     private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {
@@ -239,7 +341,8 @@ public class CapitalDialogueService {
 
     private static String dialogueBucketFor(CapitalDialogueEventModels.EventType type) {
         return switch (type) {
-            case HEIR_NAMED -> CapitalDialogueRuntime.NEWS_HEIR_NAMED;
+            case HEIR_APPARENT_NAMED -> CapitalDialogueRuntime.NEWS_HEIR_APPARENT_NAMED;
+            case CROWN_CHILD_BORN -> CapitalDialogueRuntime.NEWS_CROWN_CHILD_BORN;
             case CAPITAL_FOUNDED -> CapitalDialogueRuntime.NEWS_CAPITAL_FOUNDED;
             case ROYAL_MARRIAGE -> CapitalDialogueRuntime.NEWS_ROYAL_MARRIAGE;
             case SOVEREIGN_DEATH -> CapitalDialogueRuntime.NEWS_SOVEREIGN_DEATH;
