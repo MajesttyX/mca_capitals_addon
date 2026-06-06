@@ -1,0 +1,27 @@
+{
+  "silent": true,
+  "answers": [
+    {
+      "name": "mcacapitals_request_decree_of_the_house",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_request_decree_of_the_house"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_request_back",
+      "priority": 1,
+      "results": [
+        {
+          "actions": {
+            "next": "main"
+          }
+        }
+      ]
+    }
+  ]
+}

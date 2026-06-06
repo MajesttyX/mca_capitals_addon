@@ -7,15 +7,19 @@
   "mixins": [
     "VillagerCommandHandlerMixin",
     "DialogueChatFallbackMixin",
-    "MessengerCapitalDialogueMixin",
     "DialogueCrownAuthorityAnswerMixin",
     "PlayerSaveDataMarriageMixin",
     "VillagerTasksMCARoyalGuardMixin",
     "BreedableRelationshipGiftMixin",
-    "EntitySprintingRoyalGuardMixin"
+    "FamilyTreeNodeMarriageSurnameMixin",
+    "EntitySprintingRoyalGuardMixin",
+    "PregnancyBirthIdentityMixin",
+    "NamesRegionFilterMixin",
+    "GetInteractDataRequestIdentityMixin"
   ],
   "client": [
-    "InteractScreenBetrothalMixin"
+    "InteractScreenBetrothalMixin",
+    "InteractScreenIdentityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

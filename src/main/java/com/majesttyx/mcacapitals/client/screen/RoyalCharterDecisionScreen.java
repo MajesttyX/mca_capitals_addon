@@ -1,11 +1,14 @@
 package com.majesttyx.mcacapitals.client.screen;
 
 import com.majesttyx.mcacapitals.item.ModItems;
+import com.majesttyx.mcacapitals.util.ModDataKeys;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -42,12 +45,13 @@ public class RoyalCharterDecisionScreen extends Screen {
         addRenderableWidget(
                 Button.builder(Component.literal("Declare Myself"), button -> {
                     ItemStack stack = getHeldCharter();
-                    if (stack.isEmpty() || !stack.hasTag()) {
+                    if (stack.isEmpty() || !ModItemStackData.hasCustomData(stack)) {
                         onClose();
                         return;
                     }
 
-                    String capitalId = stack.getTag().getString("CapitalId");
+                    CompoundTag tag = ModItemStackData.getCustomData(stack);
+                    String capitalId = tag.getString(ModDataKeys.CAPITAL_ID);
                     Minecraft minecraft = Minecraft.getInstance();
                     if (minecraft.player != null && minecraft.player.connection != null) {
                         minecraft.player.connection.sendCommand("capitalfounding claimself " + capitalId);
@@ -59,12 +63,13 @@ public class RoyalCharterDecisionScreen extends Screen {
         addRenderableWidget(
                 Button.builder(Component.literal("Remain Ungoverned"), button -> {
                     ItemStack stack = getHeldCharter();
-                    if (stack.isEmpty() || !stack.hasTag()) {
+                    if (stack.isEmpty() || !ModItemStackData.hasCustomData(stack)) {
                         onClose();
                         return;
                     }
 
-                    String capitalId = stack.getTag().getString("CapitalId");
+                    CompoundTag tag = ModItemStackData.getCustomData(stack);
+                    String capitalId = tag.getString(ModDataKeys.CAPITAL_ID);
                     Minecraft minecraft = Minecraft.getInstance();
                     if (minecraft.player != null && minecraft.player.connection != null) {
                         minecraft.player.connection.sendCommand("capitalfounding reject " + capitalId);
@@ -86,7 +91,9 @@ public class RoyalCharterDecisionScreen extends Screen {
         drawCenteredNoShadow(guiGraphics, "Royal Charter", this.width / 2, top + 16, 0x3E2E1F);
 
         ItemStack stack = getHeldCharter();
-        String villageName = stack.hasTag() ? stack.getTag().getString("VillageName") : "Unknown Village";
+        String villageName = ModItemStackData.hasCustomData(stack)
+                ? ModItemStackData.getCustomData(stack).getString(ModDataKeys.VILLAGE_NAME)
+                : "Unknown Village";
 
         drawWrappedCenteredNoShadow(guiGraphics,
                 Component.literal(villageName + " has risen to capital status. Choose its course."),

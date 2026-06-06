@@ -1,6 +1,8 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.identity.HouseFoundationAutoService;
+import com.majesttyx.mcacapitals.identity.VillagerIdentityService;
 import com.majesttyx.mcacapitals.item.ModItems;
 import com.majesttyx.mcacapitals.item.RoyalCharterItem;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
@@ -95,6 +97,7 @@ public class CapitalPopulationScanner {
         }
 
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        VillagerIdentityService.ensureResidents(level, capital, residents);
 
         refreshCourtState(level, capital, residents);
         tickRecommendedBetrothals(level, capital);
@@ -103,6 +106,7 @@ public class CapitalPopulationScanner {
         tickHand(level, capital, residents);
         tickHerald(level, capital, residents);
         tickGrandMaester(level, capital, residents);
+        tickHouseFoundations(level, capital, residents);
         tickMourning(level, capital);
     }
 
@@ -169,6 +173,12 @@ public class CapitalPopulationScanner {
 
     private void tickGrandMaester(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         if (CapitalMaesterService.tickGrandMaester(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickHouseFoundations(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (HouseFoundationAutoService.tickCapital(level, capital, residents)) {
             CapitalDataAccess.markDirty(level);
         }
     }

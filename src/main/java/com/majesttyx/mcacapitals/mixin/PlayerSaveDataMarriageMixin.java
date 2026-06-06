@@ -5,6 +5,7 @@ import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.identity.MarriageSurnameService;
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import net.minecraft.server.level.ServerLevel;
@@ -46,6 +47,8 @@ public class PlayerSaveDataMarriageMixin {
         if (player == null) {
             return;
         }
+
+        MarriageSurnameService.onPlayerMarriage(level, player, spouse);
 
         PlayerCapitalTitleService.clearAllMarriageDerivedStateForRemarriage(level, playerUuid);
 

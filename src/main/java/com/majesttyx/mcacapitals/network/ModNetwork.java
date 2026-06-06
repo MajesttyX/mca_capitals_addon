@@ -44,6 +44,46 @@ public class ModNetwork {
                 OpenBetrothalSelectionPacket::handle
         );
 
+        CHANNEL.registerMessage(
+                nextId++,
+                OpenRoyalCharterDecisionPacket.class,
+                OpenRoyalCharterDecisionPacket::encode,
+                OpenRoyalCharterDecisionPacket::decode,
+                OpenRoyalCharterDecisionPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
+                OpenPlayerHouseSetupPacket.class,
+                OpenPlayerHouseSetupPacket::encode,
+                OpenPlayerHouseSetupPacket::decode,
+                OpenPlayerHouseSetupPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
+                OpenDecreeOfTheHousePacket.class,
+                OpenDecreeOfTheHousePacket::encode,
+                OpenDecreeOfTheHousePacket::decode,
+                OpenDecreeOfTheHousePacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
+                SubmitDecreeOfTheHousePacket.class,
+                SubmitDecreeOfTheHousePacket::encode,
+                SubmitDecreeOfTheHousePacket::decode,
+                SubmitDecreeOfTheHousePacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
+                SyncVillagerIdentityPacket.class,
+                SyncVillagerIdentityPacket::encode,
+                SyncVillagerIdentityPacket::decode,
+                SyncVillagerIdentityPacket::handle
+        );
+
         registered = true;
     }
 
@@ -52,6 +92,22 @@ public class ModNetwork {
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenBetrothalSelectionPacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenRoyalCharterDecisionPacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenPlayerHouseSetupPacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenDecreeOfTheHousePacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, SyncVillagerIdentityPacket packet) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 }

@@ -24,6 +24,7 @@ import java.util.UUID;
 public abstract class DialogueCrownAuthorityAnswerMixin {
 
     private static final String PETITION_ANSWER = "mcacapitals_petition";
+    private static final String REQUEST_ANSWER = "mcacapitals_request";
     private static final String SEIZE_THRONE_ANSWER = "mcacapitals_seize_throne";
 
     @Inject(
@@ -32,7 +33,7 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             cancellable = true,
             remap = false
     )
-    private void mcacapitals$filterPetitionAnswersByCrownAuthority(
+    private void mcacapitals$filterCrownAuthorityAnswers(
             ServerPlayer player,
             @Coerce Object villagerObj,
             CallbackInfoReturnable<List<String>> cir
@@ -42,14 +43,15 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             return;
         }
 
-        if (!currentAnswers.contains(PETITION_ANSWER) && !currentAnswers.contains(SEIZE_THRONE_ANSWER)) {
+        if (!currentAnswers.contains(PETITION_ANSWER)
+                && !currentAnswers.contains(REQUEST_ANSWER)
+                && !currentAnswers.contains(SEIZE_THRONE_ANSWER)) {
             return;
         }
 
         if (player == null || !(villagerObj instanceof Entity villager)) {
             List<String> filtered = new ArrayList<>(currentAnswers);
-            filtered.remove(PETITION_ANSWER);
-            filtered.remove(SEIZE_THRONE_ANSWER);
+            removeCrownAuthorityAnswers(filtered);
             cir.setReturnValue(filtered);
             return;
         }
@@ -59,9 +61,14 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
         }
 
         List<String> filtered = new ArrayList<>(currentAnswers);
-        filtered.remove(PETITION_ANSWER);
-        filtered.remove(SEIZE_THRONE_ANSWER);
+        removeCrownAuthorityAnswers(filtered);
         cir.setReturnValue(filtered);
+    }
+
+    private static void removeCrownAuthorityAnswers(List<String> answers) {
+        answers.remove(PETITION_ANSWER);
+        answers.remove(REQUEST_ANSWER);
+        answers.remove(SEIZE_THRONE_ANSWER);
     }
 
     private static boolean hasCrownAuthority(ServerLevel level, UUID villagerId) {
