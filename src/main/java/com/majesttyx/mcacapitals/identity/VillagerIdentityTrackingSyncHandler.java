@@ -33,12 +33,7 @@ public final class VillagerIdentityTrackingSyncHandler {
             return;
         }
 
-        boolean repairedFromBirth = BirthIdentityService.repairFromParentsIfNeeded(level, entity);
-        if (!repairedFromBirth) {
-            VillagerIdentityService.ensureAssigned(level, entity);
-            BirthIdentityService.repairFromParentsIfNeeded(level, entity);
-        }
-
+        repairIdentityInheritance(level, entity);
         VillagerIdentitySyncService.syncToNearbyPlayers(level, entity);
     }
 
@@ -76,13 +71,20 @@ public final class VillagerIdentityTrackingSyncHandler {
         );
 
         for (Entity villager : nearbyVillagers) {
-            boolean repairedFromBirth = BirthIdentityService.repairFromParentsIfNeeded(level, villager);
-            if (!repairedFromBirth) {
-                VillagerIdentityService.ensureAssigned(level, villager);
-                BirthIdentityService.repairFromParentsIfNeeded(level, villager);
-            }
-
+            repairIdentityInheritance(level, villager);
             VillagerIdentitySyncService.syncToPlayer(player, villager);
+        }
+    }
+
+    private static void repairIdentityInheritance(ServerLevel level, Entity entity) {
+        boolean repairedFromPlayerHouse = PlayerHouseIdentityService.repairFromParentsIfNeeded(level, entity);
+        boolean repairedFromBirth = repairedFromPlayerHouse || BirthIdentityService.repairFromParentsIfNeeded(level, entity);
+
+        if (!repairedFromBirth) {
+            VillagerIdentityService.ensureAssigned(level, entity);
+            if (!PlayerHouseIdentityService.repairFromParentsIfNeeded(level, entity)) {
+                BirthIdentityService.repairFromParentsIfNeeded(level, entity);
+            }
         }
     }
 }

@@ -12,6 +12,8 @@
     "VillagerTasksMCARoyalGuardMixin",
     "BreedableRelationshipGiftMixin",
     "FamilyTreeNodeMarriageSurnameMixin",
+    "FamilyTreeNodeAdoptionIdentityMixin",
+    "BabyItemBirthIdentityMixin",
     "EntitySprintingRoyalGuardMixin",
     "PregnancyBirthIdentityMixin",
     "NamesRegionFilterMixin",
