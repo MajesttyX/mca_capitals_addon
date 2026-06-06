@@ -3,6 +3,7 @@ package com.majesttyx.mcacapitals.house;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.data.PlayerHouseSavedData;
+import com.majesttyx.mcacapitals.identity.PlayerHouseIdentityService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,6 +24,7 @@ public final class PlayerHouseService {
         if (level == null || playerId == null) {
             return null;
         }
+
         return PlayerHouseSavedData.get(level).get(playerId);
     }
 
@@ -50,6 +52,41 @@ public final class PlayerHouseService {
         record.setHouseNameSetInCapitalId(capitalId);
         record.setHouseNameSetInCapitalName(capitalName);
         data.setDirty();
+
+        PlayerHouseIdentityService.applyPlayerHouseToImmediateFamily(level, player);
+        return true;
+    }
+
+    public static boolean reviseHouse(ServerLevel level, ServerPlayer player, String houseName, String houseWords) {
+        if (level == null || player == null) {
+            return false;
+        }
+
+        String normalizedHouseName = normalizeHouseName(houseName);
+        String normalizedHouseWords = normalizeHouseWords(houseWords);
+
+        if (!isValidHouseName(normalizedHouseName)) {
+            return false;
+        }
+
+        if (!normalizedHouseWords.isBlank() && !isValidHouseWords(normalizedHouseWords)) {
+            return false;
+        }
+
+        PlayerHouseSavedData data = PlayerHouseSavedData.get(level);
+        PlayerHouseRecord record = data.getOrCreate(player.getUUID());
+
+        if (record.getInheritanceMode() == null) {
+            record.setInheritanceMode(PlayerHouseInheritanceMode.FOLLOW_CAPITAL_LAW);
+        }
+
+        record.setHouseName(normalizedHouseName);
+        record.setHouseWords(normalizedHouseWords);
+        record.setHouseNameSetAtGameTime(level.getGameTime());
+
+        data.setDirty();
+
+        PlayerHouseIdentityService.applyPlayerHouseToImmediateFamily(level, player);
         return true;
     }
 
@@ -57,6 +94,7 @@ public final class PlayerHouseService {
         if (level == null || playerId == null) {
             return;
         }
+
         PlayerHouseSavedData.get(level).remove(playerId);
     }
 
@@ -67,6 +105,7 @@ public final class PlayerHouseService {
         }
 
         return "PlayerHouse=" + record.getHouseName()
+                + ", HouseWords=" + blankAsUnset(record.getHouseWords())
                 + ", InheritanceMode=" + record.getInheritanceMode().name()
                 + ", SetAtGameTime=" + record.getHouseNameSetAtGameTime()
                 + ", SetInCapitalId=" + (record.getHouseNameSetInCapitalId() == null ? "unset" : record.getHouseNameSetInCapitalId())
@@ -77,7 +116,16 @@ public final class PlayerHouseService {
         if (houseName == null) {
             return "";
         }
+
         return houseName.trim().replaceAll("\\s+", " ");
+    }
+
+    public static String normalizeHouseWords(String houseWords) {
+        if (houseWords == null) {
+            return "";
+        }
+
+        return houseWords.trim().replaceAll("\\s+", " ");
     }
 
     public static boolean isValidHouseName(String houseName) {
@@ -86,15 +134,16 @@ public final class PlayerHouseService {
             return false;
         }
 
-        for (int i = 0; i < normalized.length(); i++) {
-            char c = normalized.charAt(i);
-            if (Character.isLetter(c) || c == ' ' || c == '-' || c == '\'') {
-                continue;
-            }
+        return normalized.matches("[A-Za-z][A-Za-z '\\-]*");
+    }
+
+    public static boolean isValidHouseWords(String houseWords) {
+        String normalized = normalizeHouseWords(houseWords);
+        if (normalized.length() < 2 || normalized.length() > 80 || normalized.contains("§")) {
             return false;
         }
 
-        return true;
+        return normalized.matches("[A-Za-z][A-Za-z '\\-,]*");
     }
 
     public static PlayerHouseInheritanceMode parseMode(String value) {

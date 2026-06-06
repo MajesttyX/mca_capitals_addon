@@ -27,11 +27,7 @@ public final class VillagerIdentitySyncService {
             return;
         }
 
-        boolean repairedFromBirth = BirthIdentityService.repairFromParentsIfNeeded(level, entity);
-        if (!repairedFromBirth) {
-            VillagerIdentityService.ensureAssigned(level, entity);
-            BirthIdentityService.repairFromParentsIfNeeded(level, entity);
-        }
+        repairIdentityInheritance(level, entity);
 
         SyncVillagerIdentityPacket packet = createPacket(level, entity);
         if (packet == null) {
@@ -46,11 +42,7 @@ public final class VillagerIdentitySyncService {
             return;
         }
 
-        boolean repairedFromBirth = BirthIdentityService.repairFromParentsIfNeeded(level, entity);
-        if (!repairedFromBirth) {
-            VillagerIdentityService.ensureAssigned(level, entity);
-            BirthIdentityService.repairFromParentsIfNeeded(level, entity);
-        }
+        repairIdentityInheritance(level, entity);
 
         SyncVillagerIdentityPacket packet = createPacket(level, entity);
         if (packet == null) {
@@ -97,6 +89,18 @@ public final class VillagerIdentitySyncService {
                 identity == null ? "" : identity.houseWords(),
                 identity == null ? "" : identity.houseWordsPersonality()
         );
+    }
+
+    private static void repairIdentityInheritance(ServerLevel level, Entity entity) {
+        boolean repairedFromPlayerHouse = PlayerHouseIdentityService.repairFromParentsIfNeeded(level, entity);
+        boolean repairedFromBirth = repairedFromPlayerHouse || BirthIdentityService.repairFromParentsIfNeeded(level, entity);
+
+        if (!repairedFromBirth) {
+            VillagerIdentityService.ensureAssigned(level, entity);
+            if (!PlayerHouseIdentityService.repairFromParentsIfNeeded(level, entity)) {
+                BirthIdentityService.repairFromParentsIfNeeded(level, entity);
+            }
+        }
     }
 
     private static String resolveRoyalGuardOrderLine(ServerLevel level, UUID villagerId) {

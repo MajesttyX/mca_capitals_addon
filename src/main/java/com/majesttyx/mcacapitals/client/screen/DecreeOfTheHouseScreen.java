@@ -18,6 +18,7 @@ public class DecreeOfTheHouseScreen extends Screen {
     private static final int PANEL_HEIGHT = 150;
 
     private final UUID targetId;
+    private final boolean playerTarget;
     private final boolean houseFounded;
 
     private EditBox surnameBox;
@@ -29,9 +30,10 @@ public class DecreeOfTheHouseScreen extends Screen {
     private String houseWords = "";
 
     public DecreeOfTheHouseScreen(OpenDecreeOfTheHousePacket packet) {
-        super(Component.literal("Decree of the House"));
+        super(Component.literal(packet.playerTarget() ? "Revise Your House" : "Decree of the House"));
         this.targetId = packet.targetId();
-        this.houseFounded = packet.houseFounded();
+        this.playerTarget = packet.playerTarget();
+        this.houseFounded = packet.houseFounded() || packet.playerTarget();
     }
 
     public DecreeOfTheHouseScreen withInitialValues(String firstName, String surname, String houseWords) {
@@ -48,13 +50,27 @@ public class DecreeOfTheHouseScreen extends Screen {
         int left = (this.width - PANEL_WIDTH) / 2;
         int top = (this.height - PANEL_HEIGHT) / 2;
 
-        surnameBox = new EditBox(this.font, left + 28, top + 48, 184, 18, Component.literal("Surname / House Name"));
-        surnameBox.setMaxLength(40);
+        surnameBox = new EditBox(
+                this.font,
+                left + 28,
+                top + 48,
+                184,
+                18,
+                Component.literal(playerTarget ? "House Name" : "Surname / House Name")
+        );
+        surnameBox.setMaxLength(playerTarget ? 20 : 40);
         surnameBox.setValue(surname);
         surnameBox.setResponder(value -> errorMessage = Component.empty());
         addRenderableWidget(surnameBox);
 
-        houseWordsBox = new EditBox(this.font, left + 28, top + 86, 184, 18, Component.literal("House Words"));
+        houseWordsBox = new EditBox(
+                this.font,
+                left + 28,
+                top + 86,
+                184,
+                18,
+                Component.literal("House Words")
+        );
         houseWordsBox.setMaxLength(80);
         houseWordsBox.setValue(houseWords);
         houseWordsBox.setEditable(houseFounded);
@@ -77,18 +93,31 @@ public class DecreeOfTheHouseScreen extends Screen {
         String surnameValue = surnameBox == null ? "" : surnameBox.getValue();
         String houseWordsValue = houseWordsBox == null ? "" : houseWordsBox.getValue();
 
-        if (!isValidNamePart(surnameValue, 2, 40)) {
-            errorMessage = Component.literal("Surname must be 2-40 valid characters.");
-            return;
-        }
+        if (playerTarget) {
+            if (!isValidNamePart(surnameValue, 2, 20)) {
+                errorMessage = Component.literal("House name must be 2-20 valid characters.");
+                return;
+            }
 
-        if (houseFounded && !isValidHouseWords(houseWordsValue)) {
-            errorMessage = Component.literal("House Words must be 2-80 valid characters.");
-            return;
+            if (!houseWordsValue.trim().isBlank() && !isValidHouseWords(houseWordsValue)) {
+                errorMessage = Component.literal("House Words must be 2-80 valid characters.");
+                return;
+            }
+        } else {
+            if (!isValidNamePart(surnameValue, 2, 40)) {
+                errorMessage = Component.literal("Surname must be 2-40 valid characters.");
+                return;
+            }
+
+            if (houseFounded && !isValidHouseWords(houseWordsValue)) {
+                errorMessage = Component.literal("House Words must be 2-80 valid characters.");
+                return;
+            }
         }
 
         PacketDistributor.sendToServer(new SubmitDecreeOfTheHousePacket(
                 targetId,
+                playerTarget,
                 firstName,
                 surnameValue,
                 houseFounded ? houseWordsValue : ""
@@ -125,18 +154,36 @@ public class DecreeOfTheHouseScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-
         int left = (this.width - PANEL_WIDTH) / 2;
         int top = (this.height - PANEL_HEIGHT) / 2;
 
         graphics.fill(left, top, left + PANEL_WIDTH, top + PANEL_HEIGHT, 0xCC1F1A12);
         graphics.drawString(this.font, this.title, left + 68, top + 12, 0xFFFFFF, false);
 
-        graphics.drawString(this.font, "Surname / House Name", left + 28, top + 37, 0xE8D8B0, false);
-        graphics.drawString(this.font, "House Words", left + 28, top + 75, houseFounded ? 0xE8D8B0 : 0x777777, false);
+        graphics.drawString(
+                this.font,
+                playerTarget ? "House Name" : "Surname / House Name",
+                left + 28,
+                top + 37,
+                0xE8D8B0,
+                false
+        );
+
+        graphics.drawString(
+                this.font,
+                "House Words",
+                left + 28,
+                top + 75,
+                houseFounded ? 0xE8D8B0 : 0x777777,
+                false
+        );
 
         if (!houseFounded) {
             graphics.drawString(this.font, "Only established Houses have House Words.", left + 28, top + 106, 0x888888, false);
+        }
+
+        if (playerTarget) {
+            graphics.drawString(this.font, "Leave House Words blank to set them later.", left + 28, top + 106, 0x888888, false);
         }
 
         if (errorMessage != null && errorMessage != Component.empty()) {

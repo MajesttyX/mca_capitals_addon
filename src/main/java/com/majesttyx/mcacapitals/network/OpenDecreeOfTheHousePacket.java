@@ -19,6 +19,7 @@ public class OpenDecreeOfTheHousePacket implements CustomPacketPayload {
             StreamCodec.ofMember(OpenDecreeOfTheHousePacket::encode, OpenDecreeOfTheHousePacket::decode);
 
     private final UUID targetId;
+    private final boolean playerTarget;
     private final String firstName;
     private final String currentSurname;
     private final boolean houseFounded;
@@ -27,6 +28,7 @@ public class OpenDecreeOfTheHousePacket implements CustomPacketPayload {
 
     public OpenDecreeOfTheHousePacket(
             UUID targetId,
+            boolean playerTarget,
             String firstName,
             String currentSurname,
             boolean houseFounded,
@@ -34,6 +36,7 @@ public class OpenDecreeOfTheHousePacket implements CustomPacketPayload {
             String houseWords
     ) {
         this.targetId = targetId;
+        this.playerTarget = playerTarget;
         this.firstName = firstName == null ? "" : firstName;
         this.currentSurname = currentSurname == null ? "" : currentSurname;
         this.houseFounded = houseFounded;
@@ -43,6 +46,10 @@ public class OpenDecreeOfTheHousePacket implements CustomPacketPayload {
 
     public UUID targetId() {
         return targetId;
+    }
+
+    public boolean playerTarget() {
+        return playerTarget;
     }
 
     public String firstName() {
@@ -67,6 +74,7 @@ public class OpenDecreeOfTheHousePacket implements CustomPacketPayload {
 
     private void encode(RegistryFriendlyByteBuf buffer) {
         buffer.writeUUID(targetId);
+        buffer.writeBoolean(playerTarget);
         buffer.writeUtf(firstName);
         buffer.writeUtf(currentSurname);
         buffer.writeBoolean(houseFounded);
@@ -76,6 +84,7 @@ public class OpenDecreeOfTheHousePacket implements CustomPacketPayload {
 
     private static OpenDecreeOfTheHousePacket decode(RegistryFriendlyByteBuf buffer) {
         UUID targetId = buffer.readUUID();
+        boolean playerTarget = buffer.readBoolean();
         String firstName = buffer.readUtf();
         String currentSurname = buffer.readUtf();
         boolean houseFounded = buffer.readBoolean();
@@ -84,6 +93,7 @@ public class OpenDecreeOfTheHousePacket implements CustomPacketPayload {
 
         return new OpenDecreeOfTheHousePacket(
                 targetId,
+                playerTarget,
                 firstName,
                 currentSurname,
                 houseFounded,

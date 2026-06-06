@@ -20,12 +20,14 @@ public class SubmitDecreeOfTheHousePacket implements CustomPacketPayload {
             StreamCodec.ofMember(SubmitDecreeOfTheHousePacket::encode, SubmitDecreeOfTheHousePacket::decode);
 
     private final UUID targetId;
+    private final boolean playerTarget;
     private final String firstName;
     private final String currentSurname;
     private final String houseWords;
 
-    public SubmitDecreeOfTheHousePacket(UUID targetId, String firstName, String currentSurname, String houseWords) {
+    public SubmitDecreeOfTheHousePacket(UUID targetId, boolean playerTarget, String firstName, String currentSurname, String houseWords) {
         this.targetId = targetId;
+        this.playerTarget = playerTarget;
         this.firstName = firstName == null ? "" : firstName;
         this.currentSurname = currentSurname == null ? "" : currentSurname;
         this.houseWords = houseWords == null ? "" : houseWords;
@@ -33,6 +35,7 @@ public class SubmitDecreeOfTheHousePacket implements CustomPacketPayload {
 
     private void encode(RegistryFriendlyByteBuf buffer) {
         buffer.writeUUID(targetId);
+        buffer.writeBoolean(playerTarget);
         buffer.writeUtf(firstName);
         buffer.writeUtf(currentSurname);
         buffer.writeUtf(houseWords);
@@ -40,11 +43,12 @@ public class SubmitDecreeOfTheHousePacket implements CustomPacketPayload {
 
     private static SubmitDecreeOfTheHousePacket decode(RegistryFriendlyByteBuf buffer) {
         UUID targetId = buffer.readUUID();
+        boolean playerTarget = buffer.readBoolean();
         String firstName = buffer.readUtf();
         String currentSurname = buffer.readUtf();
         String houseWords = buffer.readUtf();
 
-        return new SubmitDecreeOfTheHousePacket(targetId, firstName, currentSurname, houseWords);
+        return new SubmitDecreeOfTheHousePacket(targetId, playerTarget, firstName, currentSurname, houseWords);
     }
 
     public static void handle(SubmitDecreeOfTheHousePacket packet, IPayloadContext context) {
@@ -53,6 +57,7 @@ public class SubmitDecreeOfTheHousePacket implements CustomPacketPayload {
                 DecreeOfTheHouseService.applyFromPacket(
                         player,
                         packet.targetId,
+                        packet.playerTarget,
                         packet.firstName,
                         packet.currentSurname,
                         packet.houseWords

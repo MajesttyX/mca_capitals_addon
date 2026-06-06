@@ -16,6 +16,8 @@
     "EntitySprintingRoyalGuardMixin",
     "GetInteractDataRequestIdentityMixin",
     "EntityRelationshipMarriageSurnameMixin",
+    "FamilyTreeNodeAdoptionIdentityMixin",
+    "BabyItemBirthIdentityMixin",
     "PregnancyBirthIdentityMixin",
     "NamesRegionFilterMixin"
   ],
