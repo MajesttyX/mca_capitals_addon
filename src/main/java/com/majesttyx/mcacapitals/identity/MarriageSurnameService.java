@@ -87,12 +87,29 @@ public final class MarriageSurnameService {
         VillagerIdentityService.ensureAssigned(level, spouse);
 
         if (record.getInheritanceMode() == PlayerHouseInheritanceMode.PRESERVE_PLAYER_HOUSE) {
-            VillagerIdentityService.assignCurrentSurname(level, spouse, record.getHouseName(), SurnameSource.MARRIAGE);
+            PlayerHouseIdentityService.applyPlayerHouseIdentityToVillager(
+                    level,
+                    spouse,
+                    player.getUUID(),
+                    record,
+                    SurnameSource.MARRIAGE,
+                    false
+            );
             VillagerIdentitySyncService.syncToNearbyPlayers(level, spouse);
             return;
         }
 
-        applyTraditionalPlayerMarriageLaw(level, player, spouse, record);
+        if (shouldSpouseTakePlayerHouse(level, player, spouse)) {
+            PlayerHouseIdentityService.applyPlayerHouseIdentityToVillager(
+                    level,
+                    spouse,
+                    player.getUUID(),
+                    record,
+                    SurnameSource.MARRIAGE,
+                    false
+            );
+        }
+
         VillagerIdentitySyncService.syncToNearbyPlayers(level, spouse);
     }
 
@@ -180,25 +197,22 @@ public final class MarriageSurnameService {
         );
     }
 
-    private static void applyTraditionalPlayerMarriageLaw(ServerLevel level, ServerPlayer player, Entity spouse, PlayerHouseRecord record) {
+    private static boolean shouldSpouseTakePlayerHouse(ServerLevel level, ServerPlayer player, Entity spouse) {
         boolean playerFemale = MCAIntegrationBridge.isPlayerFemale(level, player);
         GenderKind spouseGender = getGender(spouse);
 
         if (!playerFemale && spouseGender == GenderKind.FEMALE) {
-            VillagerIdentityService.assignCurrentSurname(level, spouse, record.getHouseName(), SurnameSource.MARRIAGE);
-            return;
+            return true;
         }
 
         if (playerFemale && spouseGender == GenderKind.MALE) {
-            return;
+            return false;
         }
 
         int playerRank = getPlayerTitleRank(player.getUUID());
         int spouseRank = getVillagerTitleRank(level, spouse);
 
-        if (playerRank < spouseRank) {
-            VillagerIdentityService.assignCurrentSurname(level, spouse, record.getHouseName(), SurnameSource.MARRIAGE);
-        }
+        return playerRank < spouseRank;
     }
 
     private static Entity chooseEqualRankSource(ServerLevel level, Entity first, Entity second) {

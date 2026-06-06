@@ -19,6 +19,7 @@ public class PlayerHouseSavedData extends SavedData {
     private static final String KEY_RECORDS = "Records";
     private static final String KEY_PLAYER_ID = "PlayerId";
     private static final String KEY_HOUSE_NAME = "HouseName";
+    private static final String KEY_HOUSE_WORDS = "HouseWords";
     private static final String KEY_INHERITANCE_MODE = "InheritanceMode";
     private static final String KEY_SET_AT_GAME_TIME = "HouseNameSetAtGameTime";
     private static final String KEY_SET_IN_CAPITAL_ID = "HouseNameSetInCapitalId";
@@ -41,6 +42,7 @@ public class PlayerHouseSavedData extends SavedData {
         if (playerId == null) {
             return null;
         }
+
         return records.get(playerId);
     }
 
@@ -78,6 +80,7 @@ public class PlayerHouseSavedData extends SavedData {
             CompoundTag entry = new CompoundTag();
             entry.putUUID(KEY_PLAYER_ID, record.getPlayerId());
             entry.putString(KEY_HOUSE_NAME, record.getHouseName());
+            entry.putString(KEY_HOUSE_WORDS, record.getHouseWords());
             entry.putString(KEY_INHERITANCE_MODE, record.getInheritanceMode().name());
             entry.putLong(KEY_SET_AT_GAME_TIME, record.getHouseNameSetAtGameTime());
 
@@ -109,6 +112,11 @@ public class PlayerHouseSavedData extends SavedData {
             UUID playerId = entry.getUUID(KEY_PLAYER_ID);
             PlayerHouseRecord record = new PlayerHouseRecord(playerId);
             record.setHouseName(entry.getString(KEY_HOUSE_NAME));
+
+            if (entry.contains(KEY_HOUSE_WORDS, Tag.TAG_STRING)) {
+                record.setHouseWords(entry.getString(KEY_HOUSE_WORDS));
+            }
+
             record.setInheritanceMode(parseMode(entry.getString(KEY_INHERITANCE_MODE)));
             record.setHouseNameSetAtGameTime(entry.getLong(KEY_SET_AT_GAME_TIME));
 

@@ -5,10 +5,12 @@ import com.majesttyx.mcacapitals.house.PlayerHouseService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.lang.reflect.Method;
+import java.util.Set;
 import java.util.UUID;
 
 public final class PlayerHouseIdentityService {
@@ -96,17 +98,84 @@ public final class PlayerHouseIdentityService {
             return false;
         }
 
-        VillagerIdentityService.ensureAssigned(level, child);
-        boolean changed = VillagerIdentityService.assignCurrentSurname(
-                level,
-                child,
-                record.getHouseName(),
-                SurnameSource.PLAYER_HOUSE
-        );
+        boolean changed = applyPlayerHouseIdentityToVillager(level, child, playerId, record, SurnameSource.PLAYER_HOUSE, false);
 
         if (changed) {
             VillagerIdentitySyncService.syncToNearbyPlayers(level, child);
         }
+
+        return changed;
+    }
+
+    public static void applyPlayerHouseToImmediateFamily(ServerLevel level, ServerPlayer player) {
+        if (level == null || player == null) {
+            return;
+        }
+
+        PlayerHouseRecord record = PlayerHouseService.get(level, player.getUUID());
+        if (record == null || !record.hasHouseName()) {
+            return;
+        }
+
+        UUID spouseId = MCAIntegrationBridge.getSpouse(level, player.getUUID());
+        Entity spouse = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, spouseId);
+        if (spouse != null && MCAIntegrationBridge.isMCAVillagerEntity(spouse)) {
+            if (applyPlayerHouseIdentityToVillager(level, spouse, player.getUUID(), record, SurnameSource.MARRIAGE, false)) {
+                VillagerIdentitySyncService.syncToNearbyPlayers(level, spouse);
+            }
+        }
+
+        Set<UUID> childIds = MCAIntegrationBridge.getChildren(level, player.getUUID());
+        for (UUID childId : childIds) {
+            Entity child = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, childId);
+            if (child == null || !MCAIntegrationBridge.isMCAVillagerEntity(child)) {
+                continue;
+            }
+
+            if (applyPlayerHouseIdentityToVillager(level, child, player.getUUID(), record, SurnameSource.BIRTH, true)) {
+                VillagerIdentitySyncService.syncToNearbyPlayers(level, child);
+            }
+        }
+    }
+
+    public static boolean applyPlayerHouseIdentityToVillager(
+            ServerLevel level,
+            Entity villager,
+            UUID playerId,
+            PlayerHouseRecord record,
+            SurnameSource surnameSource,
+            boolean setBirthSurname
+    ) {
+        if (level == null || villager == null || playerId == null || record == null || !record.hasHouseName()) {
+            return false;
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillagerEntity(villager)) {
+            return false;
+        }
+
+        VillagerIdentityService.ensureAssigned(level, villager);
+
+        boolean changed = false;
+
+        if (setBirthSurname) {
+            changed |= VillagerIdentityService.ensureOriginFromCurrentVillage(level, villager, null, OriginSource.BIRTH);
+            changed |= VillagerIdentityService.assignBirthSurname(level, villager, record.getHouseName(), surnameSource);
+        }
+
+        changed |= VillagerIdentityService.assignCurrentSurname(level, villager, record.getHouseName(), surnameSource);
+
+        changed |= VillagerIdentityService.foundHouse(
+                level,
+                villager,
+                record.getHouseName(),
+                record.getHouseWords(),
+                "PLAYER",
+                playerId,
+                resolvePlayerName(level, playerId),
+                record.getHouseNameSetInCapitalId(),
+                record.getHouseNameSetInCapitalName()
+        );
 
         return changed;
     }
@@ -121,27 +190,13 @@ public final class PlayerHouseIdentityService {
             return false;
         }
 
-        VillagerIdentityService.ensureOriginFromCurrentVillage(level, child, null, OriginSource.DISCOVERED);
+        boolean changed = applyPlayerHouseIdentityToVillager(level, child, playerId, record, SurnameSource.BIRTH, true);
 
-        boolean birthChanged = VillagerIdentityService.assignBirthSurname(
-                level,
-                child,
-                record.getHouseName(),
-                SurnameSource.BIRTH
-        );
-
-        boolean currentChanged = VillagerIdentityService.assignCurrentSurname(
-                level,
-                child,
-                record.getHouseName(),
-                SurnameSource.BIRTH
-        );
-
-        if (birthChanged || currentChanged) {
+        if (changed) {
             VillagerIdentitySyncService.syncToNearbyPlayers(level, child);
         }
 
-        return birthChanged || currentChanged;
+        return changed;
     }
 
     private static boolean applyPlayerHouseToChildIfNeeded(ServerLevel level, Entity child, UUID playerId) {
@@ -165,9 +220,15 @@ public final class PlayerHouseIdentityService {
         boolean birthWrong = existingIdentity == null
                 || existingIdentity.birthSurname() == null
                 || existingIdentity.birthSurname().isBlank()
-                || "GENERATED".equals(existingIdentity.surnameSource());
+                || "GENERATED".equals(existingIdentity.surnameSource())
+                || !record.getHouseName().equals(existingIdentity.birthSurname());
 
-        if (!missingSurname && !generatedSurname && !currentWrong && !birthWrong) {
+        boolean houseWrong = existingIdentity == null
+                || !existingIdentity.hasFoundedHouse()
+                || !record.getHouseName().equals(existingIdentity.houseName())
+                || !safeEquals(record.getHouseWords(), existingIdentity.houseWords());
+
+        if (!missingSurname && !generatedSurname && !currentWrong && !birthWrong && !houseWrong) {
             return false;
         }
 
@@ -182,6 +243,25 @@ public final class PlayerHouseIdentityService {
     private static boolean isPlayerNode(Object node) {
         Object value = invokeNoArg(node, "isPlayer");
         return value instanceof Boolean result && result;
+    }
+
+    private static String resolvePlayerName(ServerLevel level, UUID playerId) {
+        if (level == null || playerId == null || level.getServer() == null) {
+            return "";
+        }
+
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(playerId);
+        if (player != null) {
+            return player.getName().getString();
+        }
+
+        return "";
+    }
+
+    private static boolean safeEquals(String first, String second) {
+        String a = first == null ? "" : first;
+        String b = second == null ? "" : second;
+        return a.equals(b);
     }
 
     private static Object invokeNoArg(Object target, String methodName) {

@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 public class OpenDecreeOfTheHousePacket {
 
     private final UUID targetId;
+    private final boolean playerTarget;
     private final String firstName;
     private final String currentSurname;
     private final boolean houseFounded;
@@ -18,6 +19,7 @@ public class OpenDecreeOfTheHousePacket {
 
     public OpenDecreeOfTheHousePacket(
             UUID targetId,
+            boolean playerTarget,
             String firstName,
             String currentSurname,
             boolean houseFounded,
@@ -25,6 +27,7 @@ public class OpenDecreeOfTheHousePacket {
             String houseWords
     ) {
         this.targetId = targetId;
+        this.playerTarget = playerTarget;
         this.firstName = firstName == null ? "" : firstName;
         this.currentSurname = currentSurname == null ? "" : currentSurname;
         this.houseFounded = houseFounded;
@@ -34,6 +37,10 @@ public class OpenDecreeOfTheHousePacket {
 
     public UUID targetId() {
         return targetId;
+    }
+
+    public boolean playerTarget() {
+        return playerTarget;
     }
 
     public String firstName() {
@@ -58,6 +65,7 @@ public class OpenDecreeOfTheHousePacket {
 
     public static void encode(OpenDecreeOfTheHousePacket packet, FriendlyByteBuf buffer) {
         buffer.writeUUID(packet.targetId);
+        buffer.writeBoolean(packet.playerTarget);
         buffer.writeUtf(packet.firstName);
         buffer.writeUtf(packet.currentSurname);
         buffer.writeBoolean(packet.houseFounded);
@@ -67,6 +75,7 @@ public class OpenDecreeOfTheHousePacket {
 
     public static OpenDecreeOfTheHousePacket decode(FriendlyByteBuf buffer) {
         UUID targetId = buffer.readUUID();
+        boolean playerTarget = buffer.readBoolean();
         String firstName = buffer.readUtf();
         String currentSurname = buffer.readUtf();
         boolean houseFounded = buffer.readBoolean();
@@ -75,6 +84,7 @@ public class OpenDecreeOfTheHousePacket {
 
         return new OpenDecreeOfTheHousePacket(
                 targetId,
+                playerTarget,
                 firstName,
                 currentSurname,
                 houseFounded,

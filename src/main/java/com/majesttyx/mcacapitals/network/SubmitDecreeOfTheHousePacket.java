@@ -11,12 +11,14 @@ import java.util.function.Supplier;
 public class SubmitDecreeOfTheHousePacket {
 
     private final UUID targetId;
+    private final boolean playerTarget;
     private final String firstName;
     private final String currentSurname;
     private final String houseWords;
 
-    public SubmitDecreeOfTheHousePacket(UUID targetId, String firstName, String currentSurname, String houseWords) {
+    public SubmitDecreeOfTheHousePacket(UUID targetId, boolean playerTarget, String firstName, String currentSurname, String houseWords) {
         this.targetId = targetId;
+        this.playerTarget = playerTarget;
         this.firstName = firstName == null ? "" : firstName;
         this.currentSurname = currentSurname == null ? "" : currentSurname;
         this.houseWords = houseWords == null ? "" : houseWords;
@@ -24,6 +26,7 @@ public class SubmitDecreeOfTheHousePacket {
 
     public static void encode(SubmitDecreeOfTheHousePacket packet, FriendlyByteBuf buffer) {
         buffer.writeUUID(packet.targetId);
+        buffer.writeBoolean(packet.playerTarget);
         buffer.writeUtf(packet.firstName);
         buffer.writeUtf(packet.currentSurname);
         buffer.writeUtf(packet.houseWords);
@@ -31,11 +34,12 @@ public class SubmitDecreeOfTheHousePacket {
 
     public static SubmitDecreeOfTheHousePacket decode(FriendlyByteBuf buffer) {
         UUID targetId = buffer.readUUID();
+        boolean playerTarget = buffer.readBoolean();
         String firstName = buffer.readUtf();
         String currentSurname = buffer.readUtf();
         String houseWords = buffer.readUtf();
 
-        return new SubmitDecreeOfTheHousePacket(targetId, firstName, currentSurname, houseWords);
+        return new SubmitDecreeOfTheHousePacket(targetId, playerTarget, firstName, currentSurname, houseWords);
     }
 
     public static void handle(SubmitDecreeOfTheHousePacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
@@ -46,6 +50,7 @@ public class SubmitDecreeOfTheHousePacket {
                 DecreeOfTheHouseService.applyFromPacket(
                         player,
                         packet.targetId,
+                        packet.playerTarget,
                         packet.firstName,
                         packet.currentSurname,
                         packet.houseWords

@@ -3,7 +3,10 @@ package com.majesttyx.mcacapitals.identity;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
+import com.majesttyx.mcacapitals.house.PlayerHouseRecord;
+import com.majesttyx.mcacapitals.house.PlayerHouseService;
 import com.majesttyx.mcacapitals.item.ModItems;
+import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenDecreeOfTheHousePacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
@@ -35,6 +38,7 @@ public final class DecreeOfTheHouseService {
 
         return new OpenDecreeOfTheHousePacket(
                 target.getUUID(),
+                false,
                 getDisplayFirstNameOnly(target),
                 identity.currentSurname(),
                 identity.hasFoundedHouse(),
@@ -43,15 +47,39 @@ public final class DecreeOfTheHouseService {
         );
     }
 
+    public static void openPlayerHouseEditor(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+
+        ServerLevel level = player.serverLevel();
+        PlayerHouseRecord record = PlayerHouseService.get(level, player.getUUID());
+
+        ModNetwork.sendToPlayer(player, new OpenDecreeOfTheHousePacket(
+                player.getUUID(),
+                true,
+                player.getName().getString(),
+                record == null ? "" : record.getHouseName(),
+                true,
+                record == null ? "" : record.getHouseName(),
+                record == null ? "" : record.getHouseWords()
+        ));
+    }
+
     public static boolean applyFromPacket(
             ServerPlayer player,
             UUID targetId,
+            boolean playerTarget,
             String ignoredFirstName,
             String currentSurname,
             String houseWords
     ) {
         if (player == null || targetId == null) {
             return false;
+        }
+
+        if (playerTarget) {
+            return applyPlayerHouseRevision(player, targetId, currentSurname, houseWords);
         }
 
         ServerLevel level = player.serverLevel();
@@ -112,6 +140,47 @@ public final class DecreeOfTheHouseService {
 
     public static ItemStack createFreshDecree() {
         return new ItemStack(ModItems.DECREE_OF_THE_HOUSE.get());
+    }
+
+    private static boolean applyPlayerHouseRevision(ServerPlayer player, UUID targetId, String houseName, String houseWords) {
+        if (player == null || targetId == null || !targetId.equals(player.getUUID())) {
+            return false;
+        }
+
+        ItemStack decree = findHeldDecree(player);
+        if (decree.isEmpty()) {
+            player.sendSystemMessage(Component.literal("You must be holding a Decree of the House to revise your House."));
+            return false;
+        }
+
+        ServerLevel level = player.serverLevel();
+        houseName = PlayerHouseService.normalizeHouseName(houseName);
+        houseWords = PlayerHouseService.normalizeHouseWords(houseWords);
+
+        if (!PlayerHouseService.isValidHouseName(houseName)) {
+            player.sendSystemMessage(Component.literal("House name must be 2-20 characters using letters, spaces, hyphens, or apostrophes."));
+            return false;
+        }
+
+        if (!houseWords.isBlank() && !PlayerHouseService.isValidHouseWords(houseWords)) {
+            player.sendSystemMessage(Component.literal("House Words must be 2-80 characters and cannot contain formatting codes."));
+            return false;
+        }
+
+        if (!PlayerHouseService.reviseHouse(level, player, houseName, houseWords)) {
+            player.sendSystemMessage(Component.literal("The House records could not be revised."));
+            return false;
+        }
+
+        damageDecree(decree);
+
+        player.sendSystemMessage(Component.literal(
+                "Your House records have been revised: House "
+                        + houseName
+                        + (houseWords.isBlank() ? "" : " — " + houseWords)
+        ));
+
+        return true;
     }
 
     private static boolean isHouseNameBeingChanged(VillagerIdentityData before, String newSurname) {

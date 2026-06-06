@@ -191,7 +191,7 @@ public final class BirthIdentityService {
             return false;
         }
 
-        VillagerIdentityService.ensureOriginFromCurrentVillage(level, child, null, OriginSource.DISCOVERED);
+        VillagerIdentityService.ensureOriginFromCurrentVillage(level, child, null, OriginSource.BIRTH);
 
         boolean birthAssigned = VillagerIdentityService.assignBirthSurname(
                 level,

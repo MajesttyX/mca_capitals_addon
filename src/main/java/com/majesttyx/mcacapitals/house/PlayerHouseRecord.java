@@ -6,6 +6,7 @@ public class PlayerHouseRecord {
 
     private final UUID playerId;
     private String houseName;
+    private String houseWords;
     private PlayerHouseInheritanceMode inheritanceMode;
     private long houseNameSetAtGameTime;
     private UUID houseNameSetInCapitalId;
@@ -14,6 +15,7 @@ public class PlayerHouseRecord {
     public PlayerHouseRecord(UUID playerId) {
         this.playerId = playerId;
         this.houseName = "";
+        this.houseWords = "";
         this.inheritanceMode = PlayerHouseInheritanceMode.FOLLOW_CAPITAL_LAW;
         this.houseNameSetAtGameTime = 0L;
         this.houseNameSetInCapitalId = null;
@@ -30,6 +32,14 @@ public class PlayerHouseRecord {
 
     public void setHouseName(String houseName) {
         this.houseName = houseName == null ? "" : houseName;
+    }
+
+    public String getHouseWords() {
+        return houseWords;
+    }
+
+    public void setHouseWords(String houseWords) {
+        this.houseWords = houseWords == null ? "" : houseWords;
     }
 
     public PlayerHouseInheritanceMode getInheritanceMode() {
@@ -66,5 +76,9 @@ public class PlayerHouseRecord {
 
     public boolean hasHouseName() {
         return houseName != null && !houseName.isBlank();
+    }
+
+    public boolean hasHouseWords() {
+        return houseWords != null && !houseWords.isBlank();
     }
 }

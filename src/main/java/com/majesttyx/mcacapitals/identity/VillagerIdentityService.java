@@ -8,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -113,7 +114,16 @@ public final class VillagerIdentityService {
         }
 
         CompoundTag identity = getIdentityTag(entity);
+        OriginSource resolvedSource = resolveOriginSourceForEntity(level, entity, source);
+
         if (hasOrigin(identity)) {
+            if (shouldUpgradeOriginSource(identity, resolvedSource)) {
+                identity.putString(ORIGIN_SOURCE, resolvedSource.name());
+                identity.putLong(ORIGIN_SET_AT_GAME_TIME, level.getGameTime());
+                saveIdentityTag(entity, identity);
+                return true;
+            }
+
             return false;
         }
 
@@ -141,7 +151,7 @@ public final class VillagerIdentityService {
             identity.remove(ORIGIN_CAPITAL_NAME);
         }
 
-        identity.putString(ORIGIN_SOURCE, (source == null ? OriginSource.DISCOVERED : source).name());
+        identity.putString(ORIGIN_SOURCE, resolvedSource.name());
         identity.putLong(ORIGIN_SET_AT_GAME_TIME, level.getGameTime());
         identity.putString(ORIGIN_DIMENSION, level.dimension().location().toString());
 
@@ -426,8 +436,58 @@ public final class VillagerIdentityService {
                 && MCAIntegrationBridge.isMCAVillagerEntity(entity);
     }
 
+    private static OriginSource resolveOriginSourceForEntity(ServerLevel level, Entity entity, OriginSource source) {
+        OriginSource resolved = source == null ? OriginSource.DISCOVERED : source;
+
+        if (resolved == OriginSource.DISCOVERED && isBaby(level, entity)) {
+            return OriginSource.BIRTH;
+        }
+
+        return resolved;
+    }
+
+    private static boolean isBaby(ServerLevel level, Entity entity) {
+        if (level == null || entity == null) {
+            return false;
+        }
+
+        String ageState = MCAIntegrationBridge.getAgeState(level, entity.getUUID());
+        if (ageState == null) {
+            return false;
+        }
+
+        return "BABY".equals(ageState.trim().toUpperCase(Locale.ROOT));
+    }
+
     private static boolean hasOrigin(CompoundTag identity) {
         return identity.contains(ORIGIN_VILLAGE_ID) && hasNonBlankString(identity, ORIGIN_VILLAGE_NAME);
+    }
+
+    private static boolean shouldUpgradeOriginSource(CompoundTag identity, OriginSource source) {
+        if (identity == null || source == null) {
+            return false;
+        }
+
+        String currentSource = identity.getString(ORIGIN_SOURCE);
+        if (source.name().equals(currentSource)) {
+            return false;
+        }
+
+        if (source == OriginSource.BIRTH) {
+            return currentSource == null
+                    || currentSource.isBlank()
+                    || OriginSource.DISCOVERED.name().equals(currentSource)
+                    || OriginSource.LEGACY_BACKFILL.name().equals(currentSource);
+        }
+
+        if (source == OriginSource.INN_SETTLED) {
+            return currentSource == null
+                    || currentSource.isBlank()
+                    || OriginSource.DISCOVERED.name().equals(currentSource)
+                    || OriginSource.LEGACY_BACKFILL.name().equals(currentSource);
+        }
+
+        return false;
     }
 
     private static CompoundTag getIdentityTag(Entity entity) {
