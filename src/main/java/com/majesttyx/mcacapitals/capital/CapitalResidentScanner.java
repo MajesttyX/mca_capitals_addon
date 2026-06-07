@@ -67,7 +67,7 @@ public class CapitalResidentScanner {
             return residents;
         }
 
-        Iterable<Entity> allEntities = level.getEntities().getAll();
+        Iterable<Entity> allEntities = level.getAllEntities();
         for (Entity entity : allEntities) {
             UUID entityId = entity.getUUID();
             if (MCAIntegrationBridge.isMCAVillager(level, entityId)) {

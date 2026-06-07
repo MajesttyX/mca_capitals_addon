@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import com.majesttyx.mcacapitals.util.EntityPersistentData;
 
 import java.util.Locale;
 import java.util.Set;
@@ -491,7 +492,7 @@ public final class VillagerIdentityService {
     }
 
     private static CompoundTag getIdentityTag(Entity entity) {
-        CompoundTag persistent = entity.getPersistentData();
+        CompoundTag persistent = EntityPersistentData.get(entity);
 
         if (!persistent.contains(IDENTITY_TAG)) {
             CompoundTag identity = new CompoundTag();
@@ -503,7 +504,7 @@ public final class VillagerIdentityService {
     }
 
     private static void saveIdentityTag(Entity entity, CompoundTag identity) {
-        entity.getPersistentData().put(IDENTITY_TAG, identity);
+        EntityPersistentData.get(entity).put(IDENTITY_TAG, identity);
     }
 
     private static boolean hasNonBlankString(CompoundTag tag, String key) {

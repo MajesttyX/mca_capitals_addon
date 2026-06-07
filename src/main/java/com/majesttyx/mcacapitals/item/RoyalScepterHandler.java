@@ -1,47 +1,41 @@
 package com.majesttyx.mcacapitals.item;
 
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DistExecutor;
 
 public class RoyalScepterHandler {
 
-    @SubscribeEvent
-    public void onEntityInteract(PlayerInteractEvent.EntityInteractSpecific event) {
-        Player player = event.getEntity();
-        ItemStack held = player.getItemInHand(event.getHand());
+    public static InteractionResult handleEntityInteract(Player player, Entity rawTarget, InteractionHand hand) {
+        if (player == null || rawTarget == null || hand == null) {
+            return InteractionResult.PASS;
+        }
 
+        ItemStack held = player.getItemInHand(hand);
         if (!held.is(ModItems.ROYAL_SCEPTER.get())) {
-            return;
+            return InteractionResult.PASS;
         }
 
         if (!player.isShiftKeyDown()) {
-            return;
+            return InteractionResult.PASS;
         }
 
-        if (!(event.getTarget() instanceof LivingEntity livingTarget)) {
-            return;
+        if (!(rawTarget instanceof LivingEntity livingTarget)) {
+            return InteractionResult.PASS;
         }
 
         if (!MCAIntegrationBridge.isMCAVillagerEntity(livingTarget)) {
-            return;
+            return InteractionResult.PASS;
         }
 
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        event.setCanceled(true);
-
-        if (!player.level().isClientSide) {
-            return;
+        if (player.level().isClientSide) {
+            RoyalScepterClient.openScreen(livingTarget.getUUID(), livingTarget.getName().getString());
         }
 
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                RoyalScepterClient.openScreen(livingTarget.getUUID(), livingTarget.getName().getString())
-        );
+        return InteractionResult.SUCCESS;
     }
 }

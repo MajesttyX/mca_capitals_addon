@@ -2,12 +2,12 @@ package com.majesttyx.mcacapitals.identity;
 
 import com.majesttyx.mcacapitals.house.PlayerHouseRecord;
 import com.majesttyx.mcacapitals.house.PlayerHouseService;
+import com.majesttyx.mcacapitals.util.FabricServerAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.lang.reflect.Method;
 import java.util.Set;
@@ -68,7 +68,7 @@ public final class PlayerHouseIdentityService {
             return false;
         }
 
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        MinecraftServer server = FabricServerAccess.getCurrentServer();
         if (server == null) {
             return false;
         }

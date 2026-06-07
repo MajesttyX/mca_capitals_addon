@@ -8,6 +8,7 @@ import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.identity.MarriageSurnameService;
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
+import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -22,13 +23,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.server.world.data.PlayerSaveData", remap = false)
+@Mixin(targets = "fabric.net.mca.server.world.data.PlayerSaveData", remap = false)
 public class PlayerSaveDataMarriageMixin {
 
     @Inject(
             method = "marry(Lnet/minecraft/world/entity/Entity;)V",
             at = @At("TAIL"),
-            remap = false
+            remap = false,
+            require = 0
     )
     private void mcacapitals$onPlayerMarry(Entity spouse, CallbackInfo ci) {
         if (spouse == null) {
@@ -133,17 +135,7 @@ public class PlayerSaveDataMarriageMixin {
     }
 
     private static boolean resolvePlayerFemale(ServerLevel level, ServerPlayer player) {
-        try {
-            Class<?> bridge = Class.forName("com.majesttyx.mcacapitals.util.MCAPlayerBridge");
-            Method method = bridge.getDeclaredMethod("isPlayerFemale", ServerLevel.class, ServerPlayer.class);
-            method.setAccessible(true);
-            Object result = method.invoke(null, level, player);
-            if (result instanceof Boolean b) {
-                return b;
-            }
-        } catch (Throwable ignored) {
-        }
-        return false;
+        return MCAIntegrationBridge.isPlayerFemale(level, player);
     }
 
     private static NobleTitle resolveMarriagePrinceTitle(ServerLevel level, ServerPlayer player) {

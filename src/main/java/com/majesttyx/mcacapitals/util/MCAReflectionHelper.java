@@ -4,10 +4,13 @@ import com.majesttyx.mcacapitals.MCACapitals;
 import net.minecraft.world.entity.npc.Villager;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,20 +48,34 @@ final class MCAReflectionHelper {
     };
 
     private static final Set<String> WARNED_KEYS = ConcurrentHashMap.newKeySet();
+    private static final Map<String, Optional<Class<?>>> CLASS_CACHE = new ConcurrentHashMap<>();
 
     private MCAReflectionHelper() {
     }
 
     static Class<?> resolveAnyClass(String[] classNames) {
+        if (classNames == null || classNames.length == 0) {
+            return null;
+        }
+
+        String cacheKey = String.join("|", classNames);
+        Optional<Class<?>> cached = CLASS_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached.orElse(null);
+        }
+
         for (String className : classNames) {
             try {
-                return Class.forName(className);
+                Class<?> resolved = Class.forName(className);
+                CLASS_CACHE.put(cacheKey, Optional.of(resolved));
+                return resolved;
             } catch (Throwable ignored) {
             }
         }
 
+        CLASS_CACHE.put(cacheKey, Optional.empty());
         warnOnce(
-                "resolveAnyClass:" + String.join("|", classNames),
+                "resolveAnyClass:" + cacheKey,
                 "Could not resolve any MCA class from candidates: {}",
                 String.join(", ", classNames)
         );
@@ -75,7 +92,7 @@ final class MCAReflectionHelper {
             return method.invoke(null, args);
         } catch (Throwable t) {
             warnOnce(
-                    "invokeStatic:" + targetClass.getName() + "#" + methodName,
+                    "invokeStatic:" + targetClass.getName() + "#" + methodName + ":" + Arrays.toString(parameterTypes),
                     "Static reflection call failed: {}#{} ({})",
                     targetClass.getName(),
                     methodName,

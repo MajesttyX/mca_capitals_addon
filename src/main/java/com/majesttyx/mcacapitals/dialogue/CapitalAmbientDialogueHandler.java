@@ -11,8 +11,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -35,13 +33,8 @@ public class CapitalAmbientDialogueHandler {
     private final Map<UUID, Long> lastCapitalChatterTick = new HashMap<>();
     private final Map<UUID, Long> lastVillagerChatterTick = new HashMap<>();
 
-    @SubscribeEvent
-    public void onLevelTick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
-
-        if (!(event.level instanceof ServerLevel level)) {
+    public void onLevelTick(ServerLevel level) {
+        if (level == null) {
             return;
         }
 
@@ -102,7 +95,11 @@ public class CapitalAmbientDialogueHandler {
     private ServerPlayer nearestPlayerNearBell(ServerLevel level, BlockPos center) {
         return level.players().stream()
                 .filter(player -> player.blockPosition().closerThan(center, PLAYER_NEAR_BELL_RADIUS))
-                .min(Comparator.comparingDouble(player -> player.distanceToSqr(center.getX() + 0.5D, center.getY() + 0.5D, center.getZ() + 0.5D)))
+                .min(Comparator.comparingDouble(player -> player.distanceToSqr(
+                        center.getX() + 0.5D,
+                        center.getY() + 0.5D,
+                        center.getZ() + 0.5D
+                )))
                 .orElse(null);
     }
 

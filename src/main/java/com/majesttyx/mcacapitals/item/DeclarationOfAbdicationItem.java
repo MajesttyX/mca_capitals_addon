@@ -6,8 +6,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.api.distmarker.Dist;
 
 public class DeclarationOfAbdicationItem extends Item {
 
@@ -20,7 +18,7 @@ public class DeclarationOfAbdicationItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
 
         if (level.isClientSide && !player.isShiftKeyDown()) {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> AbdicationClient.openScreen());
+            AbdicationClient.openScreen();
         }
 
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());

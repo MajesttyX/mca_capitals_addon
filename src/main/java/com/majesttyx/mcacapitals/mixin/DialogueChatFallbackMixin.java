@@ -23,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.resources.data.dialogue.Actions", remap = false)
+@Mixin(targets = "fabric.net.mca.resources.data.dialogue.Actions", remap = false)
 public abstract class DialogueChatFallbackMixin {
 
     private static final String MCA_CHAT_TOPIC = "chat.topic";
@@ -36,11 +36,12 @@ public abstract class DialogueChatFallbackMixin {
     private static final int GENERAL_FAIL_CHANCE = 60;
 
     @ModifyVariable(
-            method = "lambda$static$0(Ljava/lang/String;Lforge/net/mca/entity/VillagerEntityMCA;Lnet/minecraft/server/level/ServerPlayer;)V",
+            method = "lambda$static$0(Ljava/lang/String;Lfabric/net/mca/entity/VillagerEntityMCA;Lnet/minecraft/server/level/ServerPlayer;)V",
             at = @At("HEAD"),
             argsOnly = true,
             ordinal = 0,
-            remap = false
+            remap = false,
+            require = 0
     )
     private static String mcacapitals$redirectCapitalChatDialogue(
             String nextKey,
@@ -115,10 +116,11 @@ public abstract class DialogueChatFallbackMixin {
     }
 
     @Inject(
-            method = "lambda$static$0(Ljava/lang/String;Lforge/net/mca/entity/VillagerEntityMCA;Lnet/minecraft/server/level/ServerPlayer;)V",
+            method = "lambda$static$0(Ljava/lang/String;Lfabric/net/mca/entity/VillagerEntityMCA;Lnet/minecraft/server/level/ServerPlayer;)V",
             at = @At("HEAD"),
             cancellable = true,
-            remap = false
+            remap = false,
+            require = 0
     )
     private static void mcacapitals$handleManagedRuntimeDialogue(
             String nextKey,

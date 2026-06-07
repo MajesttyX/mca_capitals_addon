@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.client.gui.InteractScreen", remap = false)
+@Mixin(targets = "net.mca.client.gui.InteractScreen", remap = false)
 public abstract class InteractScreenBetrothalMixin {
 
     @Unique

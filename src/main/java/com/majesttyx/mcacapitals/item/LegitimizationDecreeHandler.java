@@ -9,12 +9,12 @@ import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.UUID;
 
@@ -45,69 +45,60 @@ public class LegitimizationDecreeHandler {
             "King"
     };
 
-    @SubscribeEvent
-    public void onEntityInteract(PlayerInteractEvent.EntityInteractSpecific event) {
-        Player player = event.getEntity();
-
-        if (player.level().isClientSide) {
-            return;
+    public static InteractionResult handleEntityInteract(Player player, Entity rawTarget, InteractionHand hand) {
+        if (player == null || rawTarget == null || hand == null) {
+            return InteractionResult.PASS;
         }
 
-        if (!(player.level() instanceof ServerLevel level)) {
-            return;
-        }
-
-        if (!(event.getTarget() instanceof LivingEntity livingTarget)) {
-            return;
-        }
-
-        ItemStack held = player.getItemInHand(event.getHand());
+        ItemStack held = player.getItemInHand(hand);
         if (!held.is(ModItems.LEGITIMIZATION_DECREE.get())) {
-            return;
+            return InteractionResult.PASS;
         }
 
         if (!player.isShiftKeyDown()) {
-            return;
+            return InteractionResult.PASS;
+        }
+
+        if (!(rawTarget instanceof LivingEntity livingTarget)) {
+            return InteractionResult.PASS;
+        }
+
+        if (player.level().isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+
+        if (!(player.level() instanceof ServerLevel level)) {
+            return InteractionResult.PASS;
         }
 
         UUID targetId = livingTarget.getUUID();
 
         if (!MCAIntegrationBridge.isMCAVillager(level, targetId)) {
             player.sendSystemMessage(Component.literal("Legitimization may only be granted to an MCA villager."));
-            event.setCancellationResult(InteractionResult.FAIL);
-            event.setCanceled(true);
-            return;
+            return InteractionResult.FAIL;
         }
 
         CapitalRecord capital = resolveCapital(level, targetId);
         if (capital == null) {
             player.sendSystemMessage(Component.literal("That villager has no claim tied to any capital."));
-            event.setCancellationResult(InteractionResult.FAIL);
-            event.setCanceled(true);
-            return;
+            return InteractionResult.FAIL;
         }
 
         if (capital.getSovereign() == null) {
             player.sendSystemMessage(Component.literal("That capital has no sovereign to grant legitimacy."));
-            event.setCancellationResult(InteractionResult.FAIL);
-            event.setCanceled(true);
-            return;
+            return InteractionResult.FAIL;
         }
 
         if (targetId.equals(capital.getSovereign())
                 || targetId.equals(capital.getConsort())
                 || targetId.equals(capital.getDowager())) {
             player.sendSystemMessage(Component.literal("That title cannot be granted through legitimization."));
-            event.setCancellationResult(InteractionResult.FAIL);
-            event.setCanceled(true);
-            return;
+            return InteractionResult.FAIL;
         }
 
         if (!isEligibleDynasticChild(level, capital, targetId)) {
             player.sendSystemMessage(Component.literal("That villager is not recognized as a child of this dynasty."));
-            event.setCancellationResult(InteractionResult.FAIL);
-            event.setCanceled(true);
-            return;
+            return InteractionResult.FAIL;
         }
 
         boolean female = MCAIntegrationBridge.isFemale(level, targetId);
@@ -132,11 +123,10 @@ public class LegitimizationDecreeHandler {
                 displayName + " has been legitimized and recognized as " + title + "."
         ));
 
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        event.setCanceled(true);
+        return InteractionResult.SUCCESS;
     }
 
-    private CapitalRecord resolveCapital(ServerLevel level, UUID targetId) {
+    private static CapitalRecord resolveCapital(ServerLevel level, UUID targetId) {
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, targetId);
         if (villageId != null) {
             CapitalRecord byVillage = CapitalManager.getCapitalByVillageId(villageId);
@@ -157,7 +147,7 @@ public class LegitimizationDecreeHandler {
         return null;
     }
 
-    private boolean isEligibleDynasticChild(ServerLevel level, CapitalRecord capital, UUID targetId) {
+    private static boolean isEligibleDynasticChild(ServerLevel level, CapitalRecord capital, UUID targetId) {
         if (capital == null || capital.getSovereign() == null || targetId == null) {
             return false;
         }
@@ -173,7 +163,7 @@ public class LegitimizationDecreeHandler {
         return capital.getDowager() != null && MCAIntegrationBridge.isChildOf(level, targetId, capital.getDowager());
     }
 
-    private String stripKnownTitles(String name) {
+    private static String stripKnownTitles(String name) {
         if (name == null || name.isBlank()) {
             return "Unnamed";
         }

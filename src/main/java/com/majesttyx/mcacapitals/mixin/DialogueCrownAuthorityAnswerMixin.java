@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.resources.data.dialogue.Question", remap = false)
+@Mixin(targets = "fabric.net.mca.resources.data.dialogue.Question", remap = false)
 public abstract class DialogueCrownAuthorityAnswerMixin {
 
     private static final String PETITION_ANSWER = "mcacapitals_petition";
@@ -28,10 +28,11 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
     private static final String SEIZE_THRONE_ANSWER = "mcacapitals_seize_throne";
 
     @Inject(
-            method = "getValidAnswers(Lnet/minecraft/server/level/ServerPlayer;Lforge/net/mca/entity/VillagerEntityMCA;)Ljava/util/List;",
+            method = "getValidAnswers(Lnet/minecraft/server/level/ServerPlayer;Lfabric/net/mca/entity/VillagerEntityMCA;)Ljava/util/List;",
             at = @At("RETURN"),
             cancellable = true,
-            remap = false
+            remap = false,
+            require = 0
     )
     private void mcacapitals$filterCrownAuthorityAnswers(
             ServerPlayer player,
@@ -43,9 +44,15 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             return;
         }
 
-        if (!currentAnswers.contains(PETITION_ANSWER)
-                && !currentAnswers.contains(REQUEST_ANSWER)
-                && !currentAnswers.contains(SEIZE_THRONE_ANSWER)) {
+        boolean hasCrownAnswer = false;
+        for (String answer : currentAnswers) {
+            if (isCrownAuthorityAnswer(answer)) {
+                hasCrownAnswer = true;
+                break;
+            }
+        }
+
+        if (!hasCrownAnswer) {
             return;
         }
 
@@ -65,28 +72,40 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
         cir.setReturnValue(filtered);
     }
 
+    private static boolean isCrownAuthorityAnswer(String answer) {
+        return answer != null
+                && (answer.equals(PETITION_ANSWER)
+                || answer.equals(REQUEST_ANSWER)
+                || answer.equals(SEIZE_THRONE_ANSWER)
+                || answer.startsWith(PETITION_ANSWER + "_")
+                || answer.startsWith(REQUEST_ANSWER + "_")
+                || answer.startsWith(SEIZE_THRONE_ANSWER + "_"));
+    }
+
     private static void removeCrownAuthorityAnswers(List<String> answers) {
-        answers.remove(PETITION_ANSWER);
-        answers.remove(REQUEST_ANSWER);
-        answers.remove(SEIZE_THRONE_ANSWER);
+        answers.removeIf(DialogueCrownAuthorityAnswerMixin::isCrownAuthorityAnswer);
     }
 
     private static boolean hasCrownAuthority(ServerLevel level, UUID villagerId) {
-        if (level == null || villagerId == null) {
-            return false;
-        }
-
-        CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(level, villagerId);
-        if (capital == null) {
-            Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-            capital = CapitalManager.getCapitalByVillageId(villageId);
-        }
-
+        CapitalRecord capital = resolveCapital(level, villagerId);
         if (capital == null || capital.getState() != CapitalState.ACTIVE) {
             return false;
         }
 
-        return villagerId.equals(capital.getSovereign())
-                || villagerId.equals(capital.getHand());
+        if (villagerId.equals(capital.getSovereign())) {
+            return true;
+        }
+
+        return villagerId.equals(capital.getHand());
+    }
+
+    private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {
+        CapitalRecord byTitle = CapitalTitleResolver.findCapitalForEntity(villagerId);
+        if (byTitle != null) {
+            return byTitle;
+        }
+
+        Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
+        return CapitalManager.getCapitalByVillageId(villageId);
     }
 }

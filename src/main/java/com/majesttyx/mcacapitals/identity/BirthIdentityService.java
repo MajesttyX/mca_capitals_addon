@@ -5,6 +5,7 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import com.majesttyx.mcacapitals.util.EntityPersistentData;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -435,7 +436,7 @@ public final class BirthIdentityService {
             tag.putUUID(KEY_HOUSE_CAPITAL_ID, inherited.houseFoundedInCapitalId());
         }
 
-        child.getPersistentData().put(PENDING_BIRTH_IDENTITY_TAG, tag);
+        EntityPersistentData.get(child).put(PENDING_BIRTH_IDENTITY_TAG, tag);
     }
 
     private static InheritedBirthIdentity readPendingBirthIdentity(Entity child) {
@@ -443,7 +444,7 @@ public final class BirthIdentityService {
             return InheritedBirthIdentity.empty();
         }
 
-        CompoundTag persistent = child.getPersistentData();
+        CompoundTag persistent = EntityPersistentData.get(child);
         if (!persistent.contains(PENDING_BIRTH_IDENTITY_TAG)) {
             return InheritedBirthIdentity.empty();
         }
@@ -472,7 +473,7 @@ public final class BirthIdentityService {
             return;
         }
 
-        child.getPersistentData().remove(PENDING_BIRTH_IDENTITY_TAG);
+        EntityPersistentData.get(child).remove(PENDING_BIRTH_IDENTITY_TAG);
     }
 
     private static Object invokeNoArg(Object target, String methodName) {

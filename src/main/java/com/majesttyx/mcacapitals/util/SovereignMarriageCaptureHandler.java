@@ -4,38 +4,40 @@ import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.event.entity.player.AdvancementEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class SovereignMarriageCaptureHandler {
 
-    @SubscribeEvent
-    public void onAdvancementEarned(AdvancementEvent.AdvancementEarnEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
-        if (!(player.level() instanceof ServerLevel level)) {
+    private static final int SCAN_INTERVAL_TICKS = 100;
+
+    private final Map<UUID, Integer> lastScannedTick = new HashMap<>();
+
+    public void onPlayerTick(ServerPlayer player) {
+        if (player == null || !(player.level() instanceof ServerLevel level)) {
             return;
         }
 
-        ResourceLocation id = event.getAdvancement() == null ? null : event.getAdvancement().getId();
-        if (id == null) {
+        int tickCount = player.tickCount;
+        int lastTick = lastScannedTick.getOrDefault(player.getUUID(), Integer.MIN_VALUE);
+        if (tickCount - lastTick < SCAN_INTERVAL_TICKS) {
             return;
         }
 
-        String path = id.getPath();
-        if (path == null || !path.toLowerCase().contains("till_death_do_us_part")) {
-            return;
-        }
+        lastScannedTick.put(player.getUUID(), tickCount);
+        capturePlayerSovereignMarriage(level, player);
+    }
 
+    public void clear() {
+        lastScannedTick.clear();
+    }
+
+    private void capturePlayerSovereignMarriage(ServerLevel level, ServerPlayer player) {
         CapitalRecord capital = findCapitalForNewPlayerMarriage(level, player);
         if (capital == null) {
             return;
@@ -71,11 +73,6 @@ public class SovereignMarriageCaptureHandler {
         }
 
         CapitalDataAccess.markDirty(level);
-    }
-
-    @SubscribeEvent
-    public void onServerStopped(ServerStoppedEvent event) {
-        // no state to clear
     }
 
     private static CapitalRecord findCapitalForNewPlayerMarriage(ServerLevel level, ServerPlayer player) {

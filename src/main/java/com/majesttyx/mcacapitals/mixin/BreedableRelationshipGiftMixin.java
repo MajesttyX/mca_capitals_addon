@@ -14,14 +14,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.reflect.Field;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.entity.ai.BreedableRelationship", remap = false)
+@Mixin(targets = "fabric.net.mca.entity.ai.BreedableRelationship", remap = false)
 public class BreedableRelationshipGiftMixin {
 
     @Inject(
             method = "handleSpecialCaseGift(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/item/ItemStack;)Z",
             at = @At("HEAD"),
             cancellable = true,
-            remap = false
+            remap = false,
+            require = 0
     )
     private void mcacapitals$handleBetrothalDecreeGift(ServerPlayer player, ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
         if (player == null || stack == null || !stack.is(ModItems.BETROTHAL_DECREE.get())) {

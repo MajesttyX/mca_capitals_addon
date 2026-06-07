@@ -6,20 +6,18 @@ import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalSavedData;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public class CapitalLifecycleHandler {
 
-    @SubscribeEvent
-    public void onServerStarted(ServerStartedEvent event) {
+    public void onServerStarted(MinecraftServer server) {
+        FabricServerAccess.setServer(server);
         CapitalManager.clearAll();
         CapitalResidentScanner.clearAllCaches();
         CapitalCourtWatcher.clearAllFingerprints();
 
-        ServerLevel overworld = event.getServer().overworld();
+        ServerLevel overworld = server.overworld();
         if (overworld == null) {
             return;
         }
@@ -40,10 +38,10 @@ public class CapitalLifecycleHandler {
         }
     }
 
-    @SubscribeEvent
-    public void onServerStopped(ServerStoppedEvent event) {
+    public void onServerStopped(MinecraftServer server) {
         CapitalManager.clearAll();
         CapitalResidentScanner.clearAllCaches();
         CapitalCourtWatcher.clearAllFingerprints();
+        FabricServerAccess.clearServer(server);
     }
 }

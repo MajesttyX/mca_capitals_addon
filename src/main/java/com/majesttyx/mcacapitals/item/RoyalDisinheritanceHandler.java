@@ -8,12 +8,12 @@ import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.UUID;
 
@@ -44,53 +44,48 @@ public class RoyalDisinheritanceHandler {
             "King"
     };
 
-    @SubscribeEvent
-    public void onEntityInteract(PlayerInteractEvent.EntityInteractSpecific event) {
-        Player player = event.getEntity();
-
-        if (player.level().isClientSide) {
-            return;
+    public static InteractionResult handleEntityInteract(Player player, Entity rawTarget, InteractionHand hand) {
+        if (player == null || rawTarget == null || hand == null) {
+            return InteractionResult.PASS;
         }
 
-        if (!(player.level() instanceof ServerLevel level)) {
-            return;
-        }
-
-        if (!(event.getTarget() instanceof LivingEntity livingTarget)) {
-            return;
-        }
-
-        ItemStack held = player.getItemInHand(event.getHand());
+        ItemStack held = player.getItemInHand(hand);
         if (!held.is(ModItems.ROYAL_DISINHERITANCE.get())) {
-            return;
+            return InteractionResult.PASS;
         }
 
         if (!player.isShiftKeyDown()) {
-            return;
+            return InteractionResult.PASS;
+        }
+
+        if (!(rawTarget instanceof LivingEntity livingTarget)) {
+            return InteractionResult.PASS;
+        }
+
+        if (player.level().isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+
+        if (!(player.level() instanceof ServerLevel level)) {
+            return InteractionResult.PASS;
         }
 
         UUID targetId = livingTarget.getUUID();
 
         if (!MCAIntegrationBridge.isMCAVillager(level, targetId)) {
             player.sendSystemMessage(Component.literal("Royal disinheritance can only be used on an MCA villager."));
-            event.setCancellationResult(InteractionResult.FAIL);
-            event.setCanceled(true);
-            return;
+            return InteractionResult.FAIL;
         }
 
         CapitalRecord capital = resolveCapital(level, targetId);
         if (capital == null) {
             player.sendSystemMessage(Component.literal("That villager is not part of a capital."));
-            event.setCancellationResult(InteractionResult.FAIL);
-            event.setCanceled(true);
-            return;
+            return InteractionResult.FAIL;
         }
 
         if (!capital.isRoyalChild(targetId) && !targetId.equals(capital.getHeir())) {
             player.sendSystemMessage(Component.literal("That villager has no royal claim to strip."));
-            event.setCancellationResult(InteractionResult.FAIL);
-            event.setCanceled(true);
-            return;
+            return InteractionResult.FAIL;
         }
 
         String displayName = stripKnownTitles(livingTarget.getName().getString());
@@ -107,11 +102,10 @@ public class RoyalDisinheritanceHandler {
                 "By royal decree, " + displayName + " is disinherited and stripped of all royal claim."
         ));
 
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        event.setCanceled(true);
+        return InteractionResult.SUCCESS;
     }
 
-    private CapitalRecord resolveCapital(ServerLevel level, UUID targetId) {
+    private static CapitalRecord resolveCapital(ServerLevel level, UUID targetId) {
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, targetId);
         if (villageId != null) {
             CapitalRecord byVillage = CapitalManager.getCapitalByVillageId(villageId);
@@ -129,7 +123,7 @@ public class RoyalDisinheritanceHandler {
         return null;
     }
 
-    private String stripKnownTitles(String name) {
+    private static String stripKnownTitles(String name) {
         if (name == null || name.isBlank()) {
             return "Unnamed";
         }

@@ -6,44 +6,58 @@ import com.majesttyx.mcacapitals.capital.CapitalRoyalGuardService;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.UUID;
 
 public class RoyalGuardInteractionHandler {
 
-    @SubscribeEvent
-    public void onEntityInteract(PlayerInteractEvent.EntityInteractSpecific event) {
-        Player player = event.getEntity();
-        if (player.level().isClientSide) return;
-        if (!(player.level() instanceof ServerLevel level)) return;
+    public static InteractionResult handleEntityInteract(Player player, Entity target, InteractionHand hand) {
+        if (player == null || target == null || hand == null) {
+            return InteractionResult.PASS;
+        }
 
-        ItemStack held = player.getItemInHand(event.getHand());
-        if (!held.isEmpty()) return;
-        if (!player.isShiftKeyDown()) return;
+        ItemStack held = player.getItemInHand(hand);
+        if (!held.isEmpty()) {
+            return InteractionResult.PASS;
+        }
 
-        Entity target = event.getTarget();
+        if (!player.isShiftKeyDown()) {
+            return InteractionResult.PASS;
+        }
+
+        if (player.level().isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+
+        if (!(player.level() instanceof ServerLevel level)) {
+            return InteractionResult.PASS;
+        }
+
         UUID targetId = target.getUUID();
-        if (!MCAIntegrationBridge.isMCAVillager(level, targetId)) return;
+        if (!MCAIntegrationBridge.isMCAVillager(level, targetId)) {
+            return InteractionResult.PASS;
+        }
 
         CapitalRecord capital = CapitalManager.getCapitalForResident(targetId);
-        if (capital == null || !capital.isRoyalGuard(targetId)) return;
+        if (capital == null || !capital.isRoyalGuard(targetId)) {
+            return InteractionResult.PASS;
+        }
 
         boolean allowed = player.hasPermissions(2) || player.getUUID().equals(capital.getSovereign());
         if (!allowed) {
             player.sendSystemMessage(Component.literal("Only the sovereign may command the royal guard."));
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.FAIL);
-            return;
+            return InteractionResult.FAIL;
         }
 
         boolean changed = CapitalRoyalGuardService.togglePatrol(level, capital, targetId);
-        if (!changed) return;
+        if (!changed) {
+            return InteractionResult.PASS;
+        }
 
         boolean patrolling = capital.getRoyalGuardPatrolling().contains(targetId);
         String displayName = CapitalRoyalGuardService.buildRoyalGuardDisplayName(level, capital, targetId);
@@ -54,7 +68,6 @@ public class RoyalGuardInteractionHandler {
         }
 
         CapitalDataAccess.markDirty(level);
-        event.setCanceled(true);
-        event.setCancellationResult(InteractionResult.SUCCESS);
+        return InteractionResult.SUCCESS;
     }
 }

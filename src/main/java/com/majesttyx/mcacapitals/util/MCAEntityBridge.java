@@ -23,7 +23,12 @@ final class MCAEntityBridge {
             return null;
         }
 
-        for (Entity entity : level.getEntities().getAll()) {
+        Entity direct = level.getEntity(entityId);
+        if (direct != null) {
+            return direct;
+        }
+
+        for (Entity entity : level.getAllEntities()) {
             if (entityId.equals(entity.getUUID())) {
                 return entity;
             }
@@ -214,7 +219,7 @@ final class MCAEntityBridge {
         }
 
         List<Entity> result = new ArrayList<>();
-        for (Entity entity : level.getEntities().getAll()) {
+        for (Entity entity : level.getAllEntities()) {
             if (entity != null && isAliveMCAVillagerEntity(entity) && entity.getBoundingBox().intersects(area)) {
                 result.add(entity);
             }

@@ -10,59 +10,51 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.lang.reflect.Field;
-
 @Pseudo
-@Mixin(targets = "forge.net.mca.entity.ai.Pregnancy", remap = false)
-public abstract class PregnancyBirthIdentityMixin {
+@Mixin(targets = "net.mca.entity.ai.Pregnancy", remap = false)
+public class PregnancyBirthIdentityMixin {
 
     @Inject(
-            method = "createChild(Lforge/net/mca/entity/ai/relationship/Gender;Lforge/net/mca/entity/VillagerEntityMCA;)Lforge/net/mca/entity/VillagerEntityMCA;",
+            method = "createChild(Lnet/mca/entity/ai/relationship/Gender;Lnet/mca/entity/VillagerEntityMCA;)Lnet/mca/entity/VillagerEntityMCA;",
             at = @At("RETURN"),
-            remap = false,
-            require = 0
+            remap = false
     )
-    private void mcacapitals$assignBirthIdentity(
+    private void mcacapitals$applyBirthIdentity(
             @Coerce Object gender,
-            @Coerce Object partnerObj,
+            @Coerce Object otherParent,
             CallbackInfoReturnable<Object> cir
     ) {
-        Object childObj = cir.getReturnValue();
-
-        if (!(childObj instanceof Entity child)) {
+        if (!(cir.getReturnValue() instanceof Entity child)) {
             return;
         }
 
-        if (!(partnerObj instanceof Entity partner)) {
+        if (!(child.level() instanceof ServerLevel level)) {
             return;
         }
 
-        Entity mother = resolveMother();
-        if (mother == null) {
-            return;
-        }
+        Entity firstParent = resolveSelfParent();
+        Entity secondParent = otherParent instanceof Entity entity ? entity : null;
 
-        if (!(mother.level() instanceof ServerLevel level)) {
-            return;
-        }
-
-        BirthIdentityService.applyBirthIdentity(level, child, mother, partner);
+        BirthIdentityService.applyBirthIdentity(level, child, firstParent, secondParent);
     }
 
-    private Entity resolveMother() {
-        Class<?> current = this.getClass();
-
-        while (current != null) {
-            try {
-                Field field = current.getDeclaredField("mother");
-                field.setAccessible(true);
-                Object value = field.get(this);
-                return value instanceof Entity entity ? entity : null;
-            } catch (NoSuchFieldException ignored) {
-                current = current.getSuperclass();
-            } catch (Throwable ignored) {
-                return null;
+    private Entity resolveSelfParent() {
+        try {
+            Object target = this;
+            Object mother = target.getClass().getDeclaredField("mother").get(target);
+            if (mother instanceof Entity entity) {
+                return entity;
             }
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            Object target = this;
+            Object entity = target.getClass().getDeclaredField("entity").get(target);
+            if (entity instanceof Entity villager) {
+                return villager;
+            }
+        } catch (Throwable ignored) {
         }
 
         return null;

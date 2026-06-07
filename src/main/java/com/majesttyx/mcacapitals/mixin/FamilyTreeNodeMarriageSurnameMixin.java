@@ -10,19 +10,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.server.world.data.FamilyTreeNode", remap = false)
-public abstract class FamilyTreeNodeMarriageSurnameMixin {
+@Mixin(targets = "fabric.net.mca.server.world.data.FamilyTreeNode", remap = false)
+public class FamilyTreeNodeMarriageSurnameMixin {
 
     @Inject(
-            method = "updatePartner(Lnet/minecraft/world/entity/Entity;Lforge/net/mca/entity/ai/relationship/RelationshipState;)V",
+            method = "updatePartner(Lnet/minecraft/world/entity/Entity;Lfabric/net/mca/entity/ai/relationship/RelationshipState;)V",
             at = @At("TAIL"),
-            remap = false
+            remap = false,
+            require = 0
     )
-    private void mcacapitals$applyMarriageSurnameAfterPartnerUpdate(
-            Entity newPartner,
-            @Coerce Object relationshipState,
-            CallbackInfo ci
-    ) {
-        MarriageSurnameService.onFamilyTreePartnerUpdate(this, newPartner, relationshipState);
+    private void mcacapitals$onUpdatePartner(Entity partner, @Coerce Object state, CallbackInfo ci) {
+        MarriageSurnameService.onFamilyTreePartnerUpdate(this, partner, state);
     }
 }

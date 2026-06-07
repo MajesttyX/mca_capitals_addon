@@ -2,10 +2,8 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.VillagerIdentityClientCache;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public class SyncVillagerIdentityPacket {
 
@@ -123,9 +121,7 @@ public class SyncVillagerIdentityPacket {
         );
     }
 
-    public static void handle(SyncVillagerIdentityPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> VillagerIdentityClientCache.put(packet));
-        context.setPacketHandled(true);
+    public static void handle(SyncVillagerIdentityPacket packet) {
+        VillagerIdentityClientCache.put(packet);
     }
 }

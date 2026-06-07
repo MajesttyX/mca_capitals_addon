@@ -13,10 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.reflect.Field;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.entity.interaction.EntityCommandHandler", remap = false)
+@Mixin(targets = "fabric.net.mca.entity.interaction.EntityCommandHandler", remap = false)
 public class VillagerCommandHandlerMixin {
 
-    @Inject(method = "handle", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(method = "handle", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
     private void mcacapitals$handlePetitionCommand(ServerPlayer player, String command, CallbackInfoReturnable<Boolean> cir) {
         if (command == null || !command.startsWith("mcacapitals_")) {
             return;

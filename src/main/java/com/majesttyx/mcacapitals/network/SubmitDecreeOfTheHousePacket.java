@@ -3,10 +3,8 @@ package com.majesttyx.mcacapitals.network;
 import com.majesttyx.mcacapitals.identity.DecreeOfTheHouseService;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public class SubmitDecreeOfTheHousePacket {
 
@@ -42,21 +40,18 @@ public class SubmitDecreeOfTheHousePacket {
         return new SubmitDecreeOfTheHousePacket(targetId, playerTarget, firstName, currentSurname, houseWords);
     }
 
-    public static void handle(SubmitDecreeOfTheHousePacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> {
-            ServerPlayer player = context.getSender();
-            if (player != null) {
-                DecreeOfTheHouseService.applyFromPacket(
-                        player,
-                        packet.targetId,
-                        packet.playerTarget,
-                        packet.firstName,
-                        packet.currentSurname,
-                        packet.houseWords
-                );
-            }
-        });
-        context.setPacketHandled(true);
+    public static void handle(SubmitDecreeOfTheHousePacket packet, ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+
+        DecreeOfTheHouseService.applyFromPacket(
+                player,
+                packet.targetId,
+                packet.playerTarget,
+                packet.firstName,
+                packet.currentSurname,
+                packet.houseWords
+        );
     }
 }

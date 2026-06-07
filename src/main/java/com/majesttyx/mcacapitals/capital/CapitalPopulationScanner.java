@@ -14,8 +14,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,15 +25,13 @@ public class CapitalPopulationScanner {
 
     private static final int REQUIRED_POPULATION = 15;
     private static final int FOUNDING_RADIUS = 96;
-    private static final int SCAN_INTERVAL_TICKS = 20;
+    private static final int SCAN_INTERVAL_TICKS = 20 * 5;
 
-    @SubscribeEvent
-    public void onLevelTick(TickEvent.LevelTickEvent event) {
-        if (!shouldProcessTick(event)) {
+    public void onLevelTick(ServerLevel level) {
+        if (!shouldProcessTick(level)) {
             return;
         }
 
-        ServerLevel level = (ServerLevel) event.level;
         CapitalResidentScanner.clearCache(level);
 
         boolean changed = false;
@@ -48,11 +44,8 @@ public class CapitalPopulationScanner {
         }
     }
 
-    private boolean shouldProcessTick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return false;
-        }
-        if (!(event.level instanceof ServerLevel level)) {
+    private boolean shouldProcessTick(ServerLevel level) {
+        if (level == null) {
             return false;
         }
 

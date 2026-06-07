@@ -2,10 +2,8 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.DecreeOfTheHouseClient;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public class OpenDecreeOfTheHousePacket {
 
@@ -93,9 +91,7 @@ public class OpenDecreeOfTheHousePacket {
         );
     }
 
-    public static void handle(OpenDecreeOfTheHousePacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DecreeOfTheHouseClient.open(packet));
-        context.setPacketHandled(true);
+    public static void handle(OpenDecreeOfTheHousePacket packet) {
+        DecreeOfTheHouseClient.open(packet);
     }
 }

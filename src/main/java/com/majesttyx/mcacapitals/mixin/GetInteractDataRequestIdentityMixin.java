@@ -15,26 +15,26 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.network.c2s.GetInteractDataRequest", remap = false)
-public abstract class GetInteractDataRequestIdentityMixin {
+@Mixin(targets = "fabric.net.mca.network.c2s.GetInteractDataRequest", remap = false)
+public class GetInteractDataRequestIdentityMixin {
 
     @Shadow(remap = false)
     @Final
     private UUID uuid;
 
     @Inject(
-            method = "receive(Lnet/minecraft/server/level/ServerPlayer;)V",
+            method = "receive",
             at = @At("TAIL"),
             remap = false,
             require = 0
     )
-    private void mcacapitals$syncVillagerIdentityToClient(ServerPlayer player, CallbackInfo ci) {
+    private void mcacapitals$syncIdentityOnInteractDataRequest(ServerPlayer player, CallbackInfo ci) {
         if (player == null || uuid == null) {
             return;
         }
 
-        Entity entity = player.serverLevel().getEntity(uuid);
-        if (!MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(player.serverLevel(), uuid);
+        if (entity == null) {
             return;
         }
 

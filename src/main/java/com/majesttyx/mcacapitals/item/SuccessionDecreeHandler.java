@@ -2,65 +2,61 @@ package com.majesttyx.mcacapitals.item;
 
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.UUID;
 
 public class SuccessionDecreeHandler {
 
-    @SubscribeEvent
-    public void onEntityInteract(PlayerInteractEvent.EntityInteractSpecific event) {
-        Player player = event.getEntity();
-        ItemStack held = player.getItemInHand(event.getHand());
+    public static InteractionResult handleEntityInteract(Player player, Entity rawTarget, InteractionHand hand) {
+        if (player == null || rawTarget == null || hand == null) {
+            return InteractionResult.PASS;
+        }
 
+        ItemStack held = player.getItemInHand(hand);
         if (!held.is(ModItems.BLANK_SUCCESSION_DECREE.get())) {
-            return;
+            return InteractionResult.PASS;
         }
 
         if (!player.isShiftKeyDown()) {
-            return;
+            return InteractionResult.PASS;
         }
 
-        if (!(event.getTarget() instanceof LivingEntity livingTarget)) {
-            return;
+        if (!(rawTarget instanceof LivingEntity livingTarget)) {
+            return InteractionResult.PASS;
         }
 
-        boolean validTargetType = event.getTarget() instanceof Player
+        boolean validTargetType = rawTarget instanceof Player
                 || MCAIntegrationBridge.isMCAVillagerEntity(livingTarget);
 
         if (!validTargetType) {
-            return;
+            return InteractionResult.PASS;
         }
-
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        event.setCanceled(true);
 
         if (!SuccessionDecreeItem.isBound(held)) {
             if (!player.level().isClientSide) {
                 player.sendSystemMessage(Component.literal("Bind the Succession Decree to a capital before using it."));
             }
-            return;
+            return InteractionResult.SUCCESS;
         }
 
-        if (!player.level().isClientSide) {
-            return;
+        if (player.level().isClientSide) {
+            UUID capitalId = SuccessionDecreeItem.getBoundCapitalId(held);
+            if (capitalId != null) {
+                SuccessionDecreeClient.openScreen(
+                        capitalId,
+                        SuccessionDecreeItem.getBoundCapitalName(held),
+                        livingTarget.getUUID(),
+                        livingTarget.getName().getString()
+                );
+            }
         }
 
-        UUID capitalId = SuccessionDecreeItem.getBoundCapitalId(held);
-        if (capitalId == null) {
-            return;
-        }
-
-        SuccessionDecreeClient.openScreen(
-                capitalId,
-                SuccessionDecreeItem.getBoundCapitalName(held),
-                livingTarget.getUUID(),
-                livingTarget.getName().getString()
-        );
+        return InteractionResult.SUCCESS;
     }
 }

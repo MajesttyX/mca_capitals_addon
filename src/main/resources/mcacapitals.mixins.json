@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "com.majesttyx.mcacapitals.mixin",
   "compatibilityLevel": "JAVA_17",
-  "refmap": "mcacapitals.refmap.json",
+  "refmap": "mcacapitals-refmap.json",
   "mixins": [
     "VillagerCommandHandlerMixin",
     "DialogueChatFallbackMixin",
@@ -17,11 +17,13 @@
     "EntitySprintingRoyalGuardMixin",
     "PregnancyBirthIdentityMixin",
     "NamesRegionFilterMixin",
-    "GetInteractDataRequestIdentityMixin"
+    "GetInteractDataRequestIdentityMixin",
+    "EntityPersistentDataMixin"
   ],
   "client": [
     "InteractScreenBetrothalMixin",
-    "InteractScreenIdentityMixin"
+    "InteractScreenIdentityMixin",
+    "EntityRendererNameTagMixin"
   ],
   "injectors": {
     "defaultRequire": 1

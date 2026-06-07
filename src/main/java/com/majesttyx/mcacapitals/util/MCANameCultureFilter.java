@@ -58,6 +58,31 @@ public final class MCANameCultureFilter {
         );
     }
 
+    public static List<String> filterConfiguredRegions(List<String> regions) {
+        if (regions == null || regions.isEmpty()) {
+            return regions;
+        }
+
+        Set<String> enabled = MCACapitalsConfig.enabledCultureNameBuckets();
+        if (enabled.isEmpty()) {
+            return regions;
+        }
+
+        LinkedHashSet<String> filtered = new LinkedHashSet<>();
+        for (String region : regions) {
+            String normalized = MCACapitalsConfig.normalizeCultureNameBucket(region);
+            if (enabled.contains(normalized)) {
+                filtered.add(region);
+            }
+        }
+
+        if (filtered.isEmpty()) {
+            return regions;
+        }
+
+        return List.copyOf(filtered);
+    }
+
     @SuppressWarnings("unchecked")
     private static List<String> getLoadedRegions() {
         for (String className : NAMES_CLASSES) {

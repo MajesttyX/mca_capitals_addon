@@ -18,8 +18,8 @@ public class PlayerHouseSetupScreen extends Screen {
     private static final ResourceLocation BACKGROUND =
             new ResourceLocation("mcacapitals", "textures/gui/declaration_paper.png");
 
-    private static final int BG_WIDTH = 200;
-    private static final int BG_HEIGHT = 190;
+    private static final int BG_WIDTH = 256;
+    private static final int BG_HEIGHT = 220;
 
     private final UUID capitalId;
     private final String villageName;
@@ -43,27 +43,27 @@ public class PlayerHouseSetupScreen extends Screen {
         int left = (this.width - BG_WIDTH) / 2;
         int top = (this.height - BG_HEIGHT) / 2;
 
-        houseNameBox = new EditBox(this.font, left + 32, top + 80, 136, 18, Component.literal("House Name"));
+        houseNameBox = new EditBox(this.font, left + 48, top + 92, 160, 18, Component.literal("House Name"));
         houseNameBox.setMaxLength(20);
         houseNameBox.setResponder(value -> errorMessage = Component.empty());
         addRenderableWidget(houseNameBox);
         setInitialFocus(houseNameBox);
 
-        preserveButton = Button.builder(Component.literal(""), button -> {
+        preserveButton = Button.builder(Component.literal("Preserve My House"), button -> {
             selectedMode = PlayerHouseInheritanceMode.PRESERVE_PLAYER_HOUSE;
             refreshModeButtons();
-        }).bounds(left + 22, top + 116, 156, 20).build();
+        }).bounds(left + 38, top + 132, 180, 20).build();
         addRenderableWidget(preserveButton);
 
-        followLawButton = Button.builder(Component.literal(""), button -> {
+        followLawButton = Button.builder(Component.literal("Follow Capital Law"), button -> {
             selectedMode = PlayerHouseInheritanceMode.FOLLOW_CAPITAL_LAW;
             refreshModeButtons();
-        }).bounds(left + 22, top + 142, 156, 20).build();
+        }).bounds(left + 38, top + 158, 180, 20).build();
         addRenderableWidget(followLawButton);
 
         addRenderableWidget(
                 Button.builder(Component.literal("Continue"), button -> submit())
-                        .bounds(left + 54, top + 168, 92, 20)
+                        .bounds(left + 82, top + 184, 92, 20)
                         .build()
         );
 
@@ -72,14 +72,11 @@ public class PlayerHouseSetupScreen extends Screen {
 
     private void refreshModeButtons() {
         if (preserveButton != null) {
-            preserveButton.setMessage(Component.literal(
-                    (selectedMode == PlayerHouseInheritanceMode.PRESERVE_PLAYER_HOUSE ? "✓ " : "") + "Preserve My House"
-            ));
+            preserveButton.setMessage(Component.literal("Preserve My House"));
         }
+
         if (followLawButton != null) {
-            followLawButton.setMessage(Component.literal(
-                    (selectedMode == PlayerHouseInheritanceMode.FOLLOW_CAPITAL_LAW ? "✓ " : "") + "Follow Capital Law"
-            ));
+            followLawButton.setMessage(Component.literal("Follow Capital Law"));
         }
     }
 
@@ -109,27 +106,27 @@ public class PlayerHouseSetupScreen extends Screen {
 
         guiGraphics.blit(BACKGROUND, left, top, 0, 0, BG_WIDTH, BG_HEIGHT, BG_WIDTH, BG_HEIGHT);
 
-        drawCenteredNoShadow(guiGraphics, "Establish Your House", this.width / 2, top + 14, 0x3E2E1F);
+        drawCenteredNoShadow(guiGraphics, "Establish Your House", this.width / 2, top + 18, 0x3E2E1F);
 
         drawWrappedCenteredNoShadow(
                 guiGraphics,
                 Component.literal("The courts of " + villageName + " will know you and your descendants by a House Name."),
                 this.width / 2,
-                top + 30,
-                150,
+                top + 38,
+                190,
                 0x3E2E1F
         );
 
-        guiGraphics.drawString(this.font, "House Name", left + 32, top + 68, 0x3E2E1F, false);
+        guiGraphics.drawString(this.font, "House Name", left + 48, top + 80, 0x3E2E1F, false);
 
         String preview = "House " + PlayerHouseService.normalizeHouseName(houseNameBox == null ? "" : houseNameBox.getValue());
         if (houseNameBox == null || houseNameBox.getValue().isBlank()) {
             preview = "House [Name]";
         }
-        drawCenteredNoShadow(guiGraphics, preview, this.width / 2, top + 104, 0x3E2E1F);
+        drawCenteredNoShadow(guiGraphics, preview, this.width / 2, top + 116, 0x3E2E1F);
 
         if (errorMessage != null && !errorMessage.getString().isBlank()) {
-            drawWrappedCenteredNoShadow(guiGraphics, errorMessage, this.width / 2, top + 192, 176, 0xAA0000);
+            drawWrappedCenteredNoShadow(guiGraphics, errorMessage, this.width / 2, top + 208, 210, 0xAA0000);
         }
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);

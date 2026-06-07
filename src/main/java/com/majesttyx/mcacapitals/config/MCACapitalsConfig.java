@@ -1,14 +1,24 @@
 package com.majesttyx.mcacapitals.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import com.majesttyx.mcacapitals.MCACapitals;
+import net.fabricmc.loader.api.FabricLoader;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.Set;
 
 public final class MCACapitalsConfig {
+
+    private static final String CONFIG_FILE_NAME = "mcacapitals.properties";
+    private static final String ENABLED_CULTURE_NAME_BUCKETS_KEY = "enabledCultureNameBuckets";
 
     public static final List<String> DEFAULT_CULTURE_NAME_BUCKETS = List.of(
             "albania",
@@ -81,34 +91,7 @@ public final class MCACapitalsConfig {
 
     public static final List<String> ALL_CULTURE_NAME_BUCKETS = buildAllCultureNameBuckets();
 
-    public static final ForgeConfigSpec SPEC;
-    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ENABLED_CULTURE_NAME_BUCKETS;
-
     private static final Set<String> VALID_CULTURE_NAME_BUCKETS = Set.copyOf(ALL_CULTURE_NAME_BUCKETS);
-
-    static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
-
-        builder.push("names");
-
-        ENABLED_CULTURE_NAME_BUCKETS = builder
-                .comment(
-                        "MCA Reborn name culture buckets that are allowed to appear in the world.",
-                        "All existing MCA Reborn 1.20.1 culture buckets and MCA Capitals fantasy culture buckets are enabled by default.",
-                        "Fantasy buckets: dragonborn, fae, merfolk, dwarven, elven, folklore, tiefling, aasimar.",
-                        "To force one culture only, leave only one entry, for example: [\"spain\"] or [\"dragonborn\"].",
-                        "If this list is empty or contains no valid entries, MCA Capitals keeps all loaded MCA culture buckets enabled."
-                )
-                .defineList(
-                        "enabledCultureNameBuckets",
-                        () -> new ArrayList<>(ALL_CULTURE_NAME_BUCKETS),
-                        MCACapitalsConfig::isValidCultureNameBucketValue
-                );
-
-        builder.pop();
-
-        SPEC = builder.build();
-    }
 
     private MCACapitalsConfig() {
     }
@@ -116,7 +99,7 @@ public final class MCACapitalsConfig {
     public static Set<String> enabledCultureNameBuckets() {
         LinkedHashSet<String> enabled = new LinkedHashSet<>();
 
-        for (String value : ENABLED_CULTURE_NAME_BUCKETS.get()) {
+        for (String value : loadEnabledCultureNameBuckets()) {
             String normalized = normalizeCultureNameBucket(value);
             if (VALID_CULTURE_NAME_BUCKETS.contains(normalized)) {
                 enabled.add(normalized);
@@ -136,13 +119,58 @@ public final class MCACapitalsConfig {
                 .replaceAll("[^a-z0-9_\\-]", "");
     }
 
-    private static boolean isValidCultureNameBucketValue(Object value) {
-        if (!(value instanceof String bucket)) {
-            return false;
+    private static List<String> loadEnabledCultureNameBuckets() {
+        Path configPath = FabricLoader.getInstance().getConfigDir().resolve(CONFIG_FILE_NAME);
+        ensureConfigExists(configPath);
+
+        Properties properties = new Properties();
+        try (Reader reader = Files.newBufferedReader(configPath)) {
+            properties.load(reader);
+        } catch (IOException exception) {
+            MCACapitals.LOGGER.warn("Could not read MCA Capitals config. Using default name culture buckets.", exception);
+            return ALL_CULTURE_NAME_BUCKETS;
         }
 
-        String normalized = normalizeCultureNameBucket(bucket);
-        return VALID_CULTURE_NAME_BUCKETS.contains(normalized);
+        String raw = properties.getProperty(ENABLED_CULTURE_NAME_BUCKETS_KEY, "");
+        if (raw == null || raw.isBlank()) {
+            return ALL_CULTURE_NAME_BUCKETS;
+        }
+
+        List<String> values = new ArrayList<>();
+        for (String part : raw.split(",")) {
+            String normalized = normalizeCultureNameBucket(part);
+            if (!normalized.isBlank()) {
+                values.add(normalized);
+            }
+        }
+
+        if (values.isEmpty()) {
+            return ALL_CULTURE_NAME_BUCKETS;
+        }
+
+        return values;
+    }
+
+    private static void ensureConfigExists(Path configPath) {
+        if (Files.exists(configPath)) {
+            return;
+        }
+
+        try {
+            Files.createDirectories(configPath.getParent());
+
+            Properties properties = new Properties();
+            properties.setProperty(ENABLED_CULTURE_NAME_BUCKETS_KEY, String.join(",", ALL_CULTURE_NAME_BUCKETS));
+
+            try (Writer writer = Files.newBufferedWriter(configPath)) {
+                properties.store(
+                        writer,
+                        "MCA Capitals Fabric config. Use comma-separated culture bucket names. Leave valid defaults enabled for 1:1 behavior."
+                );
+            }
+        } catch (IOException exception) {
+            MCACapitals.LOGGER.warn("Could not create MCA Capitals config. Using default name culture buckets.", exception);
+        }
     }
 
     private static List<String> buildAllCultureNameBuckets() {

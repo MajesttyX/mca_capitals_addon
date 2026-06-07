@@ -2,12 +2,10 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.BetrothalSelectionClient;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public class OpenBetrothalSelectionPacket {
 
@@ -65,10 +63,8 @@ public class OpenBetrothalSelectionPacket {
         );
     }
 
-    public static void handle(OpenBetrothalSelectionPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> BetrothalSelectionClient.open(packet));
-        context.setPacketHandled(true);
+    public static void handle(OpenBetrothalSelectionPacket packet) {
+        BetrothalSelectionClient.open(packet);
     }
 
     private static void writeCandidates(FriendlyByteBuf buffer, List<Candidate> candidates) {

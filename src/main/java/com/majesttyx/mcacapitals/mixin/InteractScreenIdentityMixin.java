@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.client.gui.InteractScreen", remap = false)
+@Mixin(targets = "fabric.net.mca.client.gui.InteractScreen", remap = false)
 public abstract class InteractScreenIdentityMixin {
 
     @Unique

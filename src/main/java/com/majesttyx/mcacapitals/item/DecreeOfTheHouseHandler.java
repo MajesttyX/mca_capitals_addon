@@ -13,66 +13,51 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public class DecreeOfTheHouseHandler {
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        if (handleInteraction(event.getEntity(), event.getTarget(), event.getHand())) {
-            event.setCancellationResult(InteractionResult.SUCCESS);
-            event.setCanceled(true);
-        }
-    }
-
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onEntityInteractSpecific(PlayerInteractEvent.EntityInteractSpecific event) {
-        if (handleInteraction(event.getEntity(), event.getTarget(), event.getHand())) {
-            event.setCancellationResult(InteractionResult.SUCCESS);
-            event.setCanceled(true);
-        }
-    }
-
-    private boolean handleInteraction(Player player, Entity rawTarget, InteractionHand hand) {
-        if (player == null || player.level().isClientSide) {
-            return false;
-        }
-
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return false;
-        }
-
-        if (!(player.level() instanceof ServerLevel level)) {
-            return false;
-        }
-
-        if (!(rawTarget instanceof LivingEntity target)) {
-            return false;
+    public static InteractionResult handleEntityInteract(Player player, Entity rawTarget, InteractionHand hand) {
+        if (player == null || rawTarget == null || hand == null) {
+            return InteractionResult.PASS;
         }
 
         ItemStack held = player.getItemInHand(hand);
         if (!held.is(ModItems.DECREE_OF_THE_HOUSE.get())) {
-            return false;
+            return InteractionResult.PASS;
         }
 
         if (!player.isShiftKeyDown()) {
-            return false;
+            return InteractionResult.PASS;
+        }
+
+        if (!(rawTarget instanceof LivingEntity target)) {
+            return InteractionResult.PASS;
+        }
+
+        if (player.level().isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return InteractionResult.PASS;
+        }
+
+        if (!(player.level() instanceof ServerLevel level)) {
+            return InteractionResult.PASS;
         }
 
         if (!MCAIntegrationBridge.isMCAVillagerEntity(target)) {
             player.sendSystemMessage(Component.literal("A Decree of the House can only be used on an MCA villager."));
-            return true;
+            return InteractionResult.SUCCESS;
         }
 
         OpenDecreeOfTheHousePacket packet = DecreeOfTheHouseService.createOpenPacket(level, target);
         if (packet == null) {
             player.sendSystemMessage(Component.literal("The records for that villager could not be opened."));
-            return true;
+            return InteractionResult.SUCCESS;
         }
 
         ModNetwork.sendToPlayer(serverPlayer, packet);
-        return true;
+        return InteractionResult.SUCCESS;
     }
 }

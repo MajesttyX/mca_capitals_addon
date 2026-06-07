@@ -1,6 +1,5 @@
 package com.majesttyx.mcacapitals.client;
 
-import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -8,11 +7,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderNameTagEvent;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
@@ -20,7 +14,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = MCACapitals.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class CapitalNameTagHandler {
 
     private static final List<String> KNOWN_TITLES = List.of(
@@ -60,26 +53,30 @@ public final class CapitalNameTagHandler {
     private CapitalNameTagHandler() {
     }
 
-    @SubscribeEvent
-    public static void onRenderNameTag(RenderNameTagEvent event) {
-        Entity entity = event.getEntity();
-        if (entity == null || !MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
-            return;
+    public static boolean renderCustomNameTag(
+            Entity entity,
+            Component originalContent,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight
+    ) {
+        if (entity == null || originalContent == null || !MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
+            return false;
         }
 
         UUID villagerId = entity.getUUID();
         VillagerIdentityClientCache.ClientVillagerIdentity identity = VillagerIdentityClientCache.get(villagerId);
         if (identity == null) {
-            return;
+            return false;
         }
 
-        List<Component> lines = buildLines(event.getOriginalContent().getString(), identity);
+        List<Component> lines = buildLines(originalContent.getString(), identity);
         if (lines.isEmpty()) {
-            return;
+            return false;
         }
 
-        event.setResult(Event.Result.DENY);
-        renderLayeredNameTag(event, lines);
+        renderLayeredNameTag(entity, poseStack, bufferSource, packedLight, lines);
+        return true;
     }
 
     private static List<Component> buildLines(String originalName, VillagerIdentityClientCache.ClientVillagerIdentity identity) {
@@ -341,17 +338,20 @@ public final class CapitalNameTagHandler {
         return value.trim().replaceAll("\\s+", " ");
     }
 
-    private static void renderLayeredNameTag(RenderNameTagEvent event, List<Component> lines) {
-        Entity entity = event.getEntity();
+    private static void renderLayeredNameTag(
+            Entity entity,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight,
+            List<Component> lines
+    ) {
         Minecraft minecraft = Minecraft.getInstance();
 
-        if (minecraft == null || minecraft.getEntityRenderDispatcher() == null) {
+        if (minecraft == null || minecraft.getEntityRenderDispatcher() == null || minecraft.font == null) {
             return;
         }
 
-        PoseStack poseStack = event.getPoseStack();
-        MultiBufferSource bufferSource = event.getMultiBufferSource();
-        Font font = event.getEntityRenderer().getFont();
+        Font font = minecraft.font;
         boolean normalRender = !entity.isDiscrete();
 
         poseStack.pushPose();
@@ -381,7 +381,7 @@ public final class CapitalNameTagHandler {
                     bufferSource,
                     normalRender ? Font.DisplayMode.SEE_THROUGH : Font.DisplayMode.NORMAL,
                     backgroundColor,
-                    event.getPackedLight()
+                    packedLight
             );
 
             if (normalRender) {
@@ -395,7 +395,7 @@ public final class CapitalNameTagHandler {
                         bufferSource,
                         Font.DisplayMode.NORMAL,
                         0,
-                        event.getPackedLight()
+                        packedLight
                 );
             }
         }

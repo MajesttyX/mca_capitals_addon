@@ -1,34 +1,26 @@
 package com.majesttyx.mcacapitals.mixin;
 
-import com.google.gson.JsonElement;
 import com.majesttyx.mcacapitals.util.MCANameCultureFilter;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.server.level.ServerLevel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.Coerce;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-import java.util.Map;
+import java.util.List;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.resources.Names", remap = false)
-public abstract class NamesRegionFilterMixin {
+@Mixin(targets = "net.mca.resources.Names", remap = false)
+public class NamesRegionFilterMixin {
 
-    @Inject(
-            method = "apply(Ljava/util/Map;Lnet/minecraft/server/packs/resources/ResourceManager;Lnet/minecraft/util/profiling/ProfilerFiller;)V",
-            at = @At("TAIL"),
-            remap = false,
-            require = 0
+    @ModifyVariable(
+            method = "pickCitizenName",
+            at = @At(value = "STORE"),
+            ordinal = 0,
+            remap = false
     )
-    private void mcacapitals$filterEnabledNameCultures(
-            Map<ResourceLocation, JsonElement> resources,
-            ResourceManager resourceManager,
-            ProfilerFiller profiler,
-            CallbackInfo ci
-    ) {
-        MCANameCultureFilter.applyConfiguredCultureFilter();
+    private static List<String> mcacapitals$filterConfiguredRegions(List<String> regions, ServerLevel level, @Coerce Object gender) {
+        return MCANameCultureFilter.filterConfiguredRegions(regions);
     }
 }

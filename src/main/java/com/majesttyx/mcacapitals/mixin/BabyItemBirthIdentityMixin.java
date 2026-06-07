@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.item.BabyItem", remap = false)
+@Mixin(targets = "net.mca.item.BabyItem", remap = false)
 public abstract class BabyItemBirthIdentityMixin {
 
     @Inject(

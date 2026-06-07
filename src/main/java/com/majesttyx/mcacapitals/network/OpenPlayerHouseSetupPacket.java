@@ -2,10 +2,8 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.PlayerHouseSetupClient;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public class OpenPlayerHouseSetupPacket {
 
@@ -36,9 +34,7 @@ public class OpenPlayerHouseSetupPacket {
         return new OpenPlayerHouseSetupPacket(capitalId, villageName);
     }
 
-    public static void handle(OpenPlayerHouseSetupPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> PlayerHouseSetupClient.open(packet));
-        context.setPacketHandled(true);
+    public static void handle(OpenPlayerHouseSetupPacket packet) {
+        PlayerHouseSetupClient.open(packet);
     }
 }

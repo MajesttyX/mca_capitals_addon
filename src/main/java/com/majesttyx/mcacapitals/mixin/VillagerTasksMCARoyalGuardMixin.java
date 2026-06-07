@@ -1,121 +1,105 @@
 package com.majesttyx.mcacapitals.mixin;
 
+import com.majesttyx.mcacapitals.ai.RoyalGuardFollowGoal;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
-import com.google.common.collect.ImmutableList;
-import com.mojang.datafixers.util.Pair;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.schedule.Activity;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.goal.Goal;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Coerce;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.entity.ai.brain.VillagerTasksMCA", remap = false)
-public class VillagerTasksMCARoyalGuardMixin {
+@Mixin(targets = "net.mca.entity.ai.brain.VillagerTasksMCA", remap = false)
+public abstract class VillagerTasksMCARoyalGuardMixin {
 
-    @Inject(method = "initializeTasks", at = @At("TAIL"), remap = false)
-    private static void mcacapitals$overrideRoyalGuardWorkPackage(
-            @Coerce Object villagerObj,
-            @Coerce Object brainObj,
-            CallbackInfoReturnable<Object> cir
+    @Shadow(remap = false)
+    @Final
+    private PathfinderMob entity;
+
+    @Redirect(
+            method = "initCombatTasks",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/entity/ai/goal/GoalSelector;addGoal(ILnet/minecraft/world/entity/ai/goal/Goal;)V"
+            )
+    )
+    private void mcacapitals$replaceRoyalGuardCombatFollowGoal(
+            net.minecraft.world.entity.ai.goal.GoalSelector selector,
+            int priority,
+            Goal goal
     ) {
-        if (!(villagerObj instanceof Entity entity)) {
+        if (entity == null) {
+            selector.addGoal(priority, goal);
             return;
         }
 
-        UUID villagerId = entity.getUUID();
-        if (!isRoyalGuard(villagerId)) {
+        CapitalRecord capital = CapitalManager.getCapitalForResident(entity.getUUID());
+        if (capital == null || !capital.isRoyalGuard(entity.getUUID())) {
+            selector.addGoal(priority, goal);
             return;
         }
 
-        Object brain = cir.getReturnValue();
-        if (brain == null) {
-            brain = brainObj;
-        }
-        if (brain == null) {
+        if (!isFollowGoal(goal)) {
+            selector.addGoal(priority, goal);
             return;
         }
 
-        Object minimalLookPackage = resolveMinimalLookPackage();
-        if (!(minimalLookPackage instanceof ImmutableList<?> taskList)) {
-            return;
-        }
-
-        setTaskList(brain, Activity.WORK, taskList);
-        setTaskList(brain, Activity.RAID, taskList);
-        refreshActivities(brain, entity);
+        selector.addGoal(priority, new RoyalGuardFollowGoal(entity, capital.getCapitalId()));
     }
 
-    private static boolean isRoyalGuard(UUID villagerId) {
-        if (villagerId == null) {
+    private static boolean isFollowGoal(Goal goal) {
+        if (goal == null) {
             return false;
         }
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
-            if (capital != null && capital.isRoyalGuard(villagerId)) {
-                return true;
-            }
-        }
-
-        return false;
+        String name = goal.getClass().getName().toLowerCase();
+        return name.contains("follow") || name.contains("guard");
     }
 
-    private static Object resolveMinimalLookPackage() {
-        try {
-            Class<?> tasksClass = Class.forName("forge.net.mca.entity.ai.brain.VillagerTasksMCA");
-            Method method = tasksClass.getDeclaredMethod("getMinimalLookBehavior");
-            method.setAccessible(true);
-            Object pair = method.invoke(null);
-            if (pair == null) {
-                return null;
-            }
-            return ImmutableList.of((Pair<?, ?>) pair);
-        } catch (Throwable ignored) {
-            return null;
+    public static void refreshCombatTasks(Object tasks) {
+        if (tasks == null) {
+            return;
         }
-    }
 
-    private static void setTaskList(Object brain, Activity activity, ImmutableList<?> taskList) {
         try {
-            for (Method method : brain.getClass().getMethods()) {
-                if (!method.getName().equals("setTaskList") || method.getParameterCount() != 2) {
-                    continue;
-                }
+            Class<?> tasksClass = Class.forName("net.mca.entity.ai.brain.VillagerTasksMCA");
 
-                Class<?> first = method.getParameterTypes()[0];
-                Class<?> second = method.getParameterTypes()[1];
-
-                if (first.isAssignableFrom(Activity.class) && second.isAssignableFrom(taskList.getClass())) {
-                    method.invoke(brain, activity, taskList);
-                    return;
-                }
-
-                if (first.isAssignableFrom(Activity.class)) {
-                    method.invoke(brain, activity, taskList);
-                    return;
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private static void refreshActivities(Object brain, Entity entity) {
-        try {
-            for (Method method : brain.getClass().getMethods()) {
-                if (!method.getName().equals("refreshActivities") || method.getParameterCount() != 2) {
-                    continue;
-                }
-                method.invoke(brain, entity.level().getDayTime(), entity.level().getGameTime());
+            if (!tasksClass.isInstance(tasks)) {
                 return;
             }
+
+            Method method = tasksClass.getDeclaredMethod("initCombatTasks");
+            method.setAccessible(true);
+            method.invoke(tasks);
         } catch (Throwable ignored) {
         }
+    }
+
+    public static Object getTasks(Object villager) {
+        if (villager == null) {
+            return null;
+        }
+
+        Class<?> current = villager.getClass();
+        while (current != null) {
+            try {
+                Field field = current.getDeclaredField("tasks");
+                field.setAccessible(true);
+                return field.get(villager);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            } catch (Throwable ignored) {
+                return null;
+            }
+        }
+
+        return null;
     }
 }

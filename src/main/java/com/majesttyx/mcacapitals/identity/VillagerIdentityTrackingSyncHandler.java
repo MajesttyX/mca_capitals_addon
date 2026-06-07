@@ -1,19 +1,12 @@
 package com.majesttyx.mcacapitals.identity;
 
-import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = MCACapitals.MODID)
 public final class VillagerIdentityTrackingSyncHandler {
 
     private static final int SYNC_INTERVAL_TICKS = 20 * 7;
@@ -22,13 +15,11 @@ public final class VillagerIdentityTrackingSyncHandler {
     private VillagerIdentityTrackingSyncHandler() {
     }
 
-    @SubscribeEvent
-    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
-        if (!(event.getLevel() instanceof ServerLevel level)) {
+    public static void onEntityJoinLevel(Entity entity, ServerLevel level) {
+        if (entity == null || level == null) {
             return;
         }
 
-        Entity entity = event.getEntity();
         if (!MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
             return;
         }
@@ -37,26 +28,16 @@ public final class VillagerIdentityTrackingSyncHandler {
         VillagerIdentitySyncService.syncToNearbyPlayers(level, entity);
     }
 
-    @SubscribeEvent
-    public static void onStartTracking(PlayerEvent.StartTracking event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+    public static void onStartTracking(Entity target, ServerPlayer player) {
+        if (target == null || player == null) {
             return;
         }
 
-        VillagerIdentitySyncService.syncToPlayer(player, event.getTarget());
+        VillagerIdentitySyncService.syncToPlayer(player, target);
     }
 
-    @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
-
-        if (!(event.player instanceof ServerPlayer player)) {
-            return;
-        }
-
-        if (!(player.level() instanceof ServerLevel level)) {
+    public static void onPlayerTick(ServerPlayer player) {
+        if (player == null || !(player.level() instanceof ServerLevel level)) {
             return;
         }
 
