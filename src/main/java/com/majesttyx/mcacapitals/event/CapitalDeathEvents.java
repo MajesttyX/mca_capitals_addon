@@ -19,6 +19,6 @@ public final class CapitalDeathEvents {
             return;
         }
 
-        CapitalDeathTransitionService.handleVillagerDeath(serverLevel, entity.getUUID());
+        CapitalDeathTransitionService.handleVillagerDeath(serverLevel, entity);
     }
 }

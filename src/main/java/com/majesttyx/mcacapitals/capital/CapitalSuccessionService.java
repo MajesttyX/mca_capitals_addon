@@ -411,6 +411,11 @@ public class CapitalSuccessionService {
     }
 
     private static String resolveName(ServerLevel level, UUID id) {
+        String recentDeathName = CapitalDeathTransitionService.getRecentDeathDisplayName(id);
+        if (recentDeathName != null && !recentDeathName.isBlank()) {
+            return recentDeathName;
+        }
+
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
         return entity != null ? entity.getName().getString() : id.toString();
     }

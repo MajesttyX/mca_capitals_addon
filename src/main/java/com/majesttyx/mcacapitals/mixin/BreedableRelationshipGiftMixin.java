@@ -18,7 +18,7 @@ import java.lang.reflect.Field;
 public class BreedableRelationshipGiftMixin {
 
     @Inject(
-            method = "handleSpecialCaseGift(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/item/ItemStack;)Z",
+            method = "handleSpecialCaseGift",
             at = @At("HEAD"),
             cancellable = true,
             remap = false,

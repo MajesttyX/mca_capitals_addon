@@ -5,6 +5,7 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -37,7 +38,14 @@ public class CapitalMourningService {
     }
 
     public static void tickMourning(ServerLevel level, CapitalRecord capital) {
-        if (level == null || capital == null || !capital.isMourningActive()) {
+        if (level == null || capital == null) {
+            return;
+        }
+
+        if (!capital.isMourningActive()) {
+            if (!capital.getMourningOriginalClothes().isEmpty() && restoreOriginalClothes(level, capital)) {
+                CapitalDataAccess.markDirty(level);
+            }
             return;
         }
 
@@ -55,44 +63,8 @@ public class CapitalMourningService {
             return;
         }
 
-        Map<UUID, String> originals = capital.getMourningOriginalClothes();
-        for (Map.Entry<UUID, String> entry : originals.entrySet()) {
-            UUID villagerId = entry.getKey();
-            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, villagerId);
-            if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
-                continue;
-            }
+        restoreOriginalClothes(level, capital);
 
-            String original = entry.getValue();
-            if (original == null || original.isBlank()) {
-                MCAIntegrationBridge.randomizeClothes(level, villagerId);
-                continue;
-            }
-
-            String beforeRestore = MCAIntegrationBridge.getClothes(level, villagerId);
-            MCAIntegrationBridge.setClothes(level, villagerId, original);
-            String afterRestore = MCAIntegrationBridge.getClothes(level, villagerId);
-
-            if (sameClothingId(original, afterRestore)) {
-                continue;
-            }
-
-            if (!sameClothingId(beforeRestore, afterRestore) && afterRestore != null && !afterRestore.isBlank()) {
-                continue;
-            }
-
-            if (MCAIntegrationBridge.clothingExists(original)) {
-                MCAIntegrationBridge.setClothes(level, villagerId, original);
-                afterRestore = MCAIntegrationBridge.getClothes(level, villagerId);
-                if (sameClothingId(original, afterRestore)) {
-                    continue;
-                }
-            }
-
-            MCAIntegrationBridge.randomizeClothes(level, villagerId);
-        }
-
-        originals.clear();
         capital.setMourningActive(false);
         capital.setMourningEndDay(0L);
 
@@ -100,6 +72,54 @@ public class CapitalMourningService {
                 "The mourning period in " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + " came to an end.");
 
         CapitalDataAccess.markDirty(level);
+    }
+
+    private static boolean restoreOriginalClothes(ServerLevel level, CapitalRecord capital) {
+        boolean changed = false;
+
+        Map<UUID, String> originals = capital.getMourningOriginalClothes();
+        Iterator<Map.Entry<UUID, String>> iterator = originals.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, String> entry = iterator.next();
+            UUID villagerId = entry.getKey();
+
+            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, villagerId);
+            if (entity == null) {
+                continue;
+            }
+
+            if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
+                iterator.remove();
+                changed = true;
+                continue;
+            }
+
+            String original = entry.getValue();
+            if (original == null || original.isBlank()) {
+                MCAIntegrationBridge.randomizeClothes(level, villagerId);
+                iterator.remove();
+                changed = true;
+                continue;
+            }
+
+            MCAIntegrationBridge.setClothes(level, villagerId, original);
+            String afterRestore = MCAIntegrationBridge.getClothes(level, villagerId);
+
+            if (!sameClothingId(original, afterRestore) && MCAIntegrationBridge.clothingExists(original)) {
+                MCAIntegrationBridge.setClothes(level, villagerId, original);
+                afterRestore = MCAIntegrationBridge.getClothes(level, villagerId);
+            }
+
+            if (!sameClothingId(original, afterRestore)) {
+                MCAIntegrationBridge.randomizeClothes(level, villagerId);
+            }
+
+            iterator.remove();
+            changed = true;
+        }
+
+        return changed;
     }
 
     private static void applyMourning(ServerLevel level, CapitalRecord capital) {

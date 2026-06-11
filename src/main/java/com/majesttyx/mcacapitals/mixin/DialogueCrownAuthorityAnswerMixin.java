@@ -28,7 +28,7 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
     private static final String SEIZE_THRONE_ANSWER = "mcacapitals_seize_throne";
 
     @Inject(
-            method = "getValidAnswers(Lnet/minecraft/server/level/ServerPlayer;Lfabric/net/mca/entity/VillagerEntityMCA;)Ljava/util/List;",
+            method = "getValidAnswers",
             at = @At("RETURN"),
             cancellable = true,
             remap = false,

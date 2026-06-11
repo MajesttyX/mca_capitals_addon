@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class FamilyTreeNodeMarriageSurnameMixin {
 
     @Inject(
-            method = "updatePartner(Lnet/minecraft/world/entity/Entity;Lfabric/net/mca/entity/ai/relationship/RelationshipState;)V",
+            method = "updatePartner(Lnet/minecraft/class_1297;Lfabric/net/mca/entity/ai/relationship/RelationshipState;)V",
             at = @At("TAIL"),
             remap = false,
             require = 0

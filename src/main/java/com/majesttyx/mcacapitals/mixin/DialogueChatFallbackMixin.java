@@ -36,7 +36,7 @@ public abstract class DialogueChatFallbackMixin {
     private static final int GENERAL_FAIL_CHANCE = 60;
 
     @ModifyVariable(
-            method = "lambda$static$0(Ljava/lang/String;Lfabric/net/mca/entity/VillagerEntityMCA;Lnet/minecraft/server/level/ServerPlayer;)V",
+            method = "lambda$static$0(Ljava/lang/String;Lfabric/net/mca/entity/VillagerEntityMCA;Lnet/minecraft/class_3222;)V",
             at = @At("HEAD"),
             argsOnly = true,
             ordinal = 0,
@@ -116,7 +116,7 @@ public abstract class DialogueChatFallbackMixin {
     }
 
     @Inject(
-            method = "lambda$static$0(Ljava/lang/String;Lfabric/net/mca/entity/VillagerEntityMCA;Lnet/minecraft/server/level/ServerPlayer;)V",
+            method = "lambda$static$0(Ljava/lang/String;Lfabric/net/mca/entity/VillagerEntityMCA;Lnet/minecraft/class_3222;)V",
             at = @At("HEAD"),
             cancellable = true,
             remap = false,

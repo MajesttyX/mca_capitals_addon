@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 public class CapitalChronicleService {
 
-    private static final int CHARS_PER_PAGE = 220;
+    private static final int MAX_ENTRIES_PER_PAGE = 3;
     private static final int MAX_PAGES = 100;
 
     private static final Pattern DUCAL_APPOINTMENT = Pattern.compile("^(.*) was elevated to the ducal rank in (.*)\\.$");
@@ -209,41 +209,33 @@ public class CapitalChronicleService {
         Matcher vacancy = VACANCY.matcher(trimmed);
         if (vacancy.matches()) {
             return pick(trimmed,
-                    "Let all in " + vacancy.group(2) + " know: the office of " + vacancy.group(1) + " stands vacant.",
-                    "The court declares the office of " + vacancy.group(1) + " vacant in " + vacancy.group(2) + ".",
-                    "Until further decree, no holder stands in the office of " + vacancy.group(1) + " in " + vacancy.group(2) + ".",
-                    "The office of " + vacancy.group(1) + " now lies vacant in " + vacancy.group(2) + ".",
-                    "No appointment currently fills the office of " + vacancy.group(1) + " in " + vacancy.group(2) + ".");
+                    "The office of " + vacancy.group(1) + " stands vacant in " + vacancy.group(2) + ".",
+                    "Let all in " + vacancy.group(2) + " know: the office of " + vacancy.group(1) + " is now vacant.",
+                    "The court records the vacancy of " + vacancy.group(1) + " in " + vacancy.group(2) + ".");
         }
 
-        Matcher creation = CAPITAL_CREATION.matcher(trimmed);
-        if (creation.matches()) {
+        Matcher capitalCreation = CAPITAL_CREATION.matcher(trimmed);
+        if (capitalCreation.matches()) {
             return pick(trimmed,
-                    creation.group(1) + " has risen to capital status.",
-                    "Let all know: " + creation.group(1) + " now stands as a capital.",
-                    "By proclamation of the court, " + creation.group(1) + " is raised to capital standing.",
-                    creation.group(1) + " is this day declared a capital.",
-                    "The village of " + creation.group(1) + " is raised to capital standing.");
+                    capitalCreation.group(1) + " is now counted among the capitals.",
+                    "Let all take note: " + capitalCreation.group(1) + " has risen to capital status.",
+                    capitalCreation.group(1) + " now stands as a capital.");
         }
 
         Matcher acclaimed = ACCLAIMED_SOVEREIGN.matcher(trimmed);
         if (acclaimed.matches()) {
             return pick(trimmed,
                     "Let all in " + acclaimed.group(3) + " know: " + acclaimed.group(1) + " is acclaimed as " + acclaimed.group(2) + ".",
-                    "By proclamation of the court, " + acclaimed.group(1) + " has been hailed as " + acclaimed.group(2) + " of " + acclaimed.group(3) + ".",
-                    acclaimed.group(1) + " is this day acclaimed " + acclaimed.group(2) + " of " + acclaimed.group(3) + ".",
-                    "The crown of " + acclaimed.group(3) + " now rests upon " + acclaimed.group(1) + ", acclaimed as " + acclaimed.group(2) + ".",
-                    acclaimed.group(1) + " now holds the crown of " + acclaimed.group(3) + " as " + acclaimed.group(2) + ".");
+                    "By acclaim of " + acclaimed.group(3) + ", " + acclaimed.group(1) + " has been raised to the throne.",
+                    acclaimed.group(1) + " is this day acclaimed as " + acclaimed.group(2) + " of " + acclaimed.group(3) + ".");
         }
 
         Matcher claimed = CLAIMED_THRONE.matcher(trimmed);
         if (claimed.matches()) {
             return pick(trimmed,
-                    "Let all in " + claimed.group(3) + " know: " + claimed.group(1) + " now reigns as " + claimed.group(2) + ".",
                     "By bold claim and sovereign right, " + claimed.group(1) + " takes the throne as " + claimed.group(2) + " of " + claimed.group(3) + ".",
-                    "The throne of " + claimed.group(3) + " is now held by " + claimed.group(1) + ", who claims it as " + claimed.group(2) + ".",
-                    claimed.group(1) + " has taken the throne of " + claimed.group(3) + " as " + claimed.group(2) + ".",
-                    claimed.group(1) + " now sits the throne of " + claimed.group(3) + " as " + claimed.group(2) + ".");
+                    "Let all in " + claimed.group(3) + " know: " + claimed.group(1) + " has claimed the throne.",
+                    claimed.group(1) + " now rules as " + claimed.group(2) + " of " + claimed.group(3) + ".");
         }
 
         return trimmed;
@@ -253,7 +245,8 @@ public class CapitalChronicleService {
         if (options == null || options.length == 0) {
             return seed;
         }
-        int index = Math.floorMod(seed.hashCode(), options.length);
+
+        int index = Math.floorMod(seed == null ? 0 : seed.hashCode(), options.length);
         return options[index];
     }
 
@@ -303,22 +296,32 @@ public class CapitalChronicleService {
 
         pages.add("Chronicle of " + villageName + "\n\nA record of the crown, the court, and the great events of the capital.");
 
+        List<String> entries = capital.getChronicleEntries();
+        if (entries.isEmpty()) {
+            pages.add("No entries have yet been recorded.");
+            return pages;
+        }
+
         StringBuilder current = new StringBuilder();
-        for (String entry : capital.getChronicleEntries()) {
-            String line = entry + "\n\n";
-            if (current.length() + line.length() > CHARS_PER_PAGE) {
+        int entriesOnPage = 0;
+
+        for (String entry : entries) {
+            if (entry == null || entry.isBlank()) {
+                continue;
+            }
+
+            if (entriesOnPage >= MAX_ENTRIES_PER_PAGE) {
                 pages.add(current.toString());
                 current = new StringBuilder();
+                entriesOnPage = 0;
             }
-            current.append(line);
+
+            current.append(entry).append("\n\n");
+            entriesOnPage++;
         }
 
         if (!current.isEmpty()) {
             pages.add(current.toString());
-        }
-
-        if (pages.isEmpty()) {
-            pages.add("No entries have yet been recorded.");
         }
 
         return pages;

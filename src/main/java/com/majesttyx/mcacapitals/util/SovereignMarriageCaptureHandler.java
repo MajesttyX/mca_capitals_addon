@@ -4,6 +4,7 @@ import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.identity.MarriageIdentityRepairService;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -30,64 +31,65 @@ public class SovereignMarriageCaptureHandler {
         }
 
         lastScannedTick.put(player.getUUID(), tickCount);
-        capturePlayerSovereignMarriage(level, player);
+        capturePlayerMarriage(level, player);
     }
 
     public void clear() {
         lastScannedTick.clear();
     }
 
-    private void capturePlayerSovereignMarriage(ServerLevel level, ServerPlayer player) {
-        CapitalRecord capital = findCapitalForNewPlayerMarriage(level, player);
-        if (capital == null) {
+    private void capturePlayerMarriage(ServerLevel level, ServerPlayer player) {
+        UUID spouseId = MCAIntegrationBridge.getSpouse(level, player.getUUID());
+        Entity spouse = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, spouseId);
+        if (spouse == null || !MCAIntegrationBridge.isMCAVillagerEntity(spouse)) {
             return;
         }
 
-        UUID sovereignId = capital.getSovereign();
-        if (sovereignId == null) {
+        CapitalRecord sovereignCapital = findPlayerSovereignCapital(player.getUUID());
+        if (sovereignCapital != null) {
+            capturePlayerSovereignMarriage(level, player, spouse, sovereignCapital);
             return;
         }
 
-        Entity sovereign = MCAIntegrationBridge.getEntityByUuid(level, sovereignId);
-        if (sovereign == null || !MCAIntegrationBridge.isMCAVillagerEntity(sovereign)) {
-            return;
-        }
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            if (capital == null || capital.getCapitalId() == null) {
+                continue;
+            }
 
-        if (!MCARelationshipBridge.isActuallyMarried(player, sovereign)) {
-            return;
+            if (MarriageIdentityRepairService.repairPlayerVillagerMarriage(level, player, spouse, capital)) {
+                return;
+            }
         }
+    }
 
+    private void capturePlayerSovereignMarriage(ServerLevel level, ServerPlayer player, Entity spouse, CapitalRecord capital) {
         UUID previousConsort = capital.getConsort();
 
-        capital.setConsort(player.getUUID());
-        capital.setConsortFemale(MCAPlayerBridge.isPlayerFemale(level, player));
-        capital.setPlayerConsort(true);
-        capital.setPlayerConsortId(player.getUUID());
-        capital.setPlayerConsortName(player.getGameProfile().getName());
+        capital.setConsort(spouse.getUUID());
+        capital.setConsortFemale(MCAIntegrationBridge.isFemale(level, spouse.getUUID()));
+        capital.setPlayerConsort(false);
+        capital.setPlayerConsortId(null);
+        capital.setPlayerConsortName("");
 
-        String sovereignName = sovereign.getName().getString();
-        String playerName = player.getGameProfile().getName();
+        MarriageIdentityRepairService.repairPlayerVillagerMarriage(level, player, spouse, capital);
 
-        if (!player.getUUID().equals(previousConsort) && !hasMarriageEntry(capital, sovereignName, playerName)) {
-            CapitalChronicleService.addEntry(level, capital, sovereignName + " was married to " + playerName + ".");
+        String sovereignName = player.getGameProfile().getName();
+        String spouseName = spouse.getName().getString();
+
+        if (!spouse.getUUID().equals(previousConsort) && !hasMarriageEntry(capital, sovereignName, spouseName)) {
+            CapitalChronicleService.addEntry(level, capital, sovereignName + " was married to " + spouseName + ".");
         }
 
         CapitalDataAccess.markDirty(level);
     }
 
-    private static CapitalRecord findCapitalForNewPlayerMarriage(ServerLevel level, ServerPlayer player) {
-        Map<UUID, CapitalRecord> capitals = CapitalManager.getAllCapitals();
-        for (CapitalRecord capital : capitals.values()) {
-            if (capital == null || capital.getSovereign() == null) {
-                continue;
-            }
+    private static CapitalRecord findPlayerSovereignCapital(UUID playerId) {
+        if (playerId == null) {
+            return null;
+        }
 
-            Entity sovereign = MCAIntegrationBridge.getEntityByUuid(level, capital.getSovereign());
-            if (sovereign == null || !MCAIntegrationBridge.isMCAVillagerEntity(sovereign)) {
-                continue;
-            }
-
-            if (MCARelationshipBridge.isActuallyMarried(player, sovereign)) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            if (capital != null && playerId.equals(capital.getPlayerSovereignId())) {
                 return capital;
             }
         }
@@ -95,8 +97,8 @@ public class SovereignMarriageCaptureHandler {
         return null;
     }
 
-    private static boolean hasMarriageEntry(CapitalRecord capital, String sovereignName, String playerName) {
-        String needle = sovereignName + " was married to " + playerName + ".";
+    private static boolean hasMarriageEntry(CapitalRecord capital, String sovereignName, String spouseName) {
+        String needle = sovereignName + " was married to " + spouseName + ".";
         for (String entry : capital.getChronicleEntries()) {
             if (needle.equals(entry) || entry.endsWith(needle)) {
                 return true;

@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "net.mca.client.gui.InteractScreen", remap = false)
+@Mixin(targets = "fabric.net.mca.client.gui.InteractScreen", remap = false)
 public abstract class InteractScreenBetrothalMixin {
 
     @Unique
@@ -46,7 +46,7 @@ public abstract class InteractScreenBetrothalMixin {
     @Unique
     private boolean mcacapitals$marriageStateSuppressed;
 
-    @Inject(method = "drawIcons", at = @At("HEAD"), remap = false)
+    @Inject(method = "drawIcons", at = @At("HEAD"), remap = false, require = 0)
     private void mcacapitals$suppressMarriageIconForRoyalDecree(GuiGraphics graphics, CallbackInfo ci) {
         if (mcacapitals$getBetrothalDisplayData() == null) {
             return;
@@ -54,7 +54,7 @@ public abstract class InteractScreenBetrothalMixin {
         mcacapitals$suppressMarriageState();
     }
 
-    @Inject(method = "drawIcons", at = @At("TAIL"), remap = false)
+    @Inject(method = "drawIcons", at = @At("TAIL"), remap = false, require = 0)
     private void mcacapitals$drawRoyalDecreeBetrothalIcon(GuiGraphics graphics, CallbackInfo ci) {
         try {
             RoyalDecreeBetrothalClientHelper.BetrothalDisplayData data = mcacapitals$getBetrothalDisplayData();
@@ -82,7 +82,7 @@ public abstract class InteractScreenBetrothalMixin {
         }
     }
 
-    @Inject(method = "drawTextPopups", at = @At("HEAD"), remap = false)
+    @Inject(method = "drawTextPopups", at = @At("HEAD"), remap = false, require = 0)
     private void mcacapitals$suppressMarriageTooltipForRoyalDecree(GuiGraphics graphics, CallbackInfo ci) {
         if (mcacapitals$getBetrothalDisplayData() == null) {
             return;
@@ -90,7 +90,7 @@ public abstract class InteractScreenBetrothalMixin {
         mcacapitals$suppressMarriageState();
     }
 
-    @Inject(method = "drawTextPopups", at = @At("TAIL"), remap = false)
+    @Inject(method = "drawTextPopups", at = @At("TAIL"), remap = false, require = 0)
     private void mcacapitals$drawRoyalDecreeBetrothalTooltip(GuiGraphics graphics, CallbackInfo ci) {
         try {
             RoyalDecreeBetrothalClientHelper.BetrothalDisplayData data = mcacapitals$getBetrothalDisplayData();

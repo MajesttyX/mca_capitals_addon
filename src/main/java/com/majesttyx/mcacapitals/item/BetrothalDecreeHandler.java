@@ -7,6 +7,7 @@ import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.data.PendingVillagerBetrothalAccess;
 import com.majesttyx.mcacapitals.data.PendingVillagerBetrothalSavedData;
+import com.majesttyx.mcacapitals.identity.MarriageIdentityRepairService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.MCARelationshipBridge;
 import net.minecraft.network.chat.Component;
@@ -25,8 +26,8 @@ public class BetrothalDecreeHandler {
     private static final int SCAN_INTERVAL_TICKS = 40;
     private static final double SEARCH_RADIUS = 5.0D;
 
-    public static boolean tryGiftBetrothalDecree(ServerPlayer player, Entity target, ItemStack held) {
-        if (player == null || target == null || held == null) {
+    public static boolean tryGiftBetrothalDecree(ServerPlayer player, Entity target, ItemStack giftedStack) {
+        if (player == null || target == null || giftedStack == null) {
             return false;
         }
 
@@ -34,7 +35,7 @@ public class BetrothalDecreeHandler {
             return false;
         }
 
-        if (!held.is(ModItems.BETROTHAL_DECREE.get())) {
+        if (!giftedStack.is(ModItems.BETROTHAL_DECREE.get())) {
             return false;
         }
 
@@ -42,8 +43,8 @@ public class BetrothalDecreeHandler {
             return false;
         }
 
-        ItemStack actualHeld = player.getMainHandItem();
-        if (!actualHeld.is(ModItems.BETROTHAL_DECREE.get())) {
+        ItemStack actualHeld = resolveHeldBetrothalStack(player, giftedStack);
+        if (actualHeld.isEmpty() || !actualHeld.is(ModItems.BETROTHAL_DECREE.get())) {
             return false;
         }
 
@@ -117,6 +118,24 @@ public class BetrothalDecreeHandler {
         return true;
     }
 
+    private static ItemStack resolveHeldBetrothalStack(ServerPlayer player, ItemStack giftedStack) {
+        ItemStack mainHand = player.getMainHandItem();
+        if (mainHand.is(ModItems.BETROTHAL_DECREE.get())) {
+            return mainHand;
+        }
+
+        ItemStack offHand = player.getOffhandItem();
+        if (offHand.is(ModItems.BETROTHAL_DECREE.get())) {
+            return offHand;
+        }
+
+        if (giftedStack.is(ModItems.BETROTHAL_DECREE.get())) {
+            return giftedStack;
+        }
+
+        return ItemStack.EMPTY;
+    }
+
     public void onLevelTick(ServerLevel level) {
         if (level == null) {
             return;
@@ -133,13 +152,26 @@ public class BetrothalDecreeHandler {
             UUID firstId = pair.first();
             UUID secondId = pair.second();
 
-            if (shouldClearPendingPair(level, firstId, secondId)) {
+            if (firstId == null || secondId == null) {
                 PendingVillagerBetrothalAccess.removePendingBetrothal(level, firstId, secondId);
                 continue;
             }
 
             Entity firstVillager = MCAIntegrationBridge.getEntityByUuid(level, firstId);
             Entity secondVillager = MCAIntegrationBridge.getEntityByUuid(level, secondId);
+
+            if (areMarriedToEachOther(level, firstId, secondId)) {
+                if (isResolvableVillager(firstVillager) && isResolvableVillager(secondVillager)) {
+                    MarriageIdentityRepairService.repairVillagerVillagerMarriage(level, firstVillager, secondVillager);
+                }
+                PendingVillagerBetrothalAccess.removePendingBetrothal(level, firstId, secondId);
+                continue;
+            }
+
+            if (shouldClearPendingPair(level, firstId, secondId)) {
+                PendingVillagerBetrothalAccess.removePendingBetrothal(level, firstId, secondId);
+                continue;
+            }
 
             if (!isResolvableVillager(firstVillager) || !isResolvableVillager(secondVillager)) {
                 continue;
@@ -156,6 +188,7 @@ public class BetrothalDecreeHandler {
                 continue;
             }
 
+            MarriageIdentityRepairService.repairVillagerVillagerMarriage(level, firstVillager, secondVillager);
             PendingVillagerBetrothalAccess.removePendingBetrothal(level, firstId, secondId);
             handleMarriageResult(level, firstVillager, secondVillager);
         }
@@ -173,11 +206,22 @@ public class BetrothalDecreeHandler {
         UUID firstSpouse = MCAIntegrationBridge.getSpouse(level, firstId);
         UUID secondSpouse = MCAIntegrationBridge.getSpouse(level, secondId);
 
-        if (firstSpouse != null || secondSpouse != null) {
-            return !(secondId.equals(firstSpouse) && firstId.equals(secondSpouse));
+        if (firstSpouse == null && secondSpouse == null) {
+            return false;
         }
 
-        return false;
+        return !secondId.equals(firstSpouse) || !firstId.equals(secondSpouse);
+    }
+
+    private boolean areMarriedToEachOther(ServerLevel level, UUID firstId, UUID secondId) {
+        if (level == null || firstId == null || secondId == null) {
+            return false;
+        }
+
+        UUID firstSpouse = MCAIntegrationBridge.getSpouse(level, firstId);
+        UUID secondSpouse = MCAIntegrationBridge.getSpouse(level, secondId);
+
+        return secondId.equals(firstSpouse) && firstId.equals(secondSpouse);
     }
 
     private boolean isDeadOrGone(ServerLevel level, UUID entityId) {

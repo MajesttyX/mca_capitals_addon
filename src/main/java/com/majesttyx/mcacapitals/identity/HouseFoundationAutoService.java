@@ -61,10 +61,14 @@ public final class HouseFoundationAutoService {
         LinkedHashSet<UUID> candidates = new LinkedHashSet<>();
 
         addIfPresent(candidates, capital.getSovereign());
-        candidates.addAll(capital.getDukes());
-        candidates.addAll(capital.getLords());
+        addIfPresent(candidates, capital.getConsort());
+        addIfPresent(candidates, capital.getHeir());
+        addIfPresent(candidates, capital.getGrandMaester());
+
         candidates.addAll(capital.getRoyalChildren());
         candidates.addAll(capital.getLegitimizedRoyalChildren());
+        candidates.addAll(capital.getDukes());
+        candidates.addAll(capital.getLords());
 
         if (residents != null) {
             candidates.addAll(residents);
@@ -87,7 +91,8 @@ public final class HouseFoundationAutoService {
         return switch (title) {
             case "King", "Queen",
                  "Duke", "Duchess",
-                 "Lord", "Lady" -> true;
+                 "Lord", "Lady",
+                 "Maester", "Grand Maester" -> true;
             default -> false;
         };
     }

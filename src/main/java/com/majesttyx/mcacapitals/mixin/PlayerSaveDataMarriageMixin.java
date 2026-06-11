@@ -27,7 +27,7 @@ import java.util.UUID;
 public class PlayerSaveDataMarriageMixin {
 
     @Inject(
-            method = "marry(Lnet/minecraft/world/entity/Entity;)V",
+            method = "marry",
             at = @At("TAIL"),
             remap = false,
             require = 0
