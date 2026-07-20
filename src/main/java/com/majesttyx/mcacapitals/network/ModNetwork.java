@@ -28,6 +28,18 @@ public class ModNetwork {
         );
 
         registrar.playToClient(
+                OpenAccusationSelectionPacket.TYPE,
+                OpenAccusationSelectionPacket.STREAM_CODEC,
+                OpenAccusationSelectionPacket::handle
+        );
+
+        registrar.playToClient(
+                OpenSealedPurseCaseSelectionPacket.TYPE,
+                OpenSealedPurseCaseSelectionPacket.STREAM_CODEC,
+                OpenSealedPurseCaseSelectionPacket::handle
+        );
+
+        registrar.playToClient(
                 OpenRoyalCharterDecisionPacket.TYPE,
                 OpenRoyalCharterDecisionPacket.STREAM_CODEC,
                 OpenRoyalCharterDecisionPacket::handle
@@ -63,6 +75,14 @@ public class ModNetwork {
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenBetrothalSelectionPacket packet) {
+        PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenAccusationSelectionPacket packet) {
+        PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenSealedPurseCaseSelectionPacket packet) {
         PacketDistributor.sendToPlayer(player, packet);
     }
 

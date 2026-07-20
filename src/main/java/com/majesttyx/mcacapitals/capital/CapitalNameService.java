@@ -28,6 +28,7 @@ public class CapitalNameService {
             "Hand of the Queen",
             "Hand of the King",
             "Grand Maester",
+            "Master of Laws",
             "Maester",
             "Court Herald",
             "Princess",
@@ -75,6 +76,9 @@ public class CapitalNameService {
         if (capital.getGrandMaester() != null) {
             allRelevant.add(capital.getGrandMaester());
         }
+        if (capital.getMasterOfLaws() != null) {
+            allRelevant.add(capital.getMasterOfLaws());
+        }
 
         allRelevant.addAll(capital.getRoyalChildren());
         allRelevant.addAll(capital.getPrinceConsortSources().keySet());
@@ -104,6 +108,29 @@ public class CapitalNameService {
                 entity.setCustomNameVisible(true);
             }
         }
+    }
+
+    public static String resolveDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (level == null || entityId == null) {
+            return "Unknown";
+        }
+
+        Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
+        if (entity == null) {
+            if (capital != null && capital.getVillageId() != null) {
+                String savedName = MCAIntegrationBridge.getVillageResidentNames(level, capital.getVillageId()).get(entityId);
+                if (savedName != null && !savedName.isBlank()) {
+                    return normalizeBaseName(savedName);
+                }
+            }
+            return entityId.toString();
+        }
+
+        String currentName = entity.getCustomName() != null
+                ? entity.getCustomName().getString()
+                : entity.getName().getString();
+
+        return normalizeBaseName(currentName);
     }
 
     private static String buildDisplayName(ServerLevel level, UUID entityId, String baseName) {

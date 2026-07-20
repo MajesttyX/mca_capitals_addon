@@ -6,7 +6,6 @@ import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
@@ -17,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class RoyalCharterVillagerListScreen extends Screen {
+public class RoyalCharterVillagerListScreen extends CapitalNoBlurScreen {
 
     private static final ResourceLocation BACKGROUND =
             ResourceLocation.fromNamespaceAndPath("mcacapitals", "textures/gui/declaration_paper.png");
@@ -85,8 +84,6 @@ public class RoyalCharterVillagerListScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-
         int left = (this.width - BG_WIDTH) / 2;
         int top = (this.height - BG_HEIGHT) / 2;
 

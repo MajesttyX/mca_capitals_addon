@@ -37,6 +37,12 @@ public class ModItems {
     public static final DeferredItem<CapitalChronicleItem> CAPITAL_CHRONICLE =
             ITEMS.register("capital_chronicle", CapitalChronicleItem::new);
 
+    public static final DeferredItem<SealedPurseItem> SEALED_PURSE =
+            ITEMS.register("sealed_purse", SealedPurseItem::new);
+
+    public static final DeferredItem<RoyalPardonItem> ROYAL_PARDON =
+            ITEMS.register("royal_pardon", RoyalPardonItem::new);
+
     public static final DeferredItem<RoyalSealItem> RED_ROYAL_SEAL =
             ITEMS.register("red_royal_seal", RoyalSealItem::new);
 

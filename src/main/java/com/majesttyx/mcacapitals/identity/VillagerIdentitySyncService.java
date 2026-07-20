@@ -69,11 +69,13 @@ public final class VillagerIdentitySyncService {
 
         String title = CapitalTitleResolver.getDisplayTitleForEntity(level, villagerId);
         String royalGuardOrderLine = resolveRoyalGuardOrderLine(level, villagerId);
+        String courtOfficeLine = CapitalTitleResolver.getCourtOfficeLineForEntity(level, villagerId);
 
         boolean hasIdentity = identity != null && (identity.hasOrigin() || identity.hasSurname() || identity.hasFoundedHouse());
         boolean hasTitle = title != null && !title.isBlank() && !"None".equals(title) && !"Commoner".equals(title);
+        boolean hasCourtOfficeLine = courtOfficeLine != null && !courtOfficeLine.isBlank();
 
-        if (!hasIdentity && !hasTitle) {
+        if (!hasIdentity && !hasTitle && !hasCourtOfficeLine) {
             return null;
         }
 
@@ -84,6 +86,7 @@ public final class VillagerIdentitySyncService {
                 identity == null ? "" : identity.currentSurname(),
                 title,
                 royalGuardOrderLine,
+                courtOfficeLine,
                 identity != null && identity.hasFoundedHouse(),
                 identity == null ? "" : identity.houseName(),
                 identity == null ? "" : identity.houseWords(),

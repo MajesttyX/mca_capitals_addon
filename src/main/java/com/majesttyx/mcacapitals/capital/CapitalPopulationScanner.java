@@ -106,6 +106,9 @@ public class CapitalPopulationScanner {
         tickHerald(level, capital, residents);
         tickGrandMaester(level, capital, residents);
         tickHouseFoundations(level, capital, residents);
+        tickNaturalDukedoms(level, capital, residents);
+        tickMasterOfLaws(level, capital, residents);
+        tickCrownStandings(level, capital, residents);
         tickMourning(level, capital);
     }
 
@@ -182,6 +185,24 @@ public class CapitalPopulationScanner {
         }
     }
 
+    private void tickNaturalDukedoms(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (CapitalNaturalDukedomService.tick(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickMasterOfLaws(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (CapitalMasterOfLawsService.tickMasterOfLaws(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickCrownStandings(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (CapitalCrownStandingService.tick(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
     private void tickMourning(ServerLevel level, CapitalRecord capital) {
         CapitalMourningService.tickMourning(level, capital);
     }
@@ -194,7 +215,11 @@ public class CapitalPopulationScanner {
 
     private boolean issueRoyalCharterIfNeeded(ServerLevel level, CapitalRecord capital) {
         if (capital.getVillageId() == null) return false;
-        if (hasOutstandingRoyalCharter(level, capital)) return false;
+        if (capital.isRoyalCharterIssued()) return false;
+        if (hasOutstandingRoyalCharter(level, capital)) {
+            capital.setRoyalCharterIssued(true);
+            return true;
+        }
 
         BlockPos center = MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId());
         ServerPlayer nearest = level.players().stream()
@@ -214,6 +239,7 @@ public class CapitalPopulationScanner {
         boolean inserted = nearest.addItem(charter);
         if (!inserted) nearest.drop(charter, false);
 
+        capital.setRoyalCharterIssued(true);
         nearest.sendSystemMessage(Component.literal(
                 "The people of " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
                         + " seek a sovereign. A Royal Charter has been placed in your hands."

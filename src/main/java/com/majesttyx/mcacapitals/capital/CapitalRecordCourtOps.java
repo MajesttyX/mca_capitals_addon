@@ -65,6 +65,14 @@ final class CapitalRecordCourtOps {
         record.court.monarchyRejected = monarchyRejected;
     }
 
+    static boolean isRoyalCharterIssued(CapitalRecord record) {
+        return record.court.royalCharterIssued;
+    }
+
+    static void setRoyalCharterIssued(CapitalRecord record, boolean royalCharterIssued) {
+        record.court.royalCharterIssued = royalCharterIssued;
+    }
+
     static boolean isMourningActive(CapitalRecord record) {
         return record.court.mourningActive;
     }
@@ -165,6 +173,64 @@ final class CapitalRecordCourtOps {
 
     static void setGrandMaesterFemale(CapitalRecord record, boolean grandMaesterFemale) {
         record.court.grandMaesterFemale = grandMaesterFemale;
+    }
+
+    static UUID getMasterOfLaws(CapitalRecord record) {
+        return record.court.masterOfLaws;
+    }
+
+    static void setMasterOfLaws(CapitalRecord record, UUID masterOfLaws) {
+        record.court.masterOfLaws = masterOfLaws;
+    }
+
+    static boolean isMasterOfLawsFemale(CapitalRecord record) {
+        return record.court.masterOfLawsFemale;
+    }
+
+    static void setMasterOfLawsFemale(CapitalRecord record, boolean masterOfLawsFemale) {
+        record.court.masterOfLawsFemale = masterOfLawsFemale;
+    }
+
+    static UUID getLastCrownStandingSovereign(CapitalRecord record) {
+        return record.court.lastCrownStandingSovereign;
+    }
+
+    static void setLastCrownStandingSovereign(CapitalRecord record, UUID sovereign) {
+        record.court.lastCrownStandingSovereign = sovereign;
+    }
+
+    static long getLastNaturalDukedomDay(CapitalRecord record) {
+        return record.court.lastNaturalDukedomDay;
+    }
+
+    static void setLastNaturalDukedomDay(CapitalRecord record, long day) {
+        record.court.lastNaturalDukedomDay = day;
+    }
+
+    static Map<UUID, CrownStanding> getCrownStandings(CapitalRecord record) {
+        return record.court.crownStandings;
+    }
+
+    static CrownStanding getCrownStanding(CapitalRecord record, UUID entityId) {
+        if (entityId == null) {
+            return null;
+        }
+        return record.court.crownStandings.get(entityId);
+    }
+
+    static void setCrownStanding(CapitalRecord record, UUID entityId, CrownStanding standing) {
+        if (entityId == null) {
+            return;
+        }
+        if (standing == null) {
+            record.court.crownStandings.remove(entityId);
+            return;
+        }
+        record.court.crownStandings.put(entityId, standing);
+    }
+
+    static void clearCrownStandings(CapitalRecord record) {
+        record.court.crownStandings.clear();
     }
 
     static long getLastCommanderRaidBlessingGameTime(CapitalRecord record) {

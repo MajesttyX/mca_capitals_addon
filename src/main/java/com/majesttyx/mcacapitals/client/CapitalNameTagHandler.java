@@ -18,6 +18,8 @@ import net.neoforged.neoforge.client.event.RenderNameTagEvent;
 import net.neoforged.neoforge.common.util.TriState;
 import org.joml.Matrix4f;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -42,6 +44,7 @@ public final class CapitalNameTagHandler {
             "King Consort",
             "Heir Apparent",
             "Grand Maester",
+            "Master of Laws",
             "Court Herald",
             "Crown Princess",
             "Crown Prince",
@@ -70,6 +73,11 @@ public final class CapitalNameTagHandler {
             return;
         }
 
+        if (!shouldRenderMcaNameTags()) {
+            event.setCanRender(TriState.FALSE);
+            return;
+        }
+
         UUID villagerId = entity.getUUID();
         VillagerIdentityClientCache.ClientVillagerIdentity identity = VillagerIdentityClientCache.get(villagerId);
         if (identity == null) {
@@ -83,6 +91,23 @@ public final class CapitalNameTagHandler {
 
         event.setCanRender(TriState.FALSE);
         renderLayeredNameTag(event, lines);
+    }
+
+    private static boolean shouldRenderMcaNameTags() {
+        try {
+            Class<?> configClass = Class.forName("net.conczin.mca.Config");
+            Method getInstance = configClass.getMethod("getInstance");
+            Object config = getInstance.invoke(null);
+            if (config == null) {
+                return true;
+            }
+
+            Field showNameTags = config.getClass().getField("showNameTags");
+            Object value = showNameTags.get(config);
+            return !(value instanceof Boolean booleanValue) || booleanValue;
+        } catch (Throwable ignored) {
+            return true;
+        }
     }
 
     private static List<Component> buildLines(String originalName, VillagerIdentityClientCache.ClientVillagerIdentity identity) {
@@ -107,6 +132,8 @@ public final class CapitalNameTagHandler {
             title = detectTitleFromOriginalName(cleanedOriginalName);
         }
 
+        String courtOfficeLine = normalizeCourtOfficeLine(identity.courtOfficeLine());
+
         String baseName = stripTitle(cleanedOriginalName, title);
         String surname = identity.currentSurname() == null ? "" : identity.currentSurname().trim();
         String fullName = appendSurname(baseName, surname);
@@ -129,6 +156,7 @@ public final class CapitalNameTagHandler {
             }
 
             lines.add(Component.literal(orderLine));
+            addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
@@ -137,12 +165,14 @@ public final class CapitalNameTagHandler {
             if (!fullName.isBlank()) {
                 lines.add(Component.literal(fullName));
             }
+            addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
         if ("Lady".equals(title) || "Lord".equals(title) || "Dame".equals(title) || "Sir".equals(title)) {
             lines.add(Component.literal(title + " " + fullName));
+            addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
@@ -150,20 +180,29 @@ public final class CapitalNameTagHandler {
         if (isCourtOfficeNameFirst(title)) {
             lines.add(Component.literal(fullName));
             lines.add(Component.literal(title));
+            addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
         if (isInlineTitleName(title)) {
             lines.add(Component.literal(title + " " + fullName));
+            addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
         lines.add(Component.literal(title));
         lines.add(Component.literal(fullName));
+        addCourtOfficeLineIfPresent(lines, courtOfficeLine);
         addStatusLineIfPresent(lines, statusLine);
         return lines;
+    }
+
+    private static void addCourtOfficeLineIfPresent(List<Component> lines, String courtOfficeLine) {
+        if (courtOfficeLine != null && !courtOfficeLine.isBlank()) {
+            lines.add(Component.literal(courtOfficeLine));
+        }
     }
 
     private static void addStatusLineIfPresent(List<Component> lines, String statusLine) {
@@ -175,7 +214,8 @@ public final class CapitalNameTagHandler {
     private static boolean isCourtOfficeNameFirst(String title) {
         return "Heir Apparent".equals(title)
                 || "Hand of the Queen".equals(title)
-                || "Hand of the King".equals(title);
+                || "Hand of the King".equals(title)
+                || "Master of Laws".equals(title);
     }
 
     private static boolean isInlineTitleName(String title) {
@@ -251,6 +291,19 @@ public final class CapitalNameTagHandler {
         }
 
         return normalized;
+    }
+
+    private static String normalizeCourtOfficeLine(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+
+        String lower = normalizeSpaces(value).toLowerCase(Locale.ROOT);
+        if (lower.equals("master of laws")) {
+            return "Master of Laws";
+        }
+
+        return "";
     }
 
     private static String normalizeRoyalGuardOrderLine(String value) {

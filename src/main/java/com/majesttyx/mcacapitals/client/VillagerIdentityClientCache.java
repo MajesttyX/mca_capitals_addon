@@ -25,6 +25,7 @@ public final class VillagerIdentityClientCache {
                 packet.currentSurname(),
                 packet.displayTitle(),
                 packet.royalGuardOrderLine(),
+                packet.courtOfficeLine(),
                 packet.houseFounded(),
                 packet.houseName(),
                 packet.houseWords(),
@@ -53,6 +54,7 @@ public final class VillagerIdentityClientCache {
             String currentSurname,
             String displayTitle,
             String royalGuardOrderLine,
+            String courtOfficeLine,
             boolean houseFounded,
             String houseName,
             String houseWords,
@@ -83,6 +85,10 @@ public final class VillagerIdentityClientCache {
 
         public boolean isRoyalGuardOrder() {
             return royalGuardOrderLine != null && !royalGuardOrderLine.isBlank();
+        }
+
+        public boolean hasCourtOfficeLine() {
+            return courtOfficeLine != null && !courtOfficeLine.isBlank();
         }
 
         public String originDisplayLine() {

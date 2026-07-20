@@ -28,6 +28,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.DECREE_OF_THE_HOUSE.get());
                         output.accept(ModItems.ROYAL_CHARTER.get());
                         output.accept(ModItems.CAPITAL_CHRONICLE.get());
+                        output.accept(ModItems.SEALED_PURSE.get());
+                        output.accept(ModItems.ROYAL_PARDON.get());
                         output.accept(ModItems.RED_ROYAL_SEAL.get());
                         output.accept(ModItems.BLACK_ROYAL_SEAL.get());
                         output.accept(ModItems.BLUE_ROYAL_SEAL.get());

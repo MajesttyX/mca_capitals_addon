@@ -7,13 +7,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-public class RoyalCharterDecisionScreen extends Screen {
+public class RoyalCharterDecisionScreen extends CapitalNoBlurScreen {
 
     private static final ResourceLocation BACKGROUND =
             ResourceLocation.fromNamespaceAndPath("mcacapitals", "textures/gui/declaration_paper.png");
@@ -81,8 +80,6 @@ public class RoyalCharterDecisionScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-
         int left = (this.width - BG_WIDTH) / 2;
         int top = (this.height - BG_HEIGHT) / 2;
 

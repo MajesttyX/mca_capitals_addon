@@ -4,13 +4,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.UUID;
 
-public class SuccessionDecreeConfirmScreen extends Screen {
+public class SuccessionDecreeConfirmScreen extends CapitalNoBlurScreen {
 
     private final UUID capitalId;
     private final String capitalName;
@@ -57,8 +56,6 @@ public class SuccessionDecreeConfirmScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-
         int centerX = this.width / 2;
         int top = this.height / 2 - 58;
 

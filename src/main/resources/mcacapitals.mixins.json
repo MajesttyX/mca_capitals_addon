@@ -13,6 +13,7 @@
     "PlayerEditorGenderSyncMixin",
     "VillagerTasksMCARoyalGuardMixin",
     "BreedableRelationshipGiftMixin",
+    "SealedPurseGiftMixin",
     "EntitySprintingRoyalGuardMixin",
     "GetInteractDataRequestIdentityMixin",
     "EntityRelationshipMarriageSurnameMixin",

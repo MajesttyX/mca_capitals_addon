@@ -7,6 +7,7 @@ import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueRuntime;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueService;
+import com.majesttyx.mcacapitals.dialogue.CapitalPoliticalDialogueService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -80,6 +81,11 @@ public abstract class DialogueChatFallbackMixin {
                         newsDialogueId
                 );
                 return newsDialogueId;
+            }
+
+            String politicalDialogueId = CapitalPoliticalDialogueService.maybeResolvePoliticalDialogueId(player, villager);
+            if (politicalDialogueId != null && !politicalDialogueId.isBlank()) {
+                return politicalDialogueId;
             }
 
             String playerSovereignDialogueId = CapitalDialogueService.maybeResolvePlayerSovereignDialogueId(player, villager);

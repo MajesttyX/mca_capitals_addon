@@ -14,6 +14,7 @@ final class CapitalRecordCourtState {
     UUID playerConsortId;
     String playerConsortName;
     boolean monarchyRejected;
+    boolean royalCharterIssued;
     boolean mourningActive;
     long mourningEndDay;
     final List<String> chronicleEntries = new ArrayList<>();
@@ -27,6 +28,11 @@ final class CapitalRecordCourtState {
     String heraldDisplayName;
     UUID grandMaester;
     boolean grandMaesterFemale;
+    UUID masterOfLaws;
+    boolean masterOfLawsFemale;
+    UUID lastCrownStandingSovereign;
+    long lastNaturalDukedomDay;
+    final Map<UUID, CrownStanding> crownStandings = new LinkedHashMap<>();
     long lastCommanderRaidBlessingGameTime;
     long lastCommanderRandomBlessingDay;
 }

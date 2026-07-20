@@ -4,14 +4,13 @@ import com.majesttyx.mcacapitals.network.OpenBetrothalSelectionPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class BetrothalSelectionScreen extends Screen {
+public class BetrothalSelectionScreen extends CapitalNoBlurScreen {
 
     private static final int PAGE_SIZE = 5;
 
@@ -189,8 +188,6 @@ public class BetrothalSelectionScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-
         String title;
         if (mode == Mode.PLAYER) {
             title = "Choose a noble for your betrothal";

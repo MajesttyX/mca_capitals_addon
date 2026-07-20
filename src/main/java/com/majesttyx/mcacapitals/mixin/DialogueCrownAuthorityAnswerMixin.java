@@ -25,6 +25,8 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
     private static final String PETITION_ANSWER = "mcacapitals_petition";
     private static final String REQUEST_ANSWER = "mcacapitals_request";
     private static final String SEIZE_THRONE_ANSWER = "mcacapitals_seize_throne";
+    private static final String ACCUSE_ENEMY_ANSWER = "mcacapitals_accuse_enemy";
+    private static final String REQUEST_ROYAL_PARDON_ANSWER = "mcacapitals_request_royal_pardon";
 
     @Inject(
             method = "getValidAnswers(Lnet/minecraft/server/level/ServerPlayer;Lnet/conczin/mca/entity/VillagerEntityMCA;)Ljava/util/List;",
@@ -42,29 +44,47 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             return;
         }
 
-        if (!currentAnswers.contains(PETITION_ANSWER)
-                && !currentAnswers.contains(REQUEST_ANSWER)
-                && !currentAnswers.contains(SEIZE_THRONE_ANSWER)) {
+        boolean hasAnyManagedAnswer = currentAnswers.contains(PETITION_ANSWER)
+                || currentAnswers.contains(REQUEST_ANSWER)
+                || currentAnswers.contains(SEIZE_THRONE_ANSWER)
+                || currentAnswers.contains(ACCUSE_ENEMY_ANSWER)
+                || currentAnswers.contains(REQUEST_ROYAL_PARDON_ANSWER);
+
+        if (!hasAnyManagedAnswer) {
             return;
         }
 
         if (player == null || villager == null) {
-            cir.setReturnValue(removeCrownAuthorityAnswers(currentAnswers));
+            cir.setReturnValue(removeAllManagedAnswers(currentAnswers));
             return;
         }
 
-        if (hasCrownAuthority(player.serverLevel(), villager.getUUID())) {
-            return;
+        List<String> filtered = new ArrayList<>(currentAnswers);
+
+        if (!hasCrownAuthority(player.serverLevel(), villager.getUUID())) {
+            filtered.remove(PETITION_ANSWER);
+            filtered.remove(REQUEST_ANSWER);
+            filtered.remove(SEIZE_THRONE_ANSWER);
         }
 
-        cir.setReturnValue(removeCrownAuthorityAnswers(currentAnswers));
+        if (!isMasterOfLaws(player.serverLevel(), villager.getUUID())) {
+            filtered.remove(ACCUSE_ENEMY_ANSWER);
+        }
+
+        if (!canGrantRoyalPardon(player.serverLevel(), villager.getUUID())) {
+            filtered.remove(REQUEST_ROYAL_PARDON_ANSWER);
+        }
+
+        cir.setReturnValue(filtered);
     }
 
-    private static List<String> removeCrownAuthorityAnswers(List<String> currentAnswers) {
+    private static List<String> removeAllManagedAnswers(List<String> currentAnswers) {
         List<String> filtered = new ArrayList<>(currentAnswers);
         filtered.remove(PETITION_ANSWER);
         filtered.remove(REQUEST_ANSWER);
         filtered.remove(SEIZE_THRONE_ANSWER);
+        filtered.remove(ACCUSE_ENEMY_ANSWER);
+        filtered.remove(REQUEST_ROYAL_PARDON_ANSWER);
         return filtered;
     }
 
@@ -73,17 +93,45 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             return false;
         }
 
-        CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(level, villagerId);
-        if (capital == null) {
-            Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-            capital = CapitalManager.getCapitalByVillageId(villageId);
-        }
-
+        CapitalRecord capital = resolveCapital(level, villagerId);
         if (capital == null || capital.getState() != CapitalState.ACTIVE) {
             return false;
         }
 
         return villagerId.equals(capital.getSovereign())
                 || villagerId.equals(capital.getHand());
+    }
+
+    private static boolean isMasterOfLaws(ServerLevel level, UUID villagerId) {
+        if (level == null || villagerId == null) {
+            return false;
+        }
+
+        CapitalRecord capital = resolveCapital(level, villagerId);
+        return capital != null
+                && capital.getState() == CapitalState.ACTIVE
+                && villagerId.equals(capital.getMasterOfLaws());
+    }
+
+    private static boolean canGrantRoyalPardon(ServerLevel level, UUID villagerId) {
+        if (level == null || villagerId == null) {
+            return false;
+        }
+
+        CapitalRecord capital = resolveCapital(level, villagerId);
+        return capital != null
+                && capital.getState() == CapitalState.ACTIVE
+                && (villagerId.equals(capital.getSovereign())
+                || villagerId.equals(capital.getHand())
+                || villagerId.equals(capital.getMasterOfLaws()));
+    }
+
+    private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {
+        CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(level, villagerId);
+        if (capital == null) {
+            Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
+            capital = CapitalManager.getCapitalByVillageId(villageId);
+        }
+        return capital;
     }
 }

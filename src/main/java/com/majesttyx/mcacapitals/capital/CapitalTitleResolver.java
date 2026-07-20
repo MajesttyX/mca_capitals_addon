@@ -80,6 +80,24 @@ public class CapitalTitleResolver {
         return best == null ? "Commoner" : best.title();
     }
 
+    public static String getCourtOfficeLineForEntity(ServerLevel level, UUID entityId) {
+        if (entityId == null) {
+            return "";
+        }
+
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            if (capital == null) {
+                continue;
+            }
+
+            if (entityId.equals(capital.getMasterOfLaws())) {
+                return "Master of Laws";
+            }
+        }
+
+        return "";
+    }
+
     public static boolean isRoyalGuardTitle(ServerLevel level, UUID entityId) {
         if (entityId == null) {
             return false;

@@ -24,6 +24,7 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
     private final String currentSurname;
     private final String displayTitle;
     private final String royalGuardOrderLine;
+    private final String courtOfficeLine;
     private final boolean houseFounded;
     private final String houseName;
     private final String houseWords;
@@ -36,6 +37,7 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
             String currentSurname,
             String displayTitle,
             String royalGuardOrderLine,
+            String courtOfficeLine,
             boolean houseFounded,
             String houseName,
             String houseWords,
@@ -47,6 +49,7 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
         this.currentSurname = currentSurname == null ? "" : currentSurname;
         this.displayTitle = displayTitle == null ? "" : displayTitle;
         this.royalGuardOrderLine = royalGuardOrderLine == null ? "" : royalGuardOrderLine;
+        this.courtOfficeLine = courtOfficeLine == null ? "" : courtOfficeLine;
         this.houseFounded = houseFounded;
         this.houseName = houseName == null ? "" : houseName;
         this.houseWords = houseWords == null ? "" : houseWords;
@@ -77,6 +80,10 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
         return royalGuardOrderLine;
     }
 
+    public String courtOfficeLine() {
+        return courtOfficeLine;
+    }
+
     public boolean houseFounded() {
         return houseFounded;
     }
@@ -100,6 +107,7 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
         buffer.writeUtf(currentSurname);
         buffer.writeUtf(displayTitle);
         buffer.writeUtf(royalGuardOrderLine);
+        buffer.writeUtf(courtOfficeLine);
         buffer.writeBoolean(houseFounded);
         buffer.writeUtf(houseName);
         buffer.writeUtf(houseWords);
@@ -113,6 +121,7 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
         String currentSurname = buffer.readUtf();
         String displayTitle = buffer.readUtf();
         String royalGuardOrderLine = buffer.readUtf();
+        String courtOfficeLine = buffer.readUtf();
         boolean houseFounded = buffer.readBoolean();
         String houseName = buffer.readUtf();
         String houseWords = buffer.readUtf();
@@ -125,6 +134,7 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
                 currentSurname,
                 displayTitle,
                 royalGuardOrderLine,
+                courtOfficeLine,
                 houseFounded,
                 houseName,
                 houseWords,

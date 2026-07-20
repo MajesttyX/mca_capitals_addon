@@ -1,8 +1,30 @@
 {
   "answers": [
     {
-      "name": "mcacapitals_petition",
+      "name": "mcacapitals_accuse_enemy",
+      "priority": 1000,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_accuse_enemy"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_request_royal_pardon",
       "priority": 999,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_request_royal_pardon"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition",
+      "priority": 998,
       "results": [
         {
           "actions": {
@@ -13,7 +35,7 @@
     },
     {
       "name": "mcacapitals_request",
-      "priority": 998,
+      "priority": 997,
       "results": [
         {
           "actions": {
@@ -24,7 +46,7 @@
     },
     {
       "name": "mcacapitals_seize_throne",
-      "priority": 997,
+      "priority": 996,
       "results": [
         {
           "actions": {

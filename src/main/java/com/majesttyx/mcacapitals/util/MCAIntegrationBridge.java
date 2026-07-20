@@ -197,6 +197,18 @@ public final class MCAIntegrationBridge {
         return MCAVillageBridge.getVillageResidentNames(level, villageId);
     }
 
+    public static int countBuildingsOfType(ServerLevel level, Integer villageId, String buildingType) {
+        return MCAVillageBridge.countBuildingsOfType(level, villageId, buildingType);
+    }
+
+    public static List<AABB> getBuildingBoundsOfType(ServerLevel level, Integer villageId, String buildingType) {
+        return MCAVillageBridge.getBuildingBoundsOfType(level, villageId, buildingType);
+    }
+
+    public static List<BlockPos> getBuildingCentersOfType(ServerLevel level, Integer villageId, String buildingType) {
+        return MCAVillageBridge.getBuildingCentersOfType(level, villageId, buildingType);
+    }
+
     public static int getHeartsWithPlayer(ServerLevel level, UUID villagerId, UUID playerId) {
         return MCAEntityBridge.getHeartsWithPlayer(level, villagerId, playerId);
     }

@@ -1,6 +1,8 @@
 package com.majesttyx.mcacapitals;
 
+import com.majesttyx.mcacapitals.capital.CapitalExileDiscoveryHandler;
 import com.majesttyx.mcacapitals.capital.CapitalPopulationScanner;
+import com.majesttyx.mcacapitals.capital.CapitalPrisonerHandler;
 import com.majesttyx.mcacapitals.config.MCACapitalsConfig;
 import com.majesttyx.mcacapitals.dialogue.CapitalAmbientDialogueHandler;
 import com.majesttyx.mcacapitals.item.BetrothalDecreeHandler;
@@ -10,15 +12,19 @@ import com.majesttyx.mcacapitals.item.LegitimizationDecreeHandler;
 import com.majesttyx.mcacapitals.item.ModCreativeTabs;
 import com.majesttyx.mcacapitals.item.ModItems;
 import com.majesttyx.mcacapitals.item.RoyalDisinheritanceHandler;
+import com.majesttyx.mcacapitals.item.RoyalPardonHandler;
 import com.majesttyx.mcacapitals.item.RoyalScepterHandler;
+import com.majesttyx.mcacapitals.item.SealedPurseHandler;
 import com.majesttyx.mcacapitals.item.SuccessionDecreeHandler;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.util.AbdicationPromptCommands;
+import com.majesttyx.mcacapitals.util.CapitalCharterCommands;
 import com.majesttyx.mcacapitals.util.CapitalDebugCommands;
 import com.majesttyx.mcacapitals.util.CapitalFoundingCommands;
 import com.majesttyx.mcacapitals.util.CapitalHouseCommands;
 import com.majesttyx.mcacapitals.util.CapitalHouseFoundationCommands;
 import com.majesttyx.mcacapitals.util.CapitalIdentityCommands;
+import com.majesttyx.mcacapitals.util.CapitalLawCommands;
 import com.majesttyx.mcacapitals.util.CapitalLifecycleHandler;
 import com.majesttyx.mcacapitals.util.CapitalPetitionCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalGuardCommands;
@@ -50,6 +56,8 @@ public class MCACapitals {
         modEventBus.addListener(ModNetwork::register);
 
         NeoForge.EVENT_BUS.register(new CapitalPopulationScanner());
+        NeoForge.EVENT_BUS.register(new CapitalExileDiscoveryHandler());
+        NeoForge.EVENT_BUS.register(new CapitalPrisonerHandler());
         NeoForge.EVENT_BUS.register(new CapitalAmbientDialogueHandler());
         NeoForge.EVENT_BUS.register(new RoyalScepterHandler());
         NeoForge.EVENT_BUS.register(new RoyalDisinheritanceHandler());
@@ -58,6 +66,8 @@ public class MCACapitals {
         NeoForge.EVENT_BUS.register(new BetrothalDecreeHandler());
         NeoForge.EVENT_BUS.register(new SuccessionDecreeHandler());
         NeoForge.EVENT_BUS.register(new DecreeOfTheHouseHandler());
+        NeoForge.EVENT_BUS.register(new RoyalPardonHandler());
+        NeoForge.EVENT_BUS.register(new SealedPurseHandler());
         NeoForge.EVENT_BUS.register(new CapitalLifecycleHandler());
         NeoForge.EVENT_BUS.register(new RoyalGuardInteractionHandler());
         NeoForge.EVENT_BUS.addListener(this::registerCommands);
@@ -71,6 +81,8 @@ public class MCACapitals {
         CapitalDebugCommands.register(event.getDispatcher());
         AbdicationPromptCommands.register(event.getDispatcher());
         CapitalFoundingCommands.register(event.getDispatcher());
+        CapitalCharterCommands.register(event.getDispatcher());
+        CapitalLawCommands.register(event.getDispatcher());
         CapitalRoyalGuardCommands.register(event.getDispatcher());
         CapitalPetitionCommands.register(event.getDispatcher());
         RoyalScepterCommands.register(event.getDispatcher());
