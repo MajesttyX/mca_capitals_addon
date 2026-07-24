@@ -1,17 +1,20 @@
-{
-  "mcacapitals:skins/clothing/normal/male/mourning_royal/%d.png": {
+[
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_royal/%d.png",
     "count": 4,
     "profession": "mcacapitals.mourning",
     "exclude": true
   },
-  "mcacapitals:skins/clothing/normal/male/mourning_noble/%d.png": {
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_noble/%d.png",
     "count": 5,
     "profession": "mcacapitals.mourning",
     "exclude": true
   },
-  "mcacapitals:skins/clothing/normal/male/mourning_commoner/%d.png": {
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_commoner/%d.png",
     "count": 5,
     "profession": "mcacapitals.mourning",
     "exclude": true
   }
-}
+]

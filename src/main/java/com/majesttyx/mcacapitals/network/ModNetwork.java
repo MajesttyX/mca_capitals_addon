@@ -63,6 +63,12 @@ public class ModNetwork {
                 SyncVillagerIdentityPacket::handle
         );
 
+        registrar.playToClient(
+                SyncBlueprintAuthorityPacket.TYPE,
+                SyncBlueprintAuthorityPacket.STREAM_CODEC,
+                SyncBlueprintAuthorityPacket::handle
+        );
+
         registrar.playToServer(
                 SubmitDecreeOfTheHousePacket.TYPE,
                 SubmitDecreeOfTheHousePacket.STREAM_CODEC,
@@ -99,6 +105,10 @@ public class ModNetwork {
     }
 
     public static void sendToPlayer(ServerPlayer player, SyncVillagerIdentityPacket packet) {
+        PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, SyncBlueprintAuthorityPacket packet) {
         PacketDistributor.sendToPlayer(player, packet);
     }
 }

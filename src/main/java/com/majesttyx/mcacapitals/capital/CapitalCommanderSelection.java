@@ -20,10 +20,18 @@ final class CapitalCommanderSelection {
         if (level == null || capital == null || capital.getVillageId() == null) {
             return false;
         }
-        return MCAIntegrationBridge.getVillagePopulation(level, capital.getVillageId()) >= CapitalCommanderService.REQUIRED_POPULATION;
+
+        return MCAIntegrationBridge.getVillagePopulation(
+                level,
+                capital.getVillageId()
+        ) >= CapitalCommanderService.REQUIRED_POPULATION;
     }
 
-    static UUID findBestCommanderCandidate(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+    static UUID findBestCommanderCandidate(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents
+    ) {
         BlockPos center = capital.getVillageId() != null
                 ? MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId())
                 : BlockPos.ZERO;
@@ -31,13 +39,19 @@ final class CapitalCommanderSelection {
         List<UUID> candidates = new ArrayList<>();
 
         for (UUID residentId : residents) {
+            if (CapitalAmbassadorService.isAmbassador(level, residentId)) {
+                continue;
+            }
+
             if (!MCAIntegrationBridge.isMCAGuard(level, residentId)) {
                 continue;
             }
+
             Entity entity = MCAIntegrationBridge.getEntityByUuid(level, residentId);
             if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
                 continue;
             }
+
             candidates.add(residentId);
         }
 
@@ -46,14 +60,22 @@ final class CapitalCommanderSelection {
                     Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
                     return entity == null
                             ? Double.MAX_VALUE
-                            : entity.distanceToSqr(center.getX() + 0.5D, center.getY() + 0.5D, center.getZ() + 0.5D);
+                            : entity.distanceToSqr(
+                            center.getX() + 0.5D,
+                            center.getY() + 0.5D,
+                            center.getZ() + 0.5D
+                    );
                 })
                 .thenComparing(UUID::toString));
 
         return candidates.isEmpty() ? null : candidates.get(0);
     }
 
-    static boolean isValidCommander(ServerLevel level, UUID commanderId, Set<UUID> residents) {
+    static boolean isValidCommander(
+            ServerLevel level,
+            UUID commanderId,
+            Set<UUID> residents
+    ) {
         if (commanderId == null) {
             return false;
         }
@@ -62,7 +84,12 @@ final class CapitalCommanderSelection {
             return false;
         }
 
+        if (CapitalAmbassadorService.isAmbassador(level, commanderId)) {
+            return false;
+        }
+
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, commanderId);
+
         return MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)
                 && MCAIntegrationBridge.isMCAGuard(level, commanderId);
     }

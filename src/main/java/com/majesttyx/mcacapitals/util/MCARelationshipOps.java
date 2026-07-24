@@ -377,6 +377,10 @@ final class MCARelationshipOps {
             return false;
         }
 
+        if (!MCAIntegrationBridge.isMCAVillagerEntity(villagerEntity)) {
+            return false;
+        }
+
         Object playerData = MCARelationshipReflection.getPlayerSaveData(player);
         if (playerData == null) {
             return false;

@@ -7,6 +7,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -28,7 +29,7 @@ public class SealedPurseGiftMixin {
             return;
         }
 
-        Entity villager = resolveEntity();
+        Entity villager = mcacapitals$resolveSealedPurseGiftEntity();
         if (villager == null) {
             return;
         }
@@ -40,7 +41,8 @@ public class SealedPurseGiftMixin {
         }
     }
 
-    private Entity resolveEntity() {
+    @Unique
+    private Entity mcacapitals$resolveSealedPurseGiftEntity() {
         Class<?> type = this.getClass();
 
         while (type != null) {

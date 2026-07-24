@@ -12,6 +12,7 @@
     "PlayerSaveDataMarriageMixin",
     "PlayerEditorGenderSyncMixin",
     "VillagerTasksMCARoyalGuardMixin",
+    "ResidencyCampaignMixin",
     "BreedableRelationshipGiftMixin",
     "SealedPurseGiftMixin",
     "EntitySprintingRoyalGuardMixin",
@@ -20,11 +21,19 @@
     "FamilyTreeNodeAdoptionIdentityMixin",
     "BabyItemBirthIdentityMixin",
     "PregnancyBirthIdentityMixin",
-    "NamesRegionFilterMixin"
+    "NamesRegionFilterMixin",
+    "TasksCapitalRankMixin",
+    "GetVillageRequestCapitalAuthorityMixin",
+    "SaveVillageMessageCapitalAuthorityMixin",
+    "RankCriterionSuppressionMixin",
+    "CapitalSuccessionServiceInterregnumMixin",
+    "CapitalPopulationScannerInterregnumMixin",
+    "CapitalTitleResolverInterregnumMixin"
   ],
   "client": [
     "InteractScreenBetrothalMixin",
-    "InteractScreenIdentityMixin"
+    "InteractScreenIdentityMixin",
+    "BlueprintScreenCapitalAuthorityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

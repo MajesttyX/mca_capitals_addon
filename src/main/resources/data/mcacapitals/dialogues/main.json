@@ -1,6 +1,28 @@
 {
   "answers": [
     {
+      "name": "mcacapitals_manage_diplomacy",
+      "priority": 1002,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_manage_diplomacy"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_send_gift",
+      "priority": 1001,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_send_gift"
+          }
+        }
+      ]
+    },
+    {
       "name": "mcacapitals_accuse_enemy",
       "priority": 1000,
       "results": [

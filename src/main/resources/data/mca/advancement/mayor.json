@@ -1,0 +1,12 @@
+{
+  "criteria": {
+    "suppressed": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "suppressed"
+    ]
+  ]
+}

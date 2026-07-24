@@ -31,6 +31,7 @@ public class CapitalNameService {
             "Master of Laws",
             "Maester",
             "Court Herald",
+            "Ambassador",
             "Princess",
             "Prince",
             "Lord Commander",
@@ -78,6 +79,11 @@ public class CapitalNameService {
         }
         if (capital.getMasterOfLaws() != null) {
             allRelevant.add(capital.getMasterOfLaws());
+        }
+
+        UUID ambassador = CapitalAmbassadorService.getAmbassador(level, capital);
+        if (ambassador != null) {
+            allRelevant.add(ambassador);
         }
 
         allRelevant.addAll(capital.getRoyalChildren());

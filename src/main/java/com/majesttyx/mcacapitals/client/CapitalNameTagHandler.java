@@ -45,6 +45,7 @@ public final class CapitalNameTagHandler {
             "Heir Apparent",
             "Grand Maester",
             "Master of Laws",
+            "Ambassador",
             "Court Herald",
             "Crown Princess",
             "Crown Prince",
@@ -73,7 +74,7 @@ public final class CapitalNameTagHandler {
             return;
         }
 
-        if (!shouldRenderMcaNameTags()) {
+        if (!shouldRenderMcaNameTags(entity)) {
             event.setCanRender(TriState.FALSE);
             return;
         }
@@ -93,7 +94,7 @@ public final class CapitalNameTagHandler {
         renderLayeredNameTag(event, lines);
     }
 
-    private static boolean shouldRenderMcaNameTags() {
+    private static boolean shouldRenderMcaNameTags(Entity entity) {
         try {
             Class<?> configClass = Class.forName("net.conczin.mca.Config");
             Method getInstance = configClass.getMethod("getInstance");
@@ -103,8 +104,26 @@ public final class CapitalNameTagHandler {
             }
 
             Field showNameTags = config.getClass().getField("showNameTags");
-            Object value = showNameTags.get(config);
-            return !(value instanceof Boolean booleanValue) || booleanValue;
+            Object showNameTagsValue = showNameTags.get(config);
+            if (showNameTagsValue instanceof Boolean booleanValue
+                    && !booleanValue) {
+                return false;
+            }
+
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player == null) {
+                return true;
+            }
+
+            Field nameTagDistance = config.getClass().getField("nameTagDistance");
+            Object nameTagDistanceValue = nameTagDistance.get(config);
+            if (!(nameTagDistanceValue instanceof Number numberValue)) {
+                return true;
+            }
+
+            double distance = numberValue.doubleValue();
+            return minecraft.player.distanceToSqr(entity)
+                    < distance * distance;
         } catch (Throwable ignored) {
             return true;
         }
@@ -165,12 +184,16 @@ public final class CapitalNameTagHandler {
             if (!fullName.isBlank()) {
                 lines.add(Component.literal(fullName));
             }
+
             addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
-        if ("Lady".equals(title) || "Lord".equals(title) || "Dame".equals(title) || "Sir".equals(title)) {
+        if ("Lady".equals(title)
+                || "Lord".equals(title)
+                || "Dame".equals(title)
+                || "Sir".equals(title)) {
             lines.add(Component.literal(title + " " + fullName));
             addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
@@ -410,7 +433,12 @@ public final class CapitalNameTagHandler {
             return;
         }
 
-        Vec3 attachment = entity.getAttachments().getNullable(EntityAttachment.NAME_TAG, 0, entity.getViewYRot(event.getPartialTick()));
+        Vec3 attachment = entity.getAttachments().getNullable(
+                EntityAttachment.NAME_TAG,
+                0,
+                entity.getViewYRot(event.getPartialTick())
+        );
+
         if (attachment == null) {
             return;
         }
@@ -445,7 +473,9 @@ public final class CapitalNameTagHandler {
                     false,
                     matrix,
                     bufferSource,
-                    normalRender ? Font.DisplayMode.SEE_THROUGH : Font.DisplayMode.NORMAL,
+                    normalRender
+                            ? Font.DisplayMode.SEE_THROUGH
+                            : Font.DisplayMode.NORMAL,
                     backgroundColor,
                     event.getPackedLight()
             );

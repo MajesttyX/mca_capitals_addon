@@ -83,6 +83,7 @@ public final class MCACapitalsConfig {
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> ENABLED_CULTURE_NAME_BUCKETS;
+    public static final ModConfigSpec.EnumValue<OriginNameMode> ORIGIN_NAME_MODE;
 
     private static final Set<String> VALID_CULTURE_NAME_BUCKETS = Set.copyOf(ALL_CULTURE_NAME_BUCKETS);
 
@@ -108,10 +109,30 @@ public final class MCACapitalsConfig {
 
         builder.pop();
 
+        builder.push("identity");
+
+        ORIGIN_NAME_MODE = builder
+                .comment(
+                        "Controls which village name is displayed in a villager's origin line.",
+                        "HISTORICAL preserves the name recorded when the origin was assigned.",
+                        "CURRENT displays the village's current name when it can be resolved, otherwise the historical name.",
+                        "CURRENT_AND_FORMER displays the current name followed by the historical name when they differ."
+                )
+                .defineEnum(
+                        "originNameMode",
+                        OriginNameMode.HISTORICAL
+                );
+
+        builder.pop();
+
         SPEC = builder.build();
     }
 
     private MCACapitalsConfig() {
+    }
+
+    public static OriginNameMode originNameMode() {
+        return ORIGIN_NAME_MODE.get();
     }
 
     public static Set<String> enabledCultureNameBuckets() {
@@ -150,5 +171,11 @@ public final class MCACapitalsConfig {
         ArrayList<String> buckets = new ArrayList<>(DEFAULT_CULTURE_NAME_BUCKETS);
         buckets.addAll(FANTASY_CULTURE_NAME_BUCKETS);
         return List.copyOf(buckets);
+    }
+
+    public enum OriginNameMode {
+        HISTORICAL,
+        CURRENT,
+        CURRENT_AND_FORMER
     }
 }
