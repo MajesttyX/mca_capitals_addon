@@ -29,14 +29,17 @@ final class CapitalDiplomaticGiftDispatchService {
         }
 
         Entity ambassadorEntity =
-                player.serverLevel().getEntity(ambassadorId);
+                player.serverLevel()
+                        .getEntity(ambassadorId);
 
-        CapitalDiplomaticGiftValidation.Validation validation =
-                CapitalDiplomaticGiftValidation.validateAudience(
-                        player,
-                        ambassadorEntity,
-                        true
-                );
+        CapitalDiplomaticGiftValidation
+                .Validation validation =
+                CapitalDiplomaticGiftValidation
+                        .validateAudience(
+                                player,
+                                ambassadorEntity,
+                                true
+                        );
 
         if (!validation.valid()) {
             player.sendSystemMessage(
@@ -49,17 +52,23 @@ final class CapitalDiplomaticGiftDispatchService {
         }
 
         ServerLevel level = player.serverLevel();
-        CapitalRecord sourceCapital = validation.sourceCapital();
+
+        CapitalRecord sourceCapital =
+                validation.sourceCapital();
 
         CapitalRecord targetCapital =
-                CapitalManager.getCapital(targetCapitalId);
+                CapitalManager.getCapital(
+                        targetCapitalId
+                );
 
         if (targetCapital == null
-                || targetCapital.getState() != CapitalState.ACTIVE
+                || targetCapital.getState()
+                != CapitalState.ACTIVE
                 || targetCapital.getCapitalId() == null
-                || targetCapital.getCapitalId().equals(
-                sourceCapital.getCapitalId()
-        )) {
+                || targetCapital.getCapitalId()
+                .equals(
+                        sourceCapital.getCapitalId()
+                )) {
             player.sendSystemMessage(
                     Component.literal(
                             "That capital is no longer available to receive a diplomatic package."
@@ -70,11 +79,12 @@ final class CapitalDiplomaticGiftDispatchService {
         }
 
         long cooldown =
-                CapitalDiplomacyDataAccess.getGiftCooldownRemaining(
-                        level,
-                        sourceCapital.getCapitalId(),
-                        targetCapital.getCapitalId()
-                );
+                CapitalDiplomacyDataAccess
+                        .getGiftCooldownRemaining(
+                                level,
+                                sourceCapital.getCapitalId(),
+                                targetCapital.getCapitalId()
+                        );
 
         if (cooldown > 0L) {
             player.sendSystemMessage(
@@ -95,10 +105,10 @@ final class CapitalDiplomaticGiftDispatchService {
             return 0;
         }
 
-        CapitalDiplomaticGiftValidation.HeldPackage heldPackage =
-                CapitalDiplomaticGiftValidation.findHeldPackage(
-                        player
-                );
+        CapitalDiplomaticGiftValidation
+                .HeldPackage heldPackage =
+                CapitalDiplomaticGiftValidation
+                        .findHeldPackage(player);
 
         if (heldPackage == null) {
             player.sendSystemMessage(
@@ -111,9 +121,10 @@ final class CapitalDiplomaticGiftDispatchService {
         }
 
         List<ItemStack> contents =
-                CapitalDiplomaticGiftValidation.readAndValidateContents(
-                        heldPackage.stack()
-                );
+                CapitalDiplomaticGiftValidation
+                        .readAndValidateContents(
+                                heldPackage.stack()
+                        );
 
         if (contents.isEmpty()) {
             player.sendSystemMessage(
@@ -125,7 +136,8 @@ final class CapitalDiplomaticGiftDispatchService {
             return 0;
         }
 
-        CapitalGiftAppraisalService.GiftAppraisal appraisal =
+        CapitalGiftAppraisalService
+                .GiftAppraisal appraisal =
                 CapitalGiftAppraisalService.appraise(
                         player,
                         targetCapital,
@@ -133,15 +145,21 @@ final class CapitalDiplomaticGiftDispatchService {
                 );
 
         UUID recipientSovereignId =
-                CapitalDiplomaticGiftValidation.getCurrentSovereignId(
-                        targetCapital
-                );
+                CapitalDiplomaticGiftValidation
+                        .getCurrentSovereignId(
+                                targetCapital
+                        );
 
         DiplomaticShipmentStatus status =
-                targetCapital.getPlayerSovereignId() != null
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                targetCapital
+                        ) != null
                         ? DiplomaticShipmentStatus
                         .AWAITING_PLAYER_RESPONSE
-                        : DiplomaticShipmentStatus.DISPATCHED;
+                        : DiplomaticShipmentStatus
+                        .DISPATCHED;
 
         DiplomaticShipment shipment =
                 new DiplomaticShipment(
@@ -162,11 +180,12 @@ final class CapitalDiplomaticGiftDispatchService {
                 shipment
         );
 
-        CapitalDiplomacyDataAccess.beginGiftCooldown(
-                level,
-                sourceCapital.getCapitalId(),
-                targetCapital.getCapitalId()
-        );
+        CapitalDiplomacyDataAccess
+                .beginGiftCooldown(
+                        level,
+                        sourceCapital.getCapitalId(),
+                        targetCapital.getCapitalId()
+                );
 
         player.setItemInHand(
                 heldPackage.hand(),
@@ -174,16 +193,18 @@ final class CapitalDiplomaticGiftDispatchService {
         );
 
         String sourceName =
-                CapitalDiplomaticGiftText.getCapitalName(
-                        level,
-                        sourceCapital
-                );
+                CapitalDiplomaticGiftText
+                        .getCapitalName(
+                                level,
+                                sourceCapital
+                        );
 
         String targetName =
-                CapitalDiplomaticGiftText.getCapitalName(
-                        level,
-                        targetCapital
-                );
+                CapitalDiplomaticGiftText
+                        .getCapitalName(
+                                level,
+                                targetCapital
+                        );
 
         CapitalChronicleService.addEntry(
                 level,
@@ -197,11 +218,14 @@ final class CapitalDiplomaticGiftDispatchService {
 
         player.sendSystemMessage(
                 Component.literal(
-                        ambassadorEntity.getName().getString()
+                        ambassadorEntity
+                                .getName()
+                                .getString()
                                 + ": The package has been dispatched to "
                                 + targetName
                                 + ". I judge it to be "
-                                + appraisal.description().toLowerCase()
+                                + appraisal.description()
+                                .toLowerCase()
                                 + "."
                 )
         );

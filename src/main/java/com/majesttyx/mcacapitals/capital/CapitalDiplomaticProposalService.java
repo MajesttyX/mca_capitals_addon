@@ -31,11 +31,13 @@ final class CapitalDiplomaticProposalService {
             return 0;
         }
 
-        CapitalDiplomaticAgreementValidation.AudienceValidation audience =
-                CapitalDiplomaticAgreementValidation.validateAudience(
-                        player,
-                        ambassadorId
-                );
+        CapitalDiplomaticAgreementValidation
+                .AudienceValidation audience =
+                CapitalDiplomaticAgreementValidation
+                        .validateAudience(
+                                player,
+                                ambassadorId
+                        );
 
         if (!audience.valid()) {
             player.sendSystemMessage(
@@ -51,13 +53,16 @@ final class CapitalDiplomaticProposalService {
         CapitalRecord source = audience.sourceCapital();
 
         CapitalRecord target =
-                CapitalManager.getCapital(targetCapitalId);
+                CapitalManager.getCapital(
+                        targetCapitalId
+                );
 
         String targetFailure =
-                CapitalDiplomaticAgreementValidation.validateTarget(
-                        source,
-                        target
-                );
+                CapitalDiplomaticAgreementValidation
+                        .validateTarget(
+                                source,
+                                target
+                        );
 
         if (targetFailure != null) {
             player.sendSystemMessage(
@@ -74,28 +79,31 @@ final class CapitalDiplomaticProposalService {
         );
 
         CapitalDiplomaticState state =
-                CapitalDiplomacyDataAccess.getDiplomaticState(
-                        level,
-                        source.getCapitalId(),
-                        target.getCapitalId()
-                );
+                CapitalDiplomacyDataAccess
+                        .getDiplomaticState(
+                                level,
+                                source.getCapitalId(),
+                                target.getCapitalId()
+                        );
 
         int score =
-                CapitalDiplomacyDataAccess.getRelationshipScore(
-                        level,
-                        source.getCapitalId(),
-                        target.getCapitalId()
-                );
+                CapitalDiplomacyDataAccess
+                        .getRelationshipScore(
+                                level,
+                                source.getCapitalId(),
+                                target.getCapitalId()
+                        );
 
         String proposalFailure =
-                CapitalDiplomaticAgreementValidation.validateProposal(
-                        level,
-                        source,
-                        target,
-                        type,
-                        state,
-                        score
-                );
+                CapitalDiplomaticAgreementValidation
+                        .validateProposal(
+                                level,
+                                source,
+                                target,
+                                type,
+                                state,
+                                score
+                        );
 
         if (proposalFailure != null) {
             player.sendSystemMessage(
@@ -105,11 +113,12 @@ final class CapitalDiplomaticProposalService {
             return 0;
         }
 
-        if (CapitalAgreementDataAccess.findPendingBetween(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId()
-        ) != null) {
+        if (CapitalAgreementDataAccess
+                .findPendingBetween(
+                        level,
+                        source.getCapitalId(),
+                        target.getCapitalId()
+                ) != null) {
             player.sendSystemMessage(
                     Component.literal(
                             "A diplomatic proposal is already pending between these capitals."
@@ -121,7 +130,9 @@ final class CapitalDiplomaticProposalService {
 
         UUID targetSovereignId =
                 CapitalDiplomaticAgreementValidation
-                        .getCurrentSovereignId(target);
+                        .getCurrentSovereignId(
+                                target
+                        );
 
         if (targetSovereignId == null) {
             player.sendSystemMessage(
@@ -155,15 +166,20 @@ final class CapitalDiplomaticProposalService {
                 "A "
                         + type.getDisplayName()
                         + " was proposed to "
-                        + CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        target
-                )
+                        + CapitalDiplomaticAgreementText
+                        .capitalName(
+                                level,
+                                target
+                        )
                         + "."
         );
 
         UUID targetPlayerId =
-                target.getPlayerSovereignId();
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                target
+                        );
 
         if (targetPlayerId != null) {
             sendProposalToPlayer(
@@ -221,9 +237,12 @@ final class CapitalDiplomaticProposalService {
                     );
 
             if (target != null
-                    && playerId.equals(
-                    target.getPlayerSovereignId()
-            )) {
+                    && CapitalDiplomaticAuthorityService
+                    .mayExerciseSovereignAuthority(
+                            level,
+                            target,
+                            playerId
+                    )) {
                 result.add(proposal);
             }
         }
@@ -279,10 +298,16 @@ final class CapitalDiplomaticProposalService {
         }
 
         UUID targetPlayerId =
-                target.getPlayerSovereignId();
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                target
+                        );
 
         if (targetPlayerId != null) {
-            if (!proposal.wasNotifiedTo(targetPlayerId)) {
+            if (!proposal.wasNotifiedTo(
+                    targetPlayerId
+            )) {
                 sendProposalToPlayer(
                         level,
                         proposal,

@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalCampaignDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalCampaignEndReason;
+import com.majesttyx.mcacapitals.data.CapitalCampaignPhase;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
@@ -103,11 +104,12 @@ public final class CapitalCampaignService {
                 Component.literal(
                         "The attack on "
                                 + targetName
-                                + " has been planned. Travel into that capital yourself; when you cross its border, war will begin and "
+                                + " has been planned. Enter that capital yourself to begin a 20-second assembly. The campaign will attempt to gather "
                                 + result.campaign()
-                                .getAttackerIds()
-                                .size()
-                                + " Guards and Archers will arrive to fight beside you."
+                                .getTargetAttackerCount()
+                                + " Guards and Archers, up to the maximum of "
+                                + CapitalCampaignRecord.MAX_ATTACKERS
+                                + ", before the force deploys."
                 )
         );
 
@@ -119,17 +121,18 @@ public final class CapitalCampaignService {
             CapitalRecord attackingCapital,
             CapitalRecord defendingCapital
     ) {
-        UUID playerSovereignId =
-                attackingCapital == null
-                        ? null
-                        : attackingCapital
-                        .getPlayerSovereignId();
+        UUID initiatingPlayerId =
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                attackingCapital
+                        );
 
         return createCampaign(
                 level,
                 attackingCapital,
                 defendingCapital,
-                playerSovereignId
+                initiatingPlayerId
         );
     }
 
@@ -139,7 +142,8 @@ public final class CapitalCampaignService {
             CapitalRecord defendingCapital,
             UUID initiatingPlayerId
     ) {
-        CapitalCampaignEligibilityService.Validation validation =
+        CapitalCampaignEligibilityService
+                .Validation validation =
                 CapitalCampaignEligibilityService
                         .validateCampaign(
                                 level,
@@ -199,10 +203,12 @@ public final class CapitalCampaignService {
 
         String entry =
                 attackingName
-                        + " prepared "
-                        + campaign.getAttackerIds().size()
-                        + " Guards and Archers for a player-led attack on "
+                        + " planned a player-led attack on "
                         + defendingName
+                        + " and ordered the campaign to assemble a preferred force of "
+                        + campaign.getTargetAttackerCount()
+                        + " Guards and Archers, with a maximum of "
+                        + CapitalCampaignRecord.MAX_ATTACKERS
                         + ".";
 
         CapitalChronicleService.addEntry(
@@ -258,6 +264,81 @@ public final class CapitalCampaignService {
                 level,
                 capitalId
         ) != null;
+    }
+
+    public static boolean areOpposingCampaignCombatants(
+            ServerLevel level,
+            UUID firstId,
+            UUID secondId
+    ) {
+        if (level == null
+                || firstId == null
+                || secondId == null
+                || firstId.equals(secondId)) {
+            return false;
+        }
+
+        for (CapitalCampaignRecord campaign :
+                CapitalCampaignDataAccess
+                        .getActiveCampaigns(level)) {
+            if (campaign == null
+                    || campaign.getPhase()
+                    != CapitalCampaignPhase.ACTIVE) {
+                continue;
+            }
+
+            boolean firstAttacker =
+                    campaign.containsAttacker(firstId);
+
+            boolean secondAttacker =
+                    campaign.containsAttacker(secondId);
+
+            if (firstAttacker == secondAttacker) {
+                continue;
+            }
+
+            UUID defenderId =
+                    firstAttacker
+                            ? secondId
+                            : firstId;
+
+            if (isCampaignDefender(
+                    campaign,
+                    defenderId
+            )) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean isCampaignDefender(
+            CapitalCampaignRecord campaign,
+            UUID villagerId
+    ) {
+        if (campaign.containsDefender(villagerId)) {
+            return true;
+        }
+
+        CapitalRecord defendingCapital =
+                CapitalManager.getCapital(
+                        campaign.getDefendingCapitalId()
+                );
+
+        if (defendingCapital == null) {
+            return false;
+        }
+
+        if (defendingCapital.isRoyalGuard(villagerId)) {
+            return true;
+        }
+
+        return campaign
+                .didDefendingSovereignRefusePeace()
+                && villagerId.equals(
+                defendingCapital.getSovereign()
+        );
     }
 
     public static boolean activateCampaign(
@@ -322,6 +403,27 @@ public final class CapitalCampaignService {
             ServerLevel level,
             UUID campaignId
     ) {
+        CapitalCampaignRecord campaign =
+                CapitalCampaignDataAccess
+                        .getCampaign(
+                                level,
+                                campaignId
+                        );
+
+        if (campaign != null) {
+            CapitalRecord attackingCapital =
+                    CapitalManager.getCapital(
+                            campaign.getAttackingCapitalId()
+                    );
+
+            CapitalCampaignAssemblyService
+                    .releaseSourceTicket(
+                            level,
+                            campaign,
+                            attackingCapital
+                    );
+        }
+
         return CapitalCampaignDataAccess
                 .removeCampaign(
                         level,

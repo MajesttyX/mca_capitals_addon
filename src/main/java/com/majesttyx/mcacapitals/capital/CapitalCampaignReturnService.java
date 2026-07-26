@@ -7,6 +7,10 @@ import net.conczin.mca.entity.VillagerEntityMCA;
 import net.conczin.mca.server.world.data.Village;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
@@ -71,6 +75,8 @@ final class CapitalCampaignReturnService {
                     || !attacker.isAlive()) {
                 continue;
             }
+
+            restoreVisibleState(attacker);
 
             CapitalCampaignTargetingService
                     .clearCombatTarget(attacker);
@@ -169,14 +175,49 @@ final class CapitalCampaignReturnService {
                 z
         );
 
-        attacker.getNavigation().stop();
-        attacker.stopRiding();
+        restoreVisibleState(attacker);
 
         attacker.teleportTo(
                 x + 0.5D,
                 y,
                 z + 0.5D
         );
+
+        attacker.refreshDimensions();
+        refreshClientTracking(level, attacker);
+    }
+
+    private static void restoreVisibleState(
+            VillagerEntityMCA attacker
+    ) {
+        attacker.getNavigation().stop();
+        attacker.stopUsingItem();
+
+        if (attacker.isSleeping()) {
+            attacker.stopSleeping();
+        }
+
+        attacker.stopRiding();
+        attacker.setNoAi(false);
+        attacker.setAggressive(false);
+        attacker.setInvisible(false);
+        attacker.removeEffect(
+                MobEffects.INVISIBILITY
+        );
+        attacker.setPose(Pose.STANDING);
+        attacker.setDeltaMovement(Vec3.ZERO);
+        attacker.setPersistenceRequired();
+    }
+
+    private static void refreshClientTracking(
+            ServerLevel level,
+            VillagerEntityMCA attacker
+    ) {
+        level.getChunkSource()
+                .removeEntity(attacker);
+
+        level.getChunkSource()
+                .addEntity(attacker);
     }
 
     private static BlockPos nearestOutsideEdge(
@@ -279,16 +320,16 @@ final class CapitalCampaignReturnService {
             return true;
         }
 
-        net.minecraft.world.entity.Entity entity =
+        Entity entity =
                 MCAIntegrationBridge
                         .findLoadedEntityByUuid(
                                 level,
                                 villagerId
                         );
 
-        return entity != null
-                && (!entity.isAlive()
-                || entity.isRemoved());
+        return entity == null
+                || !entity.isAlive()
+                || entity.isRemoved();
     }
 
     private static int clamp(

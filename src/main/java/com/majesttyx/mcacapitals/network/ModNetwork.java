@@ -12,13 +12,24 @@ public class ModNetwork {
     private ModNetwork() {
     }
 
-    public static void register(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
+    public static void register(
+            RegisterPayloadHandlersEvent event
+    ) {
+        PayloadRegistrar registrar =
+                event.registrar(
+                        PROTOCOL_VERSION
+                );
 
         registrar.playToClient(
                 OpenCapitalChroniclePacket.TYPE,
                 OpenCapitalChroniclePacket.STREAM_CODEC,
                 OpenCapitalChroniclePacket::handle
+        );
+
+        registrar.playToClient(
+                OpenAmbassadorCommunicationPacket.TYPE,
+                OpenAmbassadorCommunicationPacket.STREAM_CODEC,
+                OpenAmbassadorCommunicationPacket::handle
         );
 
         registrar.playToClient(
@@ -76,39 +87,103 @@ public class ModNetwork {
         );
     }
 
-    public static void sendToPlayer(ServerPlayer player, OpenCapitalChroniclePacket packet) {
-        PacketDistributor.sendToPlayer(player, packet);
+    public static void sendToPlayer(
+            ServerPlayer player,
+            OpenCapitalChroniclePacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
     }
 
-    public static void sendToPlayer(ServerPlayer player, OpenBetrothalSelectionPacket packet) {
-        PacketDistributor.sendToPlayer(player, packet);
+    public static void sendToPlayer(
+            ServerPlayer player,
+            OpenAmbassadorCommunicationPacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
     }
 
-    public static void sendToPlayer(ServerPlayer player, OpenAccusationSelectionPacket packet) {
-        PacketDistributor.sendToPlayer(player, packet);
+    public static void sendToPlayer(
+            ServerPlayer player,
+            OpenBetrothalSelectionPacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
     }
 
-    public static void sendToPlayer(ServerPlayer player, OpenSealedPurseCaseSelectionPacket packet) {
-        PacketDistributor.sendToPlayer(player, packet);
+    public static void sendToPlayer(
+            ServerPlayer player,
+            OpenAccusationSelectionPacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
     }
 
-    public static void sendToPlayer(ServerPlayer player, OpenRoyalCharterDecisionPacket packet) {
-        PacketDistributor.sendToPlayer(player, packet);
+    public static void sendToPlayer(
+            ServerPlayer player,
+            OpenSealedPurseCaseSelectionPacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
     }
 
-    public static void sendToPlayer(ServerPlayer player, OpenPlayerHouseSetupPacket packet) {
-        PacketDistributor.sendToPlayer(player, packet);
+    public static void sendToPlayer(
+            ServerPlayer player,
+            OpenRoyalCharterDecisionPacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
     }
 
-    public static void sendToPlayer(ServerPlayer player, OpenDecreeOfTheHousePacket packet) {
-        PacketDistributor.sendToPlayer(player, packet);
+    public static void sendToPlayer(
+            ServerPlayer player,
+            OpenPlayerHouseSetupPacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
     }
 
-    public static void sendToPlayer(ServerPlayer player, SyncVillagerIdentityPacket packet) {
-        PacketDistributor.sendToPlayer(player, packet);
+    public static void sendToPlayer(
+            ServerPlayer player,
+            OpenDecreeOfTheHousePacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
     }
 
-    public static void sendToPlayer(ServerPlayer player, SyncBlueprintAuthorityPacket packet) {
-        PacketDistributor.sendToPlayer(player, packet);
+    public static void sendToPlayer(
+            ServerPlayer player,
+            SyncVillagerIdentityPacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
+    }
+
+    public static void sendToPlayer(
+            ServerPlayer player,
+            SyncBlueprintAuthorityPacket packet
+    ) {
+        PacketDistributor.sendToPlayer(
+                player,
+                packet
+        );
     }
 }

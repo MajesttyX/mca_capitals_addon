@@ -15,7 +15,8 @@ public final class CapitalDiplomaticAgreementService {
             "mcacapitals_manage_diplomacy";
 
     public static final long TRUCE_DURATION_TICKS =
-            CapitalDiplomaticTruceService.TRUCE_DURATION_TICKS;
+            CapitalDiplomaticTruceService
+                    .TRUCE_DURATION_TICKS;
 
     private CapitalDiplomaticAgreementService() {
     }
@@ -41,11 +42,6 @@ public final class CapitalDiplomaticAgreementService {
             ServerPlayer player,
             Entity ambassadorEntity
     ) {
-        CapitalAsylumService.sendReviewOption(
-                player,
-                ambassadorEntity
-        );
-
         return CapitalDiplomaticAgreementMenuService
                 .openCapitalList(
                         player,

@@ -42,7 +42,7 @@ public final class CapitalDiplomaticGiftService {
         return CapitalDiplomaticGiftValidation.validateAudience(
                 player,
                 ambassadorEntity,
-                true
+                false
         ).valid();
     }
 }

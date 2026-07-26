@@ -85,11 +85,14 @@ public final class CapitalDiplomaticShipmentProcessor {
                 continue;
             }
 
-            UUID playerSovereignId =
-                    targetCapital
-                            .getPlayerSovereignId();
+            UUID playerDecisionMaker =
+                    CapitalDiplomaticAuthorityService
+                            .getPlayerDecisionMaker(
+                                    level,
+                                    targetCapital
+                            );
 
-            if (playerSovereignId == null) {
+            if (playerDecisionMaker == null) {
                 if (targetCapital.getSovereign()
                         != null) {
                     shipment.setStatus(
@@ -114,7 +117,7 @@ public final class CapitalDiplomaticShipmentProcessor {
             }
 
             if (shipment.wasNotifiedTo(
-                    playerSovereignId
+                    playerDecisionMaker
             )) {
                 continue;
             }
@@ -126,14 +129,14 @@ public final class CapitalDiplomaticShipmentProcessor {
             CapitalDiplomaticCorrespondenceService
                     .sendArrivalLetter(
                             level,
-                            playerSovereignId,
+                            playerDecisionMaker,
                             shipment,
                             sourceCapital,
                             targetCapital
                     );
 
             shipment.setNotifiedPlayerId(
-                    playerSovereignId
+                    playerDecisionMaker
             );
 
             data.setDirty();

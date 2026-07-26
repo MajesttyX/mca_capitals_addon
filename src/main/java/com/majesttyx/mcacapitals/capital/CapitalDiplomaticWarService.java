@@ -72,11 +72,12 @@ final class CapitalDiplomaticWarService {
             return 0;
         }
 
-        CapitalDiplomaticTruceService.refreshExpiredTruce(
-                level,
-                source,
-                target
-        );
+        CapitalDiplomaticTruceService
+                .refreshExpiredTruce(
+                        level,
+                        source,
+                        target
+                );
 
         CapitalRelationRecord relation =
                 CapitalDiplomacyDataAccess
@@ -113,7 +114,7 @@ final class CapitalDiplomaticWarService {
                 > level.getGameTime()) {
             player.sendSystemMessage(
                     Component.literal(
-                            "War cannot be declared directly while the active truce remains in force. A player-led attack may still break it when the sovereign enters the target capital."
+                            "War cannot be declared directly while the active truce remains in force. A player-led attack may still break it when the authorized player enters the target capital."
                     )
             );
 
@@ -253,7 +254,8 @@ final class CapitalDiplomaticWarService {
                         );
 
         String previousAgreement =
-                previousState == CapitalDiplomaticState.PEACE
+                previousState
+                        == CapitalDiplomaticState.PEACE
                         ? ""
                         : " The attack broke the existing "
                         + CapitalDiplomaticAgreementText
@@ -284,11 +286,18 @@ final class CapitalDiplomaticWarService {
                 entry
         );
 
-        if (target.getPlayerSovereignId() != null) {
+        UUID targetDecisionMaker =
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                target
+                        );
+
+        if (targetDecisionMaker != null) {
             CapitalDiplomaticAgreementCorrespondenceService
                     .sendNotice(
                             level,
-                            target.getPlayerSovereignId(),
+                            targetDecisionMaker,
                             beganWithAttack
                                     ? "Military Attack"
                                     : "Declaration of War",

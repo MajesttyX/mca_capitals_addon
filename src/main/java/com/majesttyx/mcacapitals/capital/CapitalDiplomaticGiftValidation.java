@@ -58,9 +58,13 @@ final class CapitalDiplomaticGiftValidation {
             );
         }
 
-        if (!isPlayerSovereign(player, sourceCapital)) {
+        if (!CapitalDiplomaticAuthorityService.maySendGift(
+                level,
+                sourceCapital,
+                player.getUUID()
+        )) {
             return Validation.failure(
-                    "Only the sovereign may send diplomatic packages."
+                    "Only the sovereign or a Lord, Lady, Duke, or Duchess who holds the title in their own right may send diplomatic packages."
             );
         }
 
@@ -184,16 +188,6 @@ final class CapitalDiplomaticGiftValidation {
         }
 
         return null;
-    }
-
-    private static boolean isPlayerSovereign(
-            ServerPlayer player,
-            CapitalRecord capital
-    ) {
-        UUID playerId = player.getUUID();
-
-        return playerId.equals(capital.getPlayerSovereignId())
-                || playerId.equals(capital.getSovereign());
     }
 
     record HeldPackage(

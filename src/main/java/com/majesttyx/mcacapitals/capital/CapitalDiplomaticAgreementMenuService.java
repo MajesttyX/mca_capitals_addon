@@ -6,14 +6,14 @@ import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalRelationRecord;
 import com.majesttyx.mcacapitals.data.DiplomaticProposal;
 import com.majesttyx.mcacapitals.data.DiplomaticProposalType;
+import com.majesttyx.mcacapitals.network.ModNetwork;
+import com.majesttyx.mcacapitals.network.OpenAmbassadorCommunicationPacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -41,10 +41,11 @@ final class CapitalDiplomaticAgreementMenuService {
                         );
 
         if (!audience.valid()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            audience.failureMessage()
-                    )
+            sendMessage(
+                    player,
+                    "Foreign Relations",
+                    audience.failureMessage(),
+                    ""
             );
 
             return true;
@@ -60,7 +61,8 @@ final class CapitalDiplomaticAgreementMenuService {
                 ambassadorEntity.getUUID();
 
         List<CapitalRecord> targets =
-                CapitalManager.getAllCapitalRecords()
+                CapitalManager
+                        .getAllCapitalRecords()
                         .stream()
                         .filter(target ->
                                 target != null
@@ -96,29 +98,31 @@ final class CapitalDiplomaticAgreementMenuService {
                 ambassadorEntity
         );
 
-        if (targets.isEmpty()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            ambassadorEntity
-                                    .getName()
-                                    .getString()
-                                    + ": There are no other established capitals with which to conduct diplomacy."
+        List<OpenAmbassadorCommunicationPacket.Entry> entries =
+                new ArrayList<>();
+
+        if (CapitalAsylumScreenService
+                .hasReviewableRequests(
+                        player,
+                        ambassadorId
+                )) {
+            entries.add(
+                    new OpenAmbassadorCommunicationPacket.Entry(
+                            "Asylum Requests",
+                            "Refugees are currently seeking admission.",
+                            "",
+                            "",
+                            "Review Asylum Requests",
+                            "/capitalasylum review "
+                                    + ambassadorId,
+                            true,
+                            ""
                     )
             );
-
-            return true;
         }
 
-        player.sendSystemMessage(
-                Component.literal(
-                        ambassadorEntity
-                                .getName()
-                                .getString()
-                                + ": Choose the capital whose relations you wish to manage."
-                )
-        );
-
-        for (CapitalRecord target : targets) {
+        for (CapitalRecord target :
+                targets) {
             CapitalDiplomaticTruceService
                     .refreshExpiredTruce(
                             level,
@@ -163,12 +167,6 @@ final class CapitalDiplomaticAgreementMenuService {
                             target.getCapitalId()
                     );
 
-            String command =
-                    "/capitaldiplomacy options "
-                            + ambassadorId
-                            + " "
-                            + target.getCapitalId();
-
             String targetName =
                     CapitalDiplomaticAgreementText
                             .capitalName(
@@ -176,62 +174,68 @@ final class CapitalDiplomaticAgreementMenuService {
                                     target
                             );
 
-            MutableComponent line =
-                    Component.literal("[Manage] ")
-                            .setStyle(
-                                    CapitalDiplomaticAgreementText
-                                            .clickableStyle(
-                                                    ChatFormatting.GREEN,
-                                                    command,
-                                                    "Manage relations with "
-                                                            + targetName
-                                                            + "."
-                                            )
-                            )
-                            .append(
-                                    Component.literal(targetName)
-                                            .withStyle(
-                                                    ChatFormatting.GOLD
-                                            )
-                            )
-                            .append(
-                                    Component.literal(
-                                            " — "
-                                                    + CapitalRelationshipBand
-                                                    .fromScore(score)
-                                                    .getDisplayName()
-                                                    + " ("
-                                                    + score
-                                                    + ") — "
-                                                    + CapitalDiplomaticAgreementText
-                                                    .stateDisplay(state)
-                                    ).withStyle(
-                                            ChatFormatting.GRAY
-                                    )
-                            );
+            String flags =
+                    statusFlags(
+                            tradeActive,
+                            campaignBetweenCapitals
+                    );
 
-            if (tradeActive) {
-                line.append(
-                        Component.literal(
-                                " — Trade Agreement"
-                        ).withStyle(
-                                ChatFormatting.DARK_GREEN
-                        )
-                );
-            }
-
-            if (campaignBetweenCapitals) {
-                line.append(
-                        Component.literal(
-                                " — Attack Planned"
-                        ).withStyle(
-                                ChatFormatting.DARK_RED
-                        )
-                );
-            }
-
-            player.sendSystemMessage(line);
+            entries.add(
+                    new OpenAmbassadorCommunicationPacket.Entry(
+                            targetName,
+                            "Relationship: "
+                                    + CapitalRelationshipBand
+                                    .fromScore(score)
+                                    .getDisplayName()
+                                    + " ("
+                                    + score
+                                    + ")",
+                            "Status: "
+                                    + CapitalDiplomaticAgreementText
+                                    .stateDisplay(
+                                            state
+                                    ),
+                            flags,
+                            "Manage "
+                                    + targetName,
+                            "/capitaldiplomacy options "
+                                    + ambassadorId
+                                    + " "
+                                    + target.getCapitalId(),
+                            true,
+                            ""
+                    )
+            );
         }
+
+        if (entries.isEmpty()) {
+            sendMessage(
+                    player,
+                    "Foreign Relations",
+                    ambassadorEntity
+                            .getName()
+                            .getString()
+                            + ": There are no other established capitals with which to conduct diplomacy.",
+                    ""
+            );
+
+            return true;
+        }
+
+        ModNetwork.sendToPlayer(
+                player,
+                new OpenAmbassadorCommunicationPacket(
+                        OpenAmbassadorCommunicationPacket.Mode.DIPLOMACY_TARGETS,
+                        "Manage Foreign Relations",
+                        ambassadorEntity
+                                .getName()
+                                .getString(),
+                        "Choose the capital whose relations you wish to manage.",
+                        "",
+                        entries,
+                        List.of()
+                )
+        );
 
         return true;
     }
@@ -256,10 +260,11 @@ final class CapitalDiplomaticAgreementMenuService {
                         );
 
         if (!audience.valid()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            audience.failureMessage()
-                    )
+            sendMessage(
+                    player,
+                    "Foreign Relations",
+                    audience.failureMessage(),
+                    ""
             );
 
             return 0;
@@ -284,8 +289,12 @@ final class CapitalDiplomaticAgreementMenuService {
                         );
 
         if (targetFailure != null) {
-            player.sendSystemMessage(
-                    Component.literal(targetFailure)
+            sendMessage(
+                    player,
+                    "Foreign Relations",
+                    targetFailure,
+                    "/capitaldiplomacy targets "
+                            + ambassadorId
             );
 
             return 0;
@@ -355,187 +364,117 @@ final class CapitalDiplomaticAgreementMenuService {
                                 target.getCapitalId()
                         );
 
-        MutableComponent heading =
-                Component.literal(
-                        CapitalDiplomaticAgreementText
-                                .capitalName(
-                                        level,
-                                        target
-                                )
-                                + " — "
-                                + CapitalRelationshipBand
-                                .fromScore(score)
-                                .getDisplayName()
-                                + " ("
-                                + score
-                                + ") — "
-                                + CapitalDiplomaticAgreementText
-                                .stateDisplay(state)
-                ).withStyle(
-                        ChatFormatting.GOLD
-                );
+        String targetName =
+                CapitalDiplomaticAgreementText
+                        .capitalName(
+                                level,
+                                target
+                        );
+
+        List<OpenAmbassadorCommunicationPacket.Action> actions =
+                new ArrayList<>();
+
+        List<String> notices =
+                new ArrayList<>();
 
         if (tradeActive) {
-            heading.append(
-                    Component.literal(
-                            " — Trade Agreement"
-                    ).withStyle(
-                            ChatFormatting.DARK_GREEN
+            actions.add(
+                    new OpenAmbassadorCommunicationPacket.Action(
+                            "End Trade Agreement",
+                            "End the Trade Agreement with "
+                                    + targetName
+                                    + ".",
+                            "/capitaldiplomacy endtrade "
+                                    + ambassadorId
+                                    + " "
+                                    + target.getCapitalId(),
+                            true
                     )
             );
-        }
-
-        if (campaignBetweenCapitals) {
-            heading.append(
-                    Component.literal(
-                            " — Attack Planned"
-                    ).withStyle(
-                            ChatFormatting.DARK_RED
-                    )
-            );
-        }
-
-        player.sendSystemMessage(heading);
-
-        boolean offeredAction = false;
-
-        if (tradeActive) {
-            String command =
-                    "/capitaldiplomacy endtrade "
-                            + ambassadorId
-                            + " "
-                            + target.getCapitalId();
-
-            player.sendSystemMessage(
-                    Component.literal(
-                                    "[End Trade Agreement]"
-                            )
-                            .setStyle(
-                                    CapitalDiplomaticAgreementText
-                                            .clickableStyle(
-                                                    ChatFormatting.RED,
-                                                    command,
-                                                    "End the Trade Agreement with "
-                                                            + CapitalDiplomaticAgreementText
-                                                            .capitalName(
-                                                                    level,
-                                                                    target
-                                                            )
-                                                            + "."
-                                            )
-                            )
-            );
-
-            offeredAction = true;
         }
 
         if (sourceCampaign == null
                 && targetCampaign == null) {
-            String command =
-                    "/capitalcampaign launch "
-                            + ambassadorId
-                            + " "
-                            + target.getCapitalId();
-
-            player.sendSystemMessage(
-                    Component.literal(
-                                    "[Plan Attack]"
-                            )
-                            .setStyle(
-                                    CapitalDiplomaticAgreementText
-                                            .clickableStyle(
-                                                    ChatFormatting.DARK_RED,
-                                                    command,
-                                                    "Reserve up to seven Guards and Archers. War begins and the force arrives when you personally enter "
-                                                            + CapitalDiplomaticAgreementText
-                                                            .capitalName(
-                                                                    level,
-                                                                    target
-                                                            )
-                                                            + "."
-                                            )
-                            )
-            );
-
-            offeredAction = true;
-        } else if (campaignBetweenCapitals) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "An attack between these capitals is already planned or active."
-                    ).withStyle(
-                            ChatFormatting.DARK_RED
+            actions.add(
+                    new OpenAmbassadorCommunicationPacket.Action(
+                            "Plan Attack",
+                            "Reserve up to seven Guards and Archers. War begins and the force arrives when you personally enter "
+                                    + targetName
+                                    + ".",
+                            "/capitalcampaign launch "
+                                    + ambassadorId
+                                    + " "
+                                    + target.getCapitalId(),
+                            true
                     )
+            );
+        } else if (campaignBetweenCapitals) {
+            notices.add(
+                    "An attack between these capitals is already planned or active."
             );
         } else {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "One of these capitals is already committed to another active campaign."
-                    ).withStyle(
-                            ChatFormatting.YELLOW
-                    )
+            notices.add(
+                    "One of these capitals is already committed to another active campaign."
             );
         }
 
         if (pending != null) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "A "
-                                    + pending.getType()
-                                    .getDisplayName()
-                                    + " is awaiting a response. Planning an attack remains available, but new diplomatic proposals are blocked until it is resolved."
-                    ).withStyle(
-                            ChatFormatting.YELLOW
-                    )
+            notices.add(
+                    "A "
+                            + pending.getType()
+                            .getDisplayName()
+                            + " is awaiting a response. New diplomatic proposals are blocked until it is resolved."
             );
         } else {
-            offeredAction |=
-                    sendProposalActionIfValid(
-                            player,
-                            ambassadorId,
-                            source,
-                            target,
-                            DiplomaticProposalType
-                                    .NON_AGGRESSION_PACT,
-                            state,
-                            score
-                    );
+            addProposalActionIfValid(
+                    actions,
+                    player,
+                    ambassadorId,
+                    source,
+                    target,
+                    DiplomaticProposalType
+                            .NON_AGGRESSION_PACT,
+                    state,
+                    score
+            );
 
-            offeredAction |=
-                    sendProposalActionIfValid(
-                            player,
-                            ambassadorId,
-                            source,
-                            target,
-                            DiplomaticProposalType.ALLIANCE,
-                            state,
-                            score
-                    );
+            addProposalActionIfValid(
+                    actions,
+                    player,
+                    ambassadorId,
+                    source,
+                    target,
+                    DiplomaticProposalType.ALLIANCE,
+                    state,
+                    score
+            );
 
-            offeredAction |=
-                    sendProposalActionIfValid(
-                            player,
-                            ambassadorId,
-                            source,
-                            target,
-                            DiplomaticProposalType.TRUCE,
-                            state,
-                            score
-                    );
+            addProposalActionIfValid(
+                    actions,
+                    player,
+                    ambassadorId,
+                    source,
+                    target,
+                    DiplomaticProposalType.TRUCE,
+                    state,
+                    score
+            );
 
-            offeredAction |=
-                    sendProposalActionIfValid(
-                            player,
-                            ambassadorId,
-                            source,
-                            target,
-                            DiplomaticProposalType
-                                    .TRADE_AGREEMENT,
-                            state,
-                            score
-                    );
+            addProposalActionIfValid(
+                    actions,
+                    player,
+                    ambassadorId,
+                    source,
+                    target,
+                    DiplomaticProposalType
+                            .TRADE_AGREEMENT,
+                    state,
+                    score
+            );
 
             boolean activeTruce =
-                    state == CapitalDiplomaticState.TRUCE
+                    state
+                            == CapitalDiplomaticState.TRUCE
                             && relation != null
                             && relation.getTruceUntil()
                             > level.getGameTime();
@@ -543,59 +482,69 @@ final class CapitalDiplomaticAgreementMenuService {
             if (state
                     != CapitalDiplomaticState.WAR
                     && !activeTruce) {
-                String targetName =
-                        CapitalDiplomaticAgreementText
-                                .capitalName(
-                                        level,
-                                        target
-                                );
-
-                String command =
-                        "/capitaldiplomacy war "
-                                + ambassadorId
-                                + " "
-                                + target.getCapitalId();
-
-                player.sendSystemMessage(
-                        Component.literal(
-                                        "[Declare War]"
-                                )
-                                .setStyle(
-                                        CapitalDiplomaticAgreementText
-                                                .clickableStyle(
-                                                        ChatFormatting.RED,
-                                                        command,
-                                                        "Declare war on "
-                                                                + targetName
-                                                                + "."
-                                                )
-                                )
+                actions.add(
+                        new OpenAmbassadorCommunicationPacket.Action(
+                                "Declare War",
+                                "Declare war on "
+                                        + targetName
+                                        + ".",
+                                "/capitaldiplomacy war "
+                                        + ambassadorId
+                                        + " "
+                                        + target.getCapitalId(),
+                                true
+                        )
                 );
-
-                offeredAction = true;
             }
         }
 
-        if (!offeredAction) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "No new formal diplomatic action is currently available."
-                    ).withStyle(
-                            ChatFormatting.GRAY
+        if (actions.isEmpty()) {
+            actions.add(
+                    new OpenAmbassadorCommunicationPacket.Action(
+                            "No Available Actions",
+                            "No new formal diplomatic action is currently available.",
+                            "",
+                            false
                     )
             );
         }
 
-        sendBackButton(
+        String subtitle =
+                "Relationship: "
+                        + CapitalRelationshipBand
+                        .fromScore(score)
+                        .getDisplayName()
+                        + " ("
+                        + score
+                        + ") — Status: "
+                        + CapitalDiplomaticAgreementText
+                        .stateDisplay(state);
+
+        String message =
+                String.join(
+                        " ",
+                        notices
+                );
+
+        ModNetwork.sendToPlayer(
                 player,
-                ambassadorId
+                new OpenAmbassadorCommunicationPacket(
+                        OpenAmbassadorCommunicationPacket.Mode.DIPLOMACY_ACTIONS,
+                        targetName,
+                        subtitle,
+                        message,
+                        "/capitaldiplomacy targets "
+                                + ambassadorId,
+                        List.of(),
+                        actions
+                )
         );
 
         return 1;
     }
 
-    private static boolean
-    sendProposalActionIfValid(
+    private static void addProposalActionIfValid(
+            List<OpenAmbassadorCommunicationPacket.Action> actions,
             ServerPlayer player,
             UUID ambassadorId,
             CapitalRecord source,
@@ -614,7 +563,7 @@ final class CapitalDiplomaticAgreementMenuService {
                         score
                 )
                 != null) {
-            return false;
+            return;
         }
 
         String targetName =
@@ -624,54 +573,68 @@ final class CapitalDiplomaticAgreementMenuService {
                                 target
                         );
 
-        String command =
-                "/capitaldiplomacy propose "
-                        + ambassadorId
-                        + " "
-                        + target.getCapitalId()
-                        + " "
-                        + type.getSerializedName();
-
-        player.sendSystemMessage(
-                Component.literal(
-                                "[Propose "
-                                        + type.getDisplayName()
-                                        + "]"
-                        )
-                        .setStyle(
-                                CapitalDiplomaticAgreementText
-                                        .clickableStyle(
-                                                ChatFormatting.GREEN,
-                                                command,
-                                                "Send a "
-                                                        + type.getDisplayName()
-                                                        + " proposal to "
-                                                        + targetName
-                                                        + "."
-                                        )
-                        )
+        actions.add(
+                new OpenAmbassadorCommunicationPacket.Action(
+                        "Propose "
+                                + type.getDisplayName(),
+                        "Send a "
+                                + type.getDisplayName()
+                                + " proposal to "
+                                + targetName
+                                + ".",
+                        "/capitaldiplomacy propose "
+                                + ambassadorId
+                                + " "
+                                + target.getCapitalId()
+                                + " "
+                                + type.getSerializedName(),
+                        true
+                )
         );
-
-        return true;
     }
 
-    private static void sendBackButton(
-            ServerPlayer player,
-            UUID ambassadorId
+    private static String statusFlags(
+            boolean tradeActive,
+            boolean campaignBetweenCapitals
     ) {
-        player.sendSystemMessage(
-                Component.literal(
-                                "[Back to Capitals]"
-                        )
-                        .setStyle(
-                                CapitalDiplomaticAgreementText
-                                        .clickableStyle(
-                                                ChatFormatting.GRAY,
-                                                "/capitaldiplomacy targets "
-                                                        + ambassadorId,
-                                                "Return to the list of capitals."
-                                        )
-                        )
+        List<String> flags =
+                new ArrayList<>();
+
+        if (tradeActive) {
+            flags.add(
+                    "Trade Agreement: Active"
+            );
+        }
+
+        if (campaignBetweenCapitals) {
+            flags.add(
+                    "Attack: Planned"
+            );
+        }
+
+        return String.join(
+                " — ",
+                flags
+        );
+    }
+
+    private static void sendMessage(
+            ServerPlayer player,
+            String title,
+            String message,
+            String backCommand
+    ) {
+        ModNetwork.sendToPlayer(
+                player,
+                new OpenAmbassadorCommunicationPacket(
+                        OpenAmbassadorCommunicationPacket.Mode.MESSAGE,
+                        title,
+                        "",
+                        message,
+                        backCommand,
+                        List.of(),
+                        List.of()
+                )
         );
     }
 }

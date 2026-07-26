@@ -6,18 +6,27 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.conczin.mca.entity.VillagerEntityMCA;
 import net.conczin.mca.server.world.data.Village;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 final class CapitalCampaignDeploymentService {
+
+    private static final double FIELD_DEFENDER_RADIUS_SQR =
+            96.0D * 96.0D;
 
     private static final int[][] FORMATION_OFFSETS = {
             {-3, 2},
@@ -31,7 +40,15 @@ final class CapitalCampaignDeploymentService {
             {-5, 3},
             {5, 3},
             {-5, -3},
-            {5, -3}
+            {5, -3},
+            {-7, 1},
+            {7, 1},
+            {-7, -2},
+            {7, -2},
+            {-2, 7},
+            {2, 7},
+            {-2, -7},
+            {2, -7}
     };
 
     private CapitalCampaignDeploymentService() {
@@ -41,7 +58,9 @@ final class CapitalCampaignDeploymentService {
             ServerLevel level,
             CapitalCampaignRecord campaign,
             CapitalRecord attackingCapital,
-            CapitalRecord defendingCapital
+            CapitalRecord defendingCapital,
+            ServerPlayer anchor,
+            List<VillagerEntityMCA> assembledAttackers
     ) {
         Village defendingVillage =
                 CapitalCampaignEligibilityService
@@ -56,32 +75,35 @@ final class CapitalCampaignDeploymentService {
             );
         }
 
-        AnchorValidation anchorValidation =
-                findInitiatingPlayer(
-                        level,
-                        campaign,
-                        attackingCapital,
-                        defendingVillage
-                );
-
-        if (anchorValidation.invalid()) {
-            return DeploymentResult.invalid(
-                    anchorValidation.failureMessage()
+        if (anchor == null
+                || anchor.level() != level
+                || !anchor.isAlive()
+                || anchor.isSpectator()
+                || !defendingVillage.isWithinBorder(anchor)) {
+            return DeploymentResult.waiting(
+                    "Remain inside the defending capital while the force deploys."
             );
         }
 
-        ServerPlayer anchor =
-                anchorValidation.player();
-
-        if (anchor == null) {
-            return DeploymentResult.waiting();
+        if (assembledAttackers == null
+                || assembledAttackers.isEmpty()) {
+            return DeploymentResult.invalid(
+                    "No campaign attackers remained available for deployment."
+            );
         }
 
         List<VillagerEntityMCA> availableAttackers =
-                findAvailableAttackers(
-                        level,
-                        campaign
-                );
+                assembledAttackers.stream()
+                        .filter(attacker ->
+                                attacker != null
+                                        && attacker.isAlive()
+                                        && !attacker.isRemoved()
+                        )
+                        .limit(
+                                CapitalCampaignRecord
+                                        .MAX_ATTACKERS
+                        )
+                        .toList();
 
         if (availableAttackers.isEmpty()) {
             return DeploymentResult.invalid(
@@ -94,35 +116,22 @@ final class CapitalCampaignDeploymentService {
                         level,
                         defendingVillage,
                         anchor.blockPosition(),
+                        availableAttackers,
                         availableAttackers.size()
                 );
 
-        if (positions.isEmpty()) {
-            return DeploymentResult.waiting();
-        }
-
-        if (!CapitalDiplomaticWarService
-                .beginCampaignWar(
-                        level,
-                        attackingCapital,
-                        defendingCapital
-                )) {
-            return DeploymentResult.invalid(
-                    "The attack could not begin because the War state could not be established."
+        if (positions.size()
+                < availableAttackers.size()) {
+            return DeploymentResult.waiting(
+                    "Move to a clearer outdoor area inside the defending capital so the full campaign force can form around you."
             );
         }
 
         List<UUID> deployedAttackers =
                 new ArrayList<>();
 
-        int deploymentCount =
-                Math.min(
-                        positions.size(),
-                        availableAttackers.size()
-                );
-
         for (int index = 0;
-             index < deploymentCount;
+             index < availableAttackers.size();
              index++) {
             VillagerEntityMCA attacker =
                     availableAttackers.get(index);
@@ -130,11 +139,7 @@ final class CapitalCampaignDeploymentService {
             BlockPos position =
                     positions.get(index);
 
-            CapitalCampaignTargetingService
-                    .clearCombatTarget(attacker);
-
-            attacker.getNavigation().stop();
-            attacker.stopRiding();
+            prepareForCampaignTeleport(attacker);
 
             attacker.teleportTo(
                     position.getX() + 0.5D,
@@ -142,29 +147,38 @@ final class CapitalCampaignDeploymentService {
                     position.getZ() + 0.5D
             );
 
+            attacker.refreshDimensions();
+            refreshClientTracking(level, attacker);
+
             deployedAttackers.add(
                     attacker.getUUID()
             );
         }
 
-        if (deployedAttackers.isEmpty()) {
+        if (deployedAttackers.size()
+                != availableAttackers.size()) {
             return DeploymentResult.invalid(
-                    "No campaign attackers could arrive beside the sovereign."
+                    "The complete assembled campaign force could not be deployed."
             );
         }
 
         List<UUID> defenders =
                 findFieldDefenders(
                         level,
-                        defendingCapital
+                        defendingCapital,
+                        anchor.position()
                 );
 
         campaign.replaceAttackerIds(
                 deployedAttackers
         );
-
         campaign.setDefenderIds(defenders);
-        campaign.activate(level.getGameTime());
+        campaign.beginFormation(
+                level.getGameTime(),
+                level.getGameTime()
+                        + CapitalCampaignAssemblyService
+                        .FORMATION_DURATION_TICKS
+        );
 
         CapitalCampaignDataAccess
                 .get(level)
@@ -188,9 +202,11 @@ final class CapitalCampaignDeploymentService {
                 deployedAttackers.size()
                         + " campaign attackers from "
                         + attackingName
-                        + " arrived beside their sovereign inside "
+                        + " formed inside "
                         + defendingName
-                        + ".";
+                        + " to face "
+                        + defenders.size()
+                        + " field defenders. The battle was set to begin after a short formation period.";
 
         CapitalChronicleService.addEntry(
                 level,
@@ -206,7 +222,11 @@ final class CapitalCampaignDeploymentService {
 
         anchor.sendSystemMessage(
                 Component.literal(
-                        "Your campaign force has arrived and will fight beside you."
+                        "Your full assembled force has arrived: "
+                                + deployedAttackers.size()
+                                + " attackers against "
+                                + defenders.size()
+                                + " field defenders. The battle begins in 5 seconds."
                 )
         );
 
@@ -217,7 +237,7 @@ final class CapitalCampaignDeploymentService {
                         Component.literal(
                                 "A campaign force from "
                                         + attackingName
-                                        + " has appeared inside the capital."
+                                        + " has formed inside the capital. The battle begins in 5 seconds."
                         )
                 );
 
@@ -226,7 +246,8 @@ final class CapitalCampaignDeploymentService {
 
     static List<UUID> findFieldDefenders(
             ServerLevel level,
-            CapitalRecord defendingCapital
+            CapitalRecord defendingCapital,
+            Vec3 battleCenter
     ) {
         Set<UUID> residents =
                 CapitalResidentScanner.scanResidents(
@@ -264,6 +285,21 @@ final class CapitalCampaignDeploymentService {
                                         id
                                 )
                 )
+                .filter(id -> {
+                    if (battleCenter == null) {
+                        return true;
+                    }
+
+                    return MCAIntegrationBridge
+                            .findLoadedEntityByUuid(
+                                    level,
+                                    id
+                            )
+                            instanceof net.minecraft.world.entity.Entity entity
+                            && entity.distanceToSqr(
+                            battleCenter
+                    ) <= FIELD_DEFENDER_RADIUS_SQR;
+                })
                 .sorted(
                         Comparator.comparing(
                                 UUID::toString
@@ -272,116 +308,45 @@ final class CapitalCampaignDeploymentService {
                 .toList();
     }
 
-    private static AnchorValidation findInitiatingPlayer(
-            ServerLevel level,
-            CapitalCampaignRecord campaign,
-            CapitalRecord attackingCapital,
-            Village defendingVillage
-    ) {
-        UUID initiatingPlayerId =
-                campaign.getInitiatingPlayerId();
-
-        if (initiatingPlayerId == null) {
-            return AnchorValidation.invalid(
-                    "The planned attack has no initiating player sovereign and cannot deploy."
-            );
-        }
-
-        if (!initiatingPlayerId.equals(
-                attackingCapital.getPlayerSovereignId()
-        )) {
-            return AnchorValidation.invalid(
-                    "The player who planned this attack is no longer the attacking capital's sovereign."
-            );
-        }
-
-        ServerPlayer player =
-                level.getServer()
-                        .getPlayerList()
-                        .getPlayer(initiatingPlayerId);
-
-        if (player == null
-                || player.level() != level
-                || !player.isAlive()
-                || player.isSpectator()) {
-            return AnchorValidation.waiting();
-        }
-
-        if (!defendingVillage.isWithinBorder(player)) {
-            return AnchorValidation.waiting();
-        }
-
-        return AnchorValidation.success(player);
-    }
-
-    private static List<VillagerEntityMCA>
-    findAvailableAttackers(
-            ServerLevel level,
-            CapitalCampaignRecord campaign
-    ) {
-        List<VillagerEntityMCA> result =
-                new ArrayList<>();
-
-        for (UUID attackerId :
-                campaign.getAttackerIds()) {
-            if (MCAIntegrationBridge
-                    .findLoadedMCAVillagerByUuid(
-                            level,
-                            attackerId
-                    )
-                    instanceof VillagerEntityMCA attacker
-                    && attacker.isAlive()) {
-                result.add(attacker);
-            }
-        }
-
-        return result;
-    }
-
     private static List<BlockPos> createFormation(
             ServerLevel level,
             Village defendingVillage,
             BlockPos anchor,
+            List<VillagerEntityMCA> attackers,
             int requiredPositions
     ) {
         List<BlockPos> positions =
                 new ArrayList<>();
 
-        for (int[] offset :
-                FORMATION_OFFSETS) {
-            int x =
-                    anchor.getX() + offset[0];
-
-            int z =
-                    anchor.getZ() + offset[1];
-
-            BlockPos horizontal =
-                    new BlockPos(
-                            x,
-                            anchor.getY(),
-                            z
+        for (int[] offset : FORMATION_OFFSETS) {
+            VillagerEntityMCA attacker =
+                    attackers.get(
+                            Math.min(
+                                    positions.size(),
+                                    attackers.size() - 1
+                            )
                     );
 
-            if (!level.hasChunkAt(horizontal)
-                    || !defendingVillage
-                    .isWithinBorder(
-                            horizontal,
-                            0
-                    )) {
+            BlockPos safePosition =
+                    findSafeOutdoorPosition(
+                            level,
+                            defendingVillage,
+                            attacker,
+                            anchor.offset(
+                                    offset[0],
+                                    0,
+                                    offset[1]
+                            )
+                    );
+
+            if (safePosition == null
+                    || positions.contains(
+                    safePosition
+            )) {
                 continue;
             }
 
-            int y =
-                    level.getHeight(
-                            Heightmap.Types
-                                    .MOTION_BLOCKING_NO_LEAVES,
-                            x,
-                            z
-                    );
-
-            positions.add(
-                    new BlockPos(x, y, z)
-            );
+            positions.add(safePosition);
 
             if (positions.size()
                     >= requiredPositions) {
@@ -390,6 +355,151 @@ final class CapitalCampaignDeploymentService {
         }
 
         return List.copyOf(positions);
+    }
+
+    private static BlockPos findSafeOutdoorPosition(
+            ServerLevel level,
+            Village defendingVillage,
+            VillagerEntityMCA attacker,
+            BlockPos horizontal
+    ) {
+        if (!level.hasChunkAt(horizontal)
+                || !defendingVillage
+                .isWithinBorder(
+                        horizontal,
+                        0
+                )) {
+            return null;
+        }
+
+        int surfaceY =
+                level.getHeight(
+                        Heightmap.Types
+                                .MOTION_BLOCKING_NO_LEAVES,
+                        horizontal.getX(),
+                        horizontal.getZ()
+                );
+
+        LinkedHashSet<Integer> heights =
+                new LinkedHashSet<>();
+
+        heights.add(horizontal.getY());
+        heights.add(surfaceY);
+
+        for (int offset = 1;
+             offset <= 6;
+             offset++) {
+            heights.add(horizontal.getY() + offset);
+            heights.add(horizontal.getY() - offset);
+            heights.add(surfaceY + offset);
+            heights.add(surfaceY - offset);
+        }
+
+        for (int y : heights) {
+            BlockPos candidate =
+                    new BlockPos(
+                            horizontal.getX(),
+                            y,
+                            horizontal.getZ()
+                    );
+
+            if (isSafeOutdoorPosition(
+                    level,
+                    defendingVillage,
+                    attacker,
+                    candidate
+            )) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean isSafeOutdoorPosition(
+            ServerLevel level,
+            Village defendingVillage,
+            VillagerEntityMCA attacker,
+            BlockPos position
+    ) {
+        if (!defendingVillage
+                .isWithinBorder(
+                        position,
+                        0
+                )
+                || !level.canSeeSky(
+                position.above()
+        )
+                || !level.getFluidState(position)
+                .isEmpty()
+                || !level.getFluidState(
+                position.above()
+        ).isEmpty()) {
+            return false;
+        }
+
+        BlockPos floor =
+                position.below();
+
+        if (!level.getBlockState(floor)
+                .isFaceSturdy(
+                        level,
+                        floor,
+                        Direction.UP
+                )) {
+            return false;
+        }
+
+        AABB destinationBox =
+                attacker.getDimensions(
+                                Pose.STANDING
+                        )
+                        .makeBoundingBox(
+                                Vec3.atBottomCenterOf(
+                                        position
+                                )
+                        );
+
+        return level.noCollision(
+                attacker,
+                destinationBox
+        );
+    }
+
+    private static void prepareForCampaignTeleport(
+            VillagerEntityMCA attacker
+    ) {
+        CapitalCampaignTargetingService
+                .clearCombatTarget(attacker);
+
+        attacker.getNavigation().stop();
+        attacker.stopUsingItem();
+
+        if (attacker.isSleeping()) {
+            attacker.stopSleeping();
+        }
+
+        attacker.stopRiding();
+        attacker.setNoAi(false);
+        attacker.setAggressive(false);
+        attacker.setInvisible(false);
+        attacker.removeEffect(
+                MobEffects.INVISIBILITY
+        );
+        attacker.setPose(Pose.STANDING);
+        attacker.setDeltaMovement(Vec3.ZERO);
+        attacker.setPersistenceRequired();
+    }
+
+    private static void refreshClientTracking(
+            ServerLevel level,
+            VillagerEntityMCA attacker
+    ) {
+        level.getChunkSource()
+                .removeEntity(attacker);
+
+        level.getChunkSource()
+                .addEntity(attacker);
     }
 
     record DeploymentResult(
@@ -406,11 +516,13 @@ final class CapitalCampaignDeploymentService {
             );
         }
 
-        static DeploymentResult waiting() {
+        static DeploymentResult waiting(
+                String message
+        ) {
             return new DeploymentResult(
                     false,
                     false,
-                    null
+                    message
             );
         }
 
@@ -419,41 +531,6 @@ final class CapitalCampaignDeploymentService {
         ) {
             return new DeploymentResult(
                     false,
-                    true,
-                    message
-            );
-        }
-    }
-
-    private record AnchorValidation(
-            ServerPlayer player,
-            boolean invalid,
-            String failureMessage
-    ) {
-
-        static AnchorValidation success(
-                ServerPlayer player
-        ) {
-            return new AnchorValidation(
-                    player,
-                    false,
-                    null
-            );
-        }
-
-        static AnchorValidation waiting() {
-            return new AnchorValidation(
-                    null,
-                    false,
-                    null
-            );
-        }
-
-        static AnchorValidation invalid(
-                String message
-        ) {
-            return new AnchorValidation(
-                    null,
                     true,
                     message
             );

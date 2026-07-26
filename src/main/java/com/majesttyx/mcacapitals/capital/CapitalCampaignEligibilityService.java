@@ -33,12 +33,14 @@ final class CapitalCampaignEligibilityService {
             );
         }
 
-        if (initiatingPlayerId == null
-                || !initiatingPlayerId.equals(
-                attackingCapital.getPlayerSovereignId()
-        )) {
+        if (!CapitalDiplomaticAuthorityService
+                .mayExerciseSovereignAuthority(
+                        level,
+                        attackingCapital,
+                        initiatingPlayerId
+                )) {
             return Validation.failure(
-                    "Only the current player sovereign may plan an attack."
+                    "Only the player sovereign, or the player Hand serving a villager sovereign, may plan an attack."
             );
         }
 
@@ -80,8 +82,7 @@ final class CapitalCampaignEligibilityService {
                 .getCampaignForCapital(
                         level,
                         attackingCapital.getCapitalId()
-                )
-                != null) {
+                ) != null) {
             return Validation.failure(
                     "The attacking capital is already involved in an active campaign."
             );
@@ -91,8 +92,7 @@ final class CapitalCampaignEligibilityService {
                 .getCampaignForCapital(
                         level,
                         defendingCapital.getCapitalId()
-                )
-                != null) {
+                ) != null) {
             return Validation.failure(
                     "The defending capital is already involved in an active campaign."
             );
@@ -101,12 +101,13 @@ final class CapitalCampaignEligibilityService {
         List<UUID> attackers =
                 findEligibleAttackers(
                         level,
-                        attackingCapital
+                        attackingCapital,
+                        null
                 );
 
         if (attackers.isEmpty()) {
             return Validation.failure(
-                    "The attacking capital has no eligible ordinary Guards or Archers."
+                    "The attacking capital has no eligible ordinary Guards or Archers currently available to pledge to a campaign."
             );
         }
 
@@ -116,6 +117,18 @@ final class CapitalCampaignEligibilityService {
     static List<UUID> findEligibleAttackers(
             ServerLevel level,
             CapitalRecord capital
+    ) {
+        return findEligibleAttackers(
+                level,
+                capital,
+                null
+        );
+    }
+
+    static List<UUID> findEligibleAttackers(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID allowedCampaignId
     ) {
         if (level == null
                 || capital == null
@@ -159,21 +172,28 @@ final class CapitalCampaignEligibilityService {
                                         id
                                 )
                 )
-                .filter(id ->
-                        CapitalCampaignDataAccess
-                                .getCampaignForAttacker(
-                                        level,
-                                        id
-                                )
-                                == null
-                )
+                .filter(id -> {
+                    CapitalCampaignRecord existing =
+                            CapitalCampaignDataAccess
+                                    .getCampaignForAttacker(
+                                            level,
+                                            id
+                                    );
+
+                    return existing == null
+                            || allowedCampaignId != null
+                            && allowedCampaignId.equals(
+                            existing.getCampaignId()
+                    );
+                })
                 .sorted(
                         Comparator.comparing(
                                 UUID::toString
                         )
                 )
                 .limit(
-                        CapitalCampaignRecord.MAX_ATTACKERS
+                        CapitalCampaignRecord
+                                .MAX_ATTACKERS
                 )
                 .toList();
     }

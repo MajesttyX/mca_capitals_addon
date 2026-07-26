@@ -1,19 +1,81 @@
 [
   {
-    "id": "mcacapitals:skins/clothing/normal/female/mourning_royal/%d.png",
-    "count": 3,
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_royal/0.png",
     "profession": "mcacapitals.mourning",
     "exclude": true
   },
   {
-    "id": "mcacapitals:skins/clothing/normal/female/mourning_noble/%d.png",
-    "count": 6,
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_royal/1.png",
     "profession": "mcacapitals.mourning",
     "exclude": true
   },
   {
-    "id": "mcacapitals:skins/clothing/normal/female/mourning_commoner/%d.png",
-    "count": 7,
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_royal/2.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_noble/0.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_noble/1.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_noble/2.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_noble/3.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_noble/4.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_noble/5.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_commoner/0.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_commoner/1.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_commoner/2.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_commoner/3.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_commoner/4.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_commoner/5.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/female/mourning_commoner/6.png",
     "profession": "mcacapitals.mourning",
     "exclude": true
   }

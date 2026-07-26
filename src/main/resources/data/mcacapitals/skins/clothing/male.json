@@ -1,19 +1,71 @@
 [
   {
-    "id": "mcacapitals:skins/clothing/normal/male/mourning_royal/%d.png",
-    "count": 4,
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_royal/0.png",
     "profession": "mcacapitals.mourning",
     "exclude": true
   },
   {
-    "id": "mcacapitals:skins/clothing/normal/male/mourning_noble/%d.png",
-    "count": 5,
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_royal/1.png",
     "profession": "mcacapitals.mourning",
     "exclude": true
   },
   {
-    "id": "mcacapitals:skins/clothing/normal/male/mourning_commoner/%d.png",
-    "count": 5,
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_royal/2.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_royal/3.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_noble/0.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_noble/1.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_noble/2.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_noble/3.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_noble/4.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_commoner/0.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_commoner/1.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_commoner/2.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_commoner/3.png",
+    "profession": "mcacapitals.mourning",
+    "exclude": true
+  },
+  {
+    "id": "mcacapitals:skins/clothing/normal/male/mourning_commoner/4.png",
     "profession": "mcacapitals.mourning",
     "exclude": true
   }

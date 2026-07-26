@@ -6,6 +6,8 @@
   "refmap": "mcacapitals.refmap.json",
   "mixins": [
     "VillagerCommandHandlerMixin",
+    "VillagerExecutionAuthorityMixin",
+    "MayorConstraintCapitalAuthorityMixin",
     "DialogueChatFallbackMixin",
     "DialogueCrownAuthorityAnswerMixin",
     "MessengerCapitalDialogueMixin",
@@ -13,6 +15,9 @@
     "PlayerEditorGenderSyncMixin",
     "VillagerTasksMCARoyalGuardMixin",
     "ResidencyCampaignMixin",
+    "GuardEnemiesSensorCampaignMixin",
+    "VillagerTasksMCACampaignCombatMixin",
+    "CapitalCampaignChildSovereignDecisionMixin",
     "BreedableRelationshipGiftMixin",
     "SealedPurseGiftMixin",
     "EntitySprintingRoyalGuardMixin",

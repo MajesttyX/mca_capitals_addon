@@ -47,8 +47,11 @@ public final class CapitalDiplomaticResolutionService {
             );
         }
 
-        if (targetCapital.getPlayerSovereignId()
-                != null) {
+        if (CapitalDiplomaticAuthorityService
+                .getPlayerDecisionMaker(
+                        level,
+                        targetCapital
+                ) != null) {
             shipment.setStatus(
                     DiplomaticShipmentStatus
                             .AWAITING_PLAYER_RESPONSE
@@ -66,11 +69,12 @@ public final class CapitalDiplomaticResolutionService {
         }
 
         if (shipment.getRelationshipDelta() < 0) {
-            if (!CapitalDiplomaticStorageService.deposit(
-                    level,
-                    sourceCapital,
-                    shipment.getContents()
-            )) {
+            if (!CapitalDiplomaticStorageService
+                    .deposit(
+                            level,
+                            sourceCapital,
+                            shipment.getContents()
+                    )) {
                 return false;
             }
 
@@ -106,11 +110,12 @@ public final class CapitalDiplomaticResolutionService {
                             + " returned the package and condemned it as an insult."
             );
         } else {
-            if (!CapitalDiplomaticStorageService.deposit(
-                    level,
-                    targetCapital,
-                    shipment.getContents()
-            )) {
+            if (!CapitalDiplomaticStorageService
+                    .deposit(
+                            level,
+                            targetCapital,
+                            shipment.getContents()
+                    )) {
                 return false;
             }
 
@@ -186,11 +191,12 @@ public final class CapitalDiplomaticResolutionService {
         CapitalRecord targetCapital =
                 validation.targetCapital();
 
-        if (!CapitalDiplomaticStorageService.deposit(
-                level,
-                targetCapital,
-                shipment.getContents()
-        )) {
+        if (!CapitalDiplomaticStorageService
+                .deposit(
+                        level,
+                        targetCapital,
+                        shipment.getContents()
+                )) {
             player.sendSystemMessage(
                     Component.literal(
                             "The receiving capital's MCA village storage is unavailable."
@@ -280,11 +286,12 @@ public final class CapitalDiplomaticResolutionService {
         CapitalRecord targetCapital =
                 validation.targetCapital();
 
-        if (!CapitalDiplomaticStorageService.deposit(
-                level,
-                sourceCapital,
-                shipment.getContents()
-        )) {
+        if (!CapitalDiplomaticStorageService
+                .deposit(
+                        level,
+                        sourceCapital,
+                        shipment.getContents()
+                )) {
             player.sendSystemMessage(
                     Component.literal(
                             "The sending capital's MCA village storage is unavailable, so the package cannot yet be returned."
@@ -364,9 +371,12 @@ public final class CapitalDiplomaticResolutionService {
             if (capital == null
                     || capital.getState()
                     != CapitalState.ACTIVE
-                    || !playerId.equals(
-                    capital.getPlayerSovereignId()
-            )) {
+                    || !CapitalDiplomaticAuthorityService
+                    .mayExerciseSovereignAuthority(
+                            level,
+                            capital,
+                            playerId
+                    )) {
                 continue;
             }
 
@@ -399,11 +409,12 @@ public final class CapitalDiplomaticResolutionService {
             return false;
         }
 
-        if (!CapitalDiplomaticStorageService.deposit(
-                level,
-                sourceCapital,
-                shipment.getContents()
-        )) {
+        if (!CapitalDiplomaticStorageService
+                .deposit(
+                        level,
+                        sourceCapital,
+                        shipment.getContents()
+                )) {
             return false;
         }
 
@@ -437,10 +448,11 @@ public final class CapitalDiplomaticResolutionService {
                 player.serverLevel();
 
         DiplomaticShipment shipment =
-                CapitalDiplomacyDataAccess.getShipment(
-                        level,
-                        shipmentId
-                );
+                CapitalDiplomacyDataAccess
+                        .getShipment(
+                                level,
+                                shipmentId
+                        );
 
         if (shipment == null
                 || !shipment
@@ -469,12 +481,14 @@ public final class CapitalDiplomaticResolutionService {
             );
         }
 
-        if (!player.getUUID().equals(
-                targetCapital
-                        .getPlayerSovereignId()
-        )) {
+        if (!CapitalDiplomaticAuthorityService
+                .mayExerciseSovereignAuthority(
+                        level,
+                        targetCapital,
+                        player.getUUID()
+                )) {
             return Validation.failure(
-                    "Only the current sovereign of the receiving capital may answer this package."
+                    "Only the player sovereign, or the player Hand serving a villager sovereign, may answer this package."
             );
         }
 
@@ -628,13 +642,11 @@ public final class CapitalDiplomaticResolutionService {
             String message
     ) {
         UUID recipient =
-                sourceCapital
-                        .getPlayerSovereignId();
+                sourceCapital.getPlayerSovereignId();
 
         if (recipient == null) {
             recipient =
-                    shipment
-                            .getSenderSovereignId();
+                    shipment.getSenderSovereignId();
         }
 
         if (recipient == null) {

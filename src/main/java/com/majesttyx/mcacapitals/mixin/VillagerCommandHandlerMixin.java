@@ -3,6 +3,7 @@ package com.majesttyx.mcacapitals.mixin;
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticGiftService;
+import com.majesttyx.mcacapitals.capital.CapitalForeignAffairsService;
 import com.majesttyx.mcacapitals.dialogue.CapitalPetitionService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -56,7 +57,12 @@ public class VillagerCommandHandlerMixin {
 
         boolean handled;
 
-        if (CapitalDiplomaticGiftService.DIALOGUE_COMMAND.equals(command)) {
+        if (CapitalForeignAffairsService.DIALOGUE_COMMAND.equals(command)) {
+            handled = CapitalForeignAffairsService.showReport(
+                    player,
+                    entity
+            );
+        } else if (CapitalDiplomaticGiftService.DIALOGUE_COMMAND.equals(command)) {
             handled = CapitalDiplomaticGiftService.openDestinationList(
                     player,
                     entity

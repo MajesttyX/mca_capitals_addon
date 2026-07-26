@@ -67,12 +67,14 @@ final class CapitalDiplomaticAgreementValidation {
             );
         }
 
-        UUID playerId = player.getUUID();
-
-        if (!playerId.equals(source.getPlayerSovereignId())
-                && !playerId.equals(source.getSovereign())) {
+        if (!CapitalDiplomaticAuthorityService
+                .mayManageForeignRelations(
+                        level,
+                        source,
+                        player.getUUID()
+                )) {
             return AudienceValidation.failure(
-                    "Only the sovereign may conduct formal diplomacy."
+                    "Only the player sovereign, or the player Hand serving a villager sovereign, may conduct formal diplomacy."
             );
         }
 
@@ -202,11 +204,14 @@ final class CapitalDiplomaticAgreementValidation {
             );
         }
 
-        if (!player.getUUID().equals(
-                target.getPlayerSovereignId()
-        )) {
+        if (!CapitalDiplomaticAuthorityService
+                .mayExerciseSovereignAuthority(
+                        level,
+                        target,
+                        player.getUUID()
+                )) {
             return PlayerProposalValidation.failure(
-                    "Only the current sovereign of the receiving capital may answer this proposal."
+                    "Only the player sovereign, or the player Hand serving a villager sovereign, may answer this proposal."
             );
         }
 

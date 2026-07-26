@@ -1,21 +1,16 @@
 package com.majesttyx.mcacapitals.mixin;
 
-import com.majesttyx.mcacapitals.capital.CapitalAmbassadorService;
-import com.majesttyx.mcacapitals.capital.CapitalBuildingService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementService;
+import com.majesttyx.mcacapitals.capital.CapitalDiplomaticGiftService;
+import com.majesttyx.mcacapitals.capital.CapitalForeignAffairsService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
-import com.majesttyx.mcacapitals.item.DiplomaticPackageItem;
-import com.majesttyx.mcacapitals.item.ModItems;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.conczin.mca.entity.VillagerEntityMCA;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.ItemContainerContents;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -48,6 +43,9 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
     private static final String REQUEST_ROYAL_PARDON_ANSWER =
             "mcacapitals_request_royal_pardon";
 
+    private static final String ASK_FOREIGN_AFFAIRS_ANSWER =
+            "mcacapitals_ask_foreign_affairs";
+
     private static final String SEND_GIFT_ANSWER =
             "mcacapitals_send_gift";
 
@@ -77,6 +75,7 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
                         || currentAnswers.contains(SEIZE_THRONE_ANSWER)
                         || currentAnswers.contains(ACCUSE_ENEMY_ANSWER)
                         || currentAnswers.contains(REQUEST_ROYAL_PARDON_ANSWER)
+                        || currentAnswers.contains(ASK_FOREIGN_AFFAIRS_ANSWER)
                         || currentAnswers.contains(SEND_GIFT_ANSWER)
                         || currentAnswers.contains(MANAGE_DIPLOMACY_ANSWER);
 
@@ -105,7 +104,17 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             filtered.remove(REQUEST_ROYAL_PARDON_ANSWER);
         }
 
-        if (!canSendGift(player, villager)) {
+        if (!CapitalForeignAffairsService.canShowDialogueAnswer(
+                player,
+                villager
+        )) {
+            filtered.remove(ASK_FOREIGN_AFFAIRS_ANSWER);
+        }
+
+        if (!CapitalDiplomaticGiftService.canShowDialogueAnswer(
+                player,
+                villager
+        )) {
             filtered.remove(SEND_GIFT_ANSWER);
         }
 
@@ -129,6 +138,7 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
         filtered.remove(SEIZE_THRONE_ANSWER);
         filtered.remove(ACCUSE_ENEMY_ANSWER);
         filtered.remove(REQUEST_ROYAL_PARDON_ANSWER);
+        filtered.remove(ASK_FOREIGN_AFFAIRS_ANSWER);
         filtered.remove(SEND_GIFT_ANSWER);
         filtered.remove(MANAGE_DIPLOMACY_ANSWER);
 
@@ -183,96 +193,6 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
                 && (villagerId.equals(capital.getSovereign())
                 || villagerId.equals(capital.getHand())
                 || villagerId.equals(capital.getMasterOfLaws()));
-    }
-
-    private static boolean canSendGift(
-            ServerPlayer player,
-            VillagerEntityMCA villager
-    ) {
-        if (player == null || villager == null) {
-            return false;
-        }
-
-        ServerLevel level = player.serverLevel();
-
-        CapitalRecord capital = resolveAmbassadorCapital(
-                level,
-                villager.getUUID()
-        );
-
-        if (capital == null
-                || capital.getState() != CapitalState.ACTIVE
-                || !CapitalAmbassadorService.isAmbassador(
-                level,
-                capital,
-                villager.getUUID()
-        )) {
-            return false;
-        }
-
-        UUID playerId = player.getUUID();
-
-        if (!playerId.equals(capital.getPlayerSovereignId())
-                && !playerId.equals(capital.getSovereign())) {
-            return false;
-        }
-
-        if (!CapitalBuildingService.hasAmbassadorBuildings(
-                level,
-                capital
-        )) {
-            return false;
-        }
-
-        return hasFilledPackage(player.getMainHandItem())
-                || hasFilledPackage(player.getOffhandItem());
-    }
-
-    private static boolean hasFilledPackage(ItemStack stack) {
-        if (stack == null
-                || stack.isEmpty()
-                || !stack.is(ModItems.DIPLOMATIC_PACKAGE.get())) {
-            return false;
-        }
-
-        ItemContainerContents contents = stack.getOrDefault(
-                DataComponents.CONTAINER,
-                ItemContainerContents.EMPTY
-        );
-
-        int count = 0;
-
-        for (ItemStack stored : contents.nonEmptyItems()) {
-            if (!DiplomaticPackageItem.mayStore(stored)) {
-                return false;
-            }
-
-            count++;
-
-            if (count > DiplomaticPackageItem.SLOT_COUNT) {
-                return false;
-            }
-        }
-
-        return count > 0;
-    }
-
-    private static CapitalRecord resolveAmbassadorCapital(
-            ServerLevel level,
-            UUID villagerId
-    ) {
-        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
-            if (capital != null
-                    && CapitalAmbassadorService.isAmbassador(
-                    level,
-                    capital,
-                    villagerId
-            )) {
-                return capital;
-            }
-        }
-
-        return null;
     }
 
     private static CapitalRecord resolveCapital(

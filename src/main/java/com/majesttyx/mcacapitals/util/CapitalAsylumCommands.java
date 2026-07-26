@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.capital.CapitalAsylumScreenService;
 import com.majesttyx.mcacapitals.capital.CapitalAsylumService;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -19,13 +20,18 @@ public final class CapitalAsylumCommands {
             CommandDispatcher<CommandSourceStack> dispatcher
     ) {
         dispatcher.register(
-                Commands.literal("capitalasylum")
+                Commands.literal(
+                                "capitalasylum"
+                        )
                         .then(
-                                Commands.literal("review")
+                                Commands.literal(
+                                                "review"
+                                        )
                                         .then(
                                                 Commands.argument(
                                                                 "ambassadorId",
-                                                                StringArgumentType.word()
+                                                                StringArgumentType
+                                                                        .word()
                                                         )
                                                         .executes(
                                                                 context ->
@@ -41,16 +47,20 @@ public final class CapitalAsylumCommands {
                                         )
                         )
                         .then(
-                                Commands.literal("grant")
+                                Commands.literal(
+                                                "grant"
+                                        )
                                         .then(
                                                 Commands.argument(
                                                                 "ambassadorId",
-                                                                StringArgumentType.word()
+                                                                StringArgumentType
+                                                                        .word()
                                                         )
                                                         .then(
                                                                 Commands.argument(
                                                                                 "refugeeId",
-                                                                                StringArgumentType.word()
+                                                                                StringArgumentType
+                                                                                        .word()
                                                                         )
                                                                         .executes(
                                                                                 context ->
@@ -93,10 +103,11 @@ public final class CapitalAsylumCommands {
             return 0;
         }
 
-        return CapitalAsylumService.openRequests(
-                player,
-                ambassadorId
-        );
+        return CapitalAsylumScreenService
+                .openRequests(
+                        player,
+                        ambassadorId
+                );
     }
 
     private static int grant(
@@ -127,11 +138,12 @@ public final class CapitalAsylumCommands {
             return 0;
         }
 
-        return CapitalAsylumService.grantAsylum(
-                player,
-                ambassadorId,
-                refugeeId
-        );
+        return CapitalAsylumService
+                .grantAsylum(
+                        player,
+                        ambassadorId,
+                        refugeeId
+                );
     }
 
     private static UUID parseUuid(
@@ -140,7 +152,9 @@ public final class CapitalAsylumCommands {
             String failureMessage
     ) {
         try {
-            return UUID.fromString(rawValue);
+            return UUID.fromString(
+                    rawValue
+            );
         } catch (IllegalArgumentException ignored) {
             source.sendFailure(
                     Component.literal(

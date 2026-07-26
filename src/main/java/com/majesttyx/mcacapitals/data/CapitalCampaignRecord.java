@@ -13,6 +13,7 @@ import java.util.UUID;
 public final class CapitalCampaignRecord {
 
     public static final int MAX_ATTACKERS = 7;
+    public static final int PREFERRED_ATTACKERS = 5;
 
     private static final String KEY_CAMPAIGN_ID = "CampaignId";
     private static final String KEY_ATTACKING_CAPITAL_ID = "AttackingCapitalId";
@@ -30,6 +31,18 @@ public final class CapitalCampaignRecord {
     private static final String KEY_END_REASON = "EndReason";
     private static final String KEY_DEFENDING_SOVEREIGN_REFUSED_PEACE =
             "DefendingSovereignRefusedPeace";
+    private static final String KEY_TARGET_ATTACKER_COUNT =
+            "TargetAttackerCount";
+    private static final String KEY_ASSEMBLY_STARTED_AT =
+            "AssemblyStartedAt";
+    private static final String KEY_FORMATION_ENDS_AT =
+            "FormationEndsAt";
+    private static final String KEY_LAST_ASSEMBLY_REPORTED_COUNT =
+            "LastAssemblyReportedCount";
+    private static final String KEY_FIELD_DEFEAT_RESOLUTION_AT =
+            "FieldDefeatResolutionAt";
+    private static final String KEY_CROWN_RALLY_ENDS_AT =
+            "CrownRallyEndsAt";
 
     private final UUID campaignId;
     private final UUID attackingCapitalId;
@@ -46,6 +59,12 @@ public final class CapitalCampaignRecord {
     private long returnDeadline;
     private CapitalCampaignEndReason endReason;
     private boolean defendingSovereignRefusedPeace;
+    private int targetAttackerCount;
+    private long assemblyStartedAt;
+    private long formationEndsAt;
+    private int lastAssemblyReportedCount;
+    private long fieldDefeatResolutionAt;
+    private long crownRallyEndsAt;
 
     public CapitalCampaignRecord(
             UUID campaignId,
@@ -86,7 +105,17 @@ public final class CapitalCampaignRecord {
                 0L,
                 0L,
                 CapitalCampaignEndReason.NONE,
-                false
+                false,
+                preferredTarget(
+                        attackerIds == null
+                                ? 0
+                                : attackerIds.size()
+                ),
+                0L,
+                0L,
+                -1,
+                0L,
+                0L
         );
     }
 
@@ -105,6 +134,56 @@ public final class CapitalCampaignRecord {
             long returnDeadline,
             CapitalCampaignEndReason endReason,
             boolean defendingSovereignRefusedPeace
+    ) {
+        this(
+                campaignId,
+                attackingCapitalId,
+                defendingCapitalId,
+                initiatingPlayerId,
+                attackerIds,
+                defenderIds,
+                returnedAttackerIds,
+                phase,
+                createdAt,
+                activatedAt,
+                retreatStartedAt,
+                returnDeadline,
+                endReason,
+                defendingSovereignRefusedPeace,
+                preferredTarget(
+                        attackerIds == null
+                                ? 0
+                                : attackerIds.size()
+                ),
+                0L,
+                0L,
+                -1,
+                0L,
+                0L
+        );
+    }
+
+    public CapitalCampaignRecord(
+            UUID campaignId,
+            UUID attackingCapitalId,
+            UUID defendingCapitalId,
+            UUID initiatingPlayerId,
+            List<UUID> attackerIds,
+            List<UUID> defenderIds,
+            List<UUID> returnedAttackerIds,
+            CapitalCampaignPhase phase,
+            long createdAt,
+            long activatedAt,
+            long retreatStartedAt,
+            long returnDeadline,
+            CapitalCampaignEndReason endReason,
+            boolean defendingSovereignRefusedPeace,
+            int targetAttackerCount,
+            long assemblyStartedAt,
+            long formationEndsAt,
+            int lastAssemblyReportedCount,
+            long fieldDefeatResolutionAt,
+            long crownRallyEndsAt
     ) {
         if (campaignId == null
                 || attackingCapitalId == null
@@ -135,7 +214,6 @@ public final class CapitalCampaignRecord {
         this.initiatingPlayerId = initiatingPlayerId;
         this.attackerIds =
                 new ArrayList<>(normalizedAttackers);
-
         this.defenderIds =
                 new ArrayList<>(
                         normalizeCombatants(
@@ -143,7 +221,6 @@ public final class CapitalCampaignRecord {
                                 Integer.MAX_VALUE
                         )
                 );
-
         this.returnedAttackerIds =
                 new ArrayList<>(
                         normalizeCombatants(
@@ -151,31 +228,43 @@ public final class CapitalCampaignRecord {
                                 MAX_ATTACKERS
                         )
                 );
-
         this.phase =
                 phase == null
                         ? CapitalCampaignPhase.MUSTERING
                         : phase;
-
-        this.createdAt =
-                Math.max(0L, createdAt);
-
-        this.activatedAt =
-                Math.max(0L, activatedAt);
-
+        this.createdAt = Math.max(0L, createdAt);
+        this.activatedAt = Math.max(0L, activatedAt);
         this.retreatStartedAt =
                 Math.max(0L, retreatStartedAt);
-
         this.returnDeadline =
                 Math.max(0L, returnDeadline);
-
         this.endReason =
                 endReason == null
                         ? CapitalCampaignEndReason.NONE
                         : endReason;
-
         this.defendingSovereignRefusedPeace =
                 defendingSovereignRefusedPeace;
+        this.targetAttackerCount =
+                normalizeTargetAttackerCount(
+                        targetAttackerCount,
+                        normalizedAttackers.size()
+                );
+        this.assemblyStartedAt =
+                Math.max(0L, assemblyStartedAt);
+        this.formationEndsAt =
+                Math.max(0L, formationEndsAt);
+        this.lastAssemblyReportedCount =
+                Math.max(
+                        -1,
+                        lastAssemblyReportedCount
+                );
+        this.fieldDefeatResolutionAt =
+                Math.max(
+                        0L,
+                        fieldDefeatResolutionAt
+                );
+        this.crownRallyEndsAt =
+                Math.max(0L, crownRallyEndsAt);
     }
 
     public UUID getCampaignId() {
@@ -234,33 +323,96 @@ public final class CapitalCampaignRecord {
         return defendingSovereignRefusedPeace;
     }
 
-    public boolean containsCapital(UUID capitalId) {
+    public int getTargetAttackerCount() {
+        return targetAttackerCount;
+    }
+
+    public long getAssemblyStartedAt() {
+        return assemblyStartedAt;
+    }
+
+    public long getFormationEndsAt() {
+        return formationEndsAt;
+    }
+
+    public int getLastAssemblyReportedCount() {
+        return lastAssemblyReportedCount;
+    }
+
+    public long getFieldDefeatResolutionAt() {
+        return fieldDefeatResolutionAt;
+    }
+
+    public long getCrownRallyEndsAt() {
+        return crownRallyEndsAt;
+    }
+
+    public boolean hasAssemblyStarted() {
+        return phase
+                == CapitalCampaignPhase.MUSTERING
+                && assemblyStartedAt > 0L;
+    }
+
+    public boolean isFormationPending() {
+        return phase
+                == CapitalCampaignPhase.MUSTERING
+                && formationEndsAt > 0L;
+    }
+
+    public boolean isFieldDefeatResolutionPending() {
+        return phase
+                == CapitalCampaignPhase.ACTIVE
+                && fieldDefeatResolutionAt > 0L;
+    }
+
+    public boolean isCrownRallyPending() {
+        return phase
+                == CapitalCampaignPhase.ACTIVE
+                && crownRallyEndsAt > 0L;
+    }
+
+    public boolean containsCapital(
+            UUID capitalId
+    ) {
         return capitalId != null
                 && (
                 capitalId.equals(attackingCapitalId)
-                        || capitalId.equals(defendingCapitalId)
+                        || capitalId.equals(
+                        defendingCapitalId
+                )
         );
     }
 
-    public boolean containsAttacker(UUID villagerId) {
+    public boolean containsAttacker(
+            UUID villagerId
+    ) {
         return villagerId != null
                 && attackerIds.contains(villagerId);
     }
 
-    public boolean containsDefender(UUID villagerId) {
+    public boolean containsDefender(
+            UUID villagerId
+    ) {
         return villagerId != null
                 && defenderIds.contains(villagerId);
     }
 
-    public boolean hasAttackerReturned(UUID villagerId) {
+    public boolean hasAttackerReturned(
+            UUID villagerId
+    ) {
         return villagerId != null
-                && returnedAttackerIds.contains(villagerId);
+                && returnedAttackerIds.contains(
+                villagerId
+        );
     }
 
     public boolean isActiveCampaign() {
-        return phase == CapitalCampaignPhase.MUSTERING
-                || phase == CapitalCampaignPhase.ACTIVE
-                || phase == CapitalCampaignPhase.RETREATING;
+        return phase
+                == CapitalCampaignPhase.MUSTERING
+                || phase
+                == CapitalCampaignPhase.ACTIVE
+                || phase
+                == CapitalCampaignPhase.RETREATING;
     }
 
     public void replaceAttackerIds(
@@ -275,14 +427,15 @@ public final class CapitalCampaignRecord {
 
         this.attackerIds.clear();
         this.attackerIds.addAll(normalized);
-        this.returnedAttackerIds.retainAll(normalized);
+        this.returnedAttackerIds.retainAll(
+                normalized
+        );
     }
 
     public void setDefenderIds(
             List<UUID> defenderIds
     ) {
         this.defenderIds.clear();
-
         this.defenderIds.addAll(
                 normalizeCombatants(
                         defenderIds,
@@ -291,26 +444,148 @@ public final class CapitalCampaignRecord {
         );
     }
 
+    public void raiseTargetAttackerCount(
+            int targetAttackerCount
+    ) {
+        this.targetAttackerCount =
+                Math.max(
+                        this.targetAttackerCount,
+                        normalizeTargetAttackerCount(
+                                targetAttackerCount,
+                                attackerIds.size()
+                        )
+                );
+    }
+
+    public void markAssemblyReportedCount(
+            int count
+    ) {
+        lastAssemblyReportedCount =
+                Math.max(0, count);
+    }
+
+    public void beginAssembly(
+            long gameTime
+    ) {
+        if (phase
+                != CapitalCampaignPhase.MUSTERING) {
+            return;
+        }
+
+        assemblyStartedAt =
+                Math.max(1L, gameTime);
+        formationEndsAt = 0L;
+        lastAssemblyReportedCount = -1;
+        defenderIds.clear();
+        clearBattlePacing();
+    }
+
+    public void resetAssembly() {
+        if (phase
+                != CapitalCampaignPhase.MUSTERING
+                || formationEndsAt > 0L) {
+            return;
+        }
+
+        assemblyStartedAt = 0L;
+        lastAssemblyReportedCount = -1;
+        defenderIds.clear();
+        clearBattlePacing();
+    }
+
+    public void beginFormation(
+            long gameTime,
+            long formationEndsAt
+    ) {
+        if (phase
+                != CapitalCampaignPhase.MUSTERING) {
+            return;
+        }
+
+        assemblyStartedAt =
+                Math.max(1L, gameTime);
+        this.formationEndsAt =
+                Math.max(
+                        assemblyStartedAt,
+                        formationEndsAt
+                );
+        clearBattlePacing();
+    }
+
+    public void beginFieldDefeatResolution(
+            long gameTime,
+            long resolutionAt
+    ) {
+        if (phase
+                != CapitalCampaignPhase.ACTIVE
+                || defendingSovereignRefusedPeace) {
+            return;
+        }
+
+        fieldDefeatResolutionAt =
+                Math.max(
+                        Math.max(1L, gameTime),
+                        resolutionAt
+                );
+        crownRallyEndsAt = 0L;
+    }
+
+    public void clearFieldDefeatResolution() {
+        fieldDefeatResolutionAt = 0L;
+    }
+
+    public void beginCrownRally(
+            long gameTime,
+            long rallyEndsAt
+    ) {
+        if (phase
+                != CapitalCampaignPhase.ACTIVE) {
+            return;
+        }
+
+        fieldDefeatResolutionAt = 0L;
+        crownRallyEndsAt =
+                Math.max(
+                        Math.max(1L, gameTime),
+                        rallyEndsAt
+                );
+    }
+
+    public void finishCrownRally() {
+        crownRallyEndsAt = 0L;
+    }
+
     public void markAttackerReturned(
             UUID attackerId
     ) {
         if (attackerId != null
                 && attackerIds.contains(attackerId)
-                && !returnedAttackerIds.contains(attackerId)) {
+                && !returnedAttackerIds.contains(
+                attackerId
+        )) {
             returnedAttackerIds.add(attackerId);
         }
     }
 
     public void markDefendingSovereignRefusedPeace() {
         defendingSovereignRefusedPeace = true;
+        fieldDefeatResolutionAt = 0L;
     }
 
-    public void activate(long gameTime) {
+    public void activate(
+            long gameTime
+    ) {
         phase = CapitalCampaignPhase.ACTIVE;
-        activatedAt = Math.max(0L, gameTime);
+        activatedAt =
+                Math.max(0L, gameTime);
         retreatStartedAt = 0L;
         returnDeadline = 0L;
-        endReason = CapitalCampaignEndReason.NONE;
+        endReason =
+                CapitalCampaignEndReason.NONE;
+        assemblyStartedAt = 0L;
+        formationEndsAt = 0L;
+        lastAssemblyReportedCount = -1;
+        clearBattlePacing();
     }
 
     public void beginRetreat(
@@ -318,36 +593,38 @@ public final class CapitalCampaignRecord {
             long returnDeadline,
             CapitalCampaignEndReason endReason
     ) {
-        phase = CapitalCampaignPhase.RETREATING;
-
+        phase =
+                CapitalCampaignPhase.RETREATING;
         retreatStartedAt =
                 Math.max(0L, gameTime);
-
         this.returnDeadline =
                 Math.max(
                         retreatStartedAt,
                         returnDeadline
                 );
-
         this.endReason =
                 endReason == null
-                        ? CapitalCampaignEndReason.INVALIDATED
+                        ? CapitalCampaignEndReason
+                        .INVALIDATED
                         : endReason;
+        assemblyStartedAt = 0L;
+        formationEndsAt = 0L;
+        lastAssemblyReportedCount = -1;
+        clearBattlePacing();
     }
 
     public CompoundTag save() {
-        CompoundTag tag = new CompoundTag();
+        CompoundTag tag =
+                new CompoundTag();
 
         tag.putUUID(
                 KEY_CAMPAIGN_ID,
                 campaignId
         );
-
         tag.putUUID(
                 KEY_ATTACKING_CAPITAL_ID,
                 attackingCapitalId
         );
-
         tag.putUUID(
                 KEY_DEFENDING_CAPITAL_ID,
                 defendingCapitalId
@@ -364,50 +641,67 @@ public final class CapitalCampaignRecord {
                 KEY_PHASE,
                 phase.getSerializedName()
         );
-
         tag.putLong(
                 KEY_CREATED_AT,
                 createdAt
         );
-
         tag.putLong(
                 KEY_ACTIVATED_AT,
                 activatedAt
         );
-
         tag.putLong(
                 KEY_RETREAT_STARTED_AT,
                 retreatStartedAt
         );
-
         tag.putLong(
                 KEY_RETURN_DEADLINE,
                 returnDeadline
         );
-
         tag.putString(
                 KEY_END_REASON,
                 endReason.getSerializedName()
         );
-
         tag.putBoolean(
                 KEY_DEFENDING_SOVEREIGN_REFUSED_PEACE,
                 defendingSovereignRefusedPeace
         );
-
+        tag.putInt(
+                KEY_TARGET_ATTACKER_COUNT,
+                targetAttackerCount
+        );
+        tag.putLong(
+                KEY_ASSEMBLY_STARTED_AT,
+                assemblyStartedAt
+        );
+        tag.putLong(
+                KEY_FORMATION_ENDS_AT,
+                formationEndsAt
+        );
+        tag.putInt(
+                KEY_LAST_ASSEMBLY_REPORTED_COUNT,
+                lastAssemblyReportedCount
+        );
+        tag.putLong(
+                KEY_FIELD_DEFEAT_RESOLUTION_AT,
+                fieldDefeatResolutionAt
+        );
+        tag.putLong(
+                KEY_CROWN_RALLY_ENDS_AT,
+                crownRallyEndsAt
+        );
         tag.put(
                 KEY_ATTACKERS,
                 saveCombatants(attackerIds)
         );
-
         tag.put(
                 KEY_DEFENDERS,
                 saveCombatants(defenderIds)
         );
-
         tag.put(
                 KEY_RETURNED_ATTACKERS,
-                saveCombatants(returnedAttackerIds)
+                saveCombatants(
+                        returnedAttackerIds
+                )
         );
 
         return tag;
@@ -418,8 +712,12 @@ public final class CapitalCampaignRecord {
     ) {
         if (tag == null
                 || !tag.hasUUID(KEY_CAMPAIGN_ID)
-                || !tag.hasUUID(KEY_ATTACKING_CAPITAL_ID)
-                || !tag.hasUUID(KEY_DEFENDING_CAPITAL_ID)) {
+                || !tag.hasUUID(
+                KEY_ATTACKING_CAPITAL_ID
+        )
+                || !tag.hasUUID(
+                KEY_DEFENDING_CAPITAL_ID
+        )) {
             return null;
         }
 
@@ -455,38 +753,98 @@ public final class CapitalCampaignRecord {
                 );
 
         UUID initiatingPlayerId =
-                tag.hasUUID(KEY_INITIATING_PLAYER_ID)
-                        ? tag.getUUID(KEY_INITIATING_PLAYER_ID)
+                tag.hasUUID(
+                        KEY_INITIATING_PLAYER_ID
+                )
+                        ? tag.getUUID(
+                        KEY_INITIATING_PLAYER_ID
+                )
                         : null;
+
+        int targetAttackerCount =
+                tag.contains(
+                        KEY_TARGET_ATTACKER_COUNT,
+                        Tag.TAG_INT
+                )
+                        ? tag.getInt(
+                        KEY_TARGET_ATTACKER_COUNT
+                )
+                        : preferredTarget(
+                        attackers.size()
+                );
+
+        int lastAssemblyReportedCount =
+                tag.contains(
+                        KEY_LAST_ASSEMBLY_REPORTED_COUNT,
+                        Tag.TAG_INT
+                )
+                        ? tag.getInt(
+                        KEY_LAST_ASSEMBLY_REPORTED_COUNT
+                )
+                        : -1;
 
         return new CapitalCampaignRecord(
                 tag.getUUID(KEY_CAMPAIGN_ID),
-                tag.getUUID(KEY_ATTACKING_CAPITAL_ID),
-                tag.getUUID(KEY_DEFENDING_CAPITAL_ID),
+                tag.getUUID(
+                        KEY_ATTACKING_CAPITAL_ID
+                ),
+                tag.getUUID(
+                        KEY_DEFENDING_CAPITAL_ID
+                ),
                 initiatingPlayerId,
                 attackers,
                 defenders,
                 returnedAttackers,
-                CapitalCampaignPhase.fromSerializedName(
-                        tag.getString(KEY_PHASE)
-                ),
+                CapitalCampaignPhase
+                        .fromSerializedName(
+                                tag.getString(
+                                        KEY_PHASE
+                                )
+                        ),
                 tag.getLong(KEY_CREATED_AT),
                 tag.getLong(KEY_ACTIVATED_AT),
-                tag.getLong(KEY_RETREAT_STARTED_AT),
-                tag.getLong(KEY_RETURN_DEADLINE),
-                CapitalCampaignEndReason.fromSerializedName(
-                        tag.getString(KEY_END_REASON)
+                tag.getLong(
+                        KEY_RETREAT_STARTED_AT
                 ),
+                tag.getLong(
+                        KEY_RETURN_DEADLINE
+                ),
+                CapitalCampaignEndReason
+                        .fromSerializedName(
+                                tag.getString(
+                                        KEY_END_REASON
+                                )
+                        ),
                 tag.getBoolean(
                         KEY_DEFENDING_SOVEREIGN_REFUSED_PEACE
+                ),
+                targetAttackerCount,
+                tag.getLong(
+                        KEY_ASSEMBLY_STARTED_AT
+                ),
+                tag.getLong(
+                        KEY_FORMATION_ENDS_AT
+                ),
+                lastAssemblyReportedCount,
+                tag.getLong(
+                        KEY_FIELD_DEFEAT_RESOLUTION_AT
+                ),
+                tag.getLong(
+                        KEY_CROWN_RALLY_ENDS_AT
                 )
         );
+    }
+
+    private void clearBattlePacing() {
+        fieldDefeatResolutionAt = 0L;
+        crownRallyEndsAt = 0L;
     }
 
     private static ListTag saveCombatants(
             List<UUID> ids
     ) {
-        ListTag tag = new ListTag();
+        ListTag tag =
+                new ListTag();
 
         for (UUID id : ids) {
             CompoundTag entry =
@@ -518,17 +876,25 @@ public final class CapitalCampaignRecord {
             CompoundTag entry =
                     (CompoundTag) raw;
 
-            if (entry.hasUUID(KEY_COMBATANT_ID)) {
+            if (entry.hasUUID(
+                    KEY_COMBATANT_ID
+            )) {
                 result.add(
-                        entry.getUUID(KEY_COMBATANT_ID)
+                        entry.getUUID(
+                                KEY_COMBATANT_ID
+                        )
                 );
 
                 continue;
             }
 
-            if (entry.hasUUID("AttackerId")) {
+            if (entry.hasUUID(
+                    "AttackerId"
+            )) {
                 result.add(
-                        entry.getUUID("AttackerId")
+                        entry.getUUID(
+                                "AttackerId"
+                        )
                 );
             }
         }
@@ -536,6 +902,38 @@ public final class CapitalCampaignRecord {
         return normalizeCombatants(
                 result,
                 limit
+        );
+    }
+
+    private static int preferredTarget(
+            int availableCount
+    ) {
+        return Math.min(
+                MAX_ATTACKERS,
+                Math.max(
+                        PREFERRED_ATTACKERS,
+                        availableCount
+                )
+        );
+    }
+
+    private static int normalizeTargetAttackerCount(
+            int requestedCount,
+            int rosterSize
+    ) {
+        int resolved =
+                requestedCount <= 0
+                        ? preferredTarget(
+                        rosterSize
+                )
+                        : requestedCount;
+
+        return Math.max(
+                1,
+                Math.min(
+                        MAX_ATTACKERS,
+                        resolved
+                )
         );
     }
 
