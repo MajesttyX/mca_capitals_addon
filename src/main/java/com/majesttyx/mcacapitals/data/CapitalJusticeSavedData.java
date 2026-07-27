@@ -14,303 +14,102 @@ import java.util.UUID;
 
 public class CapitalJusticeSavedData extends SavedData {
 
-    public static final String DATA_NAME =
-            "mcacapitals_justice_data";
+    public static final String DATA_NAME = "mcacapitals_justice_data";
 
-    private static final String KEY_CAPITALS =
-            "Capitals";
+    private static final String KEY_CAPITALS = "Capitals";
+    private static final String KEY_CAPITAL_ID = "CapitalId";
+    private static final String KEY_PLAYERS = "Players";
+    private static final String KEY_PLAYER_ID = "PlayerId";
+    private static final String KEY_LAST_ACCUSATION_DAY = "LastAccusationDay";
+    private static final String KEY_LAST_EXILE_SCAN_DAY = "LastExileScanDay";
+    private static final String KEY_DISCOVERED_EXILES = "DiscoveredExiles";
+    private static final String KEY_ARREST_WARRANTS = "ArrestWarrants";
+    private static final String KEY_DETAINED_PRISONERS = "DetainedPrisoners";
+    private static final String KEY_ARREST_WARRANT_TIMES = "ArrestWarrantTimes";
+    private static final String KEY_DETENTION_START_DAYS = "DetentionStartDays";
+    private static final String KEY_PUBLIC_STATUSES = "PublicCrownStatuses";
+    private static final String KEY_PUBLIC_STATUS_SOVEREIGN = "PublicStatusSovereign";
+    private static final String KEY_CONFIRMED_CASE_COUNTS = "ConfirmedCaseCounts";
+    private static final String KEY_LAST_RESOLVED_DAYS = "LastResolvedDays";
+    private static final String KEY_JUDGMENTS = "Judgments";
+    private static final String KEY_SENTENCE_END_DAYS = "SentenceEndDays";
+    private static final String KEY_LAST_NPC_JUDGMENT_DAY = "LastNpcJudgmentDay";
+    private static final String KEY_TARGET_ID = "TargetId";
+    private static final String KEY_GAME_TIME = "GameTime";
+    private static final String KEY_DAY = "Day";
+    private static final String KEY_COUNT = "Count";
+    private static final String KEY_STATUS = "Status";
+    private static final String KEY_JUDGMENT = "Judgment";
 
-    private static final String KEY_CAPITAL_ID =
-            "CapitalId";
+    private final Map<UUID, Map<UUID, Long>> lastAccusationDayByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Long> lastExileScanDayByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Set<UUID>> discoveredExilesByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Set<UUID>> arrestWarrantsByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Set<UUID>> detainedPrisonersByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Map<UUID, Long>> arrestWarrantIssuedGameTimeByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Map<UUID, Long>> detentionStartDayByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Map<UUID, CapitalPublicCrownStatus>> publicStatusesByCapital = new LinkedHashMap<>();
+    private final Map<UUID, UUID> publicStatusSovereignByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Map<UUID, Integer>> confirmedCaseCountsByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Map<UUID, Long>> lastResolvedDayByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Map<UUID, CapitalJudgmentType>> judgmentsByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Map<UUID, Long>> sentenceEndDayByCapital = new LinkedHashMap<>();
+    private final Map<UUID, Long> lastNpcJudgmentDayByCapital = new LinkedHashMap<>();
 
-    private static final String KEY_PLAYERS =
-            "Players";
-
-    private static final String KEY_PLAYER_ID =
-            "PlayerId";
-
-    private static final String KEY_LAST_ACCUSATION_DAY =
-            "LastAccusationDay";
-
-    private static final String KEY_LAST_EXILE_SCAN_DAY =
-            "LastExileScanDay";
-
-    private static final String KEY_DISCOVERED_EXILES =
-            "DiscoveredExiles";
-
-    private static final String KEY_ARREST_WARRANTS =
-            "ArrestWarrants";
-
-    private static final String KEY_DETAINED_PRISONERS =
-            "DetainedPrisoners";
-
-    private static final String KEY_ARREST_WARRANT_TIMES =
-            "ArrestWarrantTimes";
-
-    private static final String KEY_DETENTION_START_DAYS =
-            "DetentionStartDays";
-
-    private static final String KEY_TARGET_ID =
-            "TargetId";
-
-    private static final String KEY_GAME_TIME =
-            "GameTime";
-
-    private static final String KEY_DAY =
-            "Day";
-
-    private final Map<
-            UUID,
-            Map<UUID, Long>
-            > lastAccusationDayByCapital =
-            new LinkedHashMap<>();
-
-    private final Map<UUID, Long>
-            lastExileScanDayByCapital =
-            new LinkedHashMap<>();
-
-    private final Map<UUID, Set<UUID>>
-            discoveredExilesByCapital =
-            new LinkedHashMap<>();
-
-    private final Map<UUID, Set<UUID>>
-            arrestWarrantsByCapital =
-            new LinkedHashMap<>();
-
-    private final Map<UUID, Set<UUID>>
-            detainedPrisonersByCapital =
-            new LinkedHashMap<>();
-
-    private final Map<
-            UUID,
-            Map<UUID, Long>
-            > arrestWarrantIssuedGameTimeByCapital =
-            new LinkedHashMap<>();
-
-    private final Map<
-            UUID,
-            Map<UUID, Long>
-            > detentionStartDayByCapital =
-            new LinkedHashMap<>();
-
-    public long getLastAccusationDay(
-            UUID capitalId,
-            UUID playerId
-    ) {
-        if (capitalId == null || playerId == null) {
-            return Long.MIN_VALUE;
-        }
-
-        Map<UUID, Long> playerDays =
-                lastAccusationDayByCapital.get(
-                        capitalId
-                );
-
-        if (playerDays == null) {
-            return Long.MIN_VALUE;
-        }
-
-        return playerDays.getOrDefault(
-                playerId,
-                Long.MIN_VALUE
-        );
+    public long getLastAccusationDay(UUID capitalId, UUID playerId) {
+        return getLong(lastAccusationDayByCapital, capitalId, playerId);
     }
 
-    public void setLastAccusationDay(
-            UUID capitalId,
-            UUID playerId,
-            long day
-    ) {
-        if (capitalId == null || playerId == null) {
-            return;
-        }
-
-        lastAccusationDayByCapital
-                .computeIfAbsent(
-                        capitalId,
-                        ignored ->
-                                new LinkedHashMap<>()
-                )
-                .put(playerId, day);
-
-        setDirty();
+    public void setLastAccusationDay(UUID capitalId, UUID playerId, long day) {
+        putLong(lastAccusationDayByCapital, capitalId, playerId, day);
     }
 
-    public long getLastExileScanDay(
-            UUID capitalId
-    ) {
-        if (capitalId == null) {
-            return Long.MIN_VALUE;
-        }
-
-        return lastExileScanDayByCapital
-                .getOrDefault(
-                        capitalId,
-                        Long.MIN_VALUE
-                );
+    public long getLastExileScanDay(UUID capitalId) {
+        return capitalId == null ? Long.MIN_VALUE : lastExileScanDayByCapital.getOrDefault(capitalId, Long.MIN_VALUE);
     }
 
-    public void setLastExileScanDay(
-            UUID capitalId,
-            long day
-    ) {
-        if (capitalId == null) {
-            return;
-        }
-
-        lastExileScanDayByCapital.put(
-                capitalId,
-                day
-        );
-
-        setDirty();
-    }
-
-    public boolean hasDiscoveredExile(
-            UUID capitalId,
-            UUID targetId
-    ) {
-        if (capitalId == null || targetId == null) {
-            return false;
-        }
-
-        Set<UUID> discovered =
-                discoveredExilesByCapital.get(
-                        capitalId
-                );
-
-        return discovered != null
-                && discovered.contains(targetId);
-    }
-
-    public Set<UUID> getDiscoveredExiles(
-            UUID capitalId
-    ) {
-        if (capitalId == null) {
-            return Set.of();
-        }
-
-        Set<UUID> discovered =
-                discoveredExilesByCapital.get(
-                        capitalId
-                );
-
-        if (discovered == null
-                || discovered.isEmpty()) {
-            return Set.of();
-        }
-
-        return new LinkedHashSet<>(discovered);
-    }
-
-    public void markDiscoveredExile(
-            UUID capitalId,
-            UUID targetId
-    ) {
-        if (capitalId == null || targetId == null) {
-            return;
-        }
-
-        discoveredExilesByCapital
-                .computeIfAbsent(
-                        capitalId,
-                        ignored ->
-                                new LinkedHashSet<>()
-                )
-                .add(targetId);
-
-        setDirty();
-    }
-
-    public boolean clearDiscoveredExile(
-            UUID capitalId,
-            UUID targetId
-    ) {
-        if (capitalId == null || targetId == null) {
-            return false;
-        }
-
-        Set<UUID> discovered =
-                discoveredExilesByCapital.get(
-                        capitalId
-                );
-
-        if (discovered == null) {
-            return false;
-        }
-
-        boolean removed =
-                discovered.remove(targetId);
-
-        if (removed) {
+    public void setLastExileScanDay(UUID capitalId, long day) {
+        if (capitalId != null) {
+            lastExileScanDayByCapital.put(capitalId, day);
             setDirty();
         }
-
-        return removed;
     }
 
-    public boolean hasArrestWarrant(
-            UUID capitalId,
-            UUID targetId
-    ) {
+    public boolean hasDiscoveredExile(UUID capitalId, UUID targetId) {
+        return contains(discoveredExilesByCapital, capitalId, targetId);
+    }
+
+    public Set<UUID> getDiscoveredExiles(UUID capitalId) {
+        return snapshot(discoveredExilesByCapital, capitalId);
+    }
+
+    public void markDiscoveredExile(UUID capitalId, UUID targetId) {
+        add(discoveredExilesByCapital, capitalId, targetId);
+    }
+
+    public boolean clearDiscoveredExile(UUID capitalId, UUID targetId) {
+        return remove(discoveredExilesByCapital, capitalId, targetId);
+    }
+
+    public boolean hasArrestWarrant(UUID capitalId, UUID targetId) {
+        return contains(arrestWarrantsByCapital, capitalId, targetId);
+    }
+
+    public Set<UUID> getArrestWarrants(UUID capitalId) {
+        return snapshot(arrestWarrantsByCapital, capitalId);
+    }
+
+    public boolean issueArrestWarrant(UUID capitalId, UUID targetId, long gameTime) {
         if (capitalId == null || targetId == null) {
             return false;
         }
 
-        Set<UUID> warrants =
-                arrestWarrantsByCapital.get(
-                        capitalId
-                );
+        boolean added = arrestWarrantsByCapital
+                .computeIfAbsent(capitalId, ignored -> new LinkedHashSet<>())
+                .add(targetId);
 
-        return warrants != null
-                && warrants.contains(targetId);
-    }
-
-    public Set<UUID> getArrestWarrants(
-            UUID capitalId
-    ) {
-        if (capitalId == null) {
-            return Set.of();
-        }
-
-        Set<UUID> warrants =
-                arrestWarrantsByCapital.get(
-                        capitalId
-                );
-
-        if (warrants == null
-                || warrants.isEmpty()) {
-            return Set.of();
-        }
-
-        return new LinkedHashSet<>(warrants);
-    }
-
-    public boolean issueArrestWarrant(
-            UUID capitalId,
-            UUID targetId,
-            long gameTime
-    ) {
-        if (capitalId == null || targetId == null) {
-            return false;
-        }
-
-        boolean added =
-                arrestWarrantsByCapital
-                        .computeIfAbsent(
-                                capitalId,
-                                ignored ->
-                                        new LinkedHashSet<>()
-                        )
-                        .add(targetId);
-
-        Map<UUID, Long> times =
-                arrestWarrantIssuedGameTimeByCapital
-                        .computeIfAbsent(
-                                capitalId,
-                                ignored ->
-                                        new LinkedHashMap<>()
-                        );
+        Map<UUID, Long> times = arrestWarrantIssuedGameTimeByCapital
+                .computeIfAbsent(capitalId, ignored -> new LinkedHashMap<>());
 
         if (added || !times.containsKey(targetId)) {
             times.put(targetId, gameTime);
@@ -320,126 +119,38 @@ public class CapitalJusticeSavedData extends SavedData {
         return added;
     }
 
-    public boolean clearArrestWarrant(
-            UUID capitalId,
-            UUID targetId
-    ) {
-        if (capitalId == null || targetId == null) {
-            return false;
-        }
-
-        boolean changed = false;
-
-        Set<UUID> warrants =
-                arrestWarrantsByCapital.get(
-                        capitalId
-                );
-
-        if (warrants != null
-                && warrants.remove(targetId)) {
-            changed = true;
-        }
-
-        Map<UUID, Long> times =
-                arrestWarrantIssuedGameTimeByCapital
-                        .get(capitalId);
-
-        if (times != null
-                && times.remove(targetId) != null) {
-            changed = true;
-        }
-
+    public boolean clearArrestWarrant(UUID capitalId, UUID targetId) {
+        boolean changed = removeWithoutDirty(arrestWarrantsByCapital, capitalId, targetId);
+        changed |= removeFromNestedMap(arrestWarrantIssuedGameTimeByCapital, capitalId, targetId);
         if (changed) {
             setDirty();
         }
-
         return changed;
     }
 
-    public long getArrestWarrantIssuedGameTime(
-            UUID capitalId,
-            UUID targetId
-    ) {
-        if (capitalId == null || targetId == null) {
-            return Long.MIN_VALUE;
-        }
-
-        Map<UUID, Long> times =
-                arrestWarrantIssuedGameTimeByCapital
-                        .get(capitalId);
-
-        if (times == null) {
-            return Long.MIN_VALUE;
-        }
-
-        return times.getOrDefault(
-                targetId,
-                Long.MIN_VALUE
-        );
+    public long getArrestWarrantIssuedGameTime(UUID capitalId, UUID targetId) {
+        return getLong(arrestWarrantIssuedGameTimeByCapital, capitalId, targetId);
     }
 
-    public boolean isDetainedPrisoner(
-            UUID capitalId,
-            UUID targetId
-    ) {
+    public boolean isDetainedPrisoner(UUID capitalId, UUID targetId) {
+        return contains(detainedPrisonersByCapital, capitalId, targetId);
+    }
+
+    public Set<UUID> getDetainedPrisoners(UUID capitalId) {
+        return snapshot(detainedPrisonersByCapital, capitalId);
+    }
+
+    public boolean markDetainedPrisoner(UUID capitalId, UUID targetId, long day) {
         if (capitalId == null || targetId == null) {
             return false;
         }
 
-        Set<UUID> detained =
-                detainedPrisonersByCapital.get(
-                        capitalId
-                );
+        boolean added = detainedPrisonersByCapital
+                .computeIfAbsent(capitalId, ignored -> new LinkedHashSet<>())
+                .add(targetId);
 
-        return detained != null
-                && detained.contains(targetId);
-    }
-
-    public Set<UUID> getDetainedPrisoners(
-            UUID capitalId
-    ) {
-        if (capitalId == null) {
-            return Set.of();
-        }
-
-        Set<UUID> detained =
-                detainedPrisonersByCapital.get(
-                        capitalId
-                );
-
-        if (detained == null
-                || detained.isEmpty()) {
-            return Set.of();
-        }
-
-        return new LinkedHashSet<>(detained);
-    }
-
-    public boolean markDetainedPrisoner(
-            UUID capitalId,
-            UUID targetId,
-            long day
-    ) {
-        if (capitalId == null || targetId == null) {
-            return false;
-        }
-
-        boolean added =
-                detainedPrisonersByCapital
-                        .computeIfAbsent(
-                                capitalId,
-                                ignored ->
-                                        new LinkedHashSet<>()
-                        )
-                        .add(targetId);
-
-        Map<UUID, Long> days =
-                detentionStartDayByCapital
-                        .computeIfAbsent(
-                                capitalId,
-                                ignored ->
-                                        new LinkedHashMap<>()
-                        );
+        Map<UUID, Long> days = detentionStartDayByCapital
+                .computeIfAbsent(capitalId, ignored -> new LinkedHashMap<>());
 
         if (added || !days.containsKey(targetId)) {
             days.put(targetId, day);
@@ -449,95 +160,154 @@ public class CapitalJusticeSavedData extends SavedData {
         return added;
     }
 
-    public boolean clearDetainedPrisoner(
-            UUID capitalId,
-            UUID targetId
-    ) {
-        if (capitalId == null || targetId == null) {
-            return false;
-        }
-
-        boolean changed = false;
-
-        Set<UUID> detained =
-                detainedPrisonersByCapital.get(
-                        capitalId
-                );
-
-        if (detained != null
-                && detained.remove(targetId)) {
-            changed = true;
-        }
-
-        Map<UUID, Long> days =
-                detentionStartDayByCapital.get(
-                        capitalId
-                );
-
-        if (days != null
-                && days.remove(targetId) != null) {
-            changed = true;
-        }
-
+    public boolean clearDetainedPrisoner(UUID capitalId, UUID targetId) {
+        boolean changed = removeWithoutDirty(detainedPrisonersByCapital, capitalId, targetId);
+        changed |= removeFromNestedMap(detentionStartDayByCapital, capitalId, targetId);
+        changed |= removeFromNestedMap(judgmentsByCapital, capitalId, targetId);
+        changed |= removeFromNestedMap(sentenceEndDayByCapital, capitalId, targetId);
         if (changed) {
             setDirty();
         }
-
         return changed;
     }
 
-    public long getDetentionStartDay(
-            UUID capitalId,
-            UUID targetId
-    ) {
-        if (capitalId == null || targetId == null) {
-            return Long.MIN_VALUE;
-        }
-
-        Map<UUID, Long> days =
-                detentionStartDayByCapital.get(
-                        capitalId
-                );
-
-        if (days == null) {
-            return Long.MIN_VALUE;
-        }
-
-        return days.getOrDefault(
-                targetId,
-                Long.MIN_VALUE
-        );
+    public long getDetentionStartDay(UUID capitalId, UUID targetId) {
+        return getLong(detentionStartDayByCapital, capitalId, targetId);
     }
 
-    public boolean clearJusticeCase(
-            UUID capitalId,
-            UUID targetId
-    ) {
+    public CapitalPublicCrownStatus getPublicStatus(UUID capitalId, UUID targetId) {
+        return getValue(publicStatusesByCapital, capitalId, targetId);
+    }
+
+    public Map<UUID, CapitalPublicCrownStatus> getPublicStatuses(UUID capitalId) {
+        Map<UUID, CapitalPublicCrownStatus> values = capitalId == null ? null : publicStatusesByCapital.get(capitalId);
+        return values == null ? Map.of() : new LinkedHashMap<>(values);
+    }
+
+    public void setPublicStatus(UUID capitalId, UUID targetId, CapitalPublicCrownStatus status) {
         if (capitalId == null || targetId == null) {
-            return false;
+            return;
         }
 
-        boolean changed = false;
+        if (status == null) {
+            if (removeFromNestedMap(publicStatusesByCapital, capitalId, targetId)) {
+                setDirty();
+            }
+            return;
+        }
 
-        changed |= clearArrestWarrant(
-                capitalId,
-                targetId
-        );
+        publicStatusesByCapital
+                .computeIfAbsent(capitalId, ignored -> new LinkedHashMap<>())
+                .put(targetId, status);
+        setDirty();
+    }
 
-        changed |= clearDetainedPrisoner(
-                capitalId,
-                targetId
-        );
+    public void clearResolvedPublicStatuses(UUID capitalId) {
+        Map<UUID, CapitalPublicCrownStatus> statuses = publicStatusesByCapital.get(capitalId);
+        if (statuses == null) {
+            return;
+        }
 
-        changed |= clearDiscoveredExile(
-                capitalId,
-                targetId
+        boolean changed = statuses.entrySet().removeIf(entry ->
+                entry.getValue() == CapitalPublicCrownStatus.RECOGNIZED_FRIEND
+                        || entry.getValue() == CapitalPublicCrownStatus.RESTORED_TO_PEACE
+                        || entry.getValue() == CapitalPublicCrownStatus.DISCOVERED_ENEMY
+                        && !hasArrestWarrant(capitalId, entry.getKey())
+                        && !isDetainedPrisoner(capitalId, entry.getKey())
         );
 
         if (changed) {
             setDirty();
         }
+    }
 
+    public UUID getPublicStatusSovereign(UUID capitalId) {
+        return capitalId == null ? null : publicStatusSovereignByCapital.get(capitalId);
+    }
+
+    public void setPublicStatusSovereign(UUID capitalId, UUID sovereignId) {
+        if (capitalId == null) {
+            return;
+        }
+
+        if (sovereignId == null) {
+            publicStatusSovereignByCapital.remove(capitalId);
+        } else {
+            publicStatusSovereignByCapital.put(capitalId, sovereignId);
+        }
+        setDirty();
+    }
+
+    public int getConfirmedCaseCount(UUID capitalId, UUID targetId) {
+        Integer count = getValue(confirmedCaseCountsByCapital, capitalId, targetId);
+        return count == null ? 0 : count;
+    }
+
+    public int incrementConfirmedCaseCount(UUID capitalId, UUID targetId) {
+        if (capitalId == null || targetId == null) {
+            return 0;
+        }
+
+        Map<UUID, Integer> counts = confirmedCaseCountsByCapital
+                .computeIfAbsent(capitalId, ignored -> new LinkedHashMap<>());
+        int updated = counts.getOrDefault(targetId, 0) + 1;
+        counts.put(targetId, updated);
+        setDirty();
+        return updated;
+    }
+
+    public long getLastResolvedDay(UUID capitalId, UUID targetId) {
+        return getLong(lastResolvedDayByCapital, capitalId, targetId);
+    }
+
+    public void setLastResolvedDay(UUID capitalId, UUID targetId, long day) {
+        putLong(lastResolvedDayByCapital, capitalId, targetId, day);
+    }
+
+    public CapitalJudgmentType getJudgment(UUID capitalId, UUID targetId) {
+        return getValue(judgmentsByCapital, capitalId, targetId);
+    }
+
+    public void setJudgment(UUID capitalId, UUID targetId, CapitalJudgmentType judgment) {
+        if (capitalId == null || targetId == null) {
+            return;
+        }
+
+        if (judgment == null) {
+            if (removeFromNestedMap(judgmentsByCapital, capitalId, targetId)) {
+                setDirty();
+            }
+            return;
+        }
+
+        judgmentsByCapital
+                .computeIfAbsent(capitalId, ignored -> new LinkedHashMap<>())
+                .put(targetId, judgment);
+        setDirty();
+    }
+
+    public long getSentenceEndDay(UUID capitalId, UUID targetId) {
+        return getLong(sentenceEndDayByCapital, capitalId, targetId);
+    }
+
+    public void setSentenceEndDay(UUID capitalId, UUID targetId, long day) {
+        putLong(sentenceEndDayByCapital, capitalId, targetId, day);
+    }
+
+    public long getLastNpcJudgmentDay(UUID capitalId) {
+        return capitalId == null ? Long.MIN_VALUE : lastNpcJudgmentDayByCapital.getOrDefault(capitalId, Long.MIN_VALUE);
+    }
+
+    public void setLastNpcJudgmentDay(UUID capitalId, long day) {
+        if (capitalId != null) {
+            lastNpcJudgmentDayByCapital.put(capitalId, day);
+            setDirty();
+        }
+    }
+
+    public boolean clearJusticeCase(UUID capitalId, UUID targetId) {
+        boolean changed = clearArrestWarrant(capitalId, targetId);
+        changed |= clearDetainedPrisoner(capitalId, targetId);
         return changed;
     }
 
@@ -547,431 +317,295 @@ public class CapitalJusticeSavedData extends SavedData {
         }
 
         boolean changed = false;
-
-        changed |= lastAccusationDayByCapital
-                .remove(capitalId) != null;
-
-        changed |= lastExileScanDayByCapital
-                .remove(capitalId) != null;
-
-        changed |= discoveredExilesByCapital
-                .remove(capitalId) != null;
-
-        changed |= arrestWarrantsByCapital
-                .remove(capitalId) != null;
-
-        changed |= detainedPrisonersByCapital
-                .remove(capitalId) != null;
-
-        changed |=
-                arrestWarrantIssuedGameTimeByCapital
-                        .remove(capitalId) != null;
-
-        changed |= detentionStartDayByCapital
-                .remove(capitalId) != null;
+        changed |= lastAccusationDayByCapital.remove(capitalId) != null;
+        changed |= lastExileScanDayByCapital.remove(capitalId) != null;
+        changed |= discoveredExilesByCapital.remove(capitalId) != null;
+        changed |= arrestWarrantsByCapital.remove(capitalId) != null;
+        changed |= detainedPrisonersByCapital.remove(capitalId) != null;
+        changed |= arrestWarrantIssuedGameTimeByCapital.remove(capitalId) != null;
+        changed |= detentionStartDayByCapital.remove(capitalId) != null;
+        changed |= publicStatusesByCapital.remove(capitalId) != null;
+        changed |= publicStatusSovereignByCapital.remove(capitalId) != null;
+        changed |= confirmedCaseCountsByCapital.remove(capitalId) != null;
+        changed |= lastResolvedDayByCapital.remove(capitalId) != null;
+        changed |= judgmentsByCapital.remove(capitalId) != null;
+        changed |= sentenceEndDayByCapital.remove(capitalId) != null;
+        changed |= lastNpcJudgmentDayByCapital.remove(capitalId) != null;
 
         if (changed) {
             setDirty();
         }
-
         return changed;
     }
 
     @Override
-    public CompoundTag save(
-            CompoundTag tag,
-            HolderLookup.Provider registries
-    ) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag capitalList = new ListTag();
-
-        Set<UUID> allCapitalIds =
-                new LinkedHashSet<>();
-
-        allCapitalIds.addAll(
-                lastAccusationDayByCapital.keySet()
-        );
-
-        allCapitalIds.addAll(
-                lastExileScanDayByCapital.keySet()
-        );
-
-        allCapitalIds.addAll(
-                discoveredExilesByCapital.keySet()
-        );
-
-        allCapitalIds.addAll(
-                arrestWarrantsByCapital.keySet()
-        );
-
-        allCapitalIds.addAll(
-                detainedPrisonersByCapital.keySet()
-        );
-
-        allCapitalIds.addAll(
-                arrestWarrantIssuedGameTimeByCapital
-                        .keySet()
-        );
-
-        allCapitalIds.addAll(
-                detentionStartDayByCapital.keySet()
-        );
+        Set<UUID> allCapitalIds = new LinkedHashSet<>();
+        allCapitalIds.addAll(lastAccusationDayByCapital.keySet());
+        allCapitalIds.addAll(lastExileScanDayByCapital.keySet());
+        allCapitalIds.addAll(discoveredExilesByCapital.keySet());
+        allCapitalIds.addAll(arrestWarrantsByCapital.keySet());
+        allCapitalIds.addAll(detainedPrisonersByCapital.keySet());
+        allCapitalIds.addAll(arrestWarrantIssuedGameTimeByCapital.keySet());
+        allCapitalIds.addAll(detentionStartDayByCapital.keySet());
+        allCapitalIds.addAll(publicStatusesByCapital.keySet());
+        allCapitalIds.addAll(publicStatusSovereignByCapital.keySet());
+        allCapitalIds.addAll(confirmedCaseCountsByCapital.keySet());
+        allCapitalIds.addAll(lastResolvedDayByCapital.keySet());
+        allCapitalIds.addAll(judgmentsByCapital.keySet());
+        allCapitalIds.addAll(sentenceEndDayByCapital.keySet());
+        allCapitalIds.addAll(lastNpcJudgmentDayByCapital.keySet());
 
         for (UUID capitalId : allCapitalIds) {
-            CompoundTag capitalTag =
-                    new CompoundTag();
+            CompoundTag capitalTag = new CompoundTag();
+            capitalTag.putUUID(KEY_CAPITAL_ID, capitalId);
+            capitalTag.put(KEY_PLAYERS, writeUuidLongMap(lastAccusationDayByCapital.get(capitalId), KEY_LAST_ACCUSATION_DAY, KEY_PLAYER_ID));
 
-            capitalTag.putUUID(
-                    KEY_CAPITAL_ID,
-                    capitalId
-            );
-
-            ListTag playerList = new ListTag();
-
-            Map<UUID, Long> playerDays =
-                    lastAccusationDayByCapital.get(
-                            capitalId
-                    );
-
-            if (playerDays != null) {
-                for (Map.Entry<UUID, Long> playerEntry :
-                        playerDays.entrySet()) {
-                    CompoundTag playerTag =
-                            new CompoundTag();
-
-                    playerTag.putUUID(
-                            KEY_PLAYER_ID,
-                            playerEntry.getKey()
-                    );
-
-                    playerTag.putLong(
-                            KEY_LAST_ACCUSATION_DAY,
-                            playerEntry.getValue()
-                    );
-
-                    playerList.add(playerTag);
-                }
+            if (lastExileScanDayByCapital.containsKey(capitalId)) {
+                capitalTag.putLong(KEY_LAST_EXILE_SCAN_DAY, lastExileScanDayByCapital.get(capitalId));
+            }
+            if (publicStatusSovereignByCapital.containsKey(capitalId)) {
+                capitalTag.putUUID(KEY_PUBLIC_STATUS_SOVEREIGN, publicStatusSovereignByCapital.get(capitalId));
+            }
+            if (lastNpcJudgmentDayByCapital.containsKey(capitalId)) {
+                capitalTag.putLong(KEY_LAST_NPC_JUDGMENT_DAY, lastNpcJudgmentDayByCapital.get(capitalId));
             }
 
-            capitalTag.put(
-                    KEY_PLAYERS,
-                    playerList
-            );
-
-            if (lastExileScanDayByCapital
-                    .containsKey(capitalId)) {
-                capitalTag.putLong(
-                        KEY_LAST_EXILE_SCAN_DAY,
-                        lastExileScanDayByCapital
-                                .get(capitalId)
-                );
-            }
-
-            capitalTag.put(
-                    KEY_DISCOVERED_EXILES,
-                    writeUuidTargetSet(
-                            discoveredExilesByCapital
-                                    .get(capitalId)
-                    )
-            );
-
-            capitalTag.put(
-                    KEY_ARREST_WARRANTS,
-                    writeUuidTargetSet(
-                            arrestWarrantsByCapital
-                                    .get(capitalId)
-                    )
-            );
-
-            capitalTag.put(
-                    KEY_DETAINED_PRISONERS,
-                    writeUuidTargetSet(
-                            detainedPrisonersByCapital
-                                    .get(capitalId)
-                    )
-            );
-
-            capitalTag.put(
-                    KEY_ARREST_WARRANT_TIMES,
-                    writeUuidLongMap(
-                            arrestWarrantIssuedGameTimeByCapital
-                                    .get(capitalId),
-                            KEY_GAME_TIME
-                    )
-            );
-
-            capitalTag.put(
-                    KEY_DETENTION_START_DAYS,
-                    writeUuidLongMap(
-                            detentionStartDayByCapital
-                                    .get(capitalId),
-                            KEY_DAY
-                    )
-            );
-
+            capitalTag.put(KEY_DISCOVERED_EXILES, writeUuidSet(discoveredExilesByCapital.get(capitalId)));
+            capitalTag.put(KEY_ARREST_WARRANTS, writeUuidSet(arrestWarrantsByCapital.get(capitalId)));
+            capitalTag.put(KEY_DETAINED_PRISONERS, writeUuidSet(detainedPrisonersByCapital.get(capitalId)));
+            capitalTag.put(KEY_ARREST_WARRANT_TIMES, writeUuidLongMap(arrestWarrantIssuedGameTimeByCapital.get(capitalId), KEY_GAME_TIME, KEY_TARGET_ID));
+            capitalTag.put(KEY_DETENTION_START_DAYS, writeUuidLongMap(detentionStartDayByCapital.get(capitalId), KEY_DAY, KEY_TARGET_ID));
+            capitalTag.put(KEY_PUBLIC_STATUSES, writeStatusMap(publicStatusesByCapital.get(capitalId)));
+            capitalTag.put(KEY_CONFIRMED_CASE_COUNTS, writeUuidIntMap(confirmedCaseCountsByCapital.get(capitalId)));
+            capitalTag.put(KEY_LAST_RESOLVED_DAYS, writeUuidLongMap(lastResolvedDayByCapital.get(capitalId), KEY_DAY, KEY_TARGET_ID));
+            capitalTag.put(KEY_JUDGMENTS, writeJudgmentMap(judgmentsByCapital.get(capitalId)));
+            capitalTag.put(KEY_SENTENCE_END_DAYS, writeUuidLongMap(sentenceEndDayByCapital.get(capitalId), KEY_DAY, KEY_TARGET_ID));
             capitalList.add(capitalTag);
         }
 
-        tag.put(
-                KEY_CAPITALS,
-                capitalList
-        );
-
+        tag.put(KEY_CAPITALS, capitalList);
         return tag;
     }
 
-    public static CapitalJusticeSavedData load(
-            CompoundTag tag,
-            HolderLookup.Provider registries
-    ) {
-        CapitalJusticeSavedData data =
-                new CapitalJusticeSavedData();
+    public static CapitalJusticeSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
+        CapitalJusticeSavedData data = new CapitalJusticeSavedData();
+        ListTag capitalList = tag.getList(KEY_CAPITALS, Tag.TAG_COMPOUND);
 
-        ListTag capitalList = tag.getList(
-                KEY_CAPITALS,
-                Tag.TAG_COMPOUND
-        );
-
-        for (Tag capitalEntryRaw : capitalList) {
-            CompoundTag capitalTag =
-                    (CompoundTag) capitalEntryRaw;
-
+        for (Tag raw : capitalList) {
+            CompoundTag capitalTag = (CompoundTag) raw;
             if (!capitalTag.hasUUID(KEY_CAPITAL_ID)) {
                 continue;
             }
 
-            UUID capitalId =
-                    capitalTag.getUUID(
-                            KEY_CAPITAL_ID
-                    );
+            UUID capitalId = capitalTag.getUUID(KEY_CAPITAL_ID);
+            putIfNotEmpty(data.lastAccusationDayByCapital, capitalId, readUuidLongMap(capitalTag.getList(KEY_PLAYERS, Tag.TAG_COMPOUND), KEY_LAST_ACCUSATION_DAY, KEY_PLAYER_ID));
 
-            Map<UUID, Long> playerDays =
-                    new LinkedHashMap<>();
-
-            ListTag playerList =
-                    capitalTag.getList(
-                            KEY_PLAYERS,
-                            Tag.TAG_COMPOUND
-                    );
-
-            for (Tag playerEntryRaw : playerList) {
-                CompoundTag playerTag =
-                        (CompoundTag) playerEntryRaw;
-
-                if (!playerTag.hasUUID(
-                        KEY_PLAYER_ID
-                )) {
-                    continue;
-                }
-
-                playerDays.put(
-                        playerTag.getUUID(
-                                KEY_PLAYER_ID
-                        ),
-                        playerTag.getLong(
-                                KEY_LAST_ACCUSATION_DAY
-                        )
-                );
+            if (capitalTag.contains(KEY_LAST_EXILE_SCAN_DAY)) {
+                data.lastExileScanDayByCapital.put(capitalId, capitalTag.getLong(KEY_LAST_EXILE_SCAN_DAY));
+            }
+            if (capitalTag.hasUUID(KEY_PUBLIC_STATUS_SOVEREIGN)) {
+                data.publicStatusSovereignByCapital.put(capitalId, capitalTag.getUUID(KEY_PUBLIC_STATUS_SOVEREIGN));
+            }
+            if (capitalTag.contains(KEY_LAST_NPC_JUDGMENT_DAY)) {
+                data.lastNpcJudgmentDayByCapital.put(capitalId, capitalTag.getLong(KEY_LAST_NPC_JUDGMENT_DAY));
             }
 
-            if (!playerDays.isEmpty()) {
-                data.lastAccusationDayByCapital
-                        .put(
-                                capitalId,
-                                playerDays
-                        );
-            }
-
-            if (capitalTag.contains(
-                    KEY_LAST_EXILE_SCAN_DAY
-            )) {
-                data.lastExileScanDayByCapital.put(
-                        capitalId,
-                        capitalTag.getLong(
-                                KEY_LAST_EXILE_SCAN_DAY
-                        )
-                );
-            }
-
-            Set<UUID> discoveredExiles =
-                    readUuidTargetSet(
-                            capitalTag.getList(
-                                    KEY_DISCOVERED_EXILES,
-                                    Tag.TAG_COMPOUND
-                            )
-                    );
-
-            if (!discoveredExiles.isEmpty()) {
-                data.discoveredExilesByCapital.put(
-                        capitalId,
-                        discoveredExiles
-                );
-            }
-
-            Set<UUID> arrestWarrants =
-                    readUuidTargetSet(
-                            capitalTag.getList(
-                                    KEY_ARREST_WARRANTS,
-                                    Tag.TAG_COMPOUND
-                            )
-                    );
-
-            if (!arrestWarrants.isEmpty()) {
-                data.arrestWarrantsByCapital.put(
-                        capitalId,
-                        arrestWarrants
-                );
-            }
-
-            Set<UUID> detainedPrisoners =
-                    readUuidTargetSet(
-                            capitalTag.getList(
-                                    KEY_DETAINED_PRISONERS,
-                                    Tag.TAG_COMPOUND
-                            )
-                    );
-
-            if (!detainedPrisoners.isEmpty()) {
-                data.detainedPrisonersByCapital.put(
-                        capitalId,
-                        detainedPrisoners
-                );
-            }
-
-            Map<UUID, Long> warrantTimes =
-                    readUuidLongMap(
-                            capitalTag.getList(
-                                    KEY_ARREST_WARRANT_TIMES,
-                                    Tag.TAG_COMPOUND
-                            ),
-                            KEY_GAME_TIME
-                    );
-
-            if (!warrantTimes.isEmpty()) {
-                data.arrestWarrantIssuedGameTimeByCapital
-                        .put(
-                                capitalId,
-                                warrantTimes
-                        );
-            }
-
-            Map<UUID, Long> detentionDays =
-                    readUuidLongMap(
-                            capitalTag.getList(
-                                    KEY_DETENTION_START_DAYS,
-                                    Tag.TAG_COMPOUND
-                            ),
-                            KEY_DAY
-                    );
-
-            if (!detentionDays.isEmpty()) {
-                data.detentionStartDayByCapital.put(
-                        capitalId,
-                        detentionDays
-                );
-            }
+            putIfNotEmpty(data.discoveredExilesByCapital, capitalId, readUuidSet(capitalTag.getList(KEY_DISCOVERED_EXILES, Tag.TAG_COMPOUND)));
+            putIfNotEmpty(data.arrestWarrantsByCapital, capitalId, readUuidSet(capitalTag.getList(KEY_ARREST_WARRANTS, Tag.TAG_COMPOUND)));
+            putIfNotEmpty(data.detainedPrisonersByCapital, capitalId, readUuidSet(capitalTag.getList(KEY_DETAINED_PRISONERS, Tag.TAG_COMPOUND)));
+            putIfNotEmpty(data.arrestWarrantIssuedGameTimeByCapital, capitalId, readUuidLongMap(capitalTag.getList(KEY_ARREST_WARRANT_TIMES, Tag.TAG_COMPOUND), KEY_GAME_TIME, KEY_TARGET_ID));
+            putIfNotEmpty(data.detentionStartDayByCapital, capitalId, readUuidLongMap(capitalTag.getList(KEY_DETENTION_START_DAYS, Tag.TAG_COMPOUND), KEY_DAY, KEY_TARGET_ID));
+            putIfNotEmpty(data.publicStatusesByCapital, capitalId, readStatusMap(capitalTag.getList(KEY_PUBLIC_STATUSES, Tag.TAG_COMPOUND)));
+            putIfNotEmpty(data.confirmedCaseCountsByCapital, capitalId, readUuidIntMap(capitalTag.getList(KEY_CONFIRMED_CASE_COUNTS, Tag.TAG_COMPOUND)));
+            putIfNotEmpty(data.lastResolvedDayByCapital, capitalId, readUuidLongMap(capitalTag.getList(KEY_LAST_RESOLVED_DAYS, Tag.TAG_COMPOUND), KEY_DAY, KEY_TARGET_ID));
+            putIfNotEmpty(data.judgmentsByCapital, capitalId, readJudgmentMap(capitalTag.getList(KEY_JUDGMENTS, Tag.TAG_COMPOUND)));
+            putIfNotEmpty(data.sentenceEndDayByCapital, capitalId, readUuidLongMap(capitalTag.getList(KEY_SENTENCE_END_DAYS, Tag.TAG_COMPOUND), KEY_DAY, KEY_TARGET_ID));
         }
 
         return data;
     }
 
-    private static ListTag writeUuidTargetSet(
-            Set<UUID> values
-    ) {
+    private static boolean contains(Map<UUID, Set<UUID>> map, UUID capitalId, UUID targetId) {
+        Set<UUID> values = capitalId == null ? null : map.get(capitalId);
+        return targetId != null && values != null && values.contains(targetId);
+    }
+
+    private static Set<UUID> snapshot(Map<UUID, Set<UUID>> map, UUID capitalId) {
+        Set<UUID> values = capitalId == null ? null : map.get(capitalId);
+        return values == null || values.isEmpty() ? Set.of() : new LinkedHashSet<>(values);
+    }
+
+    private void add(Map<UUID, Set<UUID>> map, UUID capitalId, UUID targetId) {
+        if (capitalId != null && targetId != null && map.computeIfAbsent(capitalId, ignored -> new LinkedHashSet<>()).add(targetId)) {
+            setDirty();
+        }
+    }
+
+    private boolean remove(Map<UUID, Set<UUID>> map, UUID capitalId, UUID targetId) {
+        boolean changed = removeWithoutDirty(map, capitalId, targetId);
+        if (changed) {
+            setDirty();
+        }
+        return changed;
+    }
+
+    private static boolean removeWithoutDirty(Map<UUID, Set<UUID>> map, UUID capitalId, UUID targetId) {
+        Set<UUID> values = capitalId == null ? null : map.get(capitalId);
+        return targetId != null && values != null && values.remove(targetId);
+    }
+
+    private static <T> T getValue(Map<UUID, Map<UUID, T>> map, UUID capitalId, UUID targetId) {
+        Map<UUID, T> values = capitalId == null ? null : map.get(capitalId);
+        return targetId == null || values == null ? null : values.get(targetId);
+    }
+
+    private static long getLong(Map<UUID, Map<UUID, Long>> map, UUID capitalId, UUID targetId) {
+        Long value = getValue(map, capitalId, targetId);
+        return value == null ? Long.MIN_VALUE : value;
+    }
+
+    private void putLong(Map<UUID, Map<UUID, Long>> map, UUID capitalId, UUID targetId, long value) {
+        if (capitalId != null && targetId != null) {
+            map.computeIfAbsent(capitalId, ignored -> new LinkedHashMap<>()).put(targetId, value);
+            setDirty();
+        }
+    }
+
+    private static <T> boolean removeFromNestedMap(Map<UUID, Map<UUID, T>> map, UUID capitalId, UUID targetId) {
+        Map<UUID, T> values = capitalId == null ? null : map.get(capitalId);
+        return targetId != null && values != null && values.remove(targetId) != null;
+    }
+
+    private static ListTag writeUuidSet(Set<UUID> values) {
         ListTag list = new ListTag();
-
-        if (values == null || values.isEmpty()) {
-            return list;
+        if (values != null) {
+            for (UUID value : values) {
+                CompoundTag entry = new CompoundTag();
+                entry.putUUID(KEY_TARGET_ID, value);
+                list.add(entry);
+            }
         }
-
-        for (UUID targetId : values) {
-            CompoundTag targetTag =
-                    new CompoundTag();
-
-            targetTag.putUUID(
-                    KEY_TARGET_ID,
-                    targetId
-            );
-
-            list.add(targetTag);
-        }
-
         return list;
     }
 
-    private static Set<UUID> readUuidTargetSet(
-            ListTag list
-    ) {
-        Set<UUID> values =
-                new LinkedHashSet<>();
-
-        for (Tag entryRaw : list) {
-            CompoundTag entry =
-                    (CompoundTag) entryRaw;
-
+    private static Set<UUID> readUuidSet(ListTag list) {
+        Set<UUID> values = new LinkedHashSet<>();
+        for (Tag raw : list) {
+            CompoundTag entry = (CompoundTag) raw;
             if (entry.hasUUID(KEY_TARGET_ID)) {
-                values.add(
-                        entry.getUUID(
-                                KEY_TARGET_ID
-                        )
-                );
+                values.add(entry.getUUID(KEY_TARGET_ID));
             }
         }
-
         return values;
     }
 
-    private static ListTag writeUuidLongMap(
-            Map<UUID, Long> values,
-            String longKey
-    ) {
+    private static ListTag writeUuidLongMap(Map<UUID, Long> values, String valueKey, String uuidKey) {
         ListTag list = new ListTag();
-
-        if (values == null || values.isEmpty()) {
-            return list;
+        if (values != null) {
+            for (Map.Entry<UUID, Long> value : values.entrySet()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putUUID(uuidKey, value.getKey());
+                entry.putLong(valueKey, value.getValue());
+                list.add(entry);
+            }
         }
-
-        for (Map.Entry<UUID, Long> entry :
-                values.entrySet()) {
-            CompoundTag entryTag =
-                    new CompoundTag();
-
-            entryTag.putUUID(
-                    KEY_TARGET_ID,
-                    entry.getKey()
-            );
-
-            entryTag.putLong(
-                    longKey,
-                    entry.getValue()
-            );
-
-            list.add(entryTag);
-        }
-
         return list;
     }
 
-    private static Map<UUID, Long> readUuidLongMap(
-            ListTag list,
-            String longKey
-    ) {
-        Map<UUID, Long> values =
-                new LinkedHashMap<>();
-
-        for (Tag entryRaw : list) {
-            CompoundTag entry =
-                    (CompoundTag) entryRaw;
-
-            if (entry.hasUUID(KEY_TARGET_ID)) {
-                values.put(
-                        entry.getUUID(
-                                KEY_TARGET_ID
-                        ),
-                        entry.getLong(longKey)
-                );
+    private static Map<UUID, Long> readUuidLongMap(ListTag list, String valueKey, String uuidKey) {
+        Map<UUID, Long> values = new LinkedHashMap<>();
+        for (Tag raw : list) {
+            CompoundTag entry = (CompoundTag) raw;
+            if (entry.hasUUID(uuidKey)) {
+                values.put(entry.getUUID(uuidKey), entry.getLong(valueKey));
             }
         }
-
         return values;
+    }
+
+    private static ListTag writeUuidIntMap(Map<UUID, Integer> values) {
+        ListTag list = new ListTag();
+        if (values != null) {
+            for (Map.Entry<UUID, Integer> value : values.entrySet()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putUUID(KEY_TARGET_ID, value.getKey());
+                entry.putInt(KEY_COUNT, value.getValue());
+                list.add(entry);
+            }
+        }
+        return list;
+    }
+
+    private static Map<UUID, Integer> readUuidIntMap(ListTag list) {
+        Map<UUID, Integer> values = new LinkedHashMap<>();
+        for (Tag raw : list) {
+            CompoundTag entry = (CompoundTag) raw;
+            if (entry.hasUUID(KEY_TARGET_ID)) {
+                values.put(entry.getUUID(KEY_TARGET_ID), Math.max(0, entry.getInt(KEY_COUNT)));
+            }
+        }
+        return values;
+    }
+
+    private static ListTag writeStatusMap(Map<UUID, CapitalPublicCrownStatus> values) {
+        ListTag list = new ListTag();
+        if (values != null) {
+            for (Map.Entry<UUID, CapitalPublicCrownStatus> value : values.entrySet()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putUUID(KEY_TARGET_ID, value.getKey());
+                entry.putString(KEY_STATUS, value.getValue().getSerializedName());
+                list.add(entry);
+            }
+        }
+        return list;
+    }
+
+    private static Map<UUID, CapitalPublicCrownStatus> readStatusMap(ListTag list) {
+        Map<UUID, CapitalPublicCrownStatus> values = new LinkedHashMap<>();
+        for (Tag raw : list) {
+            CompoundTag entry = (CompoundTag) raw;
+            CapitalPublicCrownStatus status = CapitalPublicCrownStatus.fromSerializedName(entry.getString(KEY_STATUS));
+            if (entry.hasUUID(KEY_TARGET_ID) && status != null) {
+                values.put(entry.getUUID(KEY_TARGET_ID), status);
+            }
+        }
+        return values;
+    }
+
+    private static ListTag writeJudgmentMap(Map<UUID, CapitalJudgmentType> values) {
+        ListTag list = new ListTag();
+        if (values != null) {
+            for (Map.Entry<UUID, CapitalJudgmentType> value : values.entrySet()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putUUID(KEY_TARGET_ID, value.getKey());
+                entry.putString(KEY_JUDGMENT, value.getValue().getSerializedName());
+                list.add(entry);
+            }
+        }
+        return list;
+    }
+
+    private static Map<UUID, CapitalJudgmentType> readJudgmentMap(ListTag list) {
+        Map<UUID, CapitalJudgmentType> values = new LinkedHashMap<>();
+        for (Tag raw : list) {
+            CompoundTag entry = (CompoundTag) raw;
+            CapitalJudgmentType judgment = CapitalJudgmentType.fromSerializedName(entry.getString(KEY_JUDGMENT));
+            if (entry.hasUUID(KEY_TARGET_ID) && judgment != null) {
+                values.put(entry.getUUID(KEY_TARGET_ID), judgment);
+            }
+        }
+        return values;
+    }
+
+    private static <T> void putIfNotEmpty(Map<UUID, T> destination, UUID capitalId, T value) {
+        if (value instanceof Map<?, ?> map && map.isEmpty()) {
+            return;
+        }
+        if (value instanceof Set<?> set && set.isEmpty()) {
+            return;
+        }
+        destination.put(capitalId, value);
     }
 }

@@ -39,6 +39,10 @@ final class CapitalCommanderSelection {
         List<UUID> candidates = new ArrayList<>();
 
         for (UUID residentId : residents) {
+            if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, residentId)) {
+                continue;
+            }
+
             if (CapitalAmbassadorService.isAmbassador(level, residentId)) {
                 continue;
             }
@@ -56,7 +60,8 @@ final class CapitalCommanderSelection {
         }
 
         candidates.sort(Comparator
-                .comparingDouble((UUID id) -> {
+                .comparing((UUID id) -> !CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparingDouble(id -> {
                     Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
                     return entity == null
                             ? Double.MAX_VALUE

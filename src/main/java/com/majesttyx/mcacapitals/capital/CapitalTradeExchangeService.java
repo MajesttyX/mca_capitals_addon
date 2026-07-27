@@ -125,13 +125,12 @@ final class CapitalTradeExchangeService {
                 );
 
         CapitalDiplomacyDataAccess
-                .adjustRelationship(
+                .adjustRelationshipOrganic(
                         level,
                         first.getCapitalId(),
                         second.getCapitalId(),
                         RELATIONSHIP_BONUS,
-                        "Trade exchange completed",
-                        null
+                        "Trade exchange completed"
                 );
 
         recordTrade(

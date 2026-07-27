@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.item;
 
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
+import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalPlayerNotificationService;
@@ -167,6 +168,7 @@ public class SealedPurseHandler {
                 return true;
             }
 
+            CapitalCrownJusticeService.recordPardonResolution(level, capital, targetId);
             String line = CapitalJusticeText.sealedPurseSuccess(level, targetId, targetName);
             CapitalChronicleService.addEntry(level, capital, "The matter concerning " + targetName + " disappeared from the court records.");
             CapitalDataAccess.markDirty(level);

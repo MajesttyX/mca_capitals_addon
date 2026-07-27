@@ -4,7 +4,7 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -31,7 +31,9 @@ final class CapitalHeraldSelection {
             }
         }
 
-        Collections.sort(result);
+        result.sort(Comparator
+                .comparing((UUID id) -> !CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparing(UUID::toString));
         return result;
     }
 
@@ -112,6 +114,10 @@ final class CapitalHeraldSelection {
             CapitalRecord capital,
             UUID villagerId
     ) {
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, villagerId)) {
+            return false;
+        }
+
         if (CapitalAmbassadorService.isAmbassador(level, villagerId)) {
             return false;
         }

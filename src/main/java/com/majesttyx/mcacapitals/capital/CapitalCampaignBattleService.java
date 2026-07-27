@@ -263,6 +263,7 @@ final class CapitalCampaignBattleService {
         if (!CapitalDiplomaticWarService
                 .beginCampaignWar(
                         level,
+                        campaign,
                         attackingCapital,
                         defendingCapital
                 )) {
@@ -881,6 +882,11 @@ final class CapitalCampaignBattleService {
                         defendingCapital,
                         Component.literal(entry)
                 );
+
+        campaign.finishWithoutRetreat(
+                CapitalCampaignEndReason.ATTACKERS_DEFEATED
+        );
+        CapitalCampaignDataAccess.get(level).setDirty();
 
         CapitalCampaignService
                 .completeCampaign(

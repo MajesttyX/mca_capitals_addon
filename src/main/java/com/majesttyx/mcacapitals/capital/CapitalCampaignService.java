@@ -4,6 +4,8 @@ import com.majesttyx.mcacapitals.data.CapitalCampaignDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalCampaignEndReason;
 import com.majesttyx.mcacapitals.data.CapitalCampaignPhase;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
+import com.majesttyx.mcacapitals.data.CapitalWarCause;
+import com.majesttyx.mcacapitals.data.CapitalWarGoal;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -24,6 +26,20 @@ public final class CapitalCampaignService {
             ServerPlayer player,
             UUID ambassadorId,
             UUID defendingCapitalId
+    ) {
+        return launchCampaign(
+                player,
+                ambassadorId,
+                defendingCapitalId,
+                CapitalWarGoal.PUNITIVE
+        );
+    }
+
+    public static int launchCampaign(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID defendingCapitalId,
+            CapitalWarGoal warGoal
     ) {
         if (player == null
                 || ambassadorId == null
@@ -80,7 +96,8 @@ public final class CapitalCampaignService {
                         level,
                         attackingCapital,
                         defendingCapital,
-                        player.getUUID()
+                        player.getUUID(),
+                        warGoal
                 );
 
         if (!result.successful()) {
@@ -102,9 +119,13 @@ public final class CapitalCampaignService {
 
         player.sendSystemMessage(
                 Component.literal(
-                        "The attack on "
+                        "The "
+                                + result.campaign().getWarGoal().getDisplayName()
+                                + " against "
                                 + targetName
-                                + " has been planned. Enter that capital yourself to begin a 20-second assembly. The campaign will attempt to gather "
+                                + " has been planned for "
+                                + result.campaign().getWarCause().getDisplayName()
+                                + ". Enter that capital yourself to begin a 20-second assembly. The campaign will attempt to gather "
                                 + result.campaign()
                                 .getTargetAttackerCount()
                                 + " Guards and Archers, up to the maximum of "
@@ -132,7 +153,8 @@ public final class CapitalCampaignService {
                 level,
                 attackingCapital,
                 defendingCapital,
-                initiatingPlayerId
+                initiatingPlayerId,
+                CapitalWarGoal.PUNITIVE
         );
     }
 
@@ -142,6 +164,28 @@ public final class CapitalCampaignService {
             CapitalRecord defendingCapital,
             UUID initiatingPlayerId
     ) {
+        return createCampaign(
+                level,
+                attackingCapital,
+                defendingCapital,
+                initiatingPlayerId,
+                CapitalWarGoal.PUNITIVE
+        );
+    }
+
+    public static CampaignCreationResult createCampaign(
+            ServerLevel level,
+            CapitalRecord attackingCapital,
+            CapitalRecord defendingCapital,
+            UUID initiatingPlayerId,
+            CapitalWarGoal warGoal
+    ) {
+        String recoveryFailure = CapitalWarPlanningService
+                .validateRecovery(level, attackingCapital);
+        if (recoveryFailure != null) {
+            return CampaignCreationResult.failure(recoveryFailure);
+        }
+
         CapitalCampaignEligibilityService
                 .Validation validation =
                 CapitalCampaignEligibilityService
@@ -165,7 +209,13 @@ public final class CapitalCampaignService {
                         defendingCapital.getCapitalId(),
                         initiatingPlayerId,
                         validation.attackers(),
-                        level.getGameTime()
+                        level.getGameTime(),
+                        CapitalWarPlanningService.resolveCause(
+                                level,
+                                attackingCapital,
+                                defendingCapital
+                        ),
+                        warGoal
                 );
 
         if (!CapitalCampaignDataAccess.addCampaign(
@@ -203,8 +253,12 @@ public final class CapitalCampaignService {
 
         String entry =
                 attackingName
-                        + " planned a player-led attack on "
+                        + " planned a "
+                        + campaign.getWarGoal().getDisplayName()
+                        + " against "
                         + defendingName
+                        + " for "
+                        + campaign.getWarCause().getDisplayName()
                         + " and ordered the campaign to assemble a preferred force of "
                         + campaign.getTargetAttackerCount()
                         + " Guards and Archers, with a maximum of "
@@ -411,6 +465,8 @@ public final class CapitalCampaignService {
                         );
 
         if (campaign != null) {
+            CapitalWarSettlementService.resolve(level, campaign);
+
             CapitalRecord attackingCapital =
                     CapitalManager.getCapital(
                             campaign.getAttackingCapitalId()

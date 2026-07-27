@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalRelationshipEvent;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenAmbassadorCommunicationPacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
@@ -118,6 +119,26 @@ public final class CapitalForeignAffairsService {
         List<OpenAmbassadorCommunicationPacket.Entry> entries =
                 new ArrayList<>();
 
+        if (CapitalRoyalBetrothalService
+                .hasOpenEscortRequests(
+                        level,
+                        source
+                )) {
+            entries.add(
+                    new OpenAmbassadorCommunicationPacket.Entry(
+                            "Royal Escort Requests",
+                            "An accepted royal betrothal is waiting for its escort.",
+                            "",
+                            "",
+                            "Review Royal Escorts",
+                            "/capitalroyalescort review "
+                                    + ambassadorEntity.getUUID(),
+                            true,
+                            ""
+                    )
+            );
+        }
+
         for (CapitalRecord target :
                 targets) {
             CapitalDiplomaticTruceService
@@ -161,14 +182,22 @@ public final class CapitalForeignAffairsService {
                             "Relationship: "
                                     + CapitalRelationshipBand
                                     .fromScore(score)
-                                    .getDisplayName(),
+                                    .getDisplayName()
+                                    + " ("
+                                    + score
+                                    + ")",
                             "Status: "
                                     + foreignAffairsStatus(
                                     state
+                            )
+                                    + (tradeActive
+                                    ? " | Trade Agreement: Active"
+                                    : ""),
+                            recentRelationshipChanges(
+                                    level,
+                                    source,
+                                    target
                             ),
-                            tradeActive
-                                    ? "Trade Agreement: Active"
-                                    : "",
                             "",
                             "",
                             true,
@@ -191,6 +220,54 @@ public final class CapitalForeignAffairsService {
         );
 
         return true;
+    }
+
+    private static String recentRelationshipChanges(
+            ServerLevel level,
+            CapitalRecord source,
+            CapitalRecord target
+    ) {
+        List<CapitalRelationshipEvent> history =
+                CapitalDiplomacyDataAccess
+                        .getRelationshipHistory(
+                                level,
+                                source.getCapitalId(),
+                                target.getCapitalId()
+                        );
+
+        if (history.isEmpty()) {
+            return "Recent changes: None recorded";
+        }
+
+        List<String> recent = new ArrayList<>();
+
+        for (int index = history.size() - 1;
+             index >= 0 && recent.size() < 2;
+             index--) {
+            CapitalRelationshipEvent event =
+                    history.get(index);
+
+            if (event == null
+                    || event.reason() == null
+                    || event.reason().isBlank()) {
+                continue;
+            }
+
+            String amount = event.amount() > 0
+                    ? "+" + event.amount()
+                    : Integer.toString(event.amount());
+
+            recent.add(
+                    amount
+                            + " "
+                            + event.reason()
+            );
+        }
+
+        return recent.isEmpty()
+                ? "Recent changes: None recorded"
+                : "Recent changes: "
+                + String.join("; ", recent);
     }
 
     private static String foreignAffairsStatus(

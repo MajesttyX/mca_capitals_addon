@@ -31,10 +31,12 @@ import com.majesttyx.mcacapitals.util.CapitalFoundingCommands;
 import com.majesttyx.mcacapitals.util.CapitalHouseCommands;
 import com.majesttyx.mcacapitals.util.CapitalHouseFoundationCommands;
 import com.majesttyx.mcacapitals.util.CapitalIdentityCommands;
+import com.majesttyx.mcacapitals.util.CapitalJusticeCommands;
 import com.majesttyx.mcacapitals.util.CapitalLawCommands;
 import com.majesttyx.mcacapitals.util.CapitalLifecycleHandler;
 import com.majesttyx.mcacapitals.util.CapitalOathsCommands;
 import com.majesttyx.mcacapitals.util.CapitalPetitionCommands;
+import com.majesttyx.mcacapitals.util.CapitalRoyalEscortCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.majesttyx.mcacapitals.util.CapitalTestCommands;
 import com.majesttyx.mcacapitals.util.RoyalScepterCommands;
@@ -182,6 +184,10 @@ public class MCACapitals {
                 event.getDispatcher()
         );
 
+        CapitalJusticeCommands.register(
+                event.getDispatcher()
+        );
+
         CapitalOathsCommands.register(
                 event.getDispatcher()
         );
@@ -203,6 +209,10 @@ public class MCACapitals {
         );
 
         CapitalDiplomaticAgreementCommands.register(
+                event.getDispatcher()
+        );
+
+        CapitalRoyalEscortCommands.register(
                 event.getDispatcher()
         );
 

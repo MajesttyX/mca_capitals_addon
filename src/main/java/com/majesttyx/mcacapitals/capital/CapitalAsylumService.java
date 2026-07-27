@@ -2,8 +2,11 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalJusticeDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalPublicCrownStatus;
 import com.majesttyx.mcacapitals.data.CapitalRefugeeDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalRefugeeRecord;
+import com.majesttyx.mcacapitals.data.CapitalWarCause;
+import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
 import com.majesttyx.mcacapitals.identity.VillagerIdentityService;
 import com.majesttyx.mcacapitals.identity.VillagerIdentitySyncService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
@@ -498,6 +501,12 @@ public final class CapitalAsylumService {
                 refugeeId,
                 CrownStanding.FRIEND_OF_CROWN
         );
+        CapitalJusticeDataAccess.setPublicStatus(
+                level,
+                targetCapital.getCapitalId(),
+                refugeeId,
+                CapitalPublicCrownStatus.RECOGNIZED_FRIEND
+        );
 
         CapitalDataAccess.markDirty(level);
 
@@ -534,6 +543,14 @@ public final class CapitalAsylumService {
                 );
 
         if (originCapital != null) {
+            CapitalWarDataAccess.recordGrievance(
+                    level,
+                    originCapital.getCapitalId(),
+                    targetCapital.getCapitalId(),
+                    CapitalWarCause.ASYLUM_DISPUTE,
+                    10L
+            );
+
             CapitalChronicleService.addEntry(
                     level,
                     originCapital,

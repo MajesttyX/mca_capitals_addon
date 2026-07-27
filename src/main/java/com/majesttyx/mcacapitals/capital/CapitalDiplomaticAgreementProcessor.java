@@ -23,6 +23,7 @@ public final class CapitalDiplomaticAgreementProcessor {
         }
 
         CapitalDiplomaticAgreementService.expireTruces(level);
+        CapitalDiplomaticWorldService.tick(level);
 
         for (DiplomaticProposal proposal :
                 CapitalAgreementDataAccess

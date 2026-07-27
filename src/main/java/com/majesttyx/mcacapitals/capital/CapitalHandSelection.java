@@ -31,7 +31,7 @@ final class CapitalHandSelection {
     ) {
         UUID duke = capital.getDukes().stream()
                 .filter(id -> isEligibleHandCandidate(level, capital, id, residents))
-                .max(candidateComparator())
+                .max(candidateComparator(level, capital))
                 .orElse(null);
 
         if (duke != null) {
@@ -40,7 +40,7 @@ final class CapitalHandSelection {
 
         UUID lord = capital.getLords().stream()
                 .filter(id -> isEligibleHandCandidate(level, capital, id, residents))
-                .max(candidateComparator())
+                .max(candidateComparator(level, capital))
                 .orElse(null);
 
         if (lord != null) {
@@ -49,7 +49,7 @@ final class CapitalHandSelection {
 
         return capital.getKnights().stream()
                 .filter(id -> isEligibleHandCandidate(level, capital, id, residents))
-                .max(candidateComparator())
+                .max(candidateComparator(level, capital))
                 .orElse(null);
     }
 
@@ -123,6 +123,10 @@ final class CapitalHandSelection {
             return false;
         }
 
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, candidateId)) {
+            return false;
+        }
+
         if (!MCAIntegrationBridge.isMCAVillager(level, candidateId)) {
             return false;
         }
@@ -153,7 +157,9 @@ final class CapitalHandSelection {
                 || capital.isKnight(candidateId);
     }
 
-    private static Comparator<UUID> candidateComparator() {
-        return Comparator.comparing(UUID::toString);
+    private static Comparator<UUID> candidateComparator(ServerLevel level, CapitalRecord capital) {
+        return Comparator
+                .comparing((UUID id) -> CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparing(UUID::toString);
     }
 }

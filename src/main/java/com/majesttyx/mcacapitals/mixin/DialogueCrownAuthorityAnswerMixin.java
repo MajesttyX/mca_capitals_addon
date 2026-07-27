@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.mixin;
 
+import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticGiftService;
 import com.majesttyx.mcacapitals.capital.CapitalForeignAffairsService;
@@ -43,6 +44,9 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
     private static final String REQUEST_ROYAL_PARDON_ANSWER =
             "mcacapitals_request_royal_pardon";
 
+    private static final String REVIEW_CROWN_JUSTICE_ANSWER =
+            "mcacapitals_review_crown_justice";
+
     private static final String ASK_FOREIGN_AFFAIRS_ANSWER =
             "mcacapitals_ask_foreign_affairs";
 
@@ -75,6 +79,7 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
                         || currentAnswers.contains(SEIZE_THRONE_ANSWER)
                         || currentAnswers.contains(ACCUSE_ENEMY_ANSWER)
                         || currentAnswers.contains(REQUEST_ROYAL_PARDON_ANSWER)
+                        || currentAnswers.contains(REVIEW_CROWN_JUSTICE_ANSWER)
                         || currentAnswers.contains(ASK_FOREIGN_AFFAIRS_ANSWER)
                         || currentAnswers.contains(SEND_GIFT_ANSWER)
                         || currentAnswers.contains(MANAGE_DIPLOMACY_ANSWER);
@@ -102,6 +107,10 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
 
         if (!canGrantRoyalPardon(player.serverLevel(), villager.getUUID())) {
             filtered.remove(REQUEST_ROYAL_PARDON_ANSWER);
+        }
+
+        if (!CapitalCrownJusticeService.canShowDialogueAnswer(player, villager)) {
+            filtered.remove(REVIEW_CROWN_JUSTICE_ANSWER);
         }
 
         if (!CapitalForeignAffairsService.canShowDialogueAnswer(
@@ -138,6 +147,7 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
         filtered.remove(SEIZE_THRONE_ANSWER);
         filtered.remove(ACCUSE_ENEMY_ANSWER);
         filtered.remove(REQUEST_ROYAL_PARDON_ANSWER);
+        filtered.remove(REVIEW_CROWN_JUSTICE_ANSWER);
         filtered.remove(ASK_FOREIGN_AFFAIRS_ANSWER);
         filtered.remove(SEND_GIFT_ANSWER);
         filtered.remove(MANAGE_DIPLOMACY_ANSWER);

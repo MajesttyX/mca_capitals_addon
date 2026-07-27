@@ -26,7 +26,9 @@ final class CapitalAmbassadorSelection {
             }
         }
 
-        candidates.sort(Comparator.comparing(UUID::toString));
+        candidates.sort(Comparator
+                .comparing((UUID id) -> !CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparing(UUID::toString));
         return candidates.isEmpty() ? null : candidates.get(0);
     }
 
@@ -52,6 +54,10 @@ final class CapitalAmbassadorSelection {
                 || candidateId == null
                 || residents == null
                 || !residents.contains(candidateId)) {
+            return false;
+        }
+
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, candidateId)) {
             return false;
         }
 

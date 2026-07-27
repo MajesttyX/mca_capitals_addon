@@ -156,6 +156,66 @@ public final class CapitalDiplomaticStorageService {
         );
     }
 
+    public static ReparationsResult transferReparations(
+            ServerLevel contextLevel,
+            CapitalRecord losingCapital,
+            CapitalRecord winningCapital,
+            long selectionSeed
+    ) {
+        if (contextLevel == null
+                || losingCapital == null
+                || winningCapital == null
+                || losingCapital.getVillageId() == null
+                || winningCapital.getVillageId() == null) {
+            return ReparationsResult.failure();
+        }
+
+        StorageTarget source = findVillage(
+                contextLevel,
+                losingCapital.getVillageId()
+        );
+        StorageTarget destination = findVillage(
+                contextLevel,
+                winningCapital.getVillageId()
+        );
+        if (source == null || destination == null) {
+            return ReparationsResult.failure();
+        }
+
+        List<StorageOffer> offers = collectOffers(source, selectionSeed);
+        List<StorageOffer> selected = new ArrayList<>();
+        List<ItemStack> transferred = new ArrayList<>();
+
+        for (StorageOffer offer : offers) {
+            if (selected.size() >= 3) {
+                break;
+            }
+            if (offer.isStillValid()) {
+                selected.add(offer);
+                transferred.add(offer.exportStack());
+            }
+        }
+
+        if (selected.isEmpty()) {
+            return ReparationsResult.failure();
+        }
+
+        for (StorageOffer offer : selected) {
+            offer.removeExportedItems();
+        }
+
+        if (!queueDelivery(destination, transferred)) {
+            for (int index = 0; index < selected.size(); index++) {
+                selected.get(index).restoreExportedItems(
+                        transferred.get(index)
+                );
+            }
+            return ReparationsResult.failure();
+        }
+
+        return new ReparationsResult(true, List.copyOf(transferred));
+    }
+
     private static List<StorageOffer> collectOffers(
             StorageTarget target,
             long selectionSeed
@@ -451,6 +511,15 @@ public final class CapitalDiplomaticStorageService {
         }
 
         return null;
+    }
+
+    public record ReparationsResult(
+            boolean successful,
+            List<ItemStack> transferredItems
+    ) {
+        private static ReparationsResult failure() {
+            return new ReparationsResult(false, List.of());
+        }
     }
 
     public record TradeExchangeResult(

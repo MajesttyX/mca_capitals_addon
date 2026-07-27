@@ -125,7 +125,9 @@ public class CapitalRoyalGuardService {
             result.add(residentId);
         }
 
-        result.sort(Comparator.comparing(UUID::toString));
+        result.sort(Comparator
+                .comparing((UUID id) -> !CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparing(UUID::toString));
         return result;
     }
 
@@ -415,6 +417,10 @@ public class CapitalRoyalGuardService {
         }
 
         if (capital.getRoyalGuards().contains(villagerId)) {
+            return false;
+        }
+
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, villagerId)) {
             return false;
         }
 

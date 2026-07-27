@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.capital.CapitalCampaignService;
+import com.majesttyx.mcacapitals.data.CapitalWarGoal;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
@@ -32,17 +33,27 @@ public final class CapitalCampaignCommands {
                                                                                 "targetCapitalId",
                                                                                 StringArgumentType.word()
                                                                         )
-                                                                        .executes(context -> launch(
-                                                                                context.getSource(),
-                                                                                StringArgumentType.getString(
-                                                                                        context,
-                                                                                        "ambassadorId"
-                                                                                ),
-                                                                                StringArgumentType.getString(
-                                                                                        context,
-                                                                                        "targetCapitalId"
-                                                                                )
-                                                                        ))
+                                                                        .then(
+                                                                                Commands.argument(
+                                                                                                "warGoal",
+                                                                                                StringArgumentType.word()
+                                                                                        )
+                                                                                        .executes(context -> launch(
+                                                                                                context.getSource(),
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "ambassadorId"
+                                                                                                ),
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "targetCapitalId"
+                                                                                                ),
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "warGoal"
+                                                                                                )
+                                                                                        ))
+                                                                        )
                                                         )
                                         )
                         )
@@ -52,7 +63,8 @@ public final class CapitalCampaignCommands {
     private static int launch(
             CommandSourceStack source,
             String rawAmbassadorId,
-            String rawTargetCapitalId
+            String rawTargetCapitalId,
+            String rawWarGoal
     ) {
         ServerPlayer player =
                 getPlayer(source);
@@ -69,9 +81,15 @@ public final class CapitalCampaignCommands {
                 "The target capital ID is invalid."
         );
 
+        CapitalWarGoal warGoal = parseWarGoal(
+                source,
+                rawWarGoal
+        );
+
         if (player == null
                 || ambassadorId == null
-                || targetCapitalId == null) {
+                || targetCapitalId == null
+                || warGoal == null) {
             return 0;
         }
 
@@ -79,8 +97,30 @@ public final class CapitalCampaignCommands {
                 .launchCampaign(
                         player,
                         ambassadorId,
-                        targetCapitalId
+                        targetCapitalId,
+                        warGoal
                 );
+    }
+
+    private static CapitalWarGoal parseWarGoal(
+            CommandSourceStack source,
+            String rawValue
+    ) {
+        if (rawValue == null) {
+            return null;
+        }
+
+        for (CapitalWarGoal goal : CapitalWarGoal.values()) {
+            if (goal.getSerializedName().equalsIgnoreCase(rawValue)
+                    || goal.name().equalsIgnoreCase(rawValue)) {
+                return goal;
+            }
+        }
+
+        source.sendFailure(
+                Component.literal("The war goal must be punitive or deposition.")
+        );
+        return null;
     }
 
     private static UUID parseUuid(

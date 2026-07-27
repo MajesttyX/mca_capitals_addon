@@ -126,6 +126,17 @@ final class CapitalDiplomaticAgreementValidation {
             return "That diplomatic proposal is invalid.";
         }
 
+        if (type == DiplomaticProposalType.ROYAL_BETROTHAL) {
+            return CapitalRoyalBetrothalService
+                    .validateProposal(
+                            level,
+                            source,
+                            target,
+                            state,
+                            score
+                    );
+        }
+
         if (type == DiplomaticProposalType.TRADE_AGREEMENT) {
             return CapitalDiplomaticTradeAgreementService
                     .validateEstablishment(

@@ -54,6 +54,10 @@ public final class CapitalMasterOfLawsSelection {
             return false;
         }
 
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, entityId)) {
+            return false;
+        }
+
         if (!MCAIntegrationBridge.isTeenOrAdultVillager(level, entityId)
                 || !MCAIntegrationBridge.isAliveMCAVillager(level, entityId)) {
             return false;
@@ -84,7 +88,7 @@ public final class CapitalMasterOfLawsSelection {
             Set<UUID> residents,
             boolean female
     ) {
-        List<UUID> candidates = sorted(capital.getDukes());
+        List<UUID> candidates = sorted(level, capital, capital.getDukes());
 
         for (UUID candidate : candidates) {
             if (!isEligible(level, capital, residents, candidate)) {
@@ -104,7 +108,7 @@ public final class CapitalMasterOfLawsSelection {
             CapitalRecord capital,
             Set<UUID> residents
     ) {
-        List<UUID> candidates = sorted(capital.getKnights());
+        List<UUID> candidates = sorted(level, capital, capital.getKnights());
 
         for (UUID candidate : candidates) {
             if (isEligible(level, capital, residents, candidate)) {
@@ -120,7 +124,7 @@ public final class CapitalMasterOfLawsSelection {
             CapitalRecord capital,
             Set<UUID> residents
     ) {
-        List<UUID> candidates = sorted(residents);
+        List<UUID> candidates = sorted(level, capital, residents);
 
         for (UUID candidate : candidates) {
             if (!isEligible(level, capital, residents, candidate)) {
@@ -142,7 +146,7 @@ public final class CapitalMasterOfLawsSelection {
         return null;
     }
 
-    private static List<UUID> sorted(Set<UUID> values) {
+    private static List<UUID> sorted(ServerLevel level, CapitalRecord capital, Set<UUID> values) {
         List<UUID> result = new ArrayList<>();
 
         if (values != null) {
@@ -153,7 +157,9 @@ public final class CapitalMasterOfLawsSelection {
             }
         }
 
-        result.sort(Comparator.comparing(UUID::toString));
+        result.sort(Comparator
+                .comparing((UUID id) -> !CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparing(UUID::toString));
         return result;
     }
 }

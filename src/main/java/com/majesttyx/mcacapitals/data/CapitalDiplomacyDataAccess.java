@@ -162,6 +162,129 @@ public final class CapitalDiplomacyDataAccess {
         );
     }
 
+    public static int adjustRelationshipOrganic(
+            ServerLevel level,
+            UUID firstCapitalId,
+            UUID secondCapitalId,
+            int amount,
+            String reason
+    ) {
+        if (level == null
+                || firstCapitalId == null
+                || secondCapitalId == null
+                || firstCapitalId.equals(secondCapitalId)) {
+            return 0;
+        }
+
+        long gameDay = Math.max(
+                1L,
+                level.getDayTime() / 24000L + 1L
+        );
+
+        return get(level).adjustRelationshipOrganic(
+                firstCapitalId,
+                secondCapitalId,
+                amount,
+                reason,
+                gameDay
+        );
+    }
+
+    public static Map<CapitalRelationKey, CapitalRelationRecord>
+    getRelationshipsSnapshot(ServerLevel level) {
+        if (level == null) {
+            return Map.of();
+        }
+
+        return get(level).getRelationshipsSnapshot();
+    }
+
+    public static List<CapitalRelationshipEvent>
+    getRelationshipHistory(
+            ServerLevel level,
+            UUID firstCapitalId,
+            UUID secondCapitalId
+    ) {
+        if (level == null
+                || firstCapitalId == null
+                || secondCapitalId == null
+                || firstCapitalId.equals(secondCapitalId)) {
+            return List.of();
+        }
+
+        CapitalRelationRecord record =
+                get(level).getRelationship(
+                        firstCapitalId,
+                        secondCapitalId
+                );
+
+        return record == null
+                ? List.of()
+                : List.copyOf(record.getHistory());
+    }
+
+    public static long getLastRelationshipDriftDay(
+            ServerLevel level
+    ) {
+        return level == null
+                ? 0L
+                : get(level).getLastRelationshipDriftDay();
+    }
+
+    public static void setLastRelationshipDriftDay(
+            ServerLevel level,
+            long gameDay
+    ) {
+        if (level != null) {
+            get(level).setLastRelationshipDriftDay(
+                    gameDay
+            );
+        }
+    }
+
+    public static long getLastNpcInitiativeDay(
+            ServerLevel level
+    ) {
+        return level == null
+                ? 0L
+                : get(level).getLastNpcInitiativeDay();
+    }
+
+    public static void setLastNpcInitiativeDay(
+            ServerLevel level,
+            long gameDay
+    ) {
+        if (level != null) {
+            get(level).setLastNpcInitiativeDay(
+                    gameDay
+            );
+        }
+    }
+
+    public static long getNpcInitiativeAvailableDay(
+            ServerLevel level,
+            UUID capitalId
+    ) {
+        return level == null || capitalId == null
+                ? 0L
+                : get(level).getNpcInitiativeAvailableDay(
+                capitalId
+        );
+    }
+
+    public static void setNpcInitiativeAvailableDay(
+            ServerLevel level,
+            UUID capitalId,
+            long availableDay
+    ) {
+        if (level != null && capitalId != null) {
+            get(level).setNpcInitiativeAvailableDay(
+                    capitalId,
+                    availableDay
+            );
+        }
+    }
+
     public static void setDiplomaticState(
             ServerLevel level,
             UUID firstCapitalId,

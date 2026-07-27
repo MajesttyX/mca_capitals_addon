@@ -183,6 +183,8 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
         DIPLOMACY_TARGETS,
         DIPLOMACY_ACTIONS,
         ASYLUM_REQUESTS,
+        ROYAL_ESCORT_REQUESTS,
+        JUSTICE_CASES,
         MESSAGE
     }
 

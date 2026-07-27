@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalAgreementDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
 import com.majesttyx.mcacapitals.data.DiplomaticProposal;
 import com.majesttyx.mcacapitals.data.DiplomaticProposalType;
 import net.minecraft.network.chat.Component;
@@ -160,18 +161,37 @@ final class CapitalDiplomaticProposalResolutionService {
                         score
                 );
 
+        int requiredScore = switch (proposal.getType()) {
+            case NON_AGGRESSION_PACT,
+                 TRADE_AGREEMENT -> 10;
+            case ROYAL_BETROTHAL -> 20;
+            case ALLIANCE -> 40;
+            case TRUCE -> -74;
+        };
+
+        int acceptanceChance = Math.min(
+                90,
+                50 + Math.max(
+                        0,
+                        score - requiredScore
+                )
+        );
+
+        if (CapitalWarDataAccess.hasActiveUnjustPenalty(
+                level,
+                source.getCapitalId()
+        )) {
+            acceptanceChance = Math.max(
+                    5,
+                    acceptanceChance - 25
+            );
+        }
+
         boolean accepted =
                 validationFailure == null
-                        && switch (proposal.getType()) {
-                    case NON_AGGRESSION_PACT ->
-                            score >= 10;
-                    case ALLIANCE ->
-                            score >= 40;
-                    case TRUCE ->
-                            score >= -74;
-                    case TRADE_AGREEMENT ->
-                            score >= 10;
-                };
+                        && score >= requiredScore
+                        && level.random.nextInt(100)
+                        < acceptanceChance;
 
         if (accepted) {
             acceptProposal(
@@ -219,6 +239,65 @@ final class CapitalDiplomaticProposalResolutionService {
             CapitalRecord source,
             CapitalRecord target
     ) {
+        if (proposal.getType()
+                == DiplomaticProposalType.ROYAL_BETROTHAL) {
+            if (!CapitalRoyalBetrothalService.establish(
+                    level,
+                    proposal,
+                    source,
+                    target
+            )) {
+                CapitalAgreementDataAccess.removeProposal(
+                        level,
+                        proposal.getProposalId()
+                );
+
+                notifySource(
+                        level,
+                        proposal,
+                        source,
+                        "Royal Betrothal Failed",
+                        "The proposed Royal Betrothal could not be established because the match was no longer eligible."
+                );
+
+                return false;
+            }
+
+            CapitalDiplomacyDataAccess.adjustRelationship(
+                    level,
+                    source.getCapitalId(),
+                    target.getCapitalId(),
+                    proposal.getType().getAcceptanceBonus(),
+                    "Royal Betrothal accepted",
+                    target.getCapitalId()
+            );
+
+            CapitalAgreementDataAccess.removeProposal(
+                    level,
+                    proposal.getProposalId()
+            );
+
+            notifySource(
+                    level,
+                    proposal,
+                    source,
+                    "Royal Betrothal Accepted",
+                    CapitalDiplomaticAgreementText
+                            .capitalName(level, target)
+                            + " accepted "
+                            + CapitalRoyalBetrothalService
+                            .proposalDescription(
+                                    level,
+                                    proposal,
+                                    source,
+                                    target
+                            )
+                            + "."
+            );
+
+            return true;
+        }
+
         if (proposal.getType()
                 == DiplomaticProposalType.TRADE_AGREEMENT) {
             if (!CapitalDiplomaticTradeAgreementService.establish(

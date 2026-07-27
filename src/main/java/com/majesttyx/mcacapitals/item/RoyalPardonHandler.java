@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.item;
 
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
+import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalPlayerNotificationService;
@@ -65,7 +66,7 @@ public class RoyalPardonHandler {
         }
 
         if (!hasPardonAuthority(level, capital, player)) {
-            player.sendSystemMessage(Component.literal("Only the Sovereign, Hand, or Lord Commander may issue a Royal Pardon."));
+            player.sendSystemMessage(Component.literal("Only the player Sovereign, or the player Hand serving an NPC Sovereign, may issue a Royal Pardon."));
             return;
         }
 
@@ -94,7 +95,8 @@ public class RoyalPardonHandler {
         String targetName = CapitalNameService.resolveDisplayName(level, capital, targetId);
         String playerName = player.getName().getString();
 
-        CapitalChronicleService.addEntry(level, capital, targetName + " was granted a Royal Pardon by " + playerName + ".");
+        CapitalCrownJusticeService.recordPardonResolution(level, capital, targetId);
+        CapitalChronicleService.addEntry(level, capital, targetName + " was granted a Royal Pardon by " + playerName + ". The discovery remains part of the Crown's record.");
         CapitalDataAccess.markDirty(level);
 
         player.sendSystemMessage(Component.literal(targetName + " has been granted a Royal Pardon."));
@@ -111,11 +113,10 @@ public class RoyalPardonHandler {
             return true;
         }
 
-        if (PlayerCapitalTitleService.isHand(level, capital, playerId)) {
-            return true;
-        }
-
-        return PlayerCapitalTitleService.isCommander(level, capital, playerId);
+        return capital.getPlayerSovereignId() == null
+                && capital.getSovereign() != null
+                && playerId.equals(capital.getHand())
+                && PlayerCapitalTitleService.isHand(level, capital, playerId);
     }
 
     private CapitalRecord resolveCapital(ServerLevel level, UUID targetId) {

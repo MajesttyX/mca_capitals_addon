@@ -101,6 +101,26 @@ final class CapitalDiplomaticAgreementMenuService {
         List<OpenAmbassadorCommunicationPacket.Entry> entries =
                 new ArrayList<>();
 
+        if (CapitalRoyalBetrothalService
+                .hasOpenEscortRequests(
+                        level,
+                        source
+                )) {
+            entries.add(
+                    new OpenAmbassadorCommunicationPacket.Entry(
+                            "Royal Escort Requests",
+                            "An accepted royal betrothal is waiting for its escort.",
+                            "",
+                            "",
+                            "Review Royal Escorts",
+                            "/capitalroyalescort review "
+                                    + ambassadorId,
+                            true,
+                            ""
+                    )
+            );
+        }
+
         if (CapitalAsylumScreenService
                 .hasReviewableRequests(
                         player,
@@ -395,16 +415,31 @@ final class CapitalDiplomaticAgreementMenuService {
 
         if (sourceCampaign == null
                 && targetCampaign == null) {
+            String warCauseDescription = CapitalWarPlanningService
+                    .describePlan(level, source, target);
             actions.add(
                     new OpenAmbassadorCommunicationPacket.Action(
-                            "Plan Attack",
-                            "Reserve up to seven Guards and Archers. War begins and the force arrives when you personally enter "
-                                    + targetName
-                                    + ".",
+                            "Plan Punitive War",
+                            warCauseDescription
+                                    + " Reserve up to seven Guards and Archers. Victory demands limited reparations.",
                             "/capitalcampaign launch "
                                     + ambassadorId
                                     + " "
-                                    + target.getCapitalId(),
+                                    + target.getCapitalId()
+                                    + " punitive",
+                            true
+                    )
+            );
+            actions.add(
+                    new OpenAmbassadorCommunicationPacket.Action(
+                            "Plan War of Deposition",
+                            warCauseDescription
+                                    + " Victory removes the defending sovereign and begins an interregnum.",
+                            "/capitalcampaign launch "
+                                    + ambassadorId
+                                    + " "
+                                    + target.getCapitalId()
+                                    + " deposition",
                             true
                     )
             );
@@ -472,30 +507,18 @@ final class CapitalDiplomaticAgreementMenuService {
                     score
             );
 
-            boolean activeTruce =
-                    state
-                            == CapitalDiplomaticState.TRUCE
-                            && relation != null
-                            && relation.getTruceUntil()
-                            > level.getGameTime();
+            addProposalActionIfValid(
+                    actions,
+                    player,
+                    ambassadorId,
+                    source,
+                    target,
+                    DiplomaticProposalType
+                            .ROYAL_BETROTHAL,
+                    state,
+                    score
+            );
 
-            if (state
-                    != CapitalDiplomaticState.WAR
-                    && !activeTruce) {
-                actions.add(
-                        new OpenAmbassadorCommunicationPacket.Action(
-                                "Declare War",
-                                "Declare war on "
-                                        + targetName
-                                        + ".",
-                                "/capitaldiplomacy war "
-                                        + ambassadorId
-                                        + " "
-                                        + target.getCapitalId(),
-                                true
-                        )
-                );
-            }
         }
 
         if (actions.isEmpty()) {

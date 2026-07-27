@@ -42,6 +42,10 @@ final class CapitalMaesterSelection {
         for (UUID residentId : residents) {
             if (isMaester(level, capital, residentId, residents)) {
                 result.add(residentId);
+                if (CapitalCrownJusticeService.isRecognizedFriend(level, capital, residentId)) {
+                    result.add(residentId);
+                    result.add(residentId);
+                }
             }
         }
 
@@ -74,6 +78,10 @@ final class CapitalMaesterSelection {
         }
 
         if (residents == null || !residents.contains(villagerId)) {
+            return false;
+        }
+
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, villagerId)) {
             return false;
         }
 

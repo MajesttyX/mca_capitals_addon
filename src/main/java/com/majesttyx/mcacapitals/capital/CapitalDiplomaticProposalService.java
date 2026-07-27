@@ -144,16 +144,52 @@ final class CapitalDiplomaticProposalService {
             return 0;
         }
 
-        DiplomaticProposal proposal =
-                new DiplomaticProposal(
-                        UUID.randomUUID(),
-                        source.getCapitalId(),
-                        target.getCapitalId(),
-                        player.getUUID(),
-                        targetSovereignId,
-                        type,
-                        level.getGameTime()
+        DiplomaticProposal proposal;
+
+        if (type == DiplomaticProposalType.ROYAL_BETROTHAL) {
+            CapitalRoyalBetrothalService.Match match =
+                    CapitalRoyalBetrothalService
+                            .findMatch(
+                                    level,
+                                    source,
+                                    target
+                            );
+
+            if (match == null) {
+                player.sendSystemMessage(
+                        Component.literal(
+                                "These capitals no longer have an eligible royal match."
+                        )
                 );
+
+                return 0;
+            }
+
+            proposal = new DiplomaticProposal(
+                    UUID.randomUUID(),
+                    source.getCapitalId(),
+                    target.getCapitalId(),
+                    player.getUUID(),
+                    targetSovereignId,
+                    null,
+                    type,
+                    level.getGameTime(),
+                    match.sourceRoyalId(),
+                    match.targetRoyalId(),
+                    match.relocatingRoyalId(),
+                    match.destinationCapitalId()
+            );
+        } else {
+            proposal = new DiplomaticProposal(
+                    UUID.randomUUID(),
+                    source.getCapitalId(),
+                    target.getCapitalId(),
+                    player.getUUID(),
+                    targetSovereignId,
+                    type,
+                    level.getGameTime()
+            );
+        }
 
         CapitalAgreementDataAccess.addProposal(
                 level,

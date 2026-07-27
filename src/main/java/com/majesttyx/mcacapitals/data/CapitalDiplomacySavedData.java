@@ -35,6 +35,18 @@ public final class CapitalDiplomacySavedData
     private static final String KEY_SHIPMENTS =
             "Shipments";
 
+    private static final String KEY_LAST_RELATIONSHIP_DRIFT_DAY =
+            "LastRelationshipDriftDay";
+
+    private static final String KEY_LAST_NPC_INITIATIVE_DAY =
+            "LastNpcInitiativeDay";
+
+    private static final String KEY_NPC_INITIATIVE_COOLDOWNS =
+            "NpcInitiativeCooldowns";
+
+    private static final String KEY_AVAILABLE_DAY =
+            "AvailableDay";
+
     private static final String KEY_CAPITAL_ID =
             "CapitalId";
 
@@ -71,6 +83,14 @@ public final class CapitalDiplomacySavedData
             DiplomaticShipment
             > shipments =
             new LinkedHashMap<>();
+
+    private final Map<UUID, Long>
+            npcInitiativeAvailableDays =
+            new LinkedHashMap<>();
+
+    private long lastRelationshipDriftDay;
+
+    private long lastNpcInitiativeDay;
 
     public UUID getAmbassador(UUID capitalId) {
         if (capitalId == null) {
@@ -224,6 +244,35 @@ public final class CapitalDiplomacySavedData
         return applied;
     }
 
+    public int adjustRelationshipOrganic(
+            UUID firstCapitalId,
+            UUID secondCapitalId,
+            int amount,
+            String reason,
+            long gameDay
+    ) {
+        CapitalRelationRecord record =
+                getOrCreateRelationship(
+                        firstCapitalId,
+                        secondCapitalId
+                );
+
+        int applied = record.adjustScoreWithin(
+                amount,
+                -90,
+                90,
+                reason,
+                gameDay,
+                null
+        );
+
+        if (applied != 0) {
+            setDirty();
+        }
+
+        return applied;
+    }
+
     public void setDiplomaticState(
             UUID firstCapitalId,
             UUID secondCapitalId,
@@ -247,6 +296,62 @@ public final class CapitalDiplomacySavedData
             CapitalRelationRecord
             > getRelationshipsSnapshot() {
         return new LinkedHashMap<>(relationships);
+    }
+
+    public long getLastRelationshipDriftDay() {
+        return lastRelationshipDriftDay;
+    }
+
+    public void setLastRelationshipDriftDay(long gameDay) {
+        long normalized = Math.max(0L, gameDay);
+
+        if (lastRelationshipDriftDay != normalized) {
+            lastRelationshipDriftDay = normalized;
+            setDirty();
+        }
+    }
+
+    public long getLastNpcInitiativeDay() {
+        return lastNpcInitiativeDay;
+    }
+
+    public void setLastNpcInitiativeDay(long gameDay) {
+        long normalized = Math.max(0L, gameDay);
+
+        if (lastNpcInitiativeDay != normalized) {
+            lastNpcInitiativeDay = normalized;
+            setDirty();
+        }
+    }
+
+    public long getNpcInitiativeAvailableDay(UUID capitalId) {
+        if (capitalId == null) {
+            return 0L;
+        }
+
+        return npcInitiativeAvailableDays.getOrDefault(
+                capitalId,
+                0L
+        );
+    }
+
+    public void setNpcInitiativeAvailableDay(
+            UUID capitalId,
+            long availableDay
+    ) {
+        if (capitalId == null) {
+            return;
+        }
+
+        long normalized = Math.max(0L, availableDay);
+        Long previous = npcInitiativeAvailableDays.put(
+                capitalId,
+                normalized
+        );
+
+        if (previous == null || previous != normalized) {
+            setDirty();
+        }
     }
 
     public long getGiftCooldownExpiresAt(
@@ -373,6 +478,10 @@ public final class CapitalDiplomacySavedData
                                         .targetCapitalId()
                         )
                 );
+
+        changed |= npcInitiativeAvailableDays.remove(
+                capitalId
+        ) != null;
 
         changed |= shipments.entrySet()
                 .removeIf(entry -> {
@@ -589,6 +698,47 @@ public final class CapitalDiplomacySavedData
                 shipmentsTag
         );
 
+        tag.putLong(
+                KEY_LAST_RELATIONSHIP_DRIFT_DAY,
+                lastRelationshipDriftDay
+        );
+
+        tag.putLong(
+                KEY_LAST_NPC_INITIATIVE_DAY,
+                lastNpcInitiativeDay
+        );
+
+        ListTag initiativeCooldownsTag =
+                new ListTag();
+
+        for (Map.Entry<UUID, Long> entry :
+                npcInitiativeAvailableDays.entrySet()) {
+            if (entry.getKey() == null
+                    || entry.getValue() == null) {
+                continue;
+            }
+
+            CompoundTag cooldownTag =
+                    new CompoundTag();
+
+            cooldownTag.putUUID(
+                    KEY_CAPITAL_ID,
+                    entry.getKey()
+            );
+
+            cooldownTag.putLong(
+                    KEY_AVAILABLE_DAY,
+                    entry.getValue()
+            );
+
+            initiativeCooldownsTag.add(cooldownTag);
+        }
+
+        tag.put(
+                KEY_NPC_INITIATIVE_COOLDOWNS,
+                initiativeCooldownsTag
+        );
+
         return tag;
     }
 
@@ -708,6 +858,46 @@ public final class CapitalDiplomacySavedData
                         shipment
                 );
             }
+        }
+
+        data.lastRelationshipDriftDay =
+                Math.max(
+                        0L,
+                        tag.getLong(
+                                KEY_LAST_RELATIONSHIP_DRIFT_DAY
+                        )
+                );
+
+        data.lastNpcInitiativeDay =
+                Math.max(
+                        0L,
+                        tag.getLong(
+                                KEY_LAST_NPC_INITIATIVE_DAY
+                        )
+                );
+
+        ListTag initiativeCooldownsTag = tag.getList(
+                KEY_NPC_INITIATIVE_COOLDOWNS,
+                Tag.TAG_COMPOUND
+        );
+
+        for (Tag rawEntry : initiativeCooldownsTag) {
+            CompoundTag cooldownTag =
+                    (CompoundTag) rawEntry;
+
+            if (!cooldownTag.hasUUID(KEY_CAPITAL_ID)) {
+                continue;
+            }
+
+            data.npcInitiativeAvailableDays.put(
+                    cooldownTag.getUUID(KEY_CAPITAL_ID),
+                    Math.max(
+                            0L,
+                            cooldownTag.getLong(
+                                    KEY_AVAILABLE_DAY
+                            )
+                    )
+            );
         }
 
         return data;

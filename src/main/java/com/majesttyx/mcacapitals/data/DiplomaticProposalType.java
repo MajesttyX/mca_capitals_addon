@@ -28,6 +28,12 @@ public enum DiplomaticProposalType {
             null,
             10,
             5
+    ),
+    ROYAL_BETROTHAL(
+            "Royal Betrothal",
+            null,
+            20,
+            5
     );
 
     private final String displayName;

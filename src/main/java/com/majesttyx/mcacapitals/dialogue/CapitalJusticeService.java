@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
+import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalCrownStandingService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
@@ -11,6 +12,7 @@ import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CrownStanding;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalJusticeDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalPublicCrownStatus;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenAccusationSelectionPacket;
 import com.majesttyx.mcacapitals.util.CapitalJusticeText;
@@ -116,6 +118,7 @@ public final class CapitalJusticeService {
 
         if (standing == CrownStanding.ENEMY_OF_CROWN) {
             rewardCorrectAccusation(player);
+            CapitalCrownJusticeService.onCorrectAccusation(level, capital, targetId);
 
             boolean newWarrant = CapitalJusticeDataAccess.issueArrestWarrant(level, capital.getCapitalId(), targetId);
             String warrantLine = CapitalJusticeText.arrestWarrantIssued(targetName);
@@ -193,6 +196,16 @@ public final class CapitalJusticeService {
             return false;
         }
 
+        CapitalPublicCrownStatus publicStatus = CapitalJusticeDataAccess.getPublicStatus(
+                level,
+                capital.getCapitalId(),
+                targetId
+        );
+        if (publicStatus == CapitalPublicCrownStatus.DISCOVERED_ENEMY
+                || publicStatus == CapitalPublicCrownStatus.RESTORED_TO_PEACE) {
+            return false;
+        }
+
         if (!MCAIntegrationBridge.isLoadedAndAlive(level, targetId)) {
             return false;
         }
@@ -217,11 +230,12 @@ public final class CapitalJusticeService {
     }
 
     private static void applyWrongAccusationPenalties(ServerLevel level, CapitalRecord capital, UUID targetId, ServerPlayer player) {
-        MCAIntegrationBridge.adjustHearts(level, targetId, player.getUUID(), -50);
+        boolean recognizedFriend = CapitalCrownJusticeService.isRecognizedFriend(level, capital, targetId);
+        MCAIntegrationBridge.adjustHearts(level, targetId, player.getUUID(), recognizedFriend ? -75 : -50);
 
         UUID sovereign = capital.getSovereign();
         if (sovereign != null && !sovereign.equals(targetId) && MCAIntegrationBridge.isMCAVillager(level, sovereign)) {
-            MCAIntegrationBridge.adjustHearts(level, sovereign, player.getUUID(), -30);
+            MCAIntegrationBridge.adjustHearts(level, sovereign, player.getUUID(), recognizedFriend ? -50 : -30);
         }
     }
 

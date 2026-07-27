@@ -92,15 +92,44 @@ public final class CapitalRelationRecord {
             long gameDay,
             UUID initiatingCapitalId
     ) {
+        return adjustScoreWithin(
+                amount,
+                -100,
+                100,
+                reason,
+                gameDay,
+                initiatingCapitalId
+        );
+    }
+
+    public int adjustScoreWithin(
+            int amount,
+            int minimum,
+            int maximum,
+            String reason,
+            long gameDay,
+            UUID initiatingCapitalId
+    ) {
+        int lowerBound = Math.max(-100, minimum);
+        int upperBound = Math.min(100, maximum);
+
+        if (lowerBound > upperBound) {
+            return 0;
+        }
+
         int previous = score;
 
-        score = clampScore(score + amount);
+        score = Math.max(
+                lowerBound,
+                Math.min(
+                        upperBound,
+                        score + amount
+                )
+        );
 
         int applied = score - previous;
 
-        if (applied != 0
-                || reason != null
-                && !reason.isBlank()) {
+        if (applied != 0) {
             addHistory(
                     new CapitalRelationshipEvent(
                             applied,

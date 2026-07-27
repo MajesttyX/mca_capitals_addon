@@ -3,6 +3,9 @@ package com.majesttyx.mcacapitals.capital;
 import com.majesttyx.mcacapitals.data.CapitalAgreementDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalRelationRecord;
+import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
+import com.majesttyx.mcacapitals.data.CapitalWarCause;
+import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,141 +25,26 @@ final class CapitalDiplomaticWarService {
             UUID ambassadorId,
             UUID targetCapitalId
     ) {
-        if (player == null
-                || ambassadorId == null
-                || targetCapitalId == null) {
-            return 0;
-        }
-
-        CapitalDiplomaticAgreementValidation
-                .AudienceValidation audience =
-                CapitalDiplomaticAgreementValidation
-                        .validateAudience(
-                                player,
-                                ambassadorId
-                        );
-
-        if (!audience.valid()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            audience.failureMessage()
-                    )
-            );
-
-            return 0;
-        }
-
-        ServerLevel level =
-                player.serverLevel();
-
-        CapitalRecord source =
-                audience.sourceCapital();
-
-        CapitalRecord target =
-                CapitalManager.getCapital(
-                        targetCapitalId
-                );
-
-        String targetFailure =
-                CapitalDiplomaticAgreementValidation
-                        .validateTarget(
-                                source,
-                                target
-                        );
-
-        if (targetFailure != null) {
-            player.sendSystemMessage(
-                    Component.literal(targetFailure)
-            );
-
-            return 0;
-        }
-
-        CapitalDiplomaticTruceService
-                .refreshExpiredTruce(
-                        level,
-                        source,
-                        target
-                );
-
-        CapitalRelationRecord relation =
-                CapitalDiplomacyDataAccess
-                        .getOrCreateRelationship(
-                                level,
-                                source.getCapitalId(),
-                                target.getCapitalId()
-                        );
-
-        if (relation == null) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "The diplomatic relationship could not be resolved."
-                    )
-            );
-
-            return 0;
-        }
-
-        if (relation.getDiplomaticState()
-                == CapitalDiplomaticState.WAR) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "These capitals are already at war."
-                    )
-            );
-
-            return 0;
-        }
-
-        if (relation.getDiplomaticState()
-                == CapitalDiplomaticState.TRUCE
-                && relation.getTruceUntil()
-                > level.getGameTime()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "War cannot be declared directly while the active truce remains in force. A player-led attack may still break it when the authorized player enters the target capital."
-                    )
-            );
-
-            return 0;
-        }
-
-        if (!applyWarState(
-                level,
-                source,
-                target,
-                false
-        )) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "War could not be declared."
-                    )
-            );
-
+        if (player == null) {
             return 0;
         }
 
         player.sendSystemMessage(
                 Component.literal(
-                        "War has been declared on "
-                                + CapitalDiplomaticAgreementText
-                                .capitalName(
-                                        level,
-                                        target
-                                )
-                                + "."
+                        "War must be begun through a planned Punitive War or War of Deposition. War starts when the campaign deploys inside the target capital."
                 )
         );
-
-        return 1;
+        return 0;
     }
 
     static boolean beginCampaignWar(
             ServerLevel level,
+            CapitalCampaignRecord campaign,
             CapitalRecord source,
             CapitalRecord target
     ) {
         if (level == null
+                || campaign == null
                 || source == null
                 || target == null
                 || source.getCapitalId() == null
@@ -180,12 +68,37 @@ final class CapitalDiplomaticWarService {
             return true;
         }
 
-        return applyWarState(
+        boolean established = applyWarState(
                 level,
                 source,
                 target,
                 true
         );
+        if (!established) {
+            return false;
+        }
+
+        CapitalWarDataAccess.recordGrievance(
+                level,
+                target.getCapitalId(),
+                source.getCapitalId(),
+                currentState == CapitalDiplomaticState.NON_AGGRESSION_PACT
+                        || currentState == CapitalDiplomaticState.ALLIANCE
+                        || currentState == CapitalDiplomaticState.TRUCE
+                        ? CapitalWarCause.TREATY_BROKEN
+                        : CapitalWarCause.PREVIOUS_AGGRESSION,
+                10L
+        );
+
+        if (campaign.getWarCause() == CapitalWarCause.UNJUST) {
+            CapitalWarPenaltyService.applyUnjustWarPenalty(
+                    level,
+                    source,
+                    target
+            );
+        }
+
+        return true;
     }
 
     private static boolean applyWarState(

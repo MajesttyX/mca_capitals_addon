@@ -47,12 +47,25 @@ public final class CapitalDiplomaticAgreementCorrespondenceService {
                         targetCapital
                 );
 
+        String proposalDescription =
+                proposal.getType()
+                        == com.majesttyx.mcacapitals.data.DiplomaticProposalType.ROYAL_BETROTHAL
+                        ? CapitalRoyalBetrothalService
+                        .proposalDescription(
+                                level,
+                                proposal,
+                                sourceCapital,
+                                targetCapital
+                        )
+                        : "a "
+                        + proposal.getType().getDisplayName();
+
         MutableComponent page =
                 Component.literal(
                         "The court of "
                                 + sourceName
-                                + " proposes a "
-                                + proposal.getType().getDisplayName()
+                                + " proposes "
+                                + proposalDescription
                                 + " with "
                                 + targetName
                                 + ".\n\n"

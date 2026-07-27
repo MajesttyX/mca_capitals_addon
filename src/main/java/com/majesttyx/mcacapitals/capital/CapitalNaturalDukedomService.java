@@ -1,9 +1,7 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
-import com.majesttyx.mcacapitals.data.CapitalJusticeDataAccess;
 import com.majesttyx.mcacapitals.util.CapitalJusticeText;
-import com.majesttyx.mcacapitals.util.MCAExecutionBridge;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 
@@ -157,7 +155,13 @@ public final class CapitalNaturalDukedomService {
                 continue;
             }
 
-            if (hasActiveJusticeCase(level, capital, resident)) {
+            int weight = CapitalCrownJusticeService.naturalElevationWeight(
+                    level,
+                    capital,
+                    resident
+            );
+
+            if (weight <= 0) {
                 continue;
             }
 
@@ -175,7 +179,9 @@ public final class CapitalNaturalDukedomService {
                 continue;
             }
 
-            candidates.add(resident);
+            for (int index = 0; index < weight; index++) {
+                candidates.add(resident);
+            }
         }
 
         if (candidates.isEmpty()) {
@@ -186,40 +192,6 @@ public final class CapitalNaturalDukedomService {
 
         return candidates.get(
                 level.random.nextInt(candidates.size())
-        );
-    }
-
-    private static boolean hasActiveJusticeCase(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID villagerId
-    ) {
-        if (level == null
-                || capital == null
-                || villagerId == null) {
-            return false;
-        }
-
-        UUID capitalId = capital.getCapitalId();
-
-        return CapitalJusticeDataAccess.hasArrestWarrant(
-                level,
-                capitalId,
-                villagerId
-        )
-                || CapitalJusticeDataAccess.isDetainedPrisoner(
-                level,
-                capitalId,
-                villagerId
-        )
-                || CapitalJusticeDataAccess.hasDiscoveredExile(
-                level,
-                capitalId,
-                villagerId
-        )
-                || MCAExecutionBridge.isMarkedForExecution(
-                level,
-                villagerId
         );
     }
 

@@ -159,6 +159,69 @@ public final class CapitalWartimeSuccessionService {
         );
     }
 
+    public static boolean beginDepositionInterregnum(
+            ServerLevel level,
+            CapitalRecord capital,
+            String reason
+    ) {
+        if (level == null
+                || capital == null
+                || capital.getCapitalId() == null
+                || capital.getSovereign() == null) {
+            return false;
+        }
+
+        UUID deposedSovereignId = capital.getSovereign();
+        String deposedName = resolveName(level, deposedSovereignId);
+        long now = level.getGameTime();
+        CapitalInterregnumRecord record = new CapitalInterregnumRecord(
+                capital.getCapitalId(),
+                deposedSovereignId,
+                deposedName,
+                now,
+                now + MINIMUM_INTERREGNUM_TICKS,
+                capital.isSovereignFemale(),
+                capital.isPlayerSovereign(),
+                capital.getPlayerSovereignId()
+        );
+
+        if (!CapitalInterregnumDataAccess.begin(level, record)) {
+            return false;
+        }
+
+        capital.setSovereign(null);
+        capital.setSovereignFemale(false);
+
+        if (record.wasPlayerSovereign()) {
+            CapitalSovereignAppointmentService
+                    .clearPlayerSovereignState(capital);
+            if (record.getFormerPlayerSovereignId() != null) {
+                PlayerCapitalTitleService.clear(
+                        level,
+                        record.getFormerPlayerSovereignId(),
+                        capital.getCapitalId()
+                );
+            }
+        }
+
+        String entry = deposedName
+                + " was removed from the throne"
+                + (reason == null || reason.isBlank()
+                ? "."
+                : " " + reason.trim())
+                + " A wartime interregnum began.";
+
+        CapitalChronicleService.addEntry(level, capital, entry);
+        CapitalPlayerNotificationService.notifyPlayersInCapital(
+                level,
+                capital,
+                Component.literal(entry)
+        );
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
+        return true;
+    }
+
     private static void beginInterregnum(
             ServerLevel level,
             CapitalRecord capital,

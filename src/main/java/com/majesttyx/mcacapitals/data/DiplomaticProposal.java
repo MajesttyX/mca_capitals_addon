@@ -14,6 +14,10 @@ public final class DiplomaticProposal {
     private static final String KEY_NOTIFIED_PLAYER_ID = "NotifiedPlayerId";
     private static final String KEY_TYPE = "Type";
     private static final String KEY_CREATED_AT = "CreatedAt";
+    private static final String KEY_SOURCE_ROYAL_ID = "SourceRoyalId";
+    private static final String KEY_TARGET_ROYAL_ID = "TargetRoyalId";
+    private static final String KEY_RELOCATING_ROYAL_ID = "RelocatingRoyalId";
+    private static final String KEY_DESTINATION_CAPITAL_ID = "DestinationCapitalId";
 
     private final UUID proposalId;
     private final UUID sourceCapitalId;
@@ -22,6 +26,10 @@ public final class DiplomaticProposal {
     private final UUID targetSovereignId;
     private final DiplomaticProposalType type;
     private final long createdAt;
+    private final UUID sourceRoyalId;
+    private final UUID targetRoyalId;
+    private final UUID relocatingRoyalId;
+    private final UUID destinationCapitalId;
 
     private UUID notifiedPlayerId;
 
@@ -42,7 +50,11 @@ public final class DiplomaticProposal {
                 targetSovereignId,
                 null,
                 type,
-                createdAt
+                createdAt,
+                null,
+                null,
+                null,
+                null
         );
     }
 
@@ -55,6 +67,36 @@ public final class DiplomaticProposal {
             UUID notifiedPlayerId,
             DiplomaticProposalType type,
             long createdAt
+    ) {
+        this(
+                proposalId,
+                sourceCapitalId,
+                targetCapitalId,
+                sourceSovereignId,
+                targetSovereignId,
+                notifiedPlayerId,
+                type,
+                createdAt,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    public DiplomaticProposal(
+            UUID proposalId,
+            UUID sourceCapitalId,
+            UUID targetCapitalId,
+            UUID sourceSovereignId,
+            UUID targetSovereignId,
+            UUID notifiedPlayerId,
+            DiplomaticProposalType type,
+            long createdAt,
+            UUID sourceRoyalId,
+            UUID targetRoyalId,
+            UUID relocatingRoyalId,
+            UUID destinationCapitalId
     ) {
         if (proposalId == null
                 || sourceCapitalId == null
@@ -79,6 +121,10 @@ public final class DiplomaticProposal {
         this.notifiedPlayerId = notifiedPlayerId;
         this.type = type;
         this.createdAt = Math.max(0L, createdAt);
+        this.sourceRoyalId = sourceRoyalId;
+        this.targetRoyalId = targetRoyalId;
+        this.relocatingRoyalId = relocatingRoyalId;
+        this.destinationCapitalId = destinationCapitalId;
     }
 
     public UUID getProposalId() {
@@ -120,6 +166,29 @@ public final class DiplomaticProposal {
 
     public long getCreatedAt() {
         return createdAt;
+    }
+
+    public UUID getSourceRoyalId() {
+        return sourceRoyalId;
+    }
+
+    public UUID getTargetRoyalId() {
+        return targetRoyalId;
+    }
+
+    public UUID getRelocatingRoyalId() {
+        return relocatingRoyalId;
+    }
+
+    public UUID getDestinationCapitalId() {
+        return destinationCapitalId;
+    }
+
+    public boolean hasRoyalBetrothalDetails() {
+        return sourceRoyalId != null
+                && targetRoyalId != null
+                && relocatingRoyalId != null
+                && destinationCapitalId != null;
     }
 
     public CompoundTag save() {
@@ -171,6 +240,22 @@ public final class DiplomaticProposal {
             );
         }
 
+        if (sourceRoyalId != null) {
+            tag.putUUID(KEY_SOURCE_ROYAL_ID, sourceRoyalId);
+        }
+
+        if (targetRoyalId != null) {
+            tag.putUUID(KEY_TARGET_ROYAL_ID, targetRoyalId);
+        }
+
+        if (relocatingRoyalId != null) {
+            tag.putUUID(KEY_RELOCATING_ROYAL_ID, relocatingRoyalId);
+        }
+
+        if (destinationCapitalId != null) {
+            tag.putUUID(KEY_DESTINATION_CAPITAL_ID, destinationCapitalId);
+        }
+
         return tag;
     }
 
@@ -213,7 +298,19 @@ public final class DiplomaticProposal {
                 targetSovereignId,
                 notifiedPlayerId,
                 type,
-                tag.getLong(KEY_CREATED_AT)
+                tag.getLong(KEY_CREATED_AT),
+                tag.hasUUID(KEY_SOURCE_ROYAL_ID)
+                        ? tag.getUUID(KEY_SOURCE_ROYAL_ID)
+                        : null,
+                tag.hasUUID(KEY_TARGET_ROYAL_ID)
+                        ? tag.getUUID(KEY_TARGET_ROYAL_ID)
+                        : null,
+                tag.hasUUID(KEY_RELOCATING_ROYAL_ID)
+                        ? tag.getUUID(KEY_RELOCATING_ROYAL_ID)
+                        : null,
+                tag.hasUUID(KEY_DESTINATION_CAPITAL_ID)
+                        ? tag.getUUID(KEY_DESTINATION_CAPITAL_ID)
+                        : null
         );
     }
 }

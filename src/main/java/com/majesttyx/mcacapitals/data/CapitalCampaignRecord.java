@@ -43,6 +43,8 @@ public final class CapitalCampaignRecord {
             "FieldDefeatResolutionAt";
     private static final String KEY_CROWN_RALLY_ENDS_AT =
             "CrownRallyEndsAt";
+    private static final String KEY_WAR_CAUSE = "WarCause";
+    private static final String KEY_WAR_GOAL = "WarGoal";
 
     private final UUID campaignId;
     private final UUID attackingCapitalId;
@@ -65,6 +67,8 @@ public final class CapitalCampaignRecord {
     private int lastAssemblyReportedCount;
     private long fieldDefeatResolutionAt;
     private long crownRallyEndsAt;
+    private final CapitalWarCause warCause;
+    private final CapitalWarGoal warGoal;
 
     public CapitalCampaignRecord(
             UUID campaignId,
@@ -115,7 +119,47 @@ public final class CapitalCampaignRecord {
                 0L,
                 -1,
                 0L,
-                0L
+                0L,
+                CapitalWarCause.UNJUST,
+                CapitalWarGoal.PUNITIVE
+        );
+    }
+
+    public CapitalCampaignRecord(
+            UUID campaignId,
+            UUID attackingCapitalId,
+            UUID defendingCapitalId,
+            UUID initiatingPlayerId,
+            List<UUID> attackerIds,
+            long createdAt,
+            CapitalWarCause warCause,
+            CapitalWarGoal warGoal
+    ) {
+        this(
+                campaignId,
+                attackingCapitalId,
+                defendingCapitalId,
+                initiatingPlayerId,
+                attackerIds,
+                List.of(),
+                List.of(),
+                CapitalCampaignPhase.MUSTERING,
+                createdAt,
+                0L,
+                0L,
+                0L,
+                CapitalCampaignEndReason.NONE,
+                false,
+                preferredTarget(
+                        attackerIds == null ? 0 : attackerIds.size()
+                ),
+                0L,
+                0L,
+                -1,
+                0L,
+                0L,
+                warCause,
+                warGoal
         );
     }
 
@@ -159,7 +203,9 @@ public final class CapitalCampaignRecord {
                 0L,
                 -1,
                 0L,
-                0L
+                0L,
+                CapitalWarCause.UNJUST,
+                CapitalWarGoal.PUNITIVE
         );
     }
 
@@ -183,7 +229,9 @@ public final class CapitalCampaignRecord {
             long formationEndsAt,
             int lastAssemblyReportedCount,
             long fieldDefeatResolutionAt,
-            long crownRallyEndsAt
+            long crownRallyEndsAt,
+            CapitalWarCause warCause,
+            CapitalWarGoal warGoal
     ) {
         if (campaignId == null
                 || attackingCapitalId == null
@@ -265,6 +313,12 @@ public final class CapitalCampaignRecord {
                 );
         this.crownRallyEndsAt =
                 Math.max(0L, crownRallyEndsAt);
+        this.warCause = warCause == null
+                ? CapitalWarCause.UNJUST
+                : warCause;
+        this.warGoal = warGoal == null
+                ? CapitalWarGoal.PUNITIVE
+                : warGoal;
     }
 
     public UUID getCampaignId() {
@@ -345,6 +399,14 @@ public final class CapitalCampaignRecord {
 
     public long getCrownRallyEndsAt() {
         return crownRallyEndsAt;
+    }
+
+    public CapitalWarCause getWarCause() {
+        return warCause;
+    }
+
+    public CapitalWarGoal getWarGoal() {
+        return warGoal;
     }
 
     public boolean hasAssemblyStarted() {
@@ -588,6 +650,12 @@ public final class CapitalCampaignRecord {
         clearBattlePacing();
     }
 
+    public void finishWithoutRetreat(CapitalCampaignEndReason reason) {
+        endReason = reason == null
+                ? CapitalCampaignEndReason.INVALIDATED
+                : reason;
+    }
+
     public void beginRetreat(
             long gameTime,
             long returnDeadline,
@@ -689,6 +757,8 @@ public final class CapitalCampaignRecord {
                 KEY_CROWN_RALLY_ENDS_AT,
                 crownRallyEndsAt
         );
+        tag.putString(KEY_WAR_CAUSE, warCause.getSerializedName());
+        tag.putString(KEY_WAR_GOAL, warGoal.getSerializedName());
         tag.put(
                 KEY_ATTACKERS,
                 saveCombatants(attackerIds)
@@ -831,6 +901,12 @@ public final class CapitalCampaignRecord {
                 ),
                 tag.getLong(
                         KEY_CROWN_RALLY_ENDS_AT
+                ),
+                CapitalWarCause.fromSerializedName(
+                        tag.getString(KEY_WAR_CAUSE)
+                ),
+                CapitalWarGoal.fromSerializedName(
+                        tag.getString(KEY_WAR_GOAL)
                 )
         );
     }
