@@ -5,6 +5,8 @@ import java.util.Locale;
 public enum DiplomaticShipmentStatus {
     DISPATCHED,
     AWAITING_PLAYER_RESPONSE,
+    ACCEPTED_RESPONSE_IN_TRANSIT,
+    RETURNED_IN_TRANSIT,
     ACCEPTED,
     RETURNED;
 
@@ -12,8 +14,7 @@ public enum DiplomaticShipmentStatus {
         return name().toLowerCase(Locale.ROOT);
     }
 
-    public static DiplomaticShipmentStatus
-    fromSerializedName(String value) {
+    public static DiplomaticShipmentStatus fromSerializedName(String value) {
         if (value == null || value.isBlank()) {
             return DISPATCHED;
         }

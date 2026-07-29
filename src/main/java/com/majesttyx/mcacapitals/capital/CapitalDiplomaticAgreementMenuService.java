@@ -27,219 +27,153 @@ final class CapitalDiplomaticAgreementMenuService {
             ServerPlayer player,
             Entity ambassadorEntity
     ) {
-        if (player == null
-                || ambassadorEntity == null) {
+        if (player == null || ambassadorEntity == null) {
             return true;
         }
 
-        CapitalDiplomaticAgreementValidation
-                .AudienceValidation audience =
-                CapitalDiplomaticAgreementValidation
-                        .validateAudience(
-                                player,
-                                ambassadorEntity.getUUID()
-                        );
+        CapitalDiplomaticAgreementValidation.AudienceValidation audience =
+                CapitalDiplomaticAgreementValidation.validateMenuAudience(
+                        player,
+                        ambassadorEntity.getUUID()
+                );
 
         if (!audience.valid()) {
-            sendMessage(
-                    player,
-                    "Foreign Relations",
-                    audience.failureMessage(),
-                    ""
-            );
-
+            sendMessage(player, "Foreign Relations", audience.failureMessage(), "");
             return true;
         }
 
-        ServerLevel level =
-                player.serverLevel();
-
-        CapitalRecord source =
-                audience.sourceCapital();
-
-        UUID ambassadorId =
-                ambassadorEntity.getUUID();
-
-        List<CapitalRecord> targets =
-                CapitalManager
-                        .getAllCapitalRecords()
-                        .stream()
-                        .filter(target ->
-                                target != null
-                        )
-                        .filter(target ->
-                                target.getState()
-                                        == CapitalState.ACTIVE
-                        )
-                        .filter(target ->
-                                target.getCapitalId()
-                                        != null
-                        )
-                        .filter(target ->
-                                !target.getCapitalId()
-                                        .equals(
-                                                source.getCapitalId()
-                                        )
-                        )
-                        .sorted(
-                                Comparator.comparing(
-                                        target ->
-                                                CapitalDiplomaticAgreementText
-                                                        .capitalName(
-                                                                level,
-                                                                target
-                                                        ),
-                                        String.CASE_INSENSITIVE_ORDER
-                                )
-                        )
-                        .toList();
-
-        MCAIntegrationBridge.stopInteracting(
-                ambassadorEntity
-        );
-
-        List<OpenAmbassadorCommunicationPacket.Entry> entries =
-                new ArrayList<>();
-
-        if (CapitalRoyalBetrothalService
-                .hasOpenEscortRequests(
+        ServerLevel level = player.serverLevel();
+        CapitalRecord source = audience.sourceCapital();
+        UUID ambassadorId = ambassadorEntity.getUUID();
+        boolean sovereignAuthority =
+                CapitalDiplomaticAuthorityService.mayExerciseSovereignAuthority(
                         level,
-                        source
-                )) {
-            entries.add(
-                    new OpenAmbassadorCommunicationPacket.Entry(
-                            "Royal Escort Requests",
-                            "An accepted royal betrothal is waiting for its escort.",
-                            "",
-                            "",
-                            "Review Royal Escorts",
-                            "/capitalroyalescort review "
-                                    + ambassadorId,
-                            true,
-                            ""
-                    )
+                        source,
+                        player.getUUID()
+                );
+
+        List<CapitalRecord> targets = CapitalManager.getAllCapitalRecords()
+                .stream()
+                .filter(target -> target != null)
+                .filter(target -> target.getState() == CapitalState.ACTIVE)
+                .filter(target -> target.getCapitalId() != null)
+                .filter(target -> !target.getCapitalId().equals(source.getCapitalId()))
+                .sorted(Comparator.comparing(
+                        target -> CapitalDiplomaticAgreementText.capitalName(level, target),
+                        String.CASE_INSENSITIVE_ORDER
+                ))
+                .toList();
+
+        MCAIntegrationBridge.stopInteracting(ambassadorEntity);
+
+        List<OpenAmbassadorCommunicationPacket.Entry> entries = new ArrayList<>();
+
+        boolean escortOpen = CapitalRoyalBetrothalService.hasOpenEscortRequests(level, source);
+        String escortReason = !sovereignAuthority
+                ? "Only the sovereign, or the Hand serving a villager sovereign, may direct a royal escort."
+                : escortOpen
+                ? "An accepted royal betrothal is waiting for its escort."
+                : "No accepted royal betrothal currently awaits an escort.";
+
+        entries.add(new OpenAmbassadorCommunicationPacket.Entry(
+                "Royal Escort Requests",
+                escortReason,
+                "",
+                "",
+                "Review Royal Escorts",
+                escortOpen && sovereignAuthority
+                        ? "/capitalroyalescort review " + ambassadorId
+                        : "",
+                escortOpen && sovereignAuthority,
+                escortReason
+        ));
+
+        boolean asylumOpen = CapitalAsylumScreenService.hasReviewableRequests(
+                player,
+                ambassadorId
+        );
+        String asylumReason = !sovereignAuthority
+                ? "Only the sovereign, or the Hand serving a villager sovereign, may grant asylum."
+                : !CapitalBuildingService.hasInn(level, source)
+                ? "The capital requires an operational Inn before refugees can seek asylum."
+                : asylumOpen
+                ? "Refugees are currently seeking admission."
+                : "No refugees are currently seeking asylum inside the capital.";
+
+        entries.add(new OpenAmbassadorCommunicationPacket.Entry(
+                "Asylum Requests",
+                asylumReason,
+                "",
+                "",
+                "Review Asylum Requests",
+                asylumOpen
+                        ? "/capitalasylum review " + ambassadorId
+                        : "",
+                asylumOpen,
+                asylumReason
+        ));
+
+        for (CapitalRecord target : targets) {
+            CapitalDiplomaticTruceService.refreshExpiredTruce(level, source, target);
+
+            int score = CapitalDiplomacyDataAccess.getRelationshipScore(
+                    level,
+                    source.getCapitalId(),
+                    target.getCapitalId()
             );
-        }
 
-        if (CapitalAsylumScreenService
-                .hasReviewableRequests(
-                        player,
-                        ambassadorId
-                )) {
-            entries.add(
-                    new OpenAmbassadorCommunicationPacket.Entry(
-                            "Asylum Requests",
-                            "Refugees are currently seeking admission.",
-                            "",
-                            "",
-                            "Review Asylum Requests",
-                            "/capitalasylum review "
-                                    + ambassadorId,
-                            true,
-                            ""
-                    )
+            CapitalDiplomaticState state = CapitalDiplomacyDataAccess.getDiplomaticState(
+                    level,
+                    source.getCapitalId(),
+                    target.getCapitalId()
             );
-        }
 
-        for (CapitalRecord target :
-                targets) {
-            CapitalDiplomaticTruceService
-                    .refreshExpiredTruce(
-                            level,
-                            source,
-                            target
-                    );
-
-            int score =
-                    CapitalDiplomacyDataAccess
-                            .getRelationshipScore(
-                                    level,
-                                    source.getCapitalId(),
-                                    target.getCapitalId()
-                            );
-
-            CapitalDiplomaticState state =
-                    CapitalDiplomacyDataAccess
-                            .getDiplomaticState(
-                                    level,
-                                    source.getCapitalId(),
-                                    target.getCapitalId()
-                            );
-
-            boolean tradeActive =
-                    CapitalDiplomaticTradeAgreementService
-                            .isActive(
-                                    level,
-                                    source,
-                                    target
-                            );
-
-            CapitalCampaignRecord campaign =
-                    CapitalCampaignService
-                            .getCampaignForCapital(
-                                    level,
-                                    source.getCapitalId()
-                            );
-
-            boolean campaignBetweenCapitals =
-                    campaign != null
-                            && campaign.containsCapital(
-                            target.getCapitalId()
-                    );
-
-            String targetName =
-                    CapitalDiplomaticAgreementText
-                            .capitalName(
-                                    level,
-                                    target
-                            );
-
-            String flags =
-                    statusFlags(
-                            tradeActive,
-                            campaignBetweenCapitals
-                    );
-
-            entries.add(
-                    new OpenAmbassadorCommunicationPacket.Entry(
-                            targetName,
-                            "Relationship: "
-                                    + CapitalRelationshipBand
-                                    .fromScore(score)
-                                    .getDisplayName()
-                                    + " ("
-                                    + score
-                                    + ")",
-                            "Status: "
-                                    + CapitalDiplomaticAgreementText
-                                    .stateDisplay(
-                                            state
-                                    ),
-                            flags,
-                            "Manage "
-                                    + targetName,
-                            "/capitaldiplomacy options "
-                                    + ambassadorId
-                                    + " "
-                                    + target.getCapitalId(),
-                            true,
-                            ""
-                    )
+            boolean tradeActive = CapitalDiplomaticTradeAgreementService.isActive(
+                    level,
+                    source,
+                    target
             );
-        }
 
-        if (entries.isEmpty()) {
-            sendMessage(
-                    player,
-                    "Foreign Relations",
-                    ambassadorEntity
-                            .getName()
-                            .getString()
-                            + ": There are no other established capitals with which to conduct diplomacy.",
+            CapitalCampaignRecord campaign = CapitalCampaignService.getCampaignForCapital(
+                    level,
+                    source.getCapitalId()
+            );
+
+            boolean campaignBetweenCapitals = campaign != null
+                    && campaign.containsCapital(target.getCapitalId());
+
+            String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
+
+            entries.add(new OpenAmbassadorCommunicationPacket.Entry(
+                    targetName,
+                    "Relationship: "
+                            + CapitalRelationshipBand.fromScore(score).getDisplayName()
+                            + " ("
+                            + score
+                            + ")",
+                    "Status: " + CapitalDiplomaticAgreementText.stateDisplay(state),
+                    statusFlags(tradeActive, campaignBetweenCapitals),
+                    "Manage " + targetName,
+                    "/capitaldiplomacy options "
+                            + ambassadorId
+                            + " "
+                            + target.getCapitalId(),
+                    true,
                     ""
-            );
+            ));
+        }
 
-            return true;
+        if (targets.isEmpty()) {
+            entries.add(new OpenAmbassadorCommunicationPacket.Entry(
+                    "No Known Foreign Capitals",
+                    "There are no other established capitals with which to conduct diplomacy.",
+                    "",
+                    "",
+                    "",
+                    "",
+                    false,
+                    "There are no other established capitals with which to conduct diplomacy."
+            ));
         }
 
         ModNetwork.sendToPlayer(
@@ -247,10 +181,8 @@ final class CapitalDiplomaticAgreementMenuService {
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.DIPLOMACY_TARGETS,
                         "Manage Foreign Relations",
-                        ambassadorEntity
-                                .getName()
-                                .getString(),
-                        "Choose the capital whose relations you wish to manage.",
+                        ambassadorEntity.getName().getString(),
+                        "Choose a capital to review every available diplomatic action.",
                         "",
                         entries,
                         List.of()
@@ -265,289 +197,189 @@ final class CapitalDiplomaticAgreementMenuService {
             UUID ambassadorId,
             UUID targetCapitalId
     ) {
-        if (player == null
-                || ambassadorId == null
-                || targetCapitalId == null) {
+        if (player == null || ambassadorId == null || targetCapitalId == null) {
             return 0;
         }
 
-        CapitalDiplomaticAgreementValidation
-                .AudienceValidation audience =
-                CapitalDiplomaticAgreementValidation
-                        .validateAudience(
-                                player,
-                                ambassadorId
-                        );
+        CapitalDiplomaticAgreementValidation.AudienceValidation menuAudience =
+                CapitalDiplomaticAgreementValidation.validateMenuAudience(player, ambassadorId);
 
-        if (!audience.valid()) {
-            sendMessage(
-                    player,
-                    "Foreign Relations",
-                    audience.failureMessage(),
-                    ""
-            );
-
+        if (!menuAudience.valid()) {
+            sendMessage(player, "Foreign Relations", menuAudience.failureMessage(), "");
             return 0;
         }
 
-        ServerLevel level =
-                player.serverLevel();
-
-        CapitalRecord source =
-                audience.sourceCapital();
-
-        CapitalRecord target =
-                CapitalManager.getCapital(
-                        targetCapitalId
-                );
-
-        String targetFailure =
-                CapitalDiplomaticAgreementValidation
-                        .validateTarget(
-                                source,
-                                target
-                        );
+        ServerLevel level = player.serverLevel();
+        CapitalRecord source = menuAudience.sourceCapital();
+        CapitalRecord target = CapitalManager.getCapital(targetCapitalId);
+        String targetFailure = CapitalDiplomaticAgreementValidation.validateTarget(source, target);
 
         if (targetFailure != null) {
             sendMessage(
                     player,
                     "Foreign Relations",
                     targetFailure,
-                    "/capitaldiplomacy targets "
-                            + ambassadorId
+                    "/capitaldiplomacy targets " + ambassadorId
             );
-
             return 0;
         }
 
-        CapitalDiplomaticTruceService
-                .refreshExpiredTruce(
-                        level,
-                        source,
-                        target
-                );
+        CapitalDiplomaticTruceService.refreshExpiredTruce(level, source, target);
 
-        int score =
-                CapitalDiplomacyDataAccess
-                        .getRelationshipScore(
-                                level,
-                                source.getCapitalId(),
-                                target.getCapitalId()
-                        );
+        int score = CapitalDiplomacyDataAccess.getRelationshipScore(
+                level,
+                source.getCapitalId(),
+                target.getCapitalId()
+        );
 
-        CapitalRelationRecord relation =
-                CapitalDiplomacyDataAccess
-                        .getOrCreateRelationship(
-                                level,
-                                source.getCapitalId(),
-                                target.getCapitalId()
-                        );
+        CapitalRelationRecord relation = CapitalDiplomacyDataAccess.getOrCreateRelationship(
+                level,
+                source.getCapitalId(),
+                target.getCapitalId()
+        );
 
-        CapitalDiplomaticState state =
-                relation == null
-                        ? CapitalDiplomaticState.PEACE
-                        : relation.getDiplomaticState();
+        CapitalDiplomaticState state = relation == null
+                ? CapitalDiplomaticState.PEACE
+                : relation.getDiplomaticState();
 
-        boolean tradeActive =
-                CapitalDiplomaticTradeAgreementService
-                        .isActive(
-                                level,
-                                source,
-                                target
-                        );
+        boolean tradeActive = CapitalDiplomaticTradeAgreementService.isActive(
+                level,
+                source,
+                target
+        );
 
-        CapitalCampaignRecord sourceCampaign =
-                CapitalCampaignService
-                        .getCampaignForCapital(
-                                level,
-                                source.getCapitalId()
-                        );
+        DiplomaticProposal pending = CapitalAgreementDataAccess.findPendingBetween(
+                level,
+                source.getCapitalId(),
+                target.getCapitalId()
+        );
 
-        CapitalCampaignRecord targetCampaign =
-                CapitalCampaignService
-                        .getCampaignForCapital(
-                                level,
-                                target.getCapitalId()
-                        );
+        String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
+        Entity ambassador = level.getEntity(ambassadorId);
+        List<OpenAmbassadorCommunicationPacket.Action> actions = new ArrayList<>();
 
-        boolean campaignBetweenCapitals =
-                sourceCampaign != null
-                        && sourceCampaign.containsCapital(
-                        target.getCapitalId()
-                );
+        addGiftAction(actions, player, ambassador, source, target, ambassadorId, targetName);
 
-        DiplomaticProposal pending =
-                CapitalAgreementDataAccess
-                        .findPendingBetween(
-                                level,
-                                source.getCapitalId(),
-                                target.getCapitalId()
-                        );
+        addProposalAction(
+                actions,
+                player,
+                ambassadorId,
+                source,
+                target,
+                DiplomaticProposalType.NON_AGGRESSION_PACT,
+                state,
+                score,
+                pending
+        );
+        addProposalAction(
+                actions,
+                player,
+                ambassadorId,
+                source,
+                target,
+                DiplomaticProposalType.ALLIANCE,
+                state,
+                score,
+                pending
+        );
+        addProposalAction(
+                actions,
+                player,
+                ambassadorId,
+                source,
+                target,
+                DiplomaticProposalType.TRUCE,
+                state,
+                score,
+                pending
+        );
+        addProposalAction(
+                actions,
+                player,
+                ambassadorId,
+                source,
+                target,
+                DiplomaticProposalType.TRADE_AGREEMENT,
+                state,
+                score,
+                pending
+        );
+        addProposalAction(
+                actions,
+                player,
+                ambassadorId,
+                source,
+                target,
+                DiplomaticProposalType.ROYAL_BETROTHAL,
+                state,
+                score,
+                pending
+        );
 
-        String targetName =
-                CapitalDiplomaticAgreementText
-                        .capitalName(
-                                level,
-                                target
-                        );
+        CapitalDiplomaticAgreementValidation.AudienceValidation formalAudience =
+                CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
 
-        List<OpenAmbassadorCommunicationPacket.Action> actions =
-                new ArrayList<>();
+        String endTradeReason;
+        boolean mayEndTrade;
 
-        List<String> notices =
-                new ArrayList<>();
-
-        if (tradeActive) {
-            actions.add(
-                    new OpenAmbassadorCommunicationPacket.Action(
-                            "End Trade Agreement",
-                            "End the Trade Agreement with "
-                                    + targetName
-                                    + ".",
-                            "/capitaldiplomacy endtrade "
-                                    + ambassadorId
-                                    + " "
-                                    + target.getCapitalId(),
-                            true
-                    )
-            );
-        }
-
-        if (sourceCampaign == null
-                && targetCampaign == null) {
-            String warCauseDescription = CapitalWarPlanningService
-                    .describePlan(level, source, target);
-            actions.add(
-                    new OpenAmbassadorCommunicationPacket.Action(
-                            "Plan Punitive War",
-                            warCauseDescription
-                                    + " Reserve up to seven Guards and Archers. Victory demands limited reparations.",
-                            "/capitalcampaign launch "
-                                    + ambassadorId
-                                    + " "
-                                    + target.getCapitalId()
-                                    + " punitive",
-                            true
-                    )
-            );
-            actions.add(
-                    new OpenAmbassadorCommunicationPacket.Action(
-                            "Plan War of Deposition",
-                            warCauseDescription
-                                    + " Victory removes the defending sovereign and begins an interregnum.",
-                            "/capitalcampaign launch "
-                                    + ambassadorId
-                                    + " "
-                                    + target.getCapitalId()
-                                    + " deposition",
-                            true
-                    )
-            );
-        } else if (campaignBetweenCapitals) {
-            notices.add(
-                    "An attack between these capitals is already planned or active."
-            );
+        if (!formalAudience.valid()) {
+            mayEndTrade = false;
+            endTradeReason = formalAudience.failureMessage();
+        } else if (!tradeActive) {
+            mayEndTrade = false;
+            endTradeReason = "No Trade Agreement is currently in force with " + targetName + ".";
         } else {
-            notices.add(
-                    "One of these capitals is already committed to another active campaign."
-            );
+            mayEndTrade = true;
+            endTradeReason = "End the Trade Agreement with " + targetName + ".";
         }
 
-        if (pending != null) {
-            notices.add(
-                    "A "
-                            + pending.getType()
-                            .getDisplayName()
-                            + " is awaiting a response. New diplomatic proposals are blocked until it is resolved."
-            );
-        } else {
-            addProposalActionIfValid(
-                    actions,
-                    player,
-                    ambassadorId,
-                    source,
-                    target,
-                    DiplomaticProposalType
-                            .NON_AGGRESSION_PACT,
-                    state,
-                    score
-            );
+        actions.add(new OpenAmbassadorCommunicationPacket.Action(
+                "End Trade Agreement",
+                endTradeReason,
+                mayEndTrade
+                        ? "/capitaldiplomacy endtrade "
+                        + ambassadorId
+                        + " "
+                        + target.getCapitalId()
+                        : "",
+                mayEndTrade
+        ));
 
-            addProposalActionIfValid(
-                    actions,
-                    player,
-                    ambassadorId,
-                    source,
-                    target,
-                    DiplomaticProposalType.ALLIANCE,
-                    state,
-                    score
-            );
+        addWarAction(
+                actions,
+                player,
+                ambassadorId,
+                source,
+                target,
+                targetName,
+                "Plan Punitive War",
+                "punitive",
+                "Victory demands limited reparations."
+        );
+        addWarAction(
+                actions,
+                player,
+                ambassadorId,
+                source,
+                target,
+                targetName,
+                "Plan War of Deposition",
+                "deposition",
+                "Victory removes the defending sovereign and begins an interregnum."
+        );
 
-            addProposalActionIfValid(
-                    actions,
-                    player,
-                    ambassadorId,
-                    source,
-                    target,
-                    DiplomaticProposalType.TRUCE,
-                    state,
-                    score
-            );
+        String subtitle = "Relationship: "
+                + CapitalRelationshipBand.fromScore(score).getDisplayName()
+                + " ("
+                + score
+                + ") — Status: "
+                + CapitalDiplomaticAgreementText.stateDisplay(state);
 
-            addProposalActionIfValid(
-                    actions,
-                    player,
-                    ambassadorId,
-                    source,
-                    target,
-                    DiplomaticProposalType
-                            .TRADE_AGREEMENT,
-                    state,
-                    score
-            );
-
-            addProposalActionIfValid(
-                    actions,
-                    player,
-                    ambassadorId,
-                    source,
-                    target,
-                    DiplomaticProposalType
-                            .ROYAL_BETROTHAL,
-                    state,
-                    score
-            );
-
-        }
-
-        if (actions.isEmpty()) {
-            actions.add(
-                    new OpenAmbassadorCommunicationPacket.Action(
-                            "No Available Actions",
-                            "No new formal diplomatic action is currently available.",
-                            "",
-                            false
-                    )
-            );
-        }
-
-        String subtitle =
-                "Relationship: "
-                        + CapitalRelationshipBand
-                        .fromScore(score)
-                        .getDisplayName()
-                        + " ("
-                        + score
-                        + ") — Status: "
-                        + CapitalDiplomaticAgreementText
-                        .stateDisplay(state);
-
-        String message =
-                String.join(
-                        " ",
-                        notices
-                );
+        String message = pending == null
+                ? "Every diplomatic course is shown below. Unavailable actions explain what must change first."
+                : CapitalDiplomaticAgreementText.capitalizedWithIndefiniteArticle(
+                pending.getType().getDisplayName()
+        ) + " is awaiting a response between these capitals.";
 
         ModNetwork.sendToPlayer(
                 player,
@@ -556,8 +388,7 @@ final class CapitalDiplomaticAgreementMenuService {
                         targetName,
                         subtitle,
                         message,
-                        "/capitaldiplomacy targets "
-                                + ambassadorId,
+                        "/capitaldiplomacy targets " + ambassadorId,
                         List.of(),
                         actions
                 )
@@ -566,7 +397,60 @@ final class CapitalDiplomaticAgreementMenuService {
         return 1;
     }
 
-    private static void addProposalActionIfValid(
+    private static void addGiftAction(
+            List<OpenAmbassadorCommunicationPacket.Action> actions,
+            ServerPlayer player,
+            Entity ambassador,
+            CapitalRecord source,
+            CapitalRecord target,
+            UUID ambassadorId,
+            String targetName
+    ) {
+        CapitalDiplomaticGiftValidation.Validation validation =
+                CapitalDiplomaticGiftValidation.validateAudience(
+                        player,
+                        ambassador,
+                        true
+                );
+
+        boolean enabled = validation.valid();
+        String reason = validation.failureMessage();
+
+        if (enabled) {
+            long cooldown = CapitalDiplomacyDataAccess.getGiftCooldownRemaining(
+                    player.serverLevel(),
+                    source.getCapitalId(),
+                    target.getCapitalId()
+            );
+
+            if (cooldown > 0L) {
+                enabled = false;
+                reason = "Another package may be sent to "
+                        + targetName
+                        + " in "
+                        + CapitalDiplomaticGiftText.formatDuration(cooldown)
+                        + ".";
+            } else {
+                reason = "Send the filled Diplomatic Package held in either hand to "
+                        + targetName
+                        + ".";
+            }
+        }
+
+        actions.add(new OpenAmbassadorCommunicationPacket.Action(
+                "Send Diplomatic Package",
+                reason == null ? "A Diplomatic Package cannot be sent at present." : reason,
+                enabled
+                        ? "/capitalgift send "
+                        + ambassadorId
+                        + " "
+                        + target.getCapitalId()
+                        : "",
+                enabled
+        ));
+    }
+
+    private static void addProposalAction(
             List<OpenAmbassadorCommunicationPacket.Action> actions,
             ServerPlayer player,
             UUID ambassadorId,
@@ -574,71 +458,158 @@ final class CapitalDiplomaticAgreementMenuService {
             CapitalRecord target,
             DiplomaticProposalType type,
             CapitalDiplomaticState state,
-            int score
+            int score,
+            DiplomaticProposal pending
     ) {
-        if (CapitalDiplomaticAgreementValidation
-                .validateProposal(
+        CapitalDiplomaticAgreementValidation.AudienceValidation formalAudience =
+                CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
+
+        boolean enabled = true;
+        String reason;
+
+        if (!formalAudience.valid()) {
+            enabled = false;
+            reason = formalAudience.failureMessage();
+        } else if (pending != null) {
+            enabled = false;
+            reason = CapitalDiplomaticAgreementText.capitalizedWithIndefiniteArticle(
+                    pending.getType().getDisplayName()
+            ) + " already awaits an answer between these capitals.";
+        } else if (CapitalDiplomaticAgreementValidation.getCurrentSovereignId(target) == null) {
+            enabled = false;
+            reason = "That capital currently has no sovereign who can answer a proposal.";
+        } else {
+            reason = CapitalDiplomaticAgreementValidation.validateProposal(
+                    player.serverLevel(),
+                    source,
+                    target,
+                    type,
+                    state,
+                    score
+            );
+
+            if (reason != null) {
+                enabled = false;
+            } else {
+                reason = "Send "
+                        + CapitalDiplomaticAgreementText.withIndefiniteArticle(type.getDisplayName())
+                        + " proposal to "
+                        + CapitalDiplomaticAgreementText.capitalName(
                         player.serverLevel(),
-                        source,
-                        target,
-                        type,
-                        state,
-                        score
+                        target
                 )
-                != null) {
-            return;
+                        + ".";
+            }
         }
 
-        String targetName =
-                CapitalDiplomaticAgreementText
-                        .capitalName(
+        String command = "";
+        if (enabled) {
+            command = type == DiplomaticProposalType.ROYAL_BETROTHAL
+                    ? "/capitaldiplomacy betrothal_source "
+                    + ambassadorId
+                    + " "
+                    + target.getCapitalId()
+                    : "/capitaldiplomacy propose "
+                    + ambassadorId
+                    + " "
+                    + target.getCapitalId()
+                    + " "
+                    + type.getSerializedName();
+        }
+
+        actions.add(new OpenAmbassadorCommunicationPacket.Action(
+                "Propose " + type.getDisplayName(),
+                reason,
+                command,
+                enabled
+        ));
+    }
+
+    private static void addWarAction(
+            List<OpenAmbassadorCommunicationPacket.Action> actions,
+            ServerPlayer player,
+            UUID ambassadorId,
+            CapitalRecord source,
+            CapitalRecord target,
+            String targetName,
+            String label,
+            String goal,
+            String outcome
+    ) {
+        CapitalDiplomaticAgreementValidation.AudienceValidation formalAudience =
+                CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
+
+        boolean enabled = true;
+        String reason;
+
+        if (!formalAudience.valid()) {
+            enabled = false;
+            reason = formalAudience.failureMessage();
+        } else {
+            reason = CapitalWarPlanningService.validateRecovery(
+                    player.serverLevel(),
+                    source
+            );
+
+            if (reason == null) {
+                CapitalCampaignEligibilityService.Validation eligibility =
+                        CapitalCampaignEligibilityService.validateCampaign(
                                 player.serverLevel(),
-                                target
+                                source,
+                                target,
+                                player.getUUID()
                         );
 
-        actions.add(
-                new OpenAmbassadorCommunicationPacket.Action(
-                        "Propose "
-                                + type.getDisplayName(),
-                        "Send a "
-                                + type.getDisplayName()
-                                + " proposal to "
-                                + targetName
-                                + ".",
-                        "/capitaldiplomacy propose "
-                                + ambassadorId
-                                + " "
-                                + target.getCapitalId()
-                                + " "
-                                + type.getSerializedName(),
-                        true
+                if (!eligibility.valid()) {
+                    reason = eligibility.failureMessage();
+                }
+            }
+
+            if (reason != null) {
+                enabled = false;
+            } else {
+                reason = CapitalWarPlanningService.describePlan(
+                        player.serverLevel(),
+                        source,
+                        target
                 )
-        );
+                        + " Reserve up to seven Guards and Archers against "
+                        + targetName
+                        + ". "
+                        + outcome;
+            }
+        }
+
+        actions.add(new OpenAmbassadorCommunicationPacket.Action(
+                label,
+                reason,
+                enabled
+                        ? "/capitalcampaign launch "
+                        + ambassadorId
+                        + " "
+                        + target.getCapitalId()
+                        + " "
+                        + goal
+                        : "",
+                enabled
+        ));
     }
 
     private static String statusFlags(
             boolean tradeActive,
             boolean campaignBetweenCapitals
     ) {
-        List<String> flags =
-                new ArrayList<>();
+        List<String> flags = new ArrayList<>();
 
         if (tradeActive) {
-            flags.add(
-                    "Trade Agreement: Active"
-            );
+            flags.add("Trade Agreement: Active");
         }
 
         if (campaignBetweenCapitals) {
-            flags.add(
-                    "Attack: Planned"
-            );
+            flags.add("Attack: Planned");
         }
 
-        return String.join(
-                " — ",
-                flags
-        );
+        return String.join(" — ", flags);
     }
 
     private static void sendMessage(

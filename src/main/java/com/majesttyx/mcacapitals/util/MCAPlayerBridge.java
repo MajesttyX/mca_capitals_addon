@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.MCACapitals;
+import net.conczin.mca.entity.ai.Messenger;
 import net.conczin.mca.entity.ai.relationship.Gender;
 import net.conczin.mca.server.world.data.FamilyTree;
 import net.conczin.mca.server.world.data.FamilyTreeNode;
@@ -46,6 +47,40 @@ final class MCAPlayerBridge {
         return getLastSeenVillageId(level, player)
                 .map(id -> id.equals(villageId))
                 .orElse(false);
+    }
+
+    static String getDialogueName(ServerPlayer player) {
+        if (player == null) {
+            return "";
+        }
+
+        try {
+            String name = Messenger.getName(player);
+            if (name != null && !name.isBlank()) {
+                return name.trim();
+            }
+        } catch (Throwable t) {
+            MCAReflectionHelper.warnOnce(
+                    "MCAPlayerBridge#getDialogueName:messenger",
+                    "Failed to resolve MCA dialogue player name through Messenger#getName ({})",
+                    t.toString()
+            );
+        }
+
+        try {
+            String name = PlayerSaveData.get(player).getFamilyEntry().getName();
+            if (name != null && !name.isBlank()) {
+                return name.trim();
+            }
+        } catch (Throwable t) {
+            MCAReflectionHelper.warnOnce(
+                    "MCAPlayerBridge#getDialogueName:familyTree",
+                    "Failed to resolve MCA dialogue player name from the family tree ({})",
+                    t.toString()
+            );
+        }
+
+        return player.getName().getString();
     }
 
     static boolean isPlayerFemale(ServerLevel level, ServerPlayer player) {

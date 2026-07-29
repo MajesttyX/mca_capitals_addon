@@ -54,6 +54,22 @@ public final class MCAIntegrationBridge {
         return MCAPlayerBridge.isPlayerInVillage(level, player, villageId);
     }
 
+    public static String getPlayerDialogueName(ServerPlayer player) {
+        return MCAPlayerBridge.getDialogueName(player);
+    }
+
+    public static boolean forceVillageResidency(
+            ServerLevel level,
+            UUID villagerId,
+            int villageId
+    ) {
+        return MCAVillageResidencyBridge.forceVillageResidency(
+                level,
+                villagerId,
+                villageId
+        );
+    }
+
     public static boolean isPlayerFemale(ServerLevel level, ServerPlayer player) {
         return MCAPlayerBridge.isPlayerFemale(level, player);
     }

@@ -466,8 +466,9 @@ final class CapitalDiplomaticWorldService {
         CapitalChronicleService.addEntry(
                 level,
                 source,
-                "A "
-                        + type.getDisplayName()
+                CapitalDiplomaticAgreementText.capitalizedWithIndefiniteArticle(
+                        type.getDisplayName()
+                )
                         + " was proposed to "
                         + CapitalDiplomaticAgreementText
                         .capitalName(level, target)

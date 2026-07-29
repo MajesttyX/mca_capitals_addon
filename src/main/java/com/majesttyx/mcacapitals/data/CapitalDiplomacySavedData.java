@@ -21,7 +21,7 @@ public final class CapitalDiplomacySavedData
             "mcacapitals_diplomacy_data";
 
     public static final long GIFT_COOLDOWN_TICKS =
-            48000L;
+            24000L;
 
     private static final String KEY_AMBASSADORS =
             "Ambassadors";

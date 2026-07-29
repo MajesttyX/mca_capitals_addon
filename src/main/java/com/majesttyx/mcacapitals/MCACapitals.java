@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals;
 
+import com.majesttyx.mcacapitals.capital.CapitalAmbassadorUrgentMatterHandler;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementProcessor;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticShipmentProcessor;
 import com.majesttyx.mcacapitals.capital.CapitalExileDiscoveryHandler;
@@ -21,6 +22,7 @@ import com.majesttyx.mcacapitals.item.SuccessionDecreeHandler;
 import com.majesttyx.mcacapitals.menu.ModMenus;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.util.AbdicationPromptCommands;
+import com.majesttyx.mcacapitals.util.CapitalAmbassadorUrgentMatterCommands;
 import com.majesttyx.mcacapitals.util.CapitalCharterCommands;
 import com.majesttyx.mcacapitals.util.CapitalDebugCommands;
 import com.majesttyx.mcacapitals.util.CapitalDiplomaticAgreementCommands;
@@ -94,6 +96,10 @@ public class MCACapitals {
 
         NeoForge.EVENT_BUS.register(
                 new CapitalDiplomaticShipmentProcessor()
+        );
+
+        NeoForge.EVENT_BUS.register(
+                new CapitalAmbassadorUrgentMatterHandler()
         );
 
         NeoForge.EVENT_BUS.register(
@@ -201,6 +207,10 @@ public class MCACapitals {
         );
 
         CapitalDiplomaticGiftCommands.register(
+                event.getDispatcher()
+        );
+
+        CapitalAmbassadorUrgentMatterCommands.register(
                 event.getDispatcher()
         );
 

@@ -2,9 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 import java.util.ArrayList;
@@ -57,9 +55,6 @@ public class CapitalRoyalGuardService {
                 appointRoyalGuard(level, capital, candidate);
                 changed = true;
             }
-        } else if (capital.getRoyalGuards().size() < MAX_ROYAL_GUARDS
-                && isEligibleForNewRoyalGuard(level, capital)) {
-            maybePromptPlayerSovereign(level, capital, residents);
         }
 
         if (changed) {
@@ -493,46 +488,4 @@ public class CapitalRoyalGuardService {
         return MCAIntegrationBridge.isMCAGuard(level, villagerId);
     }
 
-    private static void maybePromptPlayerSovereign(
-            ServerLevel level,
-            CapitalRecord capital,
-            Set<UUID> residents
-    ) {
-        long currentDay = Math.max(
-                1L,
-                level.getDayTime() / 24000L + 1L
-        );
-
-        if (capital.getLastRoyalGuardPromptDay() == currentDay) {
-            return;
-        }
-
-        List<UUID> candidates = getValidCandidates(level, capital, residents);
-
-        if (candidates.isEmpty()) {
-            return;
-        }
-
-        UUID playerId = capital.getPlayerSovereignId();
-
-        if (playerId == null) {
-            return;
-        }
-
-        ServerPlayer sovereign =
-                level.getServer().getPlayerList().getPlayer(playerId);
-
-        if (sovereign == null) {
-            return;
-        }
-
-        capital.setLastRoyalGuardPromptDay(currentDay);
-        CapitalDataAccess.markDirty(level);
-
-        sovereign.sendSystemMessage(Component.literal(
-                "Your capital can appoint up to "
-                        + MAX_ROYAL_GUARDS
-                        + " royal guards. "
-        ));
-    }
 }

@@ -109,8 +109,9 @@ public final class CapitalCrownJusticeService {
             player.sendSystemMessage(Component.literal("That villager is not a resident of this capital."));
             return false;
         }
-        if (!CapitalCrownStandingService.isFriend(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("That villager has not privately declared loyalty to this Crown."));
+        if (!CapitalCrownStandingService.isFriend(level, capital, targetId)
+                || !CapitalCrownStandingService.isWillingToDeclareLoyalty(level, capital, targetId)) {
+            player.sendSystemMessage(Component.literal("That villager has not publicly declared loyalty to this Crown."));
             return false;
         }
         if (MCAIntegrationBridge.getHeartsWithPlayer(level, targetId, player.getUUID()) < 200) {
@@ -242,14 +243,19 @@ public final class CapitalCrownJusticeService {
 
             if (publicStatus == null
                     && CapitalCrownStandingService.isFriend(level, capital, residentId)
+                    && CapitalCrownStandingService.isWillingToDeclareLoyalty(level, capital, residentId)
                     && MCAIntegrationBridge.getHeartsWithPlayer(level, residentId, player.getUUID()) >= 200
                     && isTrustedOfficeEligible(level, capital, residentId)) {
+                String title = CapitalTitleResolver.getDisplayTitle(level, capital, residentId);
+                String heading = title == null || title.isBlank() || "Commoner".equals(title)
+                        ? name
+                        : title + " " + name;
                 entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                        name,
+                        heading,
                         "Declared Loyalty",
-                        "This villager has openly declared support for the current Crown.",
+                        name + " has openly declared support for the current Crown.",
                         "Not yet formally recognized",
-                        "Recognize Friend",
+                        "Recognize " + name,
                         "/capitaljustice recognize " + masterOfLawsId + " " + residentId,
                         true,
                         ""
@@ -262,11 +268,11 @@ public final class CapitalCrownJusticeService {
 
         ModNetwork.sendToPlayer(player, new OpenAmbassadorCommunicationPacket(
                 OpenAmbassadorCommunicationPacket.Mode.JUSTICE_CASES,
-                "Crown Justice and Standing",
+                "Crown Standings",
                 master.getName().getString(),
                 entries.isEmpty()
-                        ? "No judgments, recognitions, or restorations currently require the Crown's decision."
-                        : "Review prisoners awaiting judgment and villagers eligible for formal Crown standing.",
+                        ? "No Crown standings currently require formal review."
+                        : "Review named villagers awaiting recognition, restoration, or judgment.",
                 "",
                 entries,
                 List.of()
@@ -382,12 +388,13 @@ public final class CapitalCrownJusticeService {
                 .stream()
                 .filter(targetId -> CapitalJusticeDataAccess.getPublicStatus(level, capitalId, targetId) == null)
                 .filter(targetId -> CapitalCrownStandingService.isFriend(level, capital, targetId))
+                .filter(targetId -> CapitalCrownStandingService.isWillingToDeclareLoyalty(level, capital, targetId))
                 .filter(targetId -> isTrustedOfficeEligible(level, capital, targetId))
                 .filter(targetId -> MCAIntegrationBridge.isTeenOrAdultVillager(level, targetId))
                 .sorted(Comparator.comparing(UUID::toString))
                 .toList();
 
-        if (!friendCandidates.isEmpty() && level.random.nextInt(100) < 10) {
+        if (!friendCandidates.isEmpty() && level.random.nextInt(100) < 2) {
             UUID targetId = friendCandidates.getFirst();
             CapitalJusticeDataAccess.setPublicStatus(level, capitalId, targetId, CapitalPublicCrownStatus.RECOGNIZED_FRIEND);
             CapitalJusticeDataAccess.setLastNpcJudgmentDay(level, capitalId, day);

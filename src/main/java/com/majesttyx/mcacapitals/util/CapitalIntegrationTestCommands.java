@@ -30,7 +30,7 @@ public final class CapitalIntegrationTestCommands {
             48000L;
 
     private static final long TRADE_INTERVAL_TICKS =
-            48000L;
+            96000L;
 
     private CapitalIntegrationTestCommands() {
     }
@@ -58,15 +58,15 @@ public final class CapitalIntegrationTestCommands {
                                 Commands.literal("relationship")
                                         .then(
                                                 Commands.argument(
-                                                                "firstCapitalId",
+                                                                "firstCapitalName",
                                                                 StringArgumentType
-                                                                        .word()
+                                                                        .string()
                                                         )
                                                         .then(
                                                                 Commands.argument(
-                                                                                "secondCapitalId",
+                                                                                "secondCapitalName",
                                                                                 StringArgumentType
-                                                                                        .word()
+                                                                                        .string()
                                                                         )
                                                                         .then(
                                                                                 Commands.argument(
@@ -82,12 +82,12 @@ public final class CapitalIntegrationTestCommands {
                                                                                                                 StringArgumentType
                                                                                                                         .getString(
                                                                                                                                 context,
-                                                                                                                                "firstCapitalId"
+                                                                                                                                "firstCapitalName"
                                                                                                                         ),
                                                                                                                 StringArgumentType
                                                                                                                         .getString(
                                                                                                                                 context,
-                                                                                                                                "secondCapitalId"
+                                                                                                                                "secondCapitalName"
                                                                                                                         ),
                                                                                                                 StringArgumentType
                                                                                                                         .getString(
@@ -104,15 +104,15 @@ public final class CapitalIntegrationTestCommands {
                                 Commands.literal("state")
                                         .then(
                                                 Commands.argument(
-                                                                "firstCapitalId",
+                                                                "firstCapitalName",
                                                                 StringArgumentType
-                                                                        .word()
+                                                                        .string()
                                                         )
                                                         .then(
                                                                 Commands.argument(
-                                                                                "secondCapitalId",
+                                                                                "secondCapitalName",
                                                                                 StringArgumentType
-                                                                                        .word()
+                                                                                        .string()
                                                                         )
                                                                         .then(
                                                                                 Commands.argument(
@@ -128,12 +128,12 @@ public final class CapitalIntegrationTestCommands {
                                                                                                                 StringArgumentType
                                                                                                                         .getString(
                                                                                                                                 context,
-                                                                                                                                "firstCapitalId"
+                                                                                                                                "firstCapitalName"
                                                                                                                         ),
                                                                                                                 StringArgumentType
                                                                                                                         .getString(
                                                                                                                                 context,
-                                                                                                                                "secondCapitalId"
+                                                                                                                                "secondCapitalName"
                                                                                                                         ),
                                                                                                                 StringArgumentType
                                                                                                                         .getString(
@@ -152,15 +152,15 @@ public final class CapitalIntegrationTestCommands {
                                         )
                                         .then(
                                                 Commands.argument(
-                                                                "sourceCapitalId",
+                                                                "sourceCapitalName",
                                                                 StringArgumentType
-                                                                        .word()
+                                                                        .string()
                                                         )
                                                         .then(
                                                                 Commands.argument(
-                                                                                "targetCapitalId",
+                                                                                "targetCapitalName",
                                                                                 StringArgumentType
-                                                                                        .word()
+                                                                                        .string()
                                                                         )
                                                                         .executes(
                                                                                 context ->
@@ -170,12 +170,12 @@ public final class CapitalIntegrationTestCommands {
                                                                                                 StringArgumentType
                                                                                                         .getString(
                                                                                                                 context,
-                                                                                                                "sourceCapitalId"
+                                                                                                                "sourceCapitalName"
                                                                                                         ),
                                                                                                 StringArgumentType
                                                                                                         .getString(
                                                                                                                 context,
-                                                                                                                "targetCapitalId"
+                                                                                                                "targetCapitalName"
                                                                                                         )
                                                                                         )
                                                                         )
@@ -186,15 +186,15 @@ public final class CapitalIntegrationTestCommands {
                                 Commands.literal("forcetradedue")
                                         .then(
                                                 Commands.argument(
-                                                                "firstCapitalId",
+                                                                "firstCapitalName",
                                                                 StringArgumentType
-                                                                        .word()
+                                                                        .string()
                                                         )
                                                         .then(
                                                                 Commands.argument(
-                                                                                "secondCapitalId",
+                                                                                "secondCapitalName",
                                                                                 StringArgumentType
-                                                                                        .word()
+                                                                                        .string()
                                                                         )
                                                                         .executes(
                                                                                 context ->
@@ -204,12 +204,12 @@ public final class CapitalIntegrationTestCommands {
                                                                                                 StringArgumentType
                                                                                                         .getString(
                                                                                                                 context,
-                                                                                                                "firstCapitalId"
+                                                                                                                "firstCapitalName"
                                                                                                         ),
                                                                                                 StringArgumentType
                                                                                                         .getString(
                                                                                                                 context,
-                                                                                                                "secondCapitalId"
+                                                                                                                "secondCapitalName"
                                                                                                         )
                                                                                         )
                                                                         )
@@ -222,9 +222,9 @@ public final class CapitalIntegrationTestCommands {
                                         )
                                         .then(
                                                 Commands.argument(
-                                                                "capitalId",
+                                                                "capitalName",
                                                                 StringArgumentType
-                                                                        .word()
+                                                                        .string()
                                                         )
                                                         .executes(
                                                                 context ->
@@ -234,7 +234,7 @@ public final class CapitalIntegrationTestCommands {
                                                                                 StringArgumentType
                                                                                         .getString(
                                                                                                 context,
-                                                                                                "capitalId"
+                                                                                                "capitalName"
                                                                                         )
                                                                         )
                                                         )
@@ -407,8 +407,8 @@ public final class CapitalIntegrationTestCommands {
 
     private static int setRelationship(
             CommandSourceStack source,
-            String rawFirstCapitalId,
-            String rawSecondCapitalId,
+            String rawFirstCapitalName,
+            String rawSecondCapitalName,
             String rawScore
     ) {
         ServerLevel level =
@@ -417,14 +417,14 @@ public final class CapitalIntegrationTestCommands {
         UUID firstCapitalId =
                 parseCapitalId(
                         source,
-                        rawFirstCapitalId,
+                        rawFirstCapitalName,
                         "first"
                 );
 
         UUID secondCapitalId =
                 parseCapitalId(
                         source,
-                        rawSecondCapitalId,
+                        rawSecondCapitalName,
                         "second"
                 );
 
@@ -480,8 +480,8 @@ public final class CapitalIntegrationTestCommands {
 
     private static int setState(
             CommandSourceStack source,
-            String rawFirstCapitalId,
-            String rawSecondCapitalId,
+            String rawFirstCapitalName,
+            String rawSecondCapitalName,
             String rawState
     ) {
         ServerLevel level =
@@ -490,14 +490,14 @@ public final class CapitalIntegrationTestCommands {
         UUID firstCapitalId =
                 parseCapitalId(
                         source,
-                        rawFirstCapitalId,
+                        rawFirstCapitalName,
                         "first"
                 );
 
         UUID secondCapitalId =
                 parseCapitalId(
                         source,
-                        rawSecondCapitalId,
+                        rawSecondCapitalName,
                         "second"
                 );
 
@@ -543,8 +543,8 @@ public final class CapitalIntegrationTestCommands {
 
     private static int clearGiftCooldown(
             CommandSourceStack source,
-            String rawSourceCapitalId,
-            String rawTargetCapitalId
+            String rawSourceCapitalName,
+            String rawTargetCapitalName
     ) {
         ServerLevel level =
                 source.getLevel();
@@ -552,14 +552,14 @@ public final class CapitalIntegrationTestCommands {
         UUID sourceCapitalId =
                 parseCapitalId(
                         source,
-                        rawSourceCapitalId,
+                        rawSourceCapitalName,
                         "source"
                 );
 
         UUID targetCapitalId =
                 parseCapitalId(
                         source,
-                        rawTargetCapitalId,
+                        rawTargetCapitalName,
                         "target"
                 );
 
@@ -590,8 +590,8 @@ public final class CapitalIntegrationTestCommands {
 
     private static int forceTradeDue(
             CommandSourceStack source,
-            String rawFirstCapitalId,
-            String rawSecondCapitalId
+            String rawFirstCapitalName,
+            String rawSecondCapitalName
     ) {
         ServerLevel level =
                 source.getLevel();
@@ -599,14 +599,14 @@ public final class CapitalIntegrationTestCommands {
         UUID firstCapitalId =
                 parseCapitalId(
                         source,
-                        rawFirstCapitalId,
+                        rawFirstCapitalName,
                         "first"
                 );
 
         UUID secondCapitalId =
                 parseCapitalId(
                         source,
-                        rawSecondCapitalId,
+                        rawSecondCapitalName,
                         "second"
                 );
 
@@ -657,13 +657,13 @@ public final class CapitalIntegrationTestCommands {
 
     private static int removeCapitalData(
             CommandSourceStack source,
-            String rawCapitalId
+            String rawCapitalName
     ) {
         UUID capitalId =
-                parseUuid(
+                resolveCapitalId(
                         source,
-                        rawCapitalId,
-                        "The capital ID is invalid."
+                        rawCapitalName,
+                        "capital"
                 );
 
         if (capitalId == null) {
@@ -681,7 +681,7 @@ public final class CapitalIntegrationTestCommands {
                 () -> Component.literal(
                         removed
                                 ? "The capital and its cross-system data were removed."
-                                : "No capital or connected data was found for that ID."
+                                : "No capital or connected data was found for that name."
                 ),
                 false
         );
@@ -694,51 +694,80 @@ public final class CapitalIntegrationTestCommands {
             String rawValue,
             String label
     ) {
-        UUID capitalId =
-                parseUuid(
-                        source,
-                        rawValue,
-                        "The "
-                                + label
-                                + " capital ID is invalid."
-                );
-
-        if (capitalId == null) {
-            return null;
-        }
-
-        if (CapitalManager.getCapital(capitalId)
-                == null) {
-            source.sendFailure(
-                    Component.literal(
-                            "No active capital record exists for the "
-                                    + label
-                                    + " capital ID."
-                    )
-            );
-
-            return null;
-        }
-
-        return capitalId;
+        return resolveCapitalId(
+                source,
+                rawValue,
+                label
+        );
     }
 
-    private static UUID parseUuid(
+    private static UUID resolveCapitalId(
             CommandSourceStack source,
             String rawValue,
-            String failureMessage
+            String label
     ) {
-        try {
-            return UUID.fromString(rawValue);
-        } catch (IllegalArgumentException ignored) {
+        String requestedName =
+                rawValue == null
+                        ? ""
+                        : rawValue.trim();
+
+        if (requestedName.isBlank()) {
             source.sendFailure(
                     Component.literal(
-                            failureMessage
+                            "Enter the "
+                                    + label
+                                    + " capital's village name."
                     )
             );
-
             return null;
         }
+
+        CapitalRecord matched = null;
+        for (CapitalRecord capital :
+                CapitalManager.getAllCapitalRecords()) {
+            if (capital == null
+                    || capital.getVillageId() == null) {
+                continue;
+            }
+
+            String villageName =
+                    MCAIntegrationBridge.getVillageName(
+                            source.getLevel(),
+                            capital.getVillageId()
+                    );
+
+            if (villageName == null
+                    || !villageName.equalsIgnoreCase(requestedName)) {
+                continue;
+            }
+
+            if (matched != null
+                    && !matched.getCapitalId().equals(capital.getCapitalId())) {
+                source.sendFailure(
+                        Component.literal(
+                                "More than one capital is named "
+                                        + requestedName
+                                        + ". Rename one before using this command."
+                        )
+                );
+                return null;
+            }
+
+            matched = capital;
+        }
+
+        if (matched == null) {
+            source.sendFailure(
+                    Component.literal(
+                            "No capital is named "
+                                    + requestedName
+                                    + "."
+                    )
+            );
+            return null;
+        }
+
+        return matched.getCapitalId();
     }
 
     private static Integer parseScore(

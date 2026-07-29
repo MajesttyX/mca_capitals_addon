@@ -170,6 +170,10 @@ public class CapitalPopulationScanner {
                         residents
                 );
 
+        if (capital.getState() != CapitalState.ACTIVE) {
+            return;
+        }
+
         refreshCourtState(
                 level,
                 capital,
@@ -764,35 +768,6 @@ public class CapitalPopulationScanner {
                                 level,
                                 capital.getCapitalId()
                         );
-
-                changed = true;
-            }
-        }
-
-        for (CapitalRecord capital :
-                CapitalManager
-                        .getAllCapitalsSnapshot()
-                        .values()) {
-            Integer villageId =
-                    capital.getVillageId();
-
-            if (villageId == null) {
-                continue;
-            }
-
-            int population =
-                    MCAIntegrationBridge
-                            .getVillagePopulation(
-                                    level,
-                                    villageId
-                            );
-
-            if (population >= REQUIRED_POPULATION
-                    && capital.getState()
-                    != CapitalState.ACTIVE) {
-                capital.setState(
-                        CapitalState.ACTIVE
-                );
 
                 changed = true;
             }

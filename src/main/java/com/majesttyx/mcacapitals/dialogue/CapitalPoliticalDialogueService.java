@@ -19,9 +19,9 @@ public final class CapitalPoliticalDialogueService {
 
     private static final int POLITICAL_HINT_MIN_HEARTS = 100;
     private static final int POLITICAL_PRIVATE_MIN_HEARTS = 200;
-    private static final int POLITICAL_HINT_CHANCE = 30;
-    private static final int POLITICAL_PRIVATE_CHANCE = 45;
-    private static final long POLITICAL_BRANCH_COOLDOWN_TICKS = 20L * 60L * 2L;
+    private static final int POLITICAL_HINT_CHANCE = 20;
+    private static final int POLITICAL_PRIVATE_CHANCE = 10;
+    private static final long POLITICAL_BRANCH_COOLDOWN_TICKS = 24000L;
 
     private static final Map<String, Long> POLITICAL_CHAT_COOLDOWNS = new HashMap<>();
 

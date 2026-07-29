@@ -14,131 +14,73 @@ import java.util.UUID;
 public final class CapitalDiplomaticShipmentProcessor {
 
     @SubscribeEvent
-    public void onLevelTick(
-            LevelTickEvent.Post event
-    ) {
-        if (!(event.getLevel()
-                instanceof ServerLevel level)) {
+    public void onLevelTick(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)
+                || level != level.getServer().overworld()
+                || level.getGameTime() % 20L != 0L) {
             return;
         }
 
-        if (level != level.getServer().overworld()) {
-            return;
-        }
+        CapitalDiplomacyDataAccess.cleanExpiredGiftCooldowns(level);
+        CapitalDiplomacySavedData data = CapitalDiplomacyDataAccess.get(level);
+        Map<UUID, DiplomaticShipment> shipments = data.getShipmentsSnapshot();
 
-        if (level.getGameTime() % 20L != 0L) {
-            return;
-        }
-
-        CapitalDiplomacyDataAccess
-                .cleanExpiredGiftCooldowns(level);
-
-        CapitalDiplomacySavedData data =
-                CapitalDiplomacyDataAccess.get(level);
-
-        Map<UUID, DiplomaticShipment> shipments =
-                data.getShipmentsSnapshot();
-
-        for (DiplomaticShipment shipment :
-                shipments.values()) {
-            if (shipment == null) {
+        for (DiplomaticShipment shipment : shipments.values()) {
+            if (shipment == null || !shipment.isReady(level.getGameTime())) {
                 continue;
             }
 
-            if (shipment.getStatus()
-                    == DiplomaticShipmentStatus
-                    .DISPATCHED) {
-                CapitalDiplomaticResolutionService
-                        .resolveNpcShipment(
-                                level,
-                                shipment
-                        );
-
+            if (shipment.getStatus() == DiplomaticShipmentStatus.ACCEPTED_RESPONSE_IN_TRANSIT) {
+                CapitalDiplomaticResolutionService.completeAcceptedResponse(level, shipment);
                 continue;
             }
 
-            if (!shipment
-                    .isAwaitingPlayerResponse()) {
+            if (shipment.getStatus() == DiplomaticShipmentStatus.RETURNED_IN_TRANSIT) {
+                CapitalDiplomaticResolutionService.completeReturnedResponse(level, shipment);
                 continue;
             }
 
-            CapitalRecord sourceCapital =
-                    CapitalManager.getCapital(
-                            shipment
-                                    .getSourceCapitalId()
-                    );
+            if (shipment.getStatus() == DiplomaticShipmentStatus.DISPATCHED) {
+                CapitalDiplomaticResolutionService.resolveNpcShipment(level, shipment);
+            }
 
-            CapitalRecord targetCapital =
-                    CapitalManager.getCapital(
-                            shipment
-                                    .getTargetCapitalId()
-                    );
+            if (!shipment.isAwaitingPlayerResponse()) {
+                continue;
+            }
 
+            CapitalRecord sourceCapital = CapitalManager.getCapital(shipment.getSourceCapitalId());
+            CapitalRecord targetCapital = CapitalManager.getCapital(shipment.getTargetCapitalId());
             if (targetCapital == null) {
-                CapitalDiplomaticResolutionService
-                        .returnUndeliverable(
-                                level,
-                                shipment,
-                                sourceCapital
-                        );
-
+                CapitalDiplomaticResolutionService.returnUndeliverable(level, shipment, sourceCapital);
                 continue;
             }
 
-            UUID playerDecisionMaker =
-                    CapitalDiplomaticAuthorityService
-                            .getPlayerDecisionMaker(
-                                    level,
-                                    targetCapital
-                            );
-
-            if (playerDecisionMaker == null) {
-                if (targetCapital.getSovereign()
-                        != null) {
-                    shipment.setStatus(
-                            DiplomaticShipmentStatus
-                                    .DISPATCHED
-                    );
-
-                    shipment.setNotifiedPlayerId(
-                            null
-                    );
-
-                    data.setDirty();
-
-                    CapitalDiplomaticResolutionService
-                            .resolveNpcShipment(
-                                    level,
-                                    shipment
-                            );
-                }
-
-                continue;
-            }
-
-            if (shipment.wasNotifiedTo(
-                    playerDecisionMaker
-            )) {
-                continue;
-            }
-
-            if (sourceCapital == null) {
-                continue;
-            }
-
-            CapitalDiplomaticCorrespondenceService
-                    .sendArrivalLetter(
-                            level,
-                            playerDecisionMaker,
-                            shipment,
-                            sourceCapital,
-                            targetCapital
-                    );
-
-            shipment.setNotifiedPlayerId(
-                    playerDecisionMaker
+            UUID playerDecisionMaker = CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
+                    level,
+                    targetCapital
             );
+            if (playerDecisionMaker == null) {
+                if (targetCapital.getSovereign() != null) {
+                    shipment.setStatus(DiplomaticShipmentStatus.DISPATCHED);
+                    shipment.setNotifiedPlayerId(null);
+                    data.setDirty();
+                    CapitalDiplomaticResolutionService.resolveNpcShipment(level, shipment);
+                }
+                continue;
+            }
 
+            if (shipment.wasNotifiedTo(playerDecisionMaker) || sourceCapital == null) {
+                continue;
+            }
+
+            CapitalDiplomaticCorrespondenceService.sendArrivalLetter(
+                    level,
+                    playerDecisionMaker,
+                    shipment,
+                    sourceCapital,
+                    targetCapital
+            );
+            shipment.setNotifiedPlayerId(playerDecisionMaker);
             data.setDirty();
         }
     }

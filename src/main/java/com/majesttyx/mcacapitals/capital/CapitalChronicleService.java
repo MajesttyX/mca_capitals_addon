@@ -383,11 +383,23 @@ public class CapitalChronicleService {
             return;
         }
 
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        if (villageName == null || villageName.isBlank()) {
+            villageName = "Unknown Capital";
+        }
+
+        String resolvedVillageName = villageName;
         ModItemStackData.updateCustomData(stack, tag -> {
             tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
             tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId() == null ? -1 : capital.getVillageId());
-            tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+            tag.putString(ModDataKeys.VILLAGE_NAME, resolvedVillageName);
         });
+        stack.set(
+                DataComponents.CUSTOM_NAME,
+                Component.literal(
+                        "Chronicle of " + resolvedVillageName
+                )
+        );
     }
 
     public static void writeChronicleBook(ServerLevel level, CapitalRecord capital, ItemStack stack) {

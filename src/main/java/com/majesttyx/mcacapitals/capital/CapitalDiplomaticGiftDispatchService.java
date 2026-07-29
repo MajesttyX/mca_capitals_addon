@@ -150,17 +150,6 @@ final class CapitalDiplomaticGiftDispatchService {
                                 targetCapital
                         );
 
-        DiplomaticShipmentStatus status =
-                CapitalDiplomaticAuthorityService
-                        .getPlayerDecisionMaker(
-                                level,
-                                targetCapital
-                        ) != null
-                        ? DiplomaticShipmentStatus
-                        .AWAITING_PLAYER_RESPONSE
-                        : DiplomaticShipmentStatus
-                        .DISPATCHED;
-
         DiplomaticShipment shipment =
                 new DiplomaticShipment(
                         UUID.randomUUID(),
@@ -168,10 +157,12 @@ final class CapitalDiplomaticGiftDispatchService {
                         targetCapital.getCapitalId(),
                         player.getUUID(),
                         recipientSovereignId,
+                        null,
                         level.getGameTime(),
+                        CapitalDiplomaticDelayService.schedule(level),
                         appraisal.relationshipDelta(),
                         appraisal.description(),
-                        status,
+                        DiplomaticShipmentStatus.DISPATCHED,
                         contents
                 );
 
@@ -223,7 +214,7 @@ final class CapitalDiplomaticGiftDispatchService {
                                 .getString()
                                 + ": The package has been dispatched to "
                                 + targetName
-                                + ". I judge it to be "
+                                + ". A response may arrive within one to five minutes. I judge it to be "
                                 + appraisal.description()
                                 .toLowerCase()
                                 + "."

@@ -12,78 +12,76 @@ import java.util.UUID;
 
 final class CapitalDiplomaticAgreementValidation {
 
-    private static final double MAX_AMBASSADOR_DISTANCE_SQR =
-            144.0D;
+    private static final double MAX_AMBASSADOR_DISTANCE_SQR = 144.0D;
 
     private CapitalDiplomaticAgreementValidation() {
     }
 
-    static AudienceValidation validateAudience(
+    static AudienceValidation validateMenuAudience(
             ServerPlayer player,
             UUID ambassadorId
     ) {
         if (player == null || ambassadorId == null) {
-            return AudienceValidation.failure(
-                    "The Ambassador is unavailable."
-            );
+            return AudienceValidation.failure("The Ambassador is unavailable.");
         }
 
         ServerLevel level = player.serverLevel();
         Entity ambassador = level.getEntity(ambassadorId);
 
         if (ambassador == null || !ambassador.isAlive()) {
-            return AudienceValidation.failure(
-                    "The Ambassador is unavailable."
-            );
+            return AudienceValidation.failure("The Ambassador is unavailable.");
         }
 
         if (player.level() != ambassador.level()
-                || player.distanceToSqr(ambassador)
-                > MAX_AMBASSADOR_DISTANCE_SQR) {
-            return AudienceValidation.failure(
-                    "You must remain near the Ambassador."
-            );
+                || player.distanceToSqr(ambassador) > MAX_AMBASSADOR_DISTANCE_SQR) {
+            return AudienceValidation.failure("You must remain near the Ambassador.");
         }
 
         CapitalRecord source = null;
 
-        for (CapitalRecord capital :
-                CapitalManager.getAllCapitalRecords()) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital != null
-                    && CapitalAmbassadorService.isAmbassador(
-                    level,
-                    capital,
-                    ambassadorId
-            )) {
+                    && CapitalAmbassadorService.isAmbassador(level, capital, ambassadorId)) {
                 source = capital;
                 break;
             }
         }
 
-        if (source == null
-                || source.getState() != CapitalState.ACTIVE) {
+        if (source == null || source.getState() != CapitalState.ACTIVE) {
             return AudienceValidation.failure(
                     "This villager is not the Ambassador of an active capital."
             );
         }
 
-        if (!CapitalDiplomaticAuthorityService
-                .mayManageForeignRelations(
-                        level,
-                        source,
-                        player.getUUID()
-                )) {
+        return AudienceValidation.success(source);
+    }
+
+    static AudienceValidation validateAudience(
+            ServerPlayer player,
+            UUID ambassadorId
+    ) {
+        AudienceValidation menuAudience = validateMenuAudience(player, ambassadorId);
+
+        if (!menuAudience.valid()) {
+            return menuAudience;
+        }
+
+        ServerLevel level = player.serverLevel();
+        CapitalRecord source = menuAudience.sourceCapital();
+
+        if (!CapitalDiplomaticAuthorityService.mayManageForeignRelations(
+                level,
+                source,
+                player.getUUID()
+        )) {
             return AudienceValidation.failure(
-                    "Only the player sovereign, or the player Hand serving a villager sovereign, may conduct formal diplomacy."
+                    "Only the sovereign, or the Hand serving a villager sovereign, may take this formal diplomatic action."
             );
         }
 
-        if (!CapitalBuildingService.hasAmbassadorBuildings(
-                level,
-                source
-        )) {
+        if (!CapitalBuildingService.hasAmbassadorBuildings(level, source)) {
             return AudienceValidation.failure(
-                    "The capital requires an operational Inn and Storage building before formal diplomacy can be conducted."
+                    "The capital requires an operational Inn and Storage building before this diplomatic action can be taken."
             );
         }
 
@@ -100,14 +98,11 @@ final class CapitalDiplomaticAgreementValidation {
             return "That capital is not available for formal diplomacy.";
         }
 
-        if (source == null
-                || source.getCapitalId() == null) {
+        if (source == null || source.getCapitalId() == null) {
             return "The sending capital is unavailable.";
         }
 
-        if (source.getCapitalId().equals(
-                target.getCapitalId()
-        )) {
+        if (source.getCapitalId().equals(target.getCapitalId())) {
             return "A capital cannot conduct foreign diplomacy with itself.";
         }
 
@@ -127,23 +122,21 @@ final class CapitalDiplomaticAgreementValidation {
         }
 
         if (type == DiplomaticProposalType.ROYAL_BETROTHAL) {
-            return CapitalRoyalBetrothalService
-                    .validateProposal(
-                            level,
-                            source,
-                            target,
-                            state,
-                            score
-                    );
+            return CapitalRoyalBetrothalService.validateProposal(
+                    level,
+                    source,
+                    target,
+                    state,
+                    score
+            );
         }
 
         if (type == DiplomaticProposalType.TRADE_AGREEMENT) {
-            return CapitalDiplomaticTradeAgreementService
-                    .validateEstablishment(
-                            level,
-                            source,
-                            target
-                    );
+            return CapitalDiplomaticTradeAgreementService.validateEstablishment(
+                    level,
+                    source,
+                    target
+            );
         }
 
         if (type == DiplomaticProposalType.NON_AGGRESSION_PACT) {
@@ -186,12 +179,7 @@ final class CapitalDiplomaticAgreementValidation {
         }
 
         ServerLevel level = player.serverLevel();
-
-        DiplomaticProposal proposal =
-                CapitalAgreementDataAccess.getProposal(
-                        level,
-                        proposalId
-                );
+        DiplomaticProposal proposal = CapitalAgreementDataAccess.getProposal(level, proposalId);
 
         if (proposal == null) {
             return PlayerProposalValidation.failure(
@@ -199,13 +187,15 @@ final class CapitalDiplomaticAgreementValidation {
             );
         }
 
-        CapitalRecord source = CapitalManager.getCapital(
-                proposal.getSourceCapitalId()
-        );
+        if (!proposal.isAwaitingPlayerResponse()
+                || level.getGameTime() < proposal.getAvailableAt()) {
+            return PlayerProposalValidation.failure(
+                    "That diplomatic proposal is no longer awaiting your answer."
+            );
+        }
 
-        CapitalRecord target = CapitalManager.getCapital(
-                proposal.getTargetCapitalId()
-        );
+        CapitalRecord source = CapitalManager.getCapital(proposal.getSourceCapitalId());
+        CapitalRecord target = CapitalManager.getCapital(proposal.getTargetCapitalId());
 
         if (source == null
                 || target == null
@@ -215,22 +205,17 @@ final class CapitalDiplomaticAgreementValidation {
             );
         }
 
-        if (!CapitalDiplomaticAuthorityService
-                .mayExerciseSovereignAuthority(
-                        level,
-                        target,
-                        player.getUUID()
-                )) {
+        if (!CapitalDiplomaticAuthorityService.mayExerciseSovereignAuthority(
+                level,
+                target,
+                player.getUUID()
+        )) {
             return PlayerProposalValidation.failure(
-                    "Only the player sovereign, or the player Hand serving a villager sovereign, may answer this proposal."
+                    "Only the sovereign, or the Hand serving a villager sovereign, may answer this proposal."
             );
         }
 
-        CapitalDiplomaticTruceService.refreshExpiredTruce(
-                level,
-                source,
-                target
-        );
+        CapitalDiplomaticTruceService.refreshExpiredTruce(level, source, target);
 
         String failure = validateProposal(
                 level,
@@ -250,26 +235,16 @@ final class CapitalDiplomaticAgreementValidation {
         );
 
         if (failure != null) {
-            CapitalAgreementDataAccess.removeProposal(
-                    level,
-                    proposalId
-            );
-
+            CapitalAgreementDataAccess.removeProposal(level, proposalId);
             return PlayerProposalValidation.failure(
                     "The diplomatic situation changed and this proposal is no longer valid."
             );
         }
 
-        return PlayerProposalValidation.success(
-                proposal,
-                source,
-                target
-        );
+        return PlayerProposalValidation.success(proposal, source, target);
     }
 
-    static UUID getCurrentSovereignId(
-            CapitalRecord capital
-    ) {
+    static UUID getCurrentSovereignId(CapitalRecord capital) {
         if (capital == null) {
             return null;
         }
@@ -284,25 +259,12 @@ final class CapitalDiplomaticAgreementValidation {
             CapitalRecord sourceCapital,
             String failureMessage
     ) {
-
-        static AudienceValidation success(
-                CapitalRecord capital
-        ) {
-            return new AudienceValidation(
-                    true,
-                    capital,
-                    null
-            );
+        static AudienceValidation success(CapitalRecord capital) {
+            return new AudienceValidation(true, capital, null);
         }
 
-        static AudienceValidation failure(
-                String message
-        ) {
-            return new AudienceValidation(
-                    false,
-                    null,
-                    message
-            );
+        static AudienceValidation failure(String message) {
+            return new AudienceValidation(false, null, message);
         }
     }
 
@@ -313,31 +275,16 @@ final class CapitalDiplomaticAgreementValidation {
             CapitalRecord targetCapital,
             String failureMessage
     ) {
-
         static PlayerProposalValidation success(
                 DiplomaticProposal proposal,
                 CapitalRecord source,
                 CapitalRecord target
         ) {
-            return new PlayerProposalValidation(
-                    true,
-                    proposal,
-                    source,
-                    target,
-                    null
-            );
+            return new PlayerProposalValidation(true, proposal, source, target, null);
         }
 
-        static PlayerProposalValidation failure(
-                String message
-        ) {
-            return new PlayerProposalValidation(
-                    false,
-                    null,
-                    null,
-                    null,
-                    message
-            );
+        static PlayerProposalValidation failure(String message) {
+            return new PlayerProposalValidation(false, null, null, null, message);
         }
     }
 }

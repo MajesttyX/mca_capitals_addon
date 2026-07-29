@@ -5,14 +5,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
+    private static final int TEXT_COLOR = 0xFFFFFF;
+
     private final OpenAmbassadorCommunicationPacket packet;
-    private final List<HoverTarget> hoverTargets = new ArrayList<>();
 
     private int page;
     private int pageSize;
@@ -27,7 +28,6 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
     @Override
     protected void init() {
         clearWidgets();
-        hoverTargets.clear();
 
         pageSize = calculatePageSize();
 
@@ -58,8 +58,8 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
             return Math.max(
                     1,
                     Math.min(
-                            7,
-                            availableHeight / 24
+                            5,
+                            availableHeight / 44
                     )
             );
         }
@@ -67,8 +67,8 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
         return Math.max(
                 1,
                 Math.min(
-                        4,
-                        availableHeight / 48
+                        5,
+                        availableHeight / 80
                 )
         );
     }
@@ -114,7 +114,8 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
             int y =
                     startY
-                            + visibleIndex * 48;
+                            + visibleIndex * 80
+                            + 14;
 
             Button button =
                     Button.builder(
@@ -137,20 +138,6 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
             button.active = entry.enabled();
 
             addRenderableWidget(button);
-
-            String tooltip =
-                    entry.enabled()
-                            ? entry.lineOne()
-                            : entry.disabledReason();
-
-            if (!tooltip.isBlank()) {
-                hoverTargets.add(
-                        new HoverTarget(
-                                button,
-                                Component.literal(tooltip)
-                        )
-                );
-            }
         }
     }
 
@@ -174,7 +161,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
             int y =
                     startY
-                            + visibleIndex * 24;
+                            + visibleIndex * 44;
 
             Button button =
                     Button.builder(
@@ -187,9 +174,9 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
                                             )
                             )
                             .bounds(
-                                    centerX - 120,
+                                    centerX - 150,
                                     y,
-                                    240,
+                                    300,
                                     20
                             )
                             .build();
@@ -199,17 +186,6 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
                             && !action.command().isBlank();
 
             addRenderableWidget(button);
-
-            if (!action.description().isBlank()) {
-                hoverTargets.add(
-                        new HoverTarget(
-                                button,
-                                Component.literal(
-                                        action.description()
-                                )
-                        )
-                );
-            }
         }
     }
 
@@ -388,21 +364,23 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
     ) {
         int centerX = this.width / 2;
 
-        guiGraphics.drawCenteredString(
-                this.font,
+        renderAmbassadorPanel(guiGraphics);
+
+        drawCenteredNoShadow(
+                guiGraphics,
                 packet.title(),
                 centerX,
                 16,
-                0xFFFFFF
+                TEXT_COLOR
         );
 
         if (!packet.subtitle().isBlank()) {
-            guiGraphics.drawCenteredString(
-                    this.font,
+            drawCenteredNoShadow(
+                    guiGraphics,
                     packet.subtitle(),
                     centerX,
                     30,
-                    0xCCCCCC
+                    TEXT_COLOR
             );
         }
 
@@ -411,12 +389,14 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
                     guiGraphics,
                     packet.message(),
                     44,
-                    0xAAAAAA
+                    TEXT_COLOR
             );
         }
 
         if (packet.mode()
-                != OpenAmbassadorCommunicationPacket.Mode.DIPLOMACY_ACTIONS) {
+                == OpenAmbassadorCommunicationPacket.Mode.DIPLOMACY_ACTIONS) {
+            renderActions(guiGraphics);
+        } else {
             renderEntries(guiGraphics);
         }
 
@@ -424,15 +404,15 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
                 getPageCount();
 
         if (pageCount > 1) {
-            guiGraphics.drawCenteredString(
-                    this.font,
+            drawCenteredNoShadow(
+                    guiGraphics,
                     "Page "
                             + (page + 1)
                             + " / "
                             + pageCount,
                     centerX,
                     this.height - 46,
-                    0xAAAAAA
+                    TEXT_COLOR
             );
         }
 
@@ -442,22 +422,104 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
                 mouseY,
                 partialTick
         );
+    }
 
-        for (HoverTarget hoverTarget :
-                hoverTargets) {
-            if (hoverTarget.button()
-                    .isMouseOver(
-                            mouseX,
-                            mouseY
-                    )) {
-                guiGraphics.renderTooltip(
-                        this.font,
-                        hoverTarget.tooltip(),
-                        mouseX,
-                        mouseY
-                );
+    private void renderAmbassadorPanel(
+            GuiGraphics guiGraphics
+    ) {
+        int panelWidth = Math.min(
+                440,
+                Math.max(
+                        180,
+                        this.width - 16
+                )
+        );
+        int left = (this.width - panelWidth) / 2;
+        int right = left + panelWidth;
+        int top = 8;
+        int bottom = Math.max(top + 40, this.height - 40);
 
+        guiGraphics.fill(
+                left,
+                top,
+                right,
+                bottom,
+                0xA0404040
+        );
+        guiGraphics.fill(
+                left,
+                top,
+                right,
+                top + 1,
+                0xC0909090
+        );
+        guiGraphics.fill(
+                left,
+                bottom - 1,
+                right,
+                bottom,
+                0xC0909090
+        );
+        guiGraphics.fill(
+                left,
+                top,
+                left + 1,
+                bottom,
+                0xC0909090
+        );
+        guiGraphics.fill(
+                right - 1,
+                top,
+                right,
+                bottom,
+                0xC0909090
+        );
+    }
+
+    private void renderActions(
+            GuiGraphics guiGraphics
+    ) {
+        int centerX = this.width / 2;
+        int startIndex = page * pageSize;
+        int startY = getContentStartY();
+        int textWidth = Math.min(
+                360,
+                Math.max(120, this.width - 40)
+        );
+
+        for (int visibleIndex = 0;
+             visibleIndex < pageSize;
+             visibleIndex++) {
+            int actionIndex = startIndex + visibleIndex;
+
+            if (actionIndex >= packet.actions().size()) {
                 break;
+            }
+
+            OpenAmbassadorCommunicationPacket.Action action =
+                    packet.actions().get(actionIndex);
+
+            if (action.description().isBlank()) {
+                continue;
+            }
+
+            int y = startY + visibleIndex * 44 + 23;
+            List<FormattedCharSequence> lines =
+                    this.font.split(
+                            Component.literal(action.description()),
+                            textWidth
+                    );
+
+            for (int lineIndex = 0;
+                 lineIndex < Math.min(2, lines.size());
+                 lineIndex++) {
+                drawCenteredNoShadow(
+                        guiGraphics,
+                        lines.get(lineIndex),
+                        centerX,
+                        y + lineIndex * 10,
+                        TEXT_COLOR
+                );
             }
         }
     }
@@ -468,87 +530,79 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
         int centerX = this.width / 2;
         int startIndex = page * pageSize;
         int startY = getContentStartY();
+        int textWidth = Math.min(380, Math.max(120, this.width - 48));
 
-        for (int visibleIndex = 0;
-             visibleIndex < pageSize;
-             visibleIndex++) {
-            int entryIndex =
-                    startIndex + visibleIndex;
-
+        for (int visibleIndex = 0; visibleIndex < pageSize; visibleIndex++) {
+            int entryIndex = startIndex + visibleIndex;
             if (entryIndex >= packet.entries().size()) {
                 break;
             }
 
-            OpenAmbassadorCommunicationPacket.Entry entry =
-                    packet.entries().get(entryIndex);
+            OpenAmbassadorCommunicationPacket.Entry entry = packet.entries().get(entryIndex);
+            int y = startY + visibleIndex * 80;
+            boolean hasButton = !entry.buttonLabel().isBlank() && !entry.command().isBlank();
 
-            int y =
-                    startY
-                            + visibleIndex * 48;
+            drawCenteredNoShadow(
+                    guiGraphics,
+                    entry.heading(),
+                    centerX,
+                    y,
+                    TEXT_COLOR
+            );
 
-            boolean hasButton =
-                    !entry.buttonLabel().isBlank()
-                            && !entry.command().isBlank();
+            int detailY = hasButton ? y + 38 : y + 14;
+            String firstLine = !entry.enabled() && !entry.disabledReason().isBlank()
+                    ? entry.disabledReason()
+                    : entry.lineOne();
+            String details = joinDetails(firstLine, entry.lineTwo(), entry.lineThree());
+            List<FormattedCharSequence> lines = this.font.split(
+                    Component.literal(details),
+                    textWidth
+            );
 
-            if (!hasButton) {
-                guiGraphics.drawCenteredString(
-                        this.font,
-                        entry.heading(),
+            for (int lineIndex = 0; lineIndex < Math.min(3, lines.size()); lineIndex++) {
+                drawCenteredNoShadow(
+                        guiGraphics,
+                        lines.get(lineIndex),
                         centerX,
-                        y,
-                        0xFFD36A
+                        detailY + lineIndex * 10,
+                        TEXT_COLOR
                 );
             }
-
-            int detailY =
-                    hasButton
-                            ? y + 23
-                            : y + 12;
-
-            drawDetailLine(
-                    guiGraphics,
-                    entry.lineOne(),
-                    centerX,
-                    detailY,
-                    0xDDDDDD
-            );
-
-            drawDetailLine(
-                    guiGraphics,
-                    entry.lineTwo(),
-                    centerX,
-                    detailY + 10,
-                    0xBBBBBB
-            );
-
-            drawDetailLine(
-                    guiGraphics,
-                    entry.lineThree(),
-                    centerX,
-                    detailY + 20,
-                    0x999999
-            );
         }
+    }
+
+    private String joinDetails(String... values) {
+        StringBuilder result = new StringBuilder();
+        for (String value : values) {
+            if (value == null || value.isBlank()) {
+                continue;
+            }
+            if (!result.isEmpty()) {
+                result.append(" — ");
+            }
+            result.append(value.trim());
+        }
+        return result.toString();
     }
 
     private void drawDetailLine(
             GuiGraphics guiGraphics,
             String text,
             int centerX,
-            int y,
-            int color
+            int y
     ) {
         if (text == null
                 || text.isBlank()) {
             return;
         }
 
-        guiGraphics.drawCenteredString(
-                this.font,
+        drawCenteredNoShadow(
+                guiGraphics,
                 text,
                 centerX,
                 y,
-                color
+                TEXT_COLOR
         );
     }
 
@@ -558,7 +612,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
             int startY,
             int color
     ) {
-        List<net.minecraft.util.FormattedCharSequence> lines =
+        List<FormattedCharSequence> lines =
                 this.font.split(
                         Component.literal(text),
                         Math.min(
@@ -573,10 +627,9 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
         int centerX = this.width / 2;
         int y = startY;
 
-        for (net.minecraft.util.FormattedCharSequence line :
-                lines) {
-            guiGraphics.drawCenteredString(
-                    this.font,
+        for (FormattedCharSequence line : lines) {
+            drawCenteredNoShadow(
+                    guiGraphics,
                     line,
                     centerX,
                     y,
@@ -587,14 +640,42 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
         }
     }
 
+    private void drawCenteredNoShadow(
+            GuiGraphics guiGraphics,
+            String text,
+            int centerX,
+            int y,
+            int color
+    ) {
+        guiGraphics.drawString(
+                this.font,
+                text,
+                centerX - this.font.width(text) / 2,
+                y,
+                color,
+                false
+        );
+    }
+
+    private void drawCenteredNoShadow(
+            GuiGraphics guiGraphics,
+            FormattedCharSequence text,
+            int centerX,
+            int y,
+            int color
+    ) {
+        guiGraphics.drawString(
+                this.font,
+                text,
+                centerX - this.font.width(text) / 2,
+                y,
+                color,
+                false
+        );
+    }
+
     @Override
     public boolean isPauseScreen() {
         return false;
-    }
-
-    private record HoverTarget(
-            Button button,
-            Component tooltip
-    ) {
     }
 }

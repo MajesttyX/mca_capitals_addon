@@ -103,6 +103,26 @@ public final class CapitalCrownStandingService {
         return getStanding(level, capital, villagerId) == CrownStanding.FRIEND_OF_CROWN;
     }
 
+    public static boolean isWillingToDeclareLoyalty(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID villagerId
+    ) {
+        if (!isFriend(level, capital, villagerId)
+                || capital == null
+                || capital.getCapitalId() == null
+                || villagerId == null) {
+            return false;
+        }
+
+        String seed = capital.getCapitalId()
+                + ":"
+                + String.valueOf(capital.getSovereign())
+                + ":public-loyalty:"
+                + villagerId;
+        return Math.floorMod(seed.hashCode(), 100) < 25;
+    }
+
     private static CrownStanding resolveStanding(ServerLevel level, CapitalRecord capital, UUID villagerId, boolean sovereignChanged) {
         if (capital == null || villagerId == null) {
             return CrownStanding.FRIEND_OF_CROWN;

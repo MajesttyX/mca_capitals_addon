@@ -40,6 +40,13 @@ public final class PendingVillagerBetrothalAccess {
         return get(level).getPartner(villagerId);
     }
 
+    public static String getPartnerName(
+            ServerLevel level,
+            UUID villagerId
+    ) {
+        return get(level).getPartnerName(villagerId);
+    }
+
     public static PendingVillagerBetrothalSavedData.RoyalEscortRecord
     getRoyalEscort(
             ServerLevel level,
@@ -77,14 +84,18 @@ public final class PendingVillagerBetrothalAccess {
     public static void setRoyalEscort(
             ServerLevel level,
             UUID firstId,
+            String firstName,
             UUID secondId,
+            String secondName,
             UUID originCapitalId,
             UUID destinationCapitalId,
             UUID relocatingRoyalId
     ) {
         get(level).setRoyalEscort(
                 firstId,
+                firstName,
                 secondId,
+                secondName,
                 originCapitalId,
                 destinationCapitalId,
                 relocatingRoyalId,

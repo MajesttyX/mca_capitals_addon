@@ -32,6 +32,8 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
     private static final String KEY_PAIRS = "Pairs";
     private static final String KEY_FIRST = "First";
     private static final String KEY_SECOND = "Second";
+    private static final String KEY_FIRST_NAME = "FirstName";
+    private static final String KEY_SECOND_NAME = "SecondName";
     private static final String KEY_ORIGIN_CAPITAL = "OriginCapital";
     private static final String KEY_DESTINATION_CAPITAL = "DestinationCapital";
     private static final String KEY_RELOCATING_ROYAL = "RelocatingRoyal";
@@ -131,6 +133,24 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
         return null;
     }
 
+    public String getPartnerName(UUID villagerId) {
+        if (villagerId == null) {
+            return "";
+        }
+
+        for (RoyalEscortRecord record : royalEscorts.values()) {
+            if (villagerId.equals(record.pair().first())) {
+                return record.secondName();
+            }
+
+            if (villagerId.equals(record.pair().second())) {
+                return record.firstName();
+            }
+        }
+
+        return "";
+    }
+
     public boolean containsPair(
             UUID firstId,
             UUID secondId
@@ -201,7 +221,9 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
 
     public void setRoyalEscort(
             UUID firstId,
+            String firstName,
             UUID secondId,
+            String secondName,
             UUID originCapitalId,
             UUID destinationCapitalId,
             UUID relocatingRoyalId,
@@ -228,10 +250,19 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
                 secondId
         );
 
+        String canonicalFirstName = pair.first().equals(firstId)
+                ? safeName(firstName)
+                : safeName(secondName);
+        String canonicalSecondName = pair.second().equals(secondId)
+                ? safeName(secondName)
+                : safeName(firstName);
+
         royalEscorts.put(
                 pair,
                 new RoyalEscortRecord(
                         pair,
+                        canonicalFirstName,
+                        canonicalSecondName,
                         originCapitalId,
                         destinationCapitalId,
                         relocatingRoyalId,
@@ -268,6 +299,8 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
                 pair,
                 new RoyalEscortRecord(
                         pair,
+                        current.firstName(),
+                        current.secondName(),
                         current.originCapitalId(),
                         current.destinationCapitalId(),
                         current.relocatingRoyalId(),
@@ -373,6 +406,13 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
                     royalEscorts.get(pair);
 
             if (escort != null) {
+                if (!escort.firstName().isBlank()) {
+                    entry.putString(KEY_FIRST_NAME, escort.firstName());
+                }
+                if (!escort.secondName().isBlank()) {
+                    entry.putString(KEY_SECOND_NAME, escort.secondName());
+                }
+
                 entry.putUUID(
                         KEY_ORIGIN_CAPITAL,
                         escort.originCapitalId()
@@ -475,6 +515,8 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
                             pair,
                             new RoyalEscortRecord(
                                     pair,
+                                    safeName(entry.getString(KEY_FIRST_NAME)),
+                                    safeName(entry.getString(KEY_SECOND_NAME)),
                                     originCapitalId,
                                     destinationCapitalId,
                                     relocatingRoyalId,
@@ -516,14 +558,51 @@ public class PendingVillagerBetrothalSavedData extends SavedData {
         }
     }
 
+    private static String safeName(String value) {
+        return value == null ? "" : value.trim();
+    }
+
     public record RoyalEscortRecord(
             PendingPair pair,
+            String firstName,
+            String secondName,
             UUID originCapitalId,
             UUID destinationCapitalId,
             UUID relocatingRoyalId,
             long acceptedAt,
             long completedAt
     ) {
+        public RoyalEscortRecord {
+            firstName = safeName(firstName);
+            secondName = safeName(secondName);
+        }
+
+        public String nameFor(UUID royalId) {
+            if (royalId == null) {
+                return "Unknown Royal";
+            }
+            if (royalId.equals(pair.first())) {
+                return firstName.isBlank() ? "Unknown Royal" : firstName;
+            }
+            if (royalId.equals(pair.second())) {
+                return secondName.isBlank() ? "Unknown Royal" : secondName;
+            }
+            return "Unknown Royal";
+        }
+
+        public String partnerNameFor(UUID royalId) {
+            if (royalId == null) {
+                return "Unknown Royal";
+            }
+            if (royalId.equals(pair.first())) {
+                return secondName.isBlank() ? "Unknown Royal" : secondName;
+            }
+            if (royalId.equals(pair.second())) {
+                return firstName.isBlank() ? "Unknown Royal" : firstName;
+            }
+            return "Unknown Royal";
+        }
+
         public boolean isCompleted() {
             return completedAt > 0L;
         }

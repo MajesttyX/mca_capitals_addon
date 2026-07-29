@@ -29,7 +29,7 @@ public final class CapitalAsylumScreenService {
         CapitalDiplomaticAgreementValidation
                 .AudienceValidation audience =
                 CapitalDiplomaticAgreementValidation
-                        .validateAudience(
+                        .validateMenuAudience(
                                 player,
                                 ambassadorId
                         );
@@ -43,6 +43,15 @@ public final class CapitalAsylumScreenService {
 
         CapitalRecord capital =
                 audience.sourceCapital();
+
+        if (!CapitalDiplomaticAuthorityService
+                .mayExerciseSovereignAuthority(
+                        level,
+                        capital,
+                        player.getUUID()
+                )) {
+            return false;
+        }
 
         return CapitalBuildingService.hasInn(
                 level,
@@ -61,7 +70,7 @@ public final class CapitalAsylumScreenService {
         CapitalDiplomaticAgreementValidation
                 .AudienceValidation audience =
                 CapitalDiplomaticAgreementValidation
-                        .validateAudience(
+                        .validateMenuAudience(
                                 player,
                                 ambassadorId
                         );
@@ -85,6 +94,23 @@ public final class CapitalAsylumScreenService {
 
         CapitalRecord targetCapital =
                 audience.sourceCapital();
+
+        if (!CapitalDiplomaticAuthorityService
+                .mayExerciseSovereignAuthority(
+                        level,
+                        targetCapital,
+                        player.getUUID()
+                )) {
+            sendMessage(
+                    player,
+                    "Asylum Requests",
+                    "Only the sovereign, or the Hand serving a villager sovereign, may grant asylum.",
+                    "/capitaldiplomacy targets "
+                            + ambassadorId
+            );
+
+            return 0;
+        }
 
         if (!CapitalBuildingService.hasInn(
                 level,

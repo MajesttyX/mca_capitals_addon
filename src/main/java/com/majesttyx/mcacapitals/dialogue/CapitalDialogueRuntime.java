@@ -310,6 +310,10 @@ public final class CapitalDialogueRuntime {
             CapitalDialogueEventModels.ChronicleEvent latestEvent =
                     CapitalDialogueChronicleLogic.findLatestNotableEvent(level, capital);
 
+            String playerName = MCAIntegrationBridge.getPlayerDialogueName(player);
+
+            context.put("{player_name}", playerName);
+            context.put("%1$s", playerName);
             context.put("{capital_name}", safeVillageName(level, capital));
             context.put("{capital_population}", Integer.toString(safePopulation(level, capital)));
             context.put("{mourning_status}", capital.isMourningActive() ? "in mourning" : "at peace again");
@@ -346,6 +350,7 @@ public final class CapitalDialogueRuntime {
 
         private static String fallbackFor(String key) {
             return switch (key) {
+                case "{player_name}", "%1$s" -> "traveler";
                 case "{capital_name}" -> "the capital";
                 case "{capital_population}" -> "0";
                 case "{mourning_status}" -> "at peace again";
