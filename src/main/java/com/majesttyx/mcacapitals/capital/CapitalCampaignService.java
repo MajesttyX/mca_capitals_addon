@@ -385,7 +385,8 @@ public final class CapitalCampaignService {
         }
 
         if (defendingCapital.isRoyalGuard(villagerId)) {
-            return true;
+            return campaign
+                    .didDefendingSovereignRefusePeace();
         }
 
         return campaign

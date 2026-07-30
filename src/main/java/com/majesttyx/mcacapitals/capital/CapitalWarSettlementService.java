@@ -7,7 +7,6 @@ import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalWarCause;
 import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalWarGoal;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 
@@ -288,11 +287,6 @@ public final class CapitalWarSettlementService {
                     resolvedAttacker,
                     settlement
             );
-            CapitalPlayerNotificationService.notifyPlayersInCapital(
-                    level,
-                    resolvedAttacker,
-                    Component.literal(settlement)
-            );
         }
         if (resolvedDefender != null
                 && resolvedDefender != resolvedAttacker) {
@@ -300,11 +294,6 @@ public final class CapitalWarSettlementService {
                     level,
                     resolvedDefender,
                     settlement
-            );
-            CapitalPlayerNotificationService.notifyPlayersInCapital(
-                    level,
-                    resolvedDefender,
-                    Component.literal(settlement)
             );
         }
     }

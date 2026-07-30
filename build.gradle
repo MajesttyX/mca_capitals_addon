@@ -73,7 +73,7 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
-def mcaJar = file('libs/mca-neoforge-7.7.27+1.21.1.jar')
+def mcaJar = file("libs/mca-neoforge-${mca_version}.jar")
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"

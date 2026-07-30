@@ -13,7 +13,7 @@ public final class CapitalCampaignCombatDamageHandler {
 
     private static final float
             CAMPAIGN_DAMAGE_MULTIPLIER =
-            0.5F;
+            0.3F;
 
     private CapitalCampaignCombatDamageHandler() {
     }

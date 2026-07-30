@@ -166,7 +166,7 @@ public abstract class BlueprintScreenCapitalAuthorityMixin {
         );
         graphics.drawString(
                 font,
-                Component.literal((complete ? "✓ " : "• ") + progress)
+                Component.literal(progress)
                         .withStyle(complete ? ChatFormatting.GREEN : ChatFormatting.GRAY),
                 x,
                 y + 10,

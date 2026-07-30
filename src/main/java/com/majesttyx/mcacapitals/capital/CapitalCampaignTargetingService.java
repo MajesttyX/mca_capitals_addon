@@ -33,13 +33,13 @@ final class CapitalCampaignTargetingService {
             12.0D * 12.0D;
 
     private static final float ATTACKER_SPEED =
-            1.2F;
+            0.6F;
 
     private static final float DEFENDER_SPEED =
-            1.25F;
+            0.6F;
 
     private static final float RALLY_SPEED =
-            1.15F;
+            0.55F;
 
     private static final long TARGET_MEMORY_TICKS =
             80L;
@@ -78,7 +78,7 @@ final class CapitalCampaignTargetingService {
                             fieldDefenders
                     ),
                     ATTACKER_SPEED,
-                    false
+                    true
             );
 
             assignTargets(

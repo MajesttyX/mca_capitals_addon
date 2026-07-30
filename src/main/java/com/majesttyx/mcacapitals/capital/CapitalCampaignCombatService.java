@@ -5,6 +5,7 @@ import com.majesttyx.mcacapitals.data.CapitalCampaignPhase;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.conczin.mca.entity.VillagerEntityMCA;
+import net.conczin.mca.entity.ai.MoveState;
 import net.conczin.mca.entity.ai.MemoryModuleTypeMCA;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -25,8 +26,8 @@ public final class CapitalCampaignCombatService {
     private static final double CAMPAIGN_TARGET_RANGE_SQR =
             96.0D * 96.0D;
 
-    private static final float MELEE_SPEED = 1.25F;
-    private static final float RANGED_SPEED = 1.2F;
+    private static final float MELEE_SPEED = 0.6F;
+    private static final float RANGED_SPEED = 0.6F;
     private static final long TARGET_MEMORY_TICKS = 80L;
 
     private CapitalCampaignCombatService() {
@@ -113,6 +114,14 @@ public final class CapitalCampaignCombatService {
 
         if (campaign == null) {
             return;
+        }
+
+        if (villager.getVillagerBrain().getMoveState()
+                != MoveState.MOVE) {
+            villager.getVillagerBrain().setMoveState(
+                    MoveState.MOVE,
+                    null
+            );
         }
 
         Brain<VillagerEntityMCA> brain =

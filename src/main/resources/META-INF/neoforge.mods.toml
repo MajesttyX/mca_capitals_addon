@@ -26,7 +26,7 @@ side="BOTH"
 [[dependencies.${mod_id}]]
 modId="mca"
 type="required"
-versionRange="[7.7.27,7.8.0)"
+versionRange="[7.7.31,7.8.0)"
 ordering="AFTER"
 side="BOTH"
 

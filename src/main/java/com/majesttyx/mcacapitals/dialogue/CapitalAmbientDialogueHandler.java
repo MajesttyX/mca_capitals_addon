@@ -26,18 +26,18 @@ import java.util.UUID;
 public class CapitalAmbientDialogueHandler {
 
     private static final long SCAN_INTERVAL_TICKS = 20L * 10L;
-    private static final long CAPITAL_COOLDOWN_TICKS = 20L * 60L;
+    private static final long CAPITAL_COOLDOWN_TICKS = 20L * 15L;
     private static final long VILLAGER_COOLDOWN_TICKS = 20L * 180L;
     private static final int EVENING_START_TIME = 9000;
-    private static final int EVENING_END_TIME = 13000;
-    private static final int CHAT_CHANCE_PERCENT = 60;
+    private static final int EVENING_END_TIME = 12000;
     private static final int BELL_SEARCH_RADIUS = 72;
     private static final double BELL_RADIUS = 20.0D;
     private static final double PLAYER_HEAR_RADIUS = 24.0D;
     private static final double PLAYER_NEAR_BELL_RADIUS = 36.0D;
 
-    private final Map<UUID, Long> lastCapitalChatterTick = new HashMap<>();
-    private final Map<UUID, Long> lastVillagerChatterTick = new HashMap<>();
+    private final Map<UUID, Long> nextCapitalChatterTick = new HashMap<>();
+    private final Map<UUID, Long> nextVillagerChatterTick = new HashMap<>();
+    private final Map<UUID, UUID> lastCapitalSpeaker = new HashMap<>();
 
     @SubscribeEvent
     public void onLevelTick(LevelTickEvent.Post event) {
@@ -65,12 +65,8 @@ public class CapitalAmbientDialogueHandler {
             return;
         }
 
-        Long lastCapitalTick = lastCapitalChatterTick.get(capital.getCapitalId());
-        if (lastCapitalTick != null && gameTime - lastCapitalTick < CAPITAL_COOLDOWN_TICKS) {
-            return;
-        }
-
-        if (level.random.nextInt(100) >= CHAT_CHANCE_PERCENT) {
+        UUID capitalId = capital.getCapitalId();
+        if (gameTime < nextCapitalChatterTick.getOrDefault(capitalId, 0L)) {
             return;
         }
 
@@ -85,7 +81,7 @@ public class CapitalAmbientDialogueHandler {
             return;
         }
 
-        Entity speaker = pickSpeakerNearBell(level, meetingPoint, gameTime);
+        Entity speaker = pickSpeakerNearBell(level, meetingPoint, capitalId, gameTime);
         if (speaker == null) {
             return;
         }
@@ -100,8 +96,9 @@ public class CapitalAmbientDialogueHandler {
         }
 
         sendToNearbyPlayers(level, speaker, line);
-        lastCapitalChatterTick.put(capital.getCapitalId(), gameTime);
-        lastVillagerChatterTick.put(speaker.getUUID(), gameTime);
+        nextCapitalChatterTick.put(capitalId, gameTime + CAPITAL_COOLDOWN_TICKS);
+        nextVillagerChatterTick.put(speaker.getUUID(), gameTime + VILLAGER_COOLDOWN_TICKS);
+        lastCapitalSpeaker.put(capitalId, speaker.getUUID());
     }
 
     private BlockPos findMeetingPoint(ServerLevel level, BlockPos villageCenter) {
@@ -126,20 +123,48 @@ public class CapitalAmbientDialogueHandler {
                 .orElse(null);
     }
 
-    private Entity pickSpeakerNearBell(ServerLevel level, BlockPos center, long gameTime) {
+    private Entity pickSpeakerNearBell(ServerLevel level, BlockPos center, UUID capitalId, long gameTime) {
         AABB area = new AABB(center).inflate(BELL_RADIUS, 8.0D, BELL_RADIUS);
         List<Entity> villagers = MCAIntegrationBridge.getNearbyMCAVillagers(level, area).stream()
-                .filter(villager -> canSpeak(level, villager, gameTime))
+                .filter(villager -> canParticipate(level, villager))
                 .toList();
 
         if (villagers.isEmpty()) {
             return null;
         }
 
+        UUID previousSpeaker = lastCapitalSpeaker.get(capitalId);
+
+        List<Entity> preferred = villagers.stream()
+                .filter(villager -> !villager.getUUID().equals(previousSpeaker))
+                .filter(villager -> gameTime >= nextVillagerChatterTick.getOrDefault(villager.getUUID(), 0L))
+                .toList();
+        if (!preferred.isEmpty()) {
+            return randomSpeaker(level, preferred);
+        }
+
+        List<Entity> rested = villagers.stream()
+                .filter(villager -> gameTime >= nextVillagerChatterTick.getOrDefault(villager.getUUID(), 0L))
+                .toList();
+        if (!rested.isEmpty()) {
+            return randomSpeaker(level, rested);
+        }
+
+        List<Entity> alternate = villagers.stream()
+                .filter(villager -> !villager.getUUID().equals(previousSpeaker))
+                .toList();
+        if (!alternate.isEmpty()) {
+            return randomSpeaker(level, alternate);
+        }
+
+        return randomSpeaker(level, villagers);
+    }
+
+    private Entity randomSpeaker(ServerLevel level, List<Entity> villagers) {
         return villagers.get(level.random.nextInt(villagers.size()));
     }
 
-    private boolean canSpeak(ServerLevel level, Entity villager, long gameTime) {
+    private boolean canParticipate(ServerLevel level, Entity villager) {
         if (villager == null || !villager.isAlive()) {
             return false;
         }
@@ -149,12 +174,7 @@ public class CapitalAmbientDialogueHandler {
         }
 
         String ageState = MCAIntegrationBridge.getAgeState(level, villager.getUUID());
-        if ("BABY".equalsIgnoreCase(ageState) || "TODDLER".equalsIgnoreCase(ageState)) {
-            return false;
-        }
-
-        Long lastVillagerTick = lastVillagerChatterTick.get(villager.getUUID());
-        return lastVillagerTick == null || gameTime - lastVillagerTick >= VILLAGER_COOLDOWN_TICKS;
+        return !"BABY".equalsIgnoreCase(ageState) && !"TODDLER".equalsIgnoreCase(ageState);
     }
 
     private void sendToNearbyPlayers(ServerLevel level, Entity speaker, String line) {

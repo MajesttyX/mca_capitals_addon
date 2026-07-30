@@ -215,16 +215,6 @@ final class CapitalCampaignAssemblyService {
             campaign.markAssemblyReportedCount(
                     assembledCount
             );
-
-            player.sendSystemMessage(
-                    Component.literal(
-                            "Campaign force assembling: "
-                                    + assembledCount
-                                    + "/"
-                                    + campaign.getTargetAttackerCount()
-                                    + " soldiers ready."
-                    )
-            );
         }
 
         if (previousTarget

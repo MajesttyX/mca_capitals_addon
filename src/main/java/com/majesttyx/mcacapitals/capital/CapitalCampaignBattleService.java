@@ -870,19 +870,6 @@ final class CapitalCampaignBattleService {
                 entry
         );
 
-        notifyInitiatingPlayer(
-                level,
-                campaign,
-                entry
-        );
-
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        defendingCapital,
-                        Component.literal(entry)
-                );
-
         campaign.finishWithoutRetreat(
                 CapitalCampaignEndReason.ATTACKERS_DEFEATED
         );
@@ -972,10 +959,12 @@ final class CapitalCampaignBattleService {
     ) {
         for (UUID attackerId :
                 campaign.getAttackerIds()) {
-            if (!isKnownDead(
-                    level,
-                    attackerId
-            )) {
+            if (!CapitalCampaignCasualtyService
+                    .isAttackerDefeated(
+                            level,
+                            campaign,
+                            attackerId
+                    )) {
                 return false;
             }
         }
