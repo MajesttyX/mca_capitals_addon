@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalJusticeDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalPublicCrownStatus;
 import com.majesttyx.mcacapitals.data.CapitalRefugeeDataAccess;
@@ -543,11 +544,28 @@ public final class CapitalAsylumService {
                 );
 
         if (originCapital != null) {
+            boolean recognizedEnemy = CapitalJusticeDataAccess.getPublicStatus(
+                    level,
+                    originCapital.getCapitalId(),
+                    refugeeId
+            ) == CapitalPublicCrownStatus.DISCOVERED_ENEMY;
+            CapitalDiplomacyDataAccess.adjustRelationship(
+                    level,
+                    originCapital.getCapitalId(),
+                    targetCapital.getCapitalId(),
+                    recognizedEnemy ? -45 : -30,
+                    recognizedEnemy
+                            ? "Asylum granted to a recognized Enemy of the Crown"
+                            : "Asylum granted to a foreign exile",
+                    targetCapital.getCapitalId()
+            );
             CapitalWarDataAccess.recordGrievance(
                     level,
                     originCapital.getCapitalId(),
                     targetCapital.getCapitalId(),
-                    CapitalWarCause.ASYLUM_DISPUTE,
+                    recognizedEnemy
+                            ? CapitalWarCause.SERIOUS_ASYLUM_DISPUTE
+                            : CapitalWarCause.ASYLUM_DISPUTE,
                     10L
             );
 

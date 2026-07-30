@@ -52,6 +52,7 @@ public final class CapitalDiplomaticResolutionService {
                         level,
                         targetCapital
                 ) != null) {
+            recordGraveInsult(level, sourceCapital, targetCapital, shipment);
             shipment.setStatus(
                     DiplomaticShipmentStatus
                             .AWAITING_PLAYER_RESPONSE
@@ -78,6 +79,7 @@ public final class CapitalDiplomaticResolutionService {
                 return false;
             }
 
+            recordGraveInsult(level, sourceCapital, targetCapital, shipment);
             applyRelationship(
                     level,
                     sourceCapital,
@@ -119,6 +121,7 @@ public final class CapitalDiplomaticResolutionService {
                 return false;
             }
 
+            recordGraveInsult(level, sourceCapital, targetCapital, shipment);
             applyRelationship(
                     level,
                     sourceCapital,
@@ -442,6 +445,31 @@ public final class CapitalDiplomaticResolutionService {
                 shipment,
                 sourceCapital,
                 targetCapital
+        );
+    }
+
+    private static void recordGraveInsult(
+            ServerLevel level,
+            CapitalRecord sourceCapital,
+            CapitalRecord targetCapital,
+            DiplomaticShipment shipment
+    ) {
+        if (level == null
+                || sourceCapital == null
+                || targetCapital == null
+                || shipment == null
+                || !"Grave insult".equalsIgnoreCase(shipment.getAppraisal())) {
+            return;
+        }
+
+        CapitalChronicleService.addEntry(
+                level,
+                targetCapital,
+                "A diplomatic package from "
+                        + capitalName(level, sourceCapital)
+                        + " was judged a grave insult by the court of "
+                        + capitalName(level, targetCapital)
+                        + "."
         );
     }
 

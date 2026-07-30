@@ -10,8 +10,8 @@ import java.util.List;
 
 final class CapitalTradeExchangeService {
 
-    static final long TRADE_INTERVAL_TICKS = 96000L;
-    private static final int RELATIONSHIP_BONUS = 1;
+    static final long TRADE_INTERVAL_TICKS = 48000L;
+    private static final int RELATIONSHIP_BONUS = 2;
 
     private CapitalTradeExchangeService() {
     }
@@ -90,13 +90,21 @@ final class CapitalTradeExchangeService {
                 first.getCapitalId(),
                 second.getCapitalId()
         );
-        CapitalDiplomacyDataAccess.adjustRelationshipOrganic(
+        int currentRelationship = CapitalDiplomacyDataAccess.getRelationshipScore(
                 level,
                 first.getCapitalId(),
-                second.getCapitalId(),
-                RELATIONSHIP_BONUS,
-                "Trade exchange completed"
+                second.getCapitalId()
         );
+        if (currentRelationship < 270) {
+            CapitalDiplomacyDataAccess.adjustRelationship(
+                    level,
+                    first.getCapitalId(),
+                    second.getCapitalId(),
+                    Math.min(RELATIONSHIP_BONUS, 270 - currentRelationship),
+                    "Trade exchange completed",
+                    null
+            );
+        }
         recordTrade(level, first, second, firstExports, secondExports);
     }
 

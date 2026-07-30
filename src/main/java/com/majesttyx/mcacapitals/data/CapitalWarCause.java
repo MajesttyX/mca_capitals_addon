@@ -7,6 +7,8 @@ public enum CapitalWarCause {
     PREVIOUS_AGGRESSION("Previous Aggression", true),
     ALLY_ATTACKED("Ally Attacked", true),
     ASYLUM_DISPUTE("Asylum Dispute", true),
+    SERIOUS_ASYLUM_DISPUTE("Serious Asylum Dispute", true),
+    FOREIGN_STORAGE_RAID("Foreign Storage Raided", true),
     REFUSED_REPARATIONS("Refused Reparations", true),
     HOSTILE_RELATIONS("Entrenched Hostility", true),
     HARMED_CROWN_OFFICIAL("Crown Official Harmed", true),

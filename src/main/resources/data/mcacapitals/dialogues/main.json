@@ -76,6 +76,39 @@
           }
         }
       ]
+    },
+    {
+      "name": "mcacapitals_declare_for_capital",
+      "priority": 994,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_declare_for_capital"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_pay_warrant_fine",
+      "priority": 993,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_pay_warrant_fine"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_surrender_warrant",
+      "priority": 992,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_surrender_warrant"
+          }
+        }
+      ]
     }
   ]
 }

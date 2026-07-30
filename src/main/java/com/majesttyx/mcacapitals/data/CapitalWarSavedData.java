@@ -306,6 +306,8 @@ public final class CapitalWarSavedData extends SavedData {
             case PREVIOUS_AGGRESSION -> 6;
             case ALLY_ATTACKED -> 5;
             case REFUSED_REPARATIONS -> 4;
+            case FOREIGN_STORAGE_RAID -> 4;
+            case SERIOUS_ASYLUM_DISPUTE -> 4;
             case ASYLUM_DISPUTE -> 3;
             case HARMED_CROWN_OFFICIAL -> 2;
             case HOSTILE_RELATIONS -> 1;

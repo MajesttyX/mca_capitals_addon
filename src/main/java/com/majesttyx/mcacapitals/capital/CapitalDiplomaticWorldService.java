@@ -264,7 +264,7 @@ final class CapitalDiplomaticWorldService {
                             target.getCapitalId()
                     );
 
-            if (score <= -40
+            if (score <= -120
                     && CapitalDiplomaticAuthorityService
                     .getPlayerDecisionMaker(
                             level,
@@ -368,6 +368,9 @@ final class CapitalDiplomaticWorldService {
 
             for (DiplomaticProposalType type :
                     DiplomaticProposalType.values()) {
+                if (type != DiplomaticProposalType.TRUCE && score < 30) {
+                    continue;
+                }
                 if (type == DiplomaticProposalType.TRUCE
                         && score < -74) {
                     continue;

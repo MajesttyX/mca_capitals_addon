@@ -6,6 +6,7 @@ import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
 import com.majesttyx.mcacapitals.data.DiplomaticProposal;
 import com.majesttyx.mcacapitals.data.DiplomaticProposalType;
 import com.majesttyx.mcacapitals.data.DiplomaticProposalStatus;
+import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -250,6 +251,14 @@ final class CapitalDiplomaticProposalResolutionService {
                         score - requiredScore
                 )
         );
+        acceptanceChance = Math.min(
+                100,
+                acceptanceChance + personalCourtAcceptanceBonus(
+                        level,
+                        proposal,
+                        target
+                )
+        );
 
         if (CapitalWarDataAccess.hasActiveUnjustPenalty(
                 level,
@@ -282,6 +291,47 @@ final class CapitalDiplomaticProposalResolutionService {
                     target
             );
         }
+    }
+
+    private static int personalCourtAcceptanceBonus(
+            ServerLevel level,
+            DiplomaticProposal proposal,
+            CapitalRecord target
+    ) {
+        if (level == null
+                || proposal == null
+                || target == null
+                || proposal.getSourceSovereignId() == null) {
+            return 0;
+        }
+
+        UUID playerId = proposal.getSourceSovereignId();
+        int bonus = 0;
+        if (target.getSovereign() != null) {
+            int hearts = MCAIntegrationBridge.getHeartsWithPlayer(
+                    level,
+                    target.getSovereign(),
+                    playerId
+            );
+            if (hearts >= 200) {
+                bonus += 20;
+            } else if (hearts >= 100) {
+                bonus += 10;
+            }
+        }
+        if (target.getHand() != null) {
+            int hearts = MCAIntegrationBridge.getHeartsWithPlayer(
+                    level,
+                    target.getHand(),
+                    playerId
+            );
+            if (hearts >= 200) {
+                bonus += 10;
+            } else if (hearts >= 100) {
+                bonus += 5;
+            }
+        }
+        return bonus;
     }
 
     static void notifySource(

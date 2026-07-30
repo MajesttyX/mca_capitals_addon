@@ -116,6 +116,17 @@ public final class CapitalWarSettlementService {
                 attackerWon ? -60 : -70
         );
 
+        if (reparations.successful()) {
+            CapitalDiplomacyDataAccess.adjustRelationship(
+                    level,
+                    winner.getCapitalId(),
+                    loser.getCapitalId(),
+                    10,
+                    "Valid reparations paid",
+                    loser.getCapitalId()
+            );
+        }
+
         CapitalWarDataAccess.setCampaignRecovery(
                 level,
                 winner.getCapitalId(),

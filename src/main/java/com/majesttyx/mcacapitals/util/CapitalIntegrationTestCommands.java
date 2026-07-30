@@ -30,7 +30,7 @@ public final class CapitalIntegrationTestCommands {
             48000L;
 
     private static final long TRADE_INTERVAL_TICKS =
-            96000L;
+            48000L;
 
     private CapitalIntegrationTestCommands() {
     }
@@ -778,10 +778,10 @@ public final class CapitalIntegrationTestCommands {
             int score =
                     Integer.parseInt(rawScore);
 
-            if (score < -100 || score > 100) {
+            if (score < -300 || score > 300) {
                 source.sendFailure(
                         Component.literal(
-                                "Relationship score must be between -100 and 100."
+                                "Relationship score must be between -300 and 300."
                         )
                 );
 
@@ -814,7 +814,7 @@ public final class CapitalIntegrationTestCommands {
 
         source.sendFailure(
                 Component.literal(
-                        "State must be peace, non_aggression_pact, alliance, truce, or war."
+                        "State must be peace, non-aggression pact, alliance, truce, or war."
                 )
         );
 

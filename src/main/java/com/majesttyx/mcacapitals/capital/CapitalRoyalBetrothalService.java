@@ -561,7 +561,7 @@ public final class CapitalRoyalBetrothalService {
                 level,
                 origin.getCapitalId(),
                 destination.getCapitalId(),
-                10,
+                25,
                 "Royal marriage completed",
                 destination.getCapitalId()
         );

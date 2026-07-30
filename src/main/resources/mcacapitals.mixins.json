@@ -33,7 +33,11 @@
     "RankCriterionSuppressionMixin",
     "CapitalSuccessionServiceInterregnumMixin",
     "CapitalPopulationScannerInterregnumMixin",
-    "CapitalTitleResolverInterregnumMixin"
+    "CapitalTitleResolverInterregnumMixin",
+    "InteractionDialogueInitMessageMixin",
+    "AbstractContainerMenuForeignStorageMixin",
+    "ServerPlayerGameModeForeignStorageMixin",
+    "HopperBlockEntityForeignStorageMixin"
   ],
   "client": [
     "InteractScreenBetrothalMixin",

@@ -87,7 +87,7 @@ public final class CapitalGiftAppraisalService {
 
         if (rawValue <= -20) {
             return new GiftAppraisal(
-                    -15,
+                    -25,
                     "Grave insult",
                     rawValue
             );
@@ -95,7 +95,7 @@ public final class CapitalGiftAppraisalService {
 
         if (rawValue <= -8) {
             return new GiftAppraisal(
-                    -8,
+                    -15,
                     "Offensive or threatening",
                     rawValue
             );
@@ -103,7 +103,7 @@ public final class CapitalGiftAppraisalService {
 
         if (rawValue < 0) {
             return new GiftAppraisal(
-                    -3,
+                    -5,
                     "Disappointing",
                     rawValue
             );
@@ -119,7 +119,7 @@ public final class CapitalGiftAppraisalService {
 
         if (rawValue < 35) {
             return new GiftAppraisal(
-                    3,
+                    5,
                     "Respectable",
                     rawValue
             );
@@ -127,14 +127,14 @@ public final class CapitalGiftAppraisalService {
 
         if (rawValue < 90) {
             return new GiftAppraisal(
-                    6,
+                    10,
                     "Generous",
                     rawValue
             );
         }
 
         return new GiftAppraisal(
-                10,
+                15,
                 "Exceptional",
                 rawValue
         );

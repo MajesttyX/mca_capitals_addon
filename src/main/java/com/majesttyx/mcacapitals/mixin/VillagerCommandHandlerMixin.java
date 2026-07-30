@@ -5,6 +5,8 @@ import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticGiftService;
 import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalForeignAffairsService;
+import com.majesttyx.mcacapitals.capital.CapitalPlayerWarrantDialogueService;
+import com.majesttyx.mcacapitals.capital.CapitalSovereignDeclarationPromptService;
 import com.majesttyx.mcacapitals.dialogue.CapitalPetitionService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -58,7 +60,19 @@ public class VillagerCommandHandlerMixin {
 
         boolean handled;
 
-        if (CapitalCrownJusticeService.DIALOGUE_COMMAND.equals(command)) {
+        if (CapitalSovereignDeclarationPromptService.handleCommand(
+                player,
+                entity,
+                command
+        )) {
+            handled = true;
+        } else if (CapitalPlayerWarrantDialogueService.handleCommand(
+                player,
+                entity,
+                command
+        )) {
+            handled = true;
+        } else if (CapitalCrownJusticeService.DIALOGUE_COMMAND.equals(command)) {
             handled = CapitalCrownJusticeService.openReview(
                     player,
                     entity.getUUID()

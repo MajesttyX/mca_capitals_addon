@@ -94,8 +94,8 @@ public final class CapitalRelationRecord {
     ) {
         return adjustScoreWithin(
                 amount,
-                -100,
-                100,
+                -300,
+                300,
                 reason,
                 gameDay,
                 initiatingCapitalId
@@ -110,8 +110,8 @@ public final class CapitalRelationRecord {
             long gameDay,
             UUID initiatingCapitalId
     ) {
-        int lowerBound = Math.max(-100, minimum);
-        int upperBound = Math.min(100, maximum);
+        int lowerBound = Math.max(-300, minimum);
+        int upperBound = Math.min(300, maximum);
 
         if (lowerBound > upperBound) {
             return 0;
@@ -269,8 +269,8 @@ public final class CapitalRelationRecord {
 
     private static int clampScore(int score) {
         return Math.max(
-                -100,
-                Math.min(100, score)
+                -300,
+                Math.min(300, score)
         );
     }
 }

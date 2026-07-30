@@ -5,6 +5,8 @@ import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticGiftService;
 import com.majesttyx.mcacapitals.capital.CapitalForeignAffairsService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
+import com.majesttyx.mcacapitals.capital.CapitalPlayerWarrantDialogueService;
+import com.majesttyx.mcacapitals.capital.CapitalSovereignDeclarationPromptService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
@@ -56,6 +58,15 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
     private static final String MANAGE_DIPLOMACY_ANSWER =
             "mcacapitals_manage_diplomacy";
 
+    private static final String DECLARE_FOR_CAPITAL_ANSWER =
+            "mcacapitals_declare_for_capital";
+
+    private static final String PAY_WARRANT_FINE_ANSWER =
+            "mcacapitals_pay_warrant_fine";
+
+    private static final String SURRENDER_WARRANT_ANSWER =
+            "mcacapitals_surrender_warrant";
+
     @Inject(
             method = "getValidAnswers(Lnet/minecraft/server/level/ServerPlayer;Lnet/conczin/mca/entity/VillagerEntityMCA;)Ljava/util/List;",
             at = @At("RETURN"),
@@ -82,7 +93,10 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
                         || currentAnswers.contains(REVIEW_CROWN_JUSTICE_ANSWER)
                         || currentAnswers.contains(ASK_FOREIGN_AFFAIRS_ANSWER)
                         || currentAnswers.contains(SEND_GIFT_ANSWER)
-                        || currentAnswers.contains(MANAGE_DIPLOMACY_ANSWER);
+                        || currentAnswers.contains(MANAGE_DIPLOMACY_ANSWER)
+                        || currentAnswers.contains(DECLARE_FOR_CAPITAL_ANSWER)
+                        || currentAnswers.contains(PAY_WARRANT_FINE_ANSWER)
+                        || currentAnswers.contains(SURRENDER_WARRANT_ANSWER);
 
         if (!hasAnyManagedAnswer) {
             return;
@@ -134,6 +148,21 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             filtered.remove(MANAGE_DIPLOMACY_ANSWER);
         }
 
+        if (!CapitalSovereignDeclarationPromptService.canShowDeclarationAnswer(
+                player,
+                villager
+        )) {
+            filtered.remove(DECLARE_FOR_CAPITAL_ANSWER);
+        }
+
+        if (!CapitalPlayerWarrantDialogueService.canShowPayFine(player, villager)) {
+            filtered.remove(PAY_WARRANT_FINE_ANSWER);
+        }
+
+        if (!CapitalPlayerWarrantDialogueService.canShowSurrender(player, villager)) {
+            filtered.remove(SURRENDER_WARRANT_ANSWER);
+        }
+
         cir.setReturnValue(filtered);
     }
 
@@ -151,6 +180,9 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
         filtered.remove(ASK_FOREIGN_AFFAIRS_ANSWER);
         filtered.remove(SEND_GIFT_ANSWER);
         filtered.remove(MANAGE_DIPLOMACY_ANSWER);
+        filtered.remove(DECLARE_FOR_CAPITAL_ANSWER);
+        filtered.remove(PAY_WARRANT_FINE_ANSWER);
+        filtered.remove(SURRENDER_WARRANT_ANSWER);
 
         return filtered;
     }

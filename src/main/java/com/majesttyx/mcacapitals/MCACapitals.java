@@ -5,6 +5,7 @@ import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementProcessor;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticShipmentProcessor;
 import com.majesttyx.mcacapitals.capital.CapitalExileDiscoveryHandler;
 import com.majesttyx.mcacapitals.capital.CapitalPopulationScanner;
+import com.majesttyx.mcacapitals.capital.CapitalPlayerLegalHandler;
 import com.majesttyx.mcacapitals.capital.CapitalPrisonerHandler;
 import com.majesttyx.mcacapitals.capital.CapitalTradeExchangeProcessor;
 import com.majesttyx.mcacapitals.config.MCACapitalsConfig;
@@ -88,6 +89,10 @@ public class MCACapitals {
 
         NeoForge.EVENT_BUS.register(
                 new CapitalPrisonerHandler()
+        );
+
+        NeoForge.EVENT_BUS.register(
+                new CapitalPlayerLegalHandler()
         );
 
         NeoForge.EVENT_BUS.register(

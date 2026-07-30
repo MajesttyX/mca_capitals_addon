@@ -9,31 +9,31 @@ public enum DiplomaticProposalType {
             "Non-Aggression Pact",
             CapitalDiplomaticState.NON_AGGRESSION_PACT,
             10,
-            5
+            10
     ),
     ALLIANCE(
             "Alliance",
             CapitalDiplomaticState.ALLIANCE,
             40,
-            10
+            25
     ),
     TRUCE(
             "Truce",
             CapitalDiplomaticState.TRUCE,
             -100,
-            5
+            10
     ),
     TRADE_AGREEMENT(
             "Trade Agreement",
             null,
             10,
-            5
+            10
     ),
     ROYAL_BETROTHAL(
             "Royal Betrothal",
             null,
             20,
-            5
+            10
     );
 
     private final String displayName;
