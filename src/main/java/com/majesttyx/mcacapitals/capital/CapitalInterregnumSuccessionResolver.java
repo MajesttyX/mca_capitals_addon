@@ -59,7 +59,8 @@ final class CapitalInterregnumSuccessionResolver {
         UUID successor = findSuccessor(
                 level,
                 capital,
-                residents
+                residents,
+                interregnum
         );
 
         if (successor == null) {
@@ -234,7 +235,8 @@ final class CapitalInterregnumSuccessionResolver {
         UUID nextHeir = findNextHeirAfterSuccession(
                 level,
                 capital,
-                residents
+                residents,
+                interregnum
         );
 
         capital.setHeir(nextHeir);
@@ -290,14 +292,16 @@ final class CapitalInterregnumSuccessionResolver {
     private static UUID findSuccessor(
             ServerLevel level,
             CapitalRecord capital,
-            Set<UUID> residents
+            Set<UUID> residents,
+            CapitalInterregnumRecord interregnum
     ) {
         UUID heir = capital.getHeir();
 
         if (isValidSuccessionHeir(
                 level,
                 capital,
-                heir
+                heir,
+                interregnum
         )) {
             return heir;
         }
@@ -306,14 +310,21 @@ final class CapitalInterregnumSuccessionResolver {
             if (residents.contains(id)
                     && isValidSuccessionCandidate(
                     level,
-                    id
+                    capital,
+                    id,
+                    interregnum
             )) {
                 return id;
             }
         }
 
         for (UUID id : orderedRoyalSuccessors(capital)) {
-            if (isValidSuccessionCandidate(level, id)) {
+            if (isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
                 return id;
             }
         }
@@ -322,14 +333,21 @@ final class CapitalInterregnumSuccessionResolver {
             if (residents.contains(id)
                     && isValidSuccessionCandidate(
                     level,
-                    id
+                    capital,
+                    id,
+                    interregnum
             )) {
                 return id;
             }
         }
 
         for (UUID id : capital.getDukes()) {
-            if (isValidSuccessionCandidate(level, id)) {
+            if (isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
                 return id;
             }
         }
@@ -338,14 +356,21 @@ final class CapitalInterregnumSuccessionResolver {
             if (residents.contains(id)
                     && isValidSuccessionCandidate(
                     level,
-                    id
+                    capital,
+                    id,
+                    interregnum
             )) {
                 return id;
             }
         }
 
         for (UUID id : capital.getLords()) {
-            if (isValidSuccessionCandidate(level, id)) {
+            if (isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
                 return id;
             }
         }
@@ -354,14 +379,21 @@ final class CapitalInterregnumSuccessionResolver {
             if (residents.contains(id)
                     && isValidSuccessionCandidate(
                     level,
-                    id
+                    capital,
+                    id,
+                    interregnum
             )) {
                 return id;
             }
         }
 
         for (UUID id : capital.getKnights()) {
-            if (isValidSuccessionCandidate(level, id)) {
+            if (isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
                 return id;
             }
         }
@@ -372,7 +404,8 @@ final class CapitalInterregnumSuccessionResolver {
     private static UUID findNextHeirAfterSuccession(
             ServerLevel level,
             CapitalRecord capital,
-            Set<UUID> residents
+            Set<UUID> residents,
+            CapitalInterregnumRecord interregnum
     ) {
         for (UUID id : orderedRoyalSuccessors(capital)) {
             if (id == null
@@ -384,7 +417,9 @@ final class CapitalInterregnumSuccessionResolver {
             if (residents.contains(id)
                     && isValidSuccessionCandidate(
                     level,
-                    id
+                    capital,
+                    id,
+                    interregnum
             )) {
                 return id;
             }
@@ -397,7 +432,12 @@ final class CapitalInterregnumSuccessionResolver {
                 continue;
             }
 
-            if (isValidSuccessionCandidate(level, id)) {
+            if (isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
                 return id;
             }
         }
@@ -493,7 +533,8 @@ final class CapitalInterregnumSuccessionResolver {
     private static boolean isValidSuccessionHeir(
             ServerLevel level,
             CapitalRecord capital,
-            UUID heir
+            UUID heir,
+            CapitalInterregnumRecord interregnum
     ) {
         if (heir == null
                 || capital.isDisinheritedRoyalChild(heir)) {
@@ -504,7 +545,9 @@ final class CapitalInterregnumSuccessionResolver {
                 == CapitalRecord.HeirMode.MANUAL) {
             return isValidSuccessionCandidate(
                     level,
-                    heir
+                    capital,
+                    heir,
+                    interregnum
             );
         }
 
@@ -512,15 +555,26 @@ final class CapitalInterregnumSuccessionResolver {
                 || capital.isLegitimizedRoyalChild(heir))
                 && isValidSuccessionCandidate(
                 level,
-                heir
+                capital,
+                heir,
+                interregnum
         );
     }
 
     private static boolean isValidSuccessionCandidate(
             ServerLevel level,
-            UUID entityId
+            CapitalRecord capital,
+            UUID entityId,
+            CapitalInterregnumRecord interregnum
     ) {
         return entityId != null
+                && capital != null
+                && !capital.isDisinheritedRoyalChild(entityId)
+                && (interregnum == null
+                || !interregnum.wasDeposition()
+                || !entityId.equals(
+                interregnum.getDeceasedSovereignId()
+        ))
                 && MCAIntegrationBridge
                 .hasPersistentFamilyNode(
                         level,

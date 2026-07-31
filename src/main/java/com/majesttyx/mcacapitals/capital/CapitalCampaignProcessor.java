@@ -9,6 +9,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
+import java.util.List;
+
 @EventBusSubscriber(modid = MCACapitals.MODID)
 public final class CapitalCampaignProcessor {
 
@@ -32,9 +34,21 @@ public final class CapitalCampaignProcessor {
             return;
         }
 
-        for (CapitalCampaignRecord campaign :
+        CapitalCampaignReturnService
+                .restoreWaitingAttackers(level);
+
+        List<CapitalCampaignRecord> campaigns =
                 CapitalCampaignDataAccess
-                        .getActiveCampaigns(level)) {
+                        .getActiveCampaigns(level);
+
+        CapitalCampaignCivilianResponseService
+                .tickLevel(
+                        level,
+                        campaigns
+                );
+
+        for (CapitalCampaignRecord campaign :
+                campaigns) {
             CapitalRecord attackingCapital =
                     CapitalManager.getCapital(
                             campaign

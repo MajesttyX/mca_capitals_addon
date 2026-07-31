@@ -2,6 +2,8 @@ package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalWartimeSuccessionService;
+import com.majesttyx.mcacapitals.data.CapitalInterregnumRecord;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.MCAReputationBridge;
@@ -133,6 +135,16 @@ final class CapitalPetitionSovereignActions {
             return;
         }
 
+        CapitalInterregnumRecord interregnum =
+                CapitalWartimeSuccessionService.getRecord(
+                        level,
+                        capital.getCapitalId()
+                );
+
+        boolean depositionInterregnum =
+                interregnum != null
+                        && interregnum.wasDeposition();
+
         boolean playerIsCommander = PlayerCapitalTitleService.isCommander(level, capital, player.getUUID());
         boolean commanderAligned = CapitalPetitionRequirements.hasCommanderAllegiance(
                 level,
@@ -141,7 +153,9 @@ final class CapitalPetitionSovereignActions {
                 commanderHearts
         );
 
-        if (!playerIsCommander && !commanderAligned) {
+        if (!depositionInterregnum
+                && !playerIsCommander
+                && !commanderAligned) {
             CapitalPetitionOutcomes.applyCapitalPenalty(level, residents, player.getUUID(), -50);
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_COMMANDER_SUPPORT);
             return;

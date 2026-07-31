@@ -1,6 +1,9 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.capital.CapitalCampaignService;
+import com.majesttyx.mcacapitals.capital.CapitalManager;
+import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalWarGoal;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -57,6 +60,20 @@ public final class CapitalCampaignCommands {
                                                         )
                                         )
                         )
+                        .then(
+                                Commands.literal("clearcooldown")
+                                        .requires(source ->
+                                                source.hasPermission(2)
+                                        )
+                                        .then(
+                                                Commands.literal("all")
+                                                        .executes(context ->
+                                                                clearAllCooldowns(
+                                                                        context.getSource()
+                                                                )
+                                                        )
+                                        )
+                        )
         );
     }
 
@@ -100,6 +117,53 @@ public final class CapitalCampaignCommands {
                         targetCapitalId,
                         warGoal
                 );
+    }
+
+    private static int clearAllCooldowns(
+            CommandSourceStack source
+    ) {
+        long currentDay =
+                CapitalWarDataAccess.currentDay(
+                        source.getLevel()
+                );
+
+        int cleared = 0;
+
+        for (CapitalRecord capital :
+                CapitalManager.getAllCapitalRecords()) {
+            if (capital == null
+                    || capital.getCapitalId() == null
+                    || CapitalWarDataAccess
+                    .getCampaignAvailableDay(
+                            source.getLevel(),
+                            capital.getCapitalId()
+                    ) <= currentDay) {
+                continue;
+            }
+
+            CapitalWarDataAccess.setCampaignRecovery(
+                    source.getLevel(),
+                    capital.getCapitalId(),
+                    0L
+            );
+
+            cleared++;
+        }
+
+        int result = cleared;
+
+        source.sendSuccess(
+                () -> Component.literal(
+                        "Cleared campaign recovery cooldowns for "
+                                + result
+                                + (result == 1
+                                ? " capital."
+                                : " capitals.")
+                ),
+                true
+        );
+
+        return 1;
     }
 
     private static CapitalWarGoal parseWarGoal(

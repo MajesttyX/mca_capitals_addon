@@ -12,6 +12,11 @@ import java.util.UUID;
 public class CapitalNameService {
 
     private static final String[] KNOWN_TITLES = new String[] {
+            "Deposed Queen",
+            "Deposed King",
+            "Late Queen",
+            "Late King",
+            "Regent",
             "High Queen",
             "High King",
             "Dowager Queen",

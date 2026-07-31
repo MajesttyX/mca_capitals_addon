@@ -47,6 +47,16 @@ public final class CapitalCampaignCombatDamageHandler {
             return;
         }
 
+        if (!CapitalCampaignCombatService
+                .canApplyCampaignDamage(
+                        level,
+                        attacker,
+                        victim
+                )) {
+            event.setNewDamage(0.0F);
+            return;
+        }
+
         event.setNewDamage(
                 Math.max(
                         0.0F,

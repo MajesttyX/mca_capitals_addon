@@ -14,6 +14,7 @@ public final class CapitalInterregnumRecord {
     private static final String KEY_DECEASED_SOVEREIGN_FEMALE = "DeceasedSovereignFemale";
     private static final String KEY_FORMER_PLAYER_SOVEREIGN = "FormerPlayerSovereign";
     private static final String KEY_FORMER_PLAYER_SOVEREIGN_ID = "FormerPlayerSovereignId";
+    private static final String KEY_DEPOSITION = "Deposition";
 
     private final UUID capitalId;
     private final UUID deceasedSovereignId;
@@ -23,6 +24,7 @@ public final class CapitalInterregnumRecord {
     private final boolean deceasedSovereignFemale;
     private final boolean formerPlayerSovereign;
     private final UUID formerPlayerSovereignId;
+    private final boolean deposition;
 
     public CapitalInterregnumRecord(
             UUID capitalId,
@@ -34,9 +36,33 @@ public final class CapitalInterregnumRecord {
             boolean formerPlayerSovereign,
             UUID formerPlayerSovereignId
     ) {
+        this(
+                capitalId,
+                deceasedSovereignId,
+                deceasedSovereignName,
+                startedAt,
+                resolveAfter,
+                deceasedSovereignFemale,
+                formerPlayerSovereign,
+                formerPlayerSovereignId,
+                false
+        );
+    }
+
+    public CapitalInterregnumRecord(
+            UUID capitalId,
+            UUID deceasedSovereignId,
+            String deceasedSovereignName,
+            long startedAt,
+            long resolveAfter,
+            boolean deceasedSovereignFemale,
+            boolean formerPlayerSovereign,
+            UUID formerPlayerSovereignId,
+            boolean deposition
+    ) {
         if (capitalId == null || deceasedSovereignId == null) {
             throw new IllegalArgumentException(
-                    "Capital and deceased sovereign IDs cannot be null."
+                    "Capital and former sovereign IDs cannot be null."
             );
         }
 
@@ -52,6 +78,7 @@ public final class CapitalInterregnumRecord {
         this.deceasedSovereignFemale = deceasedSovereignFemale;
         this.formerPlayerSovereign = formerPlayerSovereign;
         this.formerPlayerSovereignId = formerPlayerSovereignId;
+        this.deposition = deposition;
     }
 
     public UUID getCapitalId() {
@@ -86,6 +113,10 @@ public final class CapitalInterregnumRecord {
         return formerPlayerSovereignId;
     }
 
+    public boolean wasDeposition() {
+        return deposition;
+    }
+
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
 
@@ -108,6 +139,7 @@ public final class CapitalInterregnumRecord {
                 KEY_FORMER_PLAYER_SOVEREIGN,
                 formerPlayerSovereign
         );
+        tag.putBoolean(KEY_DEPOSITION, deposition);
 
         if (formerPlayerSovereignId != null) {
             tag.putUUID(
@@ -141,7 +173,8 @@ public final class CapitalInterregnumRecord {
                 tag.getLong(KEY_RESOLVE_AFTER),
                 tag.getBoolean(KEY_DECEASED_SOVEREIGN_FEMALE),
                 tag.getBoolean(KEY_FORMER_PLAYER_SOVEREIGN),
-                formerPlayerSovereignId
+                formerPlayerSovereignId,
+                tag.getBoolean(KEY_DEPOSITION)
         );
     }
 }

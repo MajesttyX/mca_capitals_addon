@@ -5,8 +5,10 @@ import com.majesttyx.mcacapitals.data.CapitalCampaignPhase;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.conczin.mca.entity.VillagerEntityMCA;
-import net.conczin.mca.entity.ai.MoveState;
 import net.conczin.mca.entity.ai.MemoryModuleTypeMCA;
+import net.conczin.mca.entity.ai.MoveState;
+import net.conczin.mca.server.world.data.Village;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,9 +18,14 @@ import net.minecraft.world.entity.ai.memory.MemoryModuleType;
 import net.minecraft.world.entity.ai.memory.WalkTarget;
 import net.minecraft.world.entity.schedule.Activity;
 import net.minecraft.world.item.ProjectileWeaponItem;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public final class CapitalCampaignCombatService {
@@ -28,7 +35,12 @@ public final class CapitalCampaignCombatService {
 
     private static final float MELEE_SPEED = 0.6F;
     private static final float RANGED_SPEED = 0.6F;
+    private static final float RETURN_SPEED = 0.6F;
     private static final long TARGET_MEMORY_TICKS = 80L;
+    private static final long OUTSIDE_TELEPORT_TICKS = 20L * 5L;
+
+    private static final Map<UUID, Long> OUTSIDE_SINCE =
+            new HashMap<>();
 
     private CapitalCampaignCombatService() {
     }
@@ -48,51 +60,46 @@ public final class CapitalCampaignCombatService {
             UUID firstId,
             UUID secondId
     ) {
+        return findOpposingCampaign(
+                level,
+                firstId,
+                secondId
+        ) != null;
+    }
+
+    public static boolean canApplyCampaignDamage(
+            ServerLevel level,
+            LivingEntity attacker,
+            LivingEntity victim
+    ) {
         if (level == null
-                || firstId == null
-                || secondId == null
-                || firstId.equals(secondId)) {
+                || attacker == null
+                || victim == null) {
             return false;
         }
 
-        for (CapitalCampaignRecord campaign :
-                CapitalCampaignDataAccess
-                        .getActiveCampaigns(level)) {
-            if (campaign == null
-                    || campaign.getPhase()
-                    != CapitalCampaignPhase.ACTIVE) {
-                continue;
-            }
+        CapitalCampaignRecord campaign =
+                findOpposingCampaign(
+                        level,
+                        attacker.getUUID(),
+                        victim.getUUID()
+                );
 
-            boolean firstAttacker =
-                    campaign.containsAttacker(firstId);
-
-            boolean secondAttacker =
-                    campaign.containsAttacker(secondId);
-
-            if (firstAttacker == secondAttacker) {
-                continue;
-            }
-
-            UUID defenderId =
-                    firstAttacker
-                            ? secondId
-                            : firstId;
-
-            if (campaign.containsDefender(defenderId)) {
-                return true;
-            }
-
-            if (!campaign.isCrownRallyPending()
-                    && isCrownDefender(
-                    campaign,
-                    defenderId
-            )) {
-                return true;
-            }
+        if (campaign == null
+                || campaign.isFieldDefeatResolutionPending()
+                || campaign.isCrownRallyPending()) {
+            return false;
         }
 
-        return false;
+        Village defendingVillage =
+                getDefendingVillage(
+                        level,
+                        campaign
+                );
+
+        return defendingVillage != null
+                && defendingVillage.isWithinBorder(attacker)
+                && defendingVillage.isWithinBorder(victim);
     }
 
     public static void enforceCombatState(
@@ -113,6 +120,9 @@ public final class CapitalCampaignCombatService {
                 );
 
         if (campaign == null) {
+            OUTSIDE_SINCE.remove(
+                    villager.getUUID()
+            );
             return;
         }
 
@@ -130,6 +140,35 @@ public final class CapitalCampaignCombatService {
         erasePanicState(
                 villager,
                 brain
+        );
+
+        Village defendingVillage =
+                getDefendingVillage(
+                        level,
+                        campaign
+                );
+
+        if (defendingVillage == null) {
+            clearCombatIntent(
+                    villager,
+                    brain
+            );
+            return;
+        }
+
+        if (!defendingVillage
+                .isWithinBorder(villager)) {
+            returnToBattleBounds(
+                    level,
+                    defendingVillage,
+                    villager,
+                    brain
+            );
+            return;
+        }
+
+        OUTSIDE_SINCE.remove(
+                villager.getUUID()
         );
 
         if (campaign.isFieldDefeatResolutionPending()
@@ -150,6 +189,7 @@ public final class CapitalCampaignCombatService {
                 resolveCampaignTarget(
                         level,
                         campaign,
+                        defendingVillage,
                         villager,
                         brain
                 );
@@ -168,10 +208,9 @@ public final class CapitalCampaignCombatService {
                         .getItem()
                         instanceof ProjectileWeaponItem;
 
-        float speed =
-                ranged
-                        ? RANGED_SPEED
-                        : MELEE_SPEED;
+        float speed = ranged
+                ? RANGED_SPEED
+                : MELEE_SPEED;
 
         villager.setNoAi(false);
         villager.setAggressive(true);
@@ -250,6 +289,57 @@ public final class CapitalCampaignCombatService {
         return null;
     }
 
+    private static CapitalCampaignRecord findOpposingCampaign(
+            ServerLevel level,
+            UUID firstId,
+            UUID secondId
+    ) {
+        if (level == null
+                || firstId == null
+                || secondId == null
+                || firstId.equals(secondId)) {
+            return null;
+        }
+
+        for (CapitalCampaignRecord campaign :
+                CapitalCampaignDataAccess
+                        .getActiveCampaigns(level)) {
+            if (campaign == null
+                    || campaign.getPhase()
+                    != CapitalCampaignPhase.ACTIVE) {
+                continue;
+            }
+
+            boolean firstAttacker =
+                    campaign.containsAttacker(firstId);
+
+            boolean secondAttacker =
+                    campaign.containsAttacker(secondId);
+
+            if (firstAttacker == secondAttacker) {
+                continue;
+            }
+
+            UUID defenderId = firstAttacker
+                    ? secondId
+                    : firstId;
+
+            if (campaign.containsDefender(defenderId)) {
+                return campaign;
+            }
+
+            if (!campaign.isCrownRallyPending()
+                    && isCrownDefender(
+                    campaign,
+                    defenderId
+            )) {
+                return campaign;
+            }
+        }
+
+        return null;
+    }
+
     private static boolean isCrownDefender(
             CapitalCampaignRecord campaign,
             UUID villagerId
@@ -277,6 +367,24 @@ public final class CapitalCampaignCombatService {
                 || villagerId.equals(
                 defendingCapital.getSovereign()
         );
+    }
+
+    private static Village getDefendingVillage(
+            ServerLevel level,
+            CapitalCampaignRecord campaign
+    ) {
+        CapitalRecord defendingCapital =
+                CapitalManager.getCapital(
+                        campaign.getDefendingCapitalId()
+                );
+
+        return defendingCapital == null
+                ? null
+                : CapitalCampaignEligibilityService
+                .getVillage(
+                        level,
+                        defendingCapital
+                );
     }
 
     private static void erasePanicState(
@@ -343,9 +451,156 @@ public final class CapitalCampaignCombatService {
         );
     }
 
+    private static void returnToBattleBounds(
+            ServerLevel level,
+            Village defendingVillage,
+            VillagerEntityMCA villager,
+            Brain<VillagerEntityMCA> brain
+    ) {
+        clearCombatIntent(
+                villager,
+                brain
+        );
+
+        brain.setActiveActivityIfPossible(
+                Activity.IDLE
+        );
+
+        BlockPos destination =
+                findSafeInteriorPosition(
+                        level,
+                        defendingVillage,
+                        villager.blockPosition()
+                );
+
+        long now = level.getGameTime();
+        long outsideSince = OUTSIDE_SINCE
+                .computeIfAbsent(
+                        villager.getUUID(),
+                        ignored -> now
+                );
+
+        if (now - outsideSince
+                >= OUTSIDE_TELEPORT_TICKS) {
+            villager.setDeltaMovement(Vec3.ZERO);
+            villager.teleportTo(
+                    destination.getX() + 0.5D,
+                    destination.getY(),
+                    destination.getZ() + 0.5D
+            );
+            villager.refreshDimensions();
+            OUTSIDE_SINCE.remove(
+                    villager.getUUID()
+            );
+            return;
+        }
+
+        brain.setMemory(
+                MemoryModuleType.WALK_TARGET,
+                new WalkTarget(
+                        destination,
+                        RETURN_SPEED,
+                        1
+                )
+        );
+
+        villager.getNavigation().moveTo(
+                destination.getX() + 0.5D,
+                destination.getY(),
+                destination.getZ() + 0.5D,
+                RETURN_SPEED
+        );
+    }
+
+    private static BlockPos findSafeInteriorPosition(
+            ServerLevel level,
+            Village village,
+            BlockPos current
+    ) {
+        BlockPos center =
+                new BlockPos(village.getCenter());
+
+        BoundingBox box = village.getBox();
+
+        if (box == null) {
+            return surfacePosition(
+                    level,
+                    center.getX(),
+                    center.getZ()
+            );
+        }
+
+        int minX = box.minX() + 3;
+        int maxX = box.maxX() - 3;
+        int minZ = box.minZ() + 3;
+        int maxZ = box.maxZ() - 3;
+
+        if (minX > maxX) {
+            minX = maxX = center.getX();
+        }
+
+        if (minZ > maxZ) {
+            minZ = maxZ = center.getZ();
+        }
+
+        int x = clamp(
+                current.getX(),
+                minX,
+                maxX
+        );
+        int z = clamp(
+                current.getZ(),
+                minZ,
+                maxZ
+        );
+
+        BlockPos candidate = surfacePosition(
+                level,
+                x,
+                z
+        );
+
+        if (village.isWithinBorder(candidate, 0)) {
+            return candidate;
+        }
+
+        return surfacePosition(
+                level,
+                center.getX(),
+                center.getZ()
+        );
+    }
+
+    private static BlockPos surfacePosition(
+            ServerLevel level,
+            int x,
+            int z
+    ) {
+        int y = level.getHeight(
+                Heightmap.Types
+                        .MOTION_BLOCKING_NO_LEAVES,
+                x,
+                z
+        );
+
+        return new BlockPos(x, y, z);
+    }
+
+    private static int clamp(
+            int value,
+            int minimum,
+            int maximum
+    ) {
+        return Math.max(
+                minimum,
+                Math.min(maximum, value)
+        );
+    }
+
     private static LivingEntity resolveCampaignTarget(
             ServerLevel level,
             CapitalCampaignRecord campaign,
+            Village defendingVillage,
             VillagerEntityMCA villager,
             Brain<VillagerEntityMCA> brain
     ) {
@@ -354,6 +609,8 @@ public final class CapitalCampaignCombatService {
 
         if (isValidTarget(
                 level,
+                campaign,
+                defendingVillage,
                 villager,
                 current
         )) {
@@ -367,6 +624,8 @@ public final class CapitalCampaignCombatService {
 
         if (isValidTarget(
                 level,
+                campaign,
+                defendingVillage,
                 villager,
                 memoryTarget
         )) {
@@ -381,6 +640,8 @@ public final class CapitalCampaignCombatService {
 
         if (isValidTarget(
                 level,
+                campaign,
+                defendingVillage,
                 villager,
                 guardMemoryTarget
         )) {
@@ -390,6 +651,7 @@ public final class CapitalCampaignCombatService {
         return findNearestCampaignOpponent(
                 level,
                 campaign,
+                defendingVillage,
                 villager
         );
     }
@@ -397,6 +659,7 @@ public final class CapitalCampaignCombatService {
     private static LivingEntity findNearestCampaignOpponent(
             ServerLevel level,
             CapitalCampaignRecord campaign,
+            Village defendingVillage,
             VillagerEntityMCA villager
     ) {
         List<UUID> candidateIds =
@@ -443,17 +706,18 @@ public final class CapitalCampaignCombatService {
                 Double.MAX_VALUE;
 
         for (UUID candidateId : candidateIds) {
-            Entity entity =
-                    MCAIntegrationBridge
-                            .findLoadedEntityByUuid(
-                                    level,
-                                    candidateId
-                            );
+            Entity entity = MCAIntegrationBridge
+                    .findLoadedEntityByUuid(
+                            level,
+                            candidateId
+                    );
 
             if (!(entity
                     instanceof LivingEntity candidate)
                     || !isValidTarget(
                     level,
+                    campaign,
+                    defendingVillage,
                     villager,
                     candidate
             )) {
@@ -474,6 +738,8 @@ public final class CapitalCampaignCombatService {
 
     private static boolean isValidTarget(
             ServerLevel level,
+            CapitalCampaignRecord campaign,
+            Village defendingVillage,
             VillagerEntityMCA villager,
             LivingEntity target
     ) {
@@ -481,12 +747,14 @@ public final class CapitalCampaignCombatService {
                 && target.isAlive()
                 && !target.isRemoved()
                 && target.level() == level
+                && defendingVillage.isWithinBorder(villager)
+                && defendingVillage.isWithinBorder(target)
                 && villager.distanceToSqr(target)
                 <= CAMPAIGN_TARGET_RANGE_SQR
-                && areOpposingCombatants(
+                && findOpposingCampaign(
                 level,
                 villager.getUUID(),
                 target.getUUID()
-        );
+        ) == campaign;
     }
 }

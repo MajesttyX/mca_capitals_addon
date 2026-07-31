@@ -89,22 +89,19 @@ public abstract class CapitalTitleResolverInterregnumMixin {
                         capital.getCapitalId()
                 );
 
-        if (record == null) {
+        if (record == null
+                || !entityId.equals(
+                record.getDeceasedSovereignId()
+        )) {
             return "";
         }
 
-        if (entityId.equals(
-                record.getDeceasedSovereignId()
-        )) {
-            return record.wasDeceasedSovereignFemale()
-                    ? "Late Queen"
-                    : "Late King";
+        if (record.wasDeposition()) {
+            return "Commoner";
         }
 
-        if (entityId.equals(capital.getHand())) {
-            return "Regent";
-        }
-
-        return "";
+        return record.wasDeceasedSovereignFemale()
+                ? "Queen"
+                : "King";
     }
 }

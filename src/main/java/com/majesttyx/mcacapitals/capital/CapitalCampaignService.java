@@ -473,6 +473,17 @@ public final class CapitalCampaignService {
                             campaign.getAttackingCapitalId()
                     );
 
+            CapitalRecord defendingCapital =
+                    CapitalManager.getCapital(
+                            campaign.getDefendingCapitalId()
+                    );
+
+            CapitalCampaignReturnService.returnDefendersHome(
+                    level,
+                    campaign,
+                    defendingCapital
+            );
+
             CapitalCampaignAssemblyService
                     .releaseSourceTicket(
                             level,
