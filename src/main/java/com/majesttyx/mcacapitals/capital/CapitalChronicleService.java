@@ -13,8 +13,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.WrittenBookContent;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +25,9 @@ public class CapitalChronicleService {
 
     private static final int CHARS_PER_PAGE = 220;
     private static final int MAX_PAGES = 100;
+
+    private static final Map<UUID, HeraldAnnouncement>
+            LAST_HERALD_ANNOUNCEMENTS = new HashMap<>();
 
     private static final Pattern DUCAL_APPOINTMENT = Pattern.compile("^(.*) was elevated to the ducal rank in (.*)\\.$");
     private static final Pattern ROYAL_MARRIAGE = Pattern.compile("^(.*) was married to (.*)\\.$");
@@ -80,11 +86,10 @@ public class CapitalChronicleService {
         }
 
         String normalized = entry.trim();
-        if (hasChronicleEntry(capital, normalized)) {
-            return;
+        if (!hasChronicleEntry(capital, normalized)) {
+            capital.addChronicleEntry(normalized);
         }
 
-        capital.addChronicleEntry(normalized);
         announceThroughHerald(level, capital, normalized);
     }
 
@@ -222,12 +227,41 @@ public class CapitalChronicleService {
             return;
         }
 
+        UUID capitalId = capital.getCapitalId();
+        String normalizedNews = news.trim();
+        long gameTime = level.getGameTime();
+
+        if (capitalId != null) {
+            HeraldAnnouncement previous =
+                    LAST_HERALD_ANNOUNCEMENTS.get(capitalId);
+
+            if (previous != null
+                    && previous.gameTime() == gameTime
+                    && previous.news().equals(normalizedNews)) {
+                return;
+            }
+
+            LAST_HERALD_ANNOUNCEMENTS.put(
+                    capitalId,
+                    new HeraldAnnouncement(
+                            gameTime,
+                            normalizedNews
+                    )
+            );
+        }
+
         String speakerName = CapitalHeraldService.resolveHeraldSpeakerName(level, capital);
         CapitalPlayerNotificationService.notifyPlayersInCapital(
                 level,
                 capital,
-                Component.literal(speakerName + ": " + news.trim())
+                Component.literal(speakerName + ": " + normalizedNews)
         );
+    }
+
+    private record HeraldAnnouncement(
+            long gameTime,
+            String news
+    ) {
     }
 
     public static String toHeraldNews(String entry) {

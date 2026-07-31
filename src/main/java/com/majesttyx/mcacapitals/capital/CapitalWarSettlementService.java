@@ -98,15 +98,30 @@ public final class CapitalWarSettlementService {
 
         boolean deposition = attackerWon
                 && campaign.getWarGoal() == CapitalWarGoal.DEPOSITION;
+        boolean victoriousClaimantAlreadySeized =
+                campaign.getInitiatingPlayerId() != null
+                        && defender.isPlayerSovereign()
+                        && campaign.getInitiatingPlayerId().equals(
+                        defender.getPlayerSovereignId()
+                );
+        boolean depositionStartedNow = false;
+
         if (deposition
                 && defender.getSovereign() != null
                 && campaign.getEndReason()
-                != CapitalCampaignEndReason.DEFENDING_SOVEREIGN_DIED) {
-            CapitalWartimeSuccessionService.beginDepositionInterregnum(
-                    level,
-                    defender,
-                    "under the victorious settlement."
-            );
+                != CapitalCampaignEndReason.DEFENDING_SOVEREIGN_DIED
+                && !victoriousClaimantAlreadySeized
+                && !CapitalWartimeSuccessionService.isInInterregnum(
+                level,
+                defender.getCapitalId()
+        )) {
+            depositionStartedNow =
+                    CapitalWartimeSuccessionService.beginDepositionInterregnum(
+                            level,
+                            defender,
+                            "under the victorious settlement.",
+                            campaign.getInitiatingPlayerId()
+                    );
         }
 
         establishSettlementState(
@@ -161,7 +176,7 @@ public final class CapitalWarSettlementService {
                 loser,
                 reparations,
                 reparationsDue,
-                deposition
+                depositionStartedNow
         );
         recordSettlement(
                 level,
@@ -212,7 +227,7 @@ public final class CapitalWarSettlementService {
             CapitalRecord loser,
             CapitalDiplomaticStorageService.ReparationsResult reparations,
             boolean reparationsDue,
-            boolean deposition
+            boolean depositionStartedNow
     ) {
         String winnerName = CapitalDiplomaticAgreementText.capitalName(
                 level,
@@ -232,7 +247,7 @@ public final class CapitalWarSettlementService {
                 .append(campaign.getWarCause().getDisplayName())
                 .append(". A two-day truce began.");
 
-        if (deposition) {
+        if (depositionStartedNow) {
             text.append(" The defending sovereign was removed and an interregnum began.");
         }
 

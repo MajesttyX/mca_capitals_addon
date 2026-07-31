@@ -129,21 +129,24 @@ final class CapitalPetitionSovereignActions {
             return;
         }
 
-        if (!CapitalPetitionRequirements.hasAdvancement(player, requiredAdvancementId)) {
-            CapitalPetitionOutcomes.applyCapitalPenalty(level, residents, player.getUUID(), -50);
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_ADVANCEMENT);
-            return;
-        }
-
         CapitalInterregnumRecord interregnum =
                 CapitalWartimeSuccessionService.getRecord(
                         level,
                         capital.getCapitalId()
                 );
 
-        boolean depositionInterregnum =
+        boolean victoriousDepositionClaim =
                 interregnum != null
-                        && interregnum.wasDeposition();
+                        && interregnum.mayVictoriousPlayerSeize(
+                        player.getUUID()
+                );
+
+        if (!victoriousDepositionClaim
+                && !CapitalPetitionRequirements.hasAdvancement(player, requiredAdvancementId)) {
+            CapitalPetitionOutcomes.applyCapitalPenalty(level, residents, player.getUUID(), -50);
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_ADVANCEMENT);
+            return;
+        }
 
         boolean playerIsCommander = PlayerCapitalTitleService.isCommander(level, capital, player.getUUID());
         boolean commanderAligned = CapitalPetitionRequirements.hasCommanderAllegiance(
@@ -153,7 +156,7 @@ final class CapitalPetitionSovereignActions {
                 commanderHearts
         );
 
-        if (!depositionInterregnum
+        if (!victoriousDepositionClaim
                 && !playerIsCommander
                 && !commanderAligned) {
             CapitalPetitionOutcomes.applyCapitalPenalty(level, residents, player.getUUID(), -50);

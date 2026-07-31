@@ -12,7 +12,6 @@ import com.majesttyx.mcacapitals.data.CapitalRelationKey;
 import com.majesttyx.mcacapitals.data.CapitalRelationRecord;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
@@ -47,12 +46,6 @@ public final class CapitalWartimeSuccessionService {
                 );
 
         if (existing != null) {
-            existing = normalizeInterregnumRecord(
-                    level,
-                    capital,
-                    existing
-            );
-
             return tickInterregnum(
                     level,
                     capital,
@@ -102,20 +95,9 @@ public final class CapitalWartimeSuccessionService {
             ServerLevel level,
             UUID capitalId
     ) {
-        CapitalInterregnumRecord record =
-                CapitalInterregnumDataAccess.getRecord(
-                        level,
-                        capitalId
-                );
-
-        if (record == null) {
-            return null;
-        }
-
-        return normalizeInterregnumRecord(
+        return CapitalInterregnumDataAccess.getRecord(
                 level,
-                CapitalManager.getCapital(capitalId),
-                record
+                capitalId
         );
     }
 
@@ -184,48 +166,71 @@ public final class CapitalWartimeSuccessionService {
             CapitalRecord capital,
             String reason
     ) {
+        return beginDepositionInterregnum(
+                level,
+                capital,
+                reason,
+                null
+        );
+    }
+
+    public static boolean beginDepositionInterregnum(
+            ServerLevel level,
+            CapitalRecord capital,
+            String reason,
+            UUID victoriousClaimantId
+    ) {
         if (level == null
                 || capital == null
-                || capital.getCapitalId() == null
-                || capital.getSovereign() == null) {
+                || capital.getCapitalId() == null) {
+            return false;
+        }
+
+        CapitalInterregnumRecord existing =
+                CapitalInterregnumDataAccess.getRecord(
+                        level,
+                        capital.getCapitalId()
+                );
+
+        if (existing != null) {
+            return existing.wasDeposition();
+        }
+
+        if (capital.getSovereign() == null) {
             return false;
         }
 
         UUID deposedSovereignId = capital.getSovereign();
-        String deposedName = resolveName(
-                level,
-                deposedSovereignId
-        );
-        boolean deposedFemale = capital.isSovereignFemale();
+        String deposedName = resolveName(level, deposedSovereignId);
         long now = level.getGameTime();
+        CapitalInterregnumRecord record = new CapitalInterregnumRecord(
+                capital.getCapitalId(),
+                deposedSovereignId,
+                deposedName,
+                now,
+                now + MINIMUM_INTERREGNUM_TICKS,
+                capital.isSovereignFemale(),
+                capital.isPlayerSovereign(),
+                capital.getPlayerSovereignId(),
+                true,
+                victoriousClaimantId
+        );
 
-        CapitalInterregnumRecord record =
-                new CapitalInterregnumRecord(
-                        capital.getCapitalId(),
-                        deposedSovereignId,
-                        deposedName,
-                        now,
-                        now + MINIMUM_INTERREGNUM_TICKS,
-                        deposedFemale,
-                        capital.isPlayerSovereign(),
-                        capital.getPlayerSovereignId(),
-                        true
-                );
-
-        if (!CapitalInterregnumDataAccess.begin(
-                level,
-                record
-        )) {
+        if (!CapitalInterregnumDataAccess.begin(level, record)) {
             return false;
         }
 
         capital.setSovereign(null);
-        capital.setSovereignFemale(deposedFemale);
+        capital.setSovereignFemale(false);
+        stripDeposedSovereign(
+                level,
+                capital,
+                deposedSovereignId
+        );
 
         if (record.wasPlayerSovereign()) {
             CapitalSovereignAppointmentService
                     .clearPlayerSovereignState(capital);
-
             if (record.getFormerPlayerSovereignId() != null) {
                 PlayerCapitalTitleService.clear(
                         level,
@@ -235,17 +240,6 @@ public final class CapitalWartimeSuccessionService {
             }
         }
 
-        stripDeposedSovereign(
-                level,
-                capital,
-                deposedSovereignId
-        );
-
-        ensureDepositionHand(
-                level,
-                capital
-        );
-
         String entry = deposedName
                 + " was removed from the throne"
                 + (reason == null || reason.isBlank()
@@ -253,21 +247,9 @@ public final class CapitalWartimeSuccessionService {
                 : " " + reason.trim())
                 + " A wartime interregnum began.";
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                entry
-        );
-
-        CapitalPlayerNotificationService.notifyPlayersInCapital(
-                level,
-                capital,
-                Component.literal(entry)
-        );
-
-        CapitalCourtWatcher.clearFingerprint(
-                capital.getCapitalId()
-        );
+        CapitalChronicleService.addEntry(level, capital, entry);
+        ensureDepositionHand(level, capital, record);
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
         return true;
     }
@@ -294,7 +276,8 @@ public final class CapitalWartimeSuccessionService {
                         capital.isSovereignFemale(),
                         capital.isPlayerSovereign(),
                         capital.getPlayerSovereignId(),
-                        false
+                        false,
+                        null
                 );
 
         if (!CapitalInterregnumDataAccess.begin(
@@ -347,15 +330,6 @@ public final class CapitalWartimeSuccessionService {
                         + " was at war or committed to a campaign. A wartime interregnum began."
         );
 
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        capital,
-                        Component.literal(
-                                deceasedName
-                                        + " has died. The capital has entered a wartime interregnum."
-                        )
-                );
 
         CapitalCourtWatcher.clearFingerprint(
                 capital.getCapitalId()
@@ -375,11 +349,7 @@ public final class CapitalWartimeSuccessionService {
                     capital,
                     record.getDeceasedSovereignId()
             );
-
-            ensureDepositionHand(
-                    level,
-                    capital
-            );
+            ensureDepositionHand(level, capital, record);
         }
 
         UUID currentSovereign = capital.getSovereign();
@@ -461,53 +431,100 @@ public final class CapitalWartimeSuccessionService {
         return true;
     }
 
-    public static boolean ensureDepositionHand(
+
+    private static void stripDeposedSovereign(
             ServerLevel level,
-            CapitalRecord capital
+            CapitalRecord capital,
+            UUID deposedSovereignId
     ) {
         if (level == null
                 || capital == null
-                || capital.getCapitalId() == null) {
-            return false;
+                || deposedSovereignId == null) {
+            return;
         }
 
-        CapitalInterregnumRecord record =
-                CapitalInterregnumDataAccess.getRecord(
-                        level,
-                        capital.getCapitalId()
-                );
+        capital.addDisinheritedRoyalChild(deposedSovereignId);
+        capital.removeRoyalChild(deposedSovereignId);
+        capital.removeLegitimizedRoyalChild(deposedSovereignId);
+        capital.removeDuke(deposedSovereignId);
+        capital.removeLord(deposedSovereignId);
+        capital.removeKnight(deposedSovereignId);
+        capital.removeRoyalGuard(deposedSovereignId);
 
-        if (record == null || !record.wasDeposition()) {
-            return false;
+        if (deposedSovereignId.equals(capital.getHeir())) {
+            capital.setHeir(null);
+            capital.setHeirFemale(false);
+            capital.setHeirMode(CapitalRecord.HeirMode.NONE);
         }
 
-        Set<UUID> residents =
-                CapitalResidentScanner.scanResidents(
-                        level,
-                        capital.getCapitalId()
-                );
+        if (deposedSovereignId.equals(capital.getConsort())) {
+            capital.setConsort(null);
+            capital.setConsortFemale(false);
+        }
+
+        if (deposedSovereignId.equals(capital.getDowager())) {
+            capital.setDowager(null);
+            capital.setDowagerFemale(false);
+        }
+
+        if (deposedSovereignId.equals(capital.getCommander())) {
+            capital.setCommander(null);
+            capital.setCommanderFemale(false);
+        }
+
+        if (deposedSovereignId.equals(capital.getHand())) {
+            capital.setHand(null);
+            capital.setHandFemale(false);
+        }
+
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(
+                level,
+                deposedSovereignId
+        );
+
+        if (entity != null) {
+            String baseName = CapitalNameService.resolveDisplayName(
+                    level,
+                    capital,
+                    deposedSovereignId
+            );
+            entity.setCustomName(net.minecraft.network.chat.Component.literal(baseName));
+            entity.setCustomNameVisible(true);
+        }
+    }
+
+    private static void ensureDepositionHand(
+            ServerLevel level,
+            CapitalRecord capital,
+            CapitalInterregnumRecord record
+    ) {
+        if (level == null
+                || capital == null
+                || record == null
+                || !record.wasDeposition()) {
+            return;
+        }
+
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
 
         UUID currentHand = capital.getHand();
-
         if (currentHand != null
-                && !currentHand.equals(
-                record.getDeceasedSovereignId()
-        )
+                && !currentHand.equals(record.getDeceasedSovereignId())
                 && CapitalHandSelection.isValidHand(
                 level,
                 capital,
                 currentHand,
                 residents
         )) {
-            return false;
+            return;
         }
-
-        boolean changed = false;
 
         if (currentHand != null) {
             capital.setHand(null);
             capital.setHandFemale(false);
-            changed = true;
         }
 
         UUID replacement = findDepositionHand(
@@ -518,18 +535,8 @@ public final class CapitalWartimeSuccessionService {
         );
 
         if (replacement == null) {
-            if (changed) {
-                CapitalCourtWatcher.clearFingerprint(
-                        capital.getCapitalId()
-                );
-                CapitalDataAccess.markDirty(level);
-            }
-            return changed;
-        }
-
-        if (replacement.equals(capital.getCommander())) {
-            capital.setCommander(null);
-            capital.setCommanderFemale(false);
+            CapitalDataAccess.markDirty(level);
+            return;
         }
 
         capital.setHand(replacement);
@@ -552,11 +559,8 @@ public final class CapitalWartimeSuccessionService {
                 capital,
                 residents
         );
-        CapitalCourtWatcher.clearFingerprint(
-                capital.getCapitalId()
-        );
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
-        return true;
     }
 
     private static UUID findDepositionHand(
@@ -565,8 +569,7 @@ public final class CapitalWartimeSuccessionService {
             CapitalInterregnumRecord record,
             Set<UUID> residents
     ) {
-        LinkedHashSet<UUID> ordered =
-                new LinkedHashSet<>();
+        LinkedHashSet<UUID> ordered = new LinkedHashSet<>();
 
         if (capital.getCommander() != null) {
             ordered.add(capital.getCommander());
@@ -591,21 +594,7 @@ public final class CapitalWartimeSuccessionService {
                     capital,
                     record,
                     candidateId,
-                    residents,
-                    true
-            )) {
-                return candidateId;
-            }
-        }
-
-        for (UUID candidateId : ordered) {
-            if (isEligibleDepositionHand(
-                    level,
-                    capital,
-                    record,
-                    candidateId,
-                    residents,
-                    false
+                    residents
             )) {
                 return candidateId;
             }
@@ -619,32 +608,15 @@ public final class CapitalWartimeSuccessionService {
             CapitalRecord capital,
             CapitalInterregnumRecord record,
             UUID candidateId,
-            Set<UUID> residents,
-            boolean requireTrusted
+            Set<UUID> residents
     ) {
         if (candidateId == null
-                || candidateId.equals(
-                record.getDeceasedSovereignId()
-        )
+                || candidateId.equals(record.getDeceasedSovereignId())
                 || !residents.contains(candidateId)
-                || !MCAIntegrationBridge.isMCAVillager(
-                level,
-                candidateId
-        )
-                || !MCAIntegrationBridge
-                .isTeenOrAdultVillager(
-                        level,
-                        candidateId
-                )
-                || CapitalRoleValidation
-                .isLoadedDeadOrRemoved(
-                        level,
-                        candidateId
-                )
-                || CapitalAmbassadorService.isAmbassador(
-                level,
-                candidateId
-        )
+                || !MCAIntegrationBridge.isMCAVillager(level, candidateId)
+                || !MCAIntegrationBridge.isTeenOrAdultVillager(level, candidateId)
+                || CapitalRoleValidation.isLoadedDeadOrRemoved(level, candidateId)
+                || CapitalAmbassadorService.isAmbassador(level, candidateId)
                 || candidateId.equals(capital.getConsort())
                 || candidateId.equals(capital.getDowager())
                 || candidateId.equals(capital.getHeir())
@@ -655,189 +627,7 @@ public final class CapitalWartimeSuccessionService {
             return false;
         }
 
-        return !requireTrusted
-                || CapitalCrownJusticeService
-                .isTrustedOfficeEligible(
-                        level,
-                        capital,
-                        candidateId
-                );
-    }
-
-    private static CapitalInterregnumRecord normalizeInterregnumRecord(
-            ServerLevel level,
-            CapitalRecord capital,
-            CapitalInterregnumRecord record
-    ) {
-        if (level == null
-                || capital == null
-                || record == null
-                || record.wasDeposition()
-                || !isValidLivingSovereign(
-                level,
-                record.getDeceasedSovereignId()
-        )) {
-            return record;
-        }
-
-        CapitalInterregnumRecord migrated =
-                new CapitalInterregnumRecord(
-                        record.getCapitalId(),
-                        record.getDeceasedSovereignId(),
-                        record.getDeceasedSovereignName(),
-                        record.getStartedAt(),
-                        record.getResolveAfter(),
-                        record.wasDeceasedSovereignFemale(),
-                        record.wasPlayerSovereign(),
-                        record.getFormerPlayerSovereignId(),
-                        true
-                );
-
-        CapitalInterregnumDataAccess.remove(
-                level,
-                record.getCapitalId()
-        );
-        CapitalInterregnumDataAccess.begin(
-                level,
-                migrated
-        );
-
-        stripDeposedSovereign(
-                level,
-                capital,
-                migrated.getDeceasedSovereignId()
-        );
-        ensureDepositionHand(
-                level,
-                capital
-        );
-
-        return migrated;
-    }
-
-    private static boolean stripDeposedSovereign(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID deposedSovereignId
-    ) {
-        if (capital == null || deposedSovereignId == null) {
-            return false;
-        }
-
-        boolean changed = false;
-
-        if (!capital.isDisinheritedRoyalChild(
-                deposedSovereignId
-        )) {
-            capital.addDisinheritedRoyalChild(
-                    deposedSovereignId
-            );
-            changed = true;
-        }
-
-        if (capital.isDuke(deposedSovereignId)) {
-            capital.removeDuke(deposedSovereignId);
-            changed = true;
-        }
-
-        if (capital.isLord(deposedSovereignId)) {
-            capital.removeLord(deposedSovereignId);
-            changed = true;
-        }
-
-        if (capital.isKnight(deposedSovereignId)) {
-            capital.removeKnight(deposedSovereignId);
-            changed = true;
-        }
-
-        if (capital.isRoyalGuard(
-                deposedSovereignId
-        )) {
-            capital.removeRoyalGuard(
-                    deposedSovereignId
-            );
-            changed = true;
-        }
-
-        if (deposedSovereignId.equals(
-                capital.getConsort()
-        )) {
-            capital.setConsort(null);
-            capital.setConsortFemale(false);
-            changed = true;
-        }
-
-        if (deposedSovereignId.equals(
-                capital.getDowager()
-        )) {
-            capital.setDowager(null);
-            capital.setDowagerFemale(false);
-            changed = true;
-        }
-
-        if (deposedSovereignId.equals(
-                capital.getHeir()
-        )) {
-            capital.setHeir(null);
-            capital.setHeirFemale(false);
-            capital.setHeirMode(
-                    CapitalRecord.HeirMode.NONE
-            );
-            changed = true;
-        }
-
-        if (deposedSovereignId.equals(
-                capital.getCommander()
-        )) {
-            capital.setCommander(null);
-            capital.setCommanderFemale(false);
-            changed = true;
-        }
-
-        if (deposedSovereignId.equals(
-                capital.getHand()
-        )) {
-            capital.setHand(null);
-            capital.setHandFemale(false);
-            changed = true;
-        }
-
-        Entity entity = MCAIntegrationBridge
-                .getEntityByUuid(
-                        level,
-                        deposedSovereignId
-                );
-
-        if (entity != null) {
-            String currentName =
-                    entity.getCustomName() != null
-                            ? entity.getCustomName().getString()
-                            : entity.getName().getString();
-
-            String baseName =
-                    CapitalNameService.resolveDisplayName(
-                            level,
-                            capital,
-                            deposedSovereignId
-                    );
-
-            if (!currentName.equals(baseName)) {
-                entity.setCustomName(
-                        Component.literal(baseName)
-                );
-                entity.setCustomNameVisible(true);
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            CapitalCourtWatcher.clearFingerprint(
-                    capital.getCapitalId()
-            );
-            CapitalDataAccess.markDirty(level);
-        }
-
-        return changed;
+        return true;
     }
 
     private static boolean isSurvivalPlayerSovereignDeath(

@@ -9,8 +9,8 @@ import com.majesttyx.mcacapitals.capital.CapitalRoyalGuardService;
 import com.majesttyx.mcacapitals.capital.CapitalRoyalHouseholdService;
 import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalWartimeSuccessionService;
-import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalInterregnumRecord;
+import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,45 +32,27 @@ final class CapitalPetitionOutcomes {
                 );
 
         UUID formerSovereignId = capital.getSovereign();
-
-        if (formerSovereignId == null
-                && interregnum != null) {
-            formerSovereignId =
-                    interregnum.getDeceasedSovereignId();
+        if (formerSovereignId == null && interregnum != null) {
+            formerSovereignId = interregnum.getDeceasedSovereignId();
         }
 
-        String formerSovereignName =
-                formerSovereignId == null
-                        ? "the vacant throne"
-                        : resolveLoadedName(
-                        level,
-                        formerSovereignId
-                );
-
+        String formerSovereignName = formerSovereignId == null
+                ? "the vacant throne"
+                : resolveLoadedName(level, formerSovereignId);
         String playerName = player.getName().getString();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
         boolean female = MCAIntegrationBridge.isPlayerFemale(level, player);
 
         Set<UUID> formerRoyalFamily = collectRoyalFamily(capital);
-
         if (formerSovereignId != null) {
             formerRoyalFamily.add(formerSovereignId);
         }
-
         formerRoyalFamily.remove(player.getUUID());
 
         CapitalFoundationService.appointPlayerSovereign(level, capital, player.getUUID(), female);
         CapitalRoyalGuardService.clearRoyalGuardsForTransfer(level, capital);
 
         stripFormerRoyalFamily(capital);
-
-        if (interregnum != null
-                && interregnum.wasDeposition()
-                && formerSovereignId != null) {
-            capital.addDisinheritedRoyalChild(
-                    formerSovereignId
-            );
-        }
 
         capital.setPlayerSovereign(true);
         capital.setPlayerSovereignId(player.getUUID());
@@ -87,11 +69,11 @@ final class CapitalPetitionOutcomes {
                 level,
                 capital,
                 interregnum != null
-                        && interregnum.wasDeposition()
+                        && interregnum.mayVictoriousPlayerSeize(player.getUUID())
                         ? playerName
                         + " seized the vacant throne of "
                         + villageName
-                        + " during the wartime interregnum."
+                        + " after winning the War of Deposition."
                         : playerName
                         + " seized the throne of "
                         + villageName

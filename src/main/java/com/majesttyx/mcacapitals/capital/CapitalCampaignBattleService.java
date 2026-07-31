@@ -286,28 +286,6 @@ final class CapitalCampaignBattleService {
                 .get(level)
                 .setDirty();
 
-        initiatingPlayer.sendSystemMessage(
-                Component.literal(
-                        "The campaign battle has begun: "
-                                + campaign
-                                .getAttackerIds()
-                                .size()
-                                + " attackers against "
-                                + campaign
-                                .getDefenderIds()
-                                .size()
-                                + " field defenders."
-                )
-        );
-
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        defendingCapital,
-                        Component.literal(
-                                "The campaign battle has begun."
-                        )
-                );
     }
 
     private static void processActiveBattle(
@@ -401,20 +379,6 @@ final class CapitalCampaignBattleService {
                     .get(level)
                     .setDirty();
 
-            notifyInitiatingPlayer(
-                    level,
-                    campaign,
-                    "The defending Crown has rallied. The campaign battle resumes."
-            );
-
-            CapitalPlayerNotificationService
-                    .notifyPlayersInCapital(
-                            level,
-                            defendingCapital,
-                            Component.literal(
-                                    "The defending Crown has rallied. The battle resumes."
-                            )
-                    );
         }
 
         if (!campaign
@@ -524,20 +488,6 @@ final class CapitalCampaignBattleService {
                 entry
         );
 
-        notifyInitiatingPlayer(
-                level,
-                campaign,
-                "The field defenders have fallen. The defending court will answer in 3 seconds."
-        );
-
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        defendingCapital,
-                        Component.literal(
-                                "The field defenders have fallen. The defending court is preparing its answer."
-                        )
-                );
     }
 
     private static boolean hasAnyPlayerInsideCapital(
@@ -633,6 +583,16 @@ final class CapitalCampaignBattleService {
                             + " sued for peace after the capital's field defenders fell."
             );
 
+            if (campaign.getPhase()
+                    == CapitalCampaignPhase.RETREATING) {
+                beginVictoriousDepositionIfApplicable(
+                        level,
+                        campaign,
+                        defendingCapital,
+                        "after the defending sovereign sued for peace."
+                );
+            }
+
             return;
         }
 
@@ -668,22 +628,26 @@ final class CapitalCampaignBattleService {
                 entry
         );
 
-        notifyInitiatingPlayer(
-                level,
-                campaign,
-                "The sovereign of "
-                        + defendingName
-                        + " has refused peace. The defending Crown will rally for 5 seconds before the battle resumes."
-        );
+    }
 
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        defendingCapital,
-                        Component.literal(
-                                "The defending sovereign has refused peace. The Crown is rallying for 5 seconds."
-                        )
-                );
+    private static void beginVictoriousDepositionIfApplicable(
+            ServerLevel level,
+            CapitalCampaignRecord campaign,
+            CapitalRecord defendingCapital,
+            String reason
+    ) {
+        if (campaign.getWarGoal()
+                != com.majesttyx.mcacapitals.data.CapitalWarGoal.DEPOSITION
+                || defendingCapital.getSovereign() == null) {
+            return;
+        }
+
+        CapitalWartimeSuccessionService.beginDepositionInterregnum(
+                level,
+                defendingCapital,
+                reason,
+                campaign.getInitiatingPlayerId()
+        );
     }
 
     private static void establishPeace(
@@ -747,22 +711,6 @@ final class CapitalCampaignBattleService {
                 entry
         );
 
-        notifyInitiatingPlayer(
-                level,
-                campaign,
-                entry
-                        + " Surviving attackers are returning home."
-        );
-
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        defendingCapital,
-                        Component.literal(
-                                entry
-                                        + " The surviving attackers are retreating."
-                        )
-                );
     }
 
     private static void finishRetreat(
@@ -811,18 +759,6 @@ final class CapitalCampaignBattleService {
                 entry
         );
 
-        notifyInitiatingPlayer(
-                level,
-                campaign,
-                entry
-        );
-
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        defendingCapital,
-                        Component.literal(entry)
-                );
 
         CapitalCampaignService
                 .completeCampaign(
@@ -901,14 +837,12 @@ final class CapitalCampaignBattleService {
                         ? "The planned military attack was invalidated."
                         : message;
 
-        CapitalChronicleService.addEntry(
-                level,
+        CapitalChronicleService.addEntryWithoutHerald(
                 attackingCapital,
                 entry
         );
 
-        CapitalChronicleService.addEntry(
-                level,
+        CapitalChronicleService.addEntryWithoutHerald(
                 defendingCapital,
                 entry
         );

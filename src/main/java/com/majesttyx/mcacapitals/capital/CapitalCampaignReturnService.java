@@ -23,6 +23,7 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,26 +62,34 @@ final class CapitalCampaignReturnService {
                                 defendingCapital
                         );
 
-        if (attackingVillage == null
-                || defendingVillage == null) {
-            return false;
+        if (defendingVillage != null) {
+            returnDefendersHome(
+                    level,
+                    campaign,
+                    defendingCapital,
+                    defendingVillage
+            );
         }
-
-        returnDefendersHome(
-                level,
-                campaign,
-                defendingCapital,
-                defendingVillage
-        );
 
         StoredReturnData storage =
                 getStorage(level);
 
+        UUID attackingCapitalId =
+                attackingCapital == null
+                        ? campaign.getAttackingCapitalId()
+                        : attackingCapital.getCapitalId();
+
         boolean homeOccupied =
-                hasPlayerInside(
+                attackingVillage != null
+                        && hasPlayerInside(
                         level,
                         attackingVillage
                 );
+
+        long now = level.getGameTime();
+        boolean forceReturn =
+                campaign.getReturnDeadline() <= 0L
+                        || now >= campaign.getReturnDeadline();
 
         boolean changed = false;
         int homeIndex = 0;
@@ -98,7 +107,7 @@ final class CapitalCampaignReturnService {
             }
 
             if (storage.contains(
-                    attackingCapital.getCapitalId(),
+                    attackingCapitalId,
                     attackerId
             )) {
                 campaign.markAttackerReturned(
@@ -108,14 +117,27 @@ final class CapitalCampaignReturnService {
                 continue;
             }
 
-            if (!(MCAIntegrationBridge
-                    .findLoadedMCAVillagerByUuid(
-                            level,
-                            attackerId
-                    )
+            Entity loaded =
+                    MCAIntegrationBridge
+                            .findLoadedEntityByUuid(
+                                    level,
+                                    attackerId
+                            );
+
+            if (!(loaded
                     instanceof VillagerEntityMCA attacker)
                     || !attacker.isAlive()
                     || attacker.isRemoved()) {
+                if (forceReturn) {
+                    storage.markPending(
+                            attackingCapitalId,
+                            attackerId
+                    );
+                    campaign.markAttackerReturned(
+                            attackerId
+                    );
+                    changed = true;
+                }
                 continue;
             }
 
@@ -123,9 +145,10 @@ final class CapitalCampaignReturnService {
             CapitalCampaignTargetingService
                     .clearCombatTarget(attacker);
 
-            if (homeOccupied
+            if (attackingVillage != null
+                    && (homeOccupied
                     || attackingVillage
-                    .isWithinBorder(attacker)) {
+                    .isWithinBorder(attacker))) {
                 teleportHome(
                         level,
                         attackingVillage,
@@ -143,22 +166,32 @@ final class CapitalCampaignReturnService {
             CompoundTag entityData =
                     new CompoundTag();
 
-            if (!attacker.save(entityData)) {
+            if (attacker.save(entityData)) {
+                storage.store(
+                        attackingCapitalId,
+                        attackerId,
+                        entityData
+                );
+
+                attacker.discard();
+
+                campaign.markAttackerReturned(
+                        attackerId
+                );
+                changed = true;
                 continue;
             }
 
-            storage.store(
-                    attackingCapital.getCapitalId(),
-                    attackerId,
-                    entityData
-            );
-
-            attacker.discard();
-
-            campaign.markAttackerReturned(
-                    attackerId
-            );
-            changed = true;
+            if (forceReturn) {
+                storage.markPending(
+                        attackingCapitalId,
+                        attackerId
+                );
+                campaign.markAttackerReturned(
+                        attackerId
+                );
+                changed = true;
+            }
         }
 
         if (changed) {
@@ -234,13 +267,12 @@ final class CapitalCampaignReturnService {
                                     capital
                             );
 
-            if (village == null
-                    || !hasPlayerInside(
-                    level,
-                    village
-            )) {
-                continue;
-            }
+            boolean homeOccupied =
+                    village != null
+                            && hasPlayerInside(
+                            level,
+                            village
+                    );
 
             int index = 0;
 
@@ -260,20 +292,49 @@ final class CapitalCampaignReturnService {
                         && attacker.isAlive()
                         && !attacker.isRemoved()) {
                     restoreVisibleState(attacker);
-                    teleportHome(
-                            level,
-                            village,
-                            attacker,
-                            index++
-                    );
-                    storage.remove(
+                    CapitalCampaignTargetingService
+                            .clearCombatTarget(attacker);
+
+                    if (homeOccupied) {
+                        teleportHome(
+                                level,
+                                village,
+                                attacker,
+                                index++
+                        );
+                        storage.remove(
+                                capitalId,
+                                attackerId
+                        );
+                        continue;
+                    }
+
+                    if (!storage.hasStoredData(
                             capitalId,
                             attackerId
-                    );
+                    )) {
+                        CompoundTag entityData =
+                                new CompoundTag();
+
+                        if (attacker.save(entityData)) {
+                            storage.store(
+                                    capitalId,
+                                    attackerId,
+                                    entityData
+                            );
+                            attacker.discard();
+                        }
+                    }
+
                     continue;
                 }
 
-                if (restoreStoredAttacker(
+                if (homeOccupied
+                        && storage.hasStoredData(
+                        capitalId,
+                        attackerId
+                )
+                        && restoreStoredAttacker(
                         level,
                         village,
                         storage,
@@ -586,6 +647,8 @@ final class CapitalCampaignReturnService {
                 "CapitalId";
         private static final String KEY_ATTACKERS =
                 "Attackers";
+        private static final String KEY_PENDING_ATTACKERS =
+                "PendingAttackers";
         private static final String KEY_ATTACKER_ID =
                 "AttackerId";
         private static final String KEY_ENTITY_DATA =
@@ -593,6 +656,10 @@ final class CapitalCampaignReturnService {
 
         private final Map<UUID, Map<UUID, CompoundTag>>
                 storedAttackers =
+                new LinkedHashMap<>();
+
+        private final Map<UUID, Set<UUID>>
+                pendingAttackers =
                 new LinkedHashMap<>();
 
         private void store(
@@ -617,18 +684,76 @@ final class CapitalCampaignReturnService {
                             entityData.copy()
                     );
 
+            Set<UUID> pending =
+                    pendingAttackers.get(capitalId);
+
+            if (pending != null) {
+                pending.remove(attackerId);
+
+                if (pending.isEmpty()) {
+                    pendingAttackers.remove(capitalId);
+                }
+            }
+
             setDirty();
+        }
+
+        private void markPending(
+                UUID capitalId,
+                UUID attackerId
+        ) {
+            if (capitalId == null
+                    || attackerId == null) {
+                return;
+            }
+
+            Map<UUID, CompoundTag> stored =
+                    storedAttackers.get(capitalId);
+
+            if (stored != null
+                    && stored.containsKey(attackerId)) {
+                return;
+            }
+
+            if (pendingAttackers
+                    .computeIfAbsent(
+                            capitalId,
+                            ignored ->
+                                    new LinkedHashSet<>()
+                    )
+                    .add(attackerId)) {
+                setDirty();
+            }
+        }
+
+        private boolean hasStoredData(
+                UUID capitalId,
+                UUID attackerId
+        ) {
+            Map<UUID, CompoundTag> stored =
+                    storedAttackers.get(capitalId);
+
+            return stored != null
+                    && stored.containsKey(attackerId);
         }
 
         private boolean contains(
                 UUID capitalId,
                 UUID attackerId
         ) {
-            Map<UUID, CompoundTag> capital =
+            Map<UUID, CompoundTag> stored =
                     storedAttackers.get(capitalId);
 
-            return capital != null
-                    && capital.containsKey(attackerId);
+            if (stored != null
+                    && stored.containsKey(attackerId)) {
+                return true;
+            }
+
+            Set<UUID> pending =
+                    pendingAttackers.get(capitalId);
+
+            return pending != null
+                    && pending.contains(attackerId);
         }
 
         private CompoundTag get(
@@ -651,42 +776,78 @@ final class CapitalCampaignReturnService {
         }
 
         private Set<UUID> getStoredCapitalIds() {
-            return Set.copyOf(
+            Set<UUID> capitalIds =
+                    new LinkedHashSet<>();
+
+            capitalIds.addAll(
                     storedAttackers.keySet()
             );
+            capitalIds.addAll(
+                    pendingAttackers.keySet()
+            );
+
+            return Set.copyOf(capitalIds);
         }
 
         private Set<UUID> getStoredAttackerIds(
                 UUID capitalId
         ) {
-            Map<UUID, CompoundTag> capital =
+            Set<UUID> attackerIds =
+                    new LinkedHashSet<>();
+
+            Map<UUID, CompoundTag> stored =
                     storedAttackers.get(capitalId);
 
-            return capital == null
-                    ? Set.of()
-                    : Set.copyOf(
-                    capital.keySet()
-            );
+            if (stored != null) {
+                attackerIds.addAll(
+                        stored.keySet()
+                );
+            }
+
+            Set<UUID> pending =
+                    pendingAttackers.get(capitalId);
+
+            if (pending != null) {
+                attackerIds.addAll(pending);
+            }
+
+            return Set.copyOf(attackerIds);
         }
 
         private void remove(
                 UUID capitalId,
                 UUID attackerId
         ) {
-            Map<UUID, CompoundTag> capital =
+            boolean changed = false;
+
+            Map<UUID, CompoundTag> stored =
                     storedAttackers.get(capitalId);
 
-            if (capital == null
-                    || capital.remove(attackerId)
-                    == null) {
-                return;
+            if (stored != null
+                    && stored.remove(attackerId)
+                    != null) {
+                changed = true;
+
+                if (stored.isEmpty()) {
+                    storedAttackers.remove(capitalId);
+                }
             }
 
-            if (capital.isEmpty()) {
-                storedAttackers.remove(capitalId);
+            Set<UUID> pending =
+                    pendingAttackers.get(capitalId);
+
+            if (pending != null
+                    && pending.remove(attackerId)) {
+                changed = true;
+
+                if (pending.isEmpty()) {
+                    pendingAttackers.remove(capitalId);
+                }
             }
 
-            setDirty();
+            if (changed) {
+                setDirty();
+            }
         }
 
         @Override
@@ -694,53 +855,87 @@ final class CapitalCampaignReturnService {
                 CompoundTag tag,
                 HolderLookup.Provider registries
         ) {
+            Set<UUID> capitalIds =
+                    new LinkedHashSet<>();
+
+            capitalIds.addAll(
+                    storedAttackers.keySet()
+            );
+            capitalIds.addAll(
+                    pendingAttackers.keySet()
+            );
+
             ListTag capitalsTag =
                     new ListTag();
 
-            for (Map.Entry<
-                    UUID,
-                    Map<UUID, CompoundTag>
-                    > capitalEntry :
-                    storedAttackers.entrySet()) {
+            for (UUID capitalId : capitalIds) {
                 CompoundTag capitalTag =
                         new CompoundTag();
 
                 capitalTag.putUUID(
                         KEY_CAPITAL_ID,
-                        capitalEntry.getKey()
+                        capitalId
                 );
 
                 ListTag attackersTag =
                         new ListTag();
 
-                for (Map.Entry<
-                        UUID,
-                        CompoundTag
-                        > attackerEntry :
-                        capitalEntry
-                                .getValue()
-                                .entrySet()) {
-                    CompoundTag attackerTag =
-                            new CompoundTag();
+                Map<UUID, CompoundTag> stored =
+                        storedAttackers.get(capitalId);
 
-                    attackerTag.putUUID(
-                            KEY_ATTACKER_ID,
-                            attackerEntry.getKey()
-                    );
+                if (stored != null) {
+                    for (Map.Entry<
+                            UUID,
+                            CompoundTag
+                            > attackerEntry :
+                            stored.entrySet()) {
+                        CompoundTag attackerTag =
+                                new CompoundTag();
 
-                    attackerTag.put(
-                            KEY_ENTITY_DATA,
-                            attackerEntry
-                                    .getValue()
-                                    .copy()
-                    );
+                        attackerTag.putUUID(
+                                KEY_ATTACKER_ID,
+                                attackerEntry.getKey()
+                        );
 
-                    attackersTag.add(attackerTag);
+                        attackerTag.put(
+                                KEY_ENTITY_DATA,
+                                attackerEntry
+                                        .getValue()
+                                        .copy()
+                        );
+
+                        attackersTag.add(attackerTag);
+                    }
                 }
 
                 capitalTag.put(
                         KEY_ATTACKERS,
                         attackersTag
+                );
+
+                ListTag pendingTag =
+                        new ListTag();
+
+                Set<UUID> pending =
+                        pendingAttackers.get(capitalId);
+
+                if (pending != null) {
+                    for (UUID attackerId : pending) {
+                        CompoundTag attackerTag =
+                                new CompoundTag();
+
+                        attackerTag.putUUID(
+                                KEY_ATTACKER_ID,
+                                attackerId
+                        );
+
+                        pendingTag.add(attackerTag);
+                    }
+                }
+
+                capitalTag.put(
+                        KEY_PENDING_ATTACKERS,
+                        pendingTag
                 );
 
                 capitalsTag.add(capitalTag);
@@ -823,9 +1018,47 @@ final class CapitalCampaignReturnService {
                             attackers
                     );
                 }
+
+                Set<UUID> pending =
+                        new LinkedHashSet<>();
+
+                ListTag pendingTag =
+                        capitalTag.getList(
+                                KEY_PENDING_ATTACKERS,
+                                Tag.TAG_COMPOUND
+                        );
+
+                for (Tag rawPending :
+                        pendingTag) {
+                    CompoundTag attackerTag =
+                            (CompoundTag) rawPending;
+
+                    if (attackerTag.hasUUID(
+                            KEY_ATTACKER_ID
+                    )) {
+                        UUID attackerId =
+                                attackerTag.getUUID(
+                                        KEY_ATTACKER_ID
+                                );
+
+                        if (!attackers.containsKey(
+                                attackerId
+                        )) {
+                            pending.add(attackerId);
+                        }
+                    }
+                }
+
+                if (!pending.isEmpty()) {
+                    data.pendingAttackers.put(
+                            capitalId,
+                            pending
+                    );
+                }
             }
 
             return data;
         }
     }
+
 }

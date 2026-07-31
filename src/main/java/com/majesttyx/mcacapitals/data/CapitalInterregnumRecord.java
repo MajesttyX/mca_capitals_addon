@@ -15,6 +15,7 @@ public final class CapitalInterregnumRecord {
     private static final String KEY_FORMER_PLAYER_SOVEREIGN = "FormerPlayerSovereign";
     private static final String KEY_FORMER_PLAYER_SOVEREIGN_ID = "FormerPlayerSovereignId";
     private static final String KEY_DEPOSITION = "Deposition";
+    private static final String KEY_VICTORIOUS_CLAIMANT_ID = "VictoriousClaimantId";
 
     private final UUID capitalId;
     private final UUID deceasedSovereignId;
@@ -25,6 +26,7 @@ public final class CapitalInterregnumRecord {
     private final boolean formerPlayerSovereign;
     private final UUID formerPlayerSovereignId;
     private final boolean deposition;
+    private final UUID victoriousClaimantId;
 
     public CapitalInterregnumRecord(
             UUID capitalId,
@@ -45,7 +47,8 @@ public final class CapitalInterregnumRecord {
                 deceasedSovereignFemale,
                 formerPlayerSovereign,
                 formerPlayerSovereignId,
-                false
+                false,
+                null
         );
     }
 
@@ -58,7 +61,8 @@ public final class CapitalInterregnumRecord {
             boolean deceasedSovereignFemale,
             boolean formerPlayerSovereign,
             UUID formerPlayerSovereignId,
-            boolean deposition
+            boolean deposition,
+            UUID victoriousClaimantId
     ) {
         if (capitalId == null || deceasedSovereignId == null) {
             throw new IllegalArgumentException(
@@ -79,6 +83,7 @@ public final class CapitalInterregnumRecord {
         this.formerPlayerSovereign = formerPlayerSovereign;
         this.formerPlayerSovereignId = formerPlayerSovereignId;
         this.deposition = deposition;
+        this.victoriousClaimantId = victoriousClaimantId;
     }
 
     public UUID getCapitalId() {
@@ -117,6 +122,16 @@ public final class CapitalInterregnumRecord {
         return deposition;
     }
 
+    public UUID getVictoriousClaimantId() {
+        return victoriousClaimantId;
+    }
+
+    public boolean mayVictoriousPlayerSeize(UUID playerId) {
+        return deposition
+                && playerId != null
+                && playerId.equals(victoriousClaimantId);
+    }
+
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
 
@@ -148,6 +163,13 @@ public final class CapitalInterregnumRecord {
             );
         }
 
+        if (victoriousClaimantId != null) {
+            tag.putUUID(
+                    KEY_VICTORIOUS_CLAIMANT_ID,
+                    victoriousClaimantId
+            );
+        }
+
         return tag;
     }
 
@@ -165,6 +187,11 @@ public final class CapitalInterregnumRecord {
                         ? tag.getUUID(KEY_FORMER_PLAYER_SOVEREIGN_ID)
                         : null;
 
+        UUID victoriousClaimantId =
+                tag.hasUUID(KEY_VICTORIOUS_CLAIMANT_ID)
+                        ? tag.getUUID(KEY_VICTORIOUS_CLAIMANT_ID)
+                        : null;
+
         return new CapitalInterregnumRecord(
                 tag.getUUID(KEY_CAPITAL_ID),
                 tag.getUUID(KEY_DECEASED_SOVEREIGN_ID),
@@ -174,7 +201,8 @@ public final class CapitalInterregnumRecord {
                 tag.getBoolean(KEY_DECEASED_SOVEREIGN_FEMALE),
                 tag.getBoolean(KEY_FORMER_PLAYER_SOVEREIGN),
                 formerPlayerSovereignId,
-                tag.getBoolean(KEY_DEPOSITION)
+                tag.getBoolean(KEY_DEPOSITION),
+                victoriousClaimantId
         );
     }
 }

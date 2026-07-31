@@ -138,7 +138,7 @@ final class CapitalCampaignAssemblyService {
 
             player.sendSystemMessage(
                     Component.literal(
-                            "Your campaign force is assembling. Soldiers will be gathered for 20 seconds before deployment."
+                            "Your campaign force is assembling, get to an open area and prepare to fight."
                     )
             );
         }

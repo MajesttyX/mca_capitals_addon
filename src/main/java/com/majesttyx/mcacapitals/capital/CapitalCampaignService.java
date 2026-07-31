@@ -110,30 +110,6 @@ public final class CapitalCampaignService {
             return 0;
         }
 
-        String targetName =
-                CapitalDiplomaticAgreementText
-                        .capitalName(
-                                level,
-                                defendingCapital
-                        );
-
-        player.sendSystemMessage(
-                Component.literal(
-                        "The "
-                                + result.campaign().getWarGoal().getDisplayName()
-                                + " against "
-                                + targetName
-                                + " has been planned for "
-                                + result.campaign().getWarCause().getDisplayName()
-                                + ". Enter that capital yourself to begin a 20-second assembly. The campaign will attempt to gather "
-                                + result.campaign()
-                                .getTargetAttackerCount()
-                                + " Guards and Archers, up to the maximum of "
-                                + CapitalCampaignRecord.MAX_ATTACKERS
-                                + ", before the force deploys."
-                )
-        );
-
         return 1;
     }
 
@@ -472,17 +448,6 @@ public final class CapitalCampaignService {
                     CapitalManager.getCapital(
                             campaign.getAttackingCapitalId()
                     );
-
-            CapitalRecord defendingCapital =
-                    CapitalManager.getCapital(
-                            campaign.getDefendingCapitalId()
-                    );
-
-            CapitalCampaignReturnService.returnDefendersHome(
-                    level,
-                    campaign,
-                    defendingCapital
-            );
 
             CapitalCampaignAssemblyService
                     .releaseSourceTicket(

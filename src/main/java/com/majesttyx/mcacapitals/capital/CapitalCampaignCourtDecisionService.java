@@ -8,7 +8,6 @@ import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 import java.util.ArrayList;
@@ -93,6 +92,17 @@ public final class CapitalCampaignCourtDecisionService {
                 );
 
         if (suingForPeace) {
+            if (campaign.getWarGoal()
+                    == com.majesttyx.mcacapitals.data.CapitalWarGoal.DEPOSITION
+                    && defendingCapital.getSovereign() != null) {
+                CapitalWartimeSuccessionService.beginDepositionInterregnum(
+                        level,
+                        defendingCapital,
+                        "after the defending court sued for peace.",
+                        campaign.getInitiatingPlayerId()
+                );
+            }
+
             establishPeace(
                     level,
                     attackingCapital,
@@ -111,12 +121,6 @@ public final class CapitalCampaignCourtDecisionService {
                                 campaign
                         );
 
-                notifyInitiatingPlayer(
-                        level,
-                        campaign,
-                        decision.chronicleEntry()
-                                + " Surviving attackers are returning home."
-                );
             }
 
             return true;
@@ -134,12 +138,6 @@ public final class CapitalCampaignCourtDecisionService {
                 .get(level)
                 .setDirty();
 
-        notifyInitiatingPlayer(
-                level,
-                campaign,
-                decision.chronicleEntry()
-                        + " The defending Crown will rally for 5 seconds before the battle resumes."
-        );
 
         return true;
     }
@@ -174,7 +172,7 @@ public final class CapitalCampaignCourtDecisionService {
                         ? defendingName
                         + " sues for peace. The occupying force will withdraw."
                         : defendingName
-                        + " refuses peace. The Crown will continue the fight after a 5-second rally.";
+                        + " refuses peace. The Crown will continue the fight.";
 
         if (speaker != null) {
             return new DecisionMessage(
@@ -247,33 +245,6 @@ public final class CapitalCampaignCourtDecisionService {
                         defendingCapital,
                         entry
                 );
-    }
-
-    private static void notifyInitiatingPlayer(
-            ServerLevel level,
-            CapitalCampaignRecord campaign,
-            String message
-    ) {
-        if (campaign.getInitiatingPlayerId()
-                == null
-                || message == null
-                || message.isBlank()) {
-            return;
-        }
-
-        ServerPlayer player =
-                level.getServer()
-                        .getPlayerList()
-                        .getPlayer(
-                                campaign
-                                        .getInitiatingPlayerId()
-                        );
-
-        if (player != null) {
-            player.sendSystemMessage(
-                    Component.literal(message)
-            );
-        }
     }
 
     private static boolean isBabyOrToddlerSovereign(

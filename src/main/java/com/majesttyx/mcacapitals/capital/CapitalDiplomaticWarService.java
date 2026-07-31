@@ -206,7 +206,12 @@ final class CapitalDiplomaticWarService {
                                 target
                         );
 
-        if (targetDecisionMaker != null) {
+        if (targetDecisionMaker != null
+                && !isPlayerInsideCapital(
+                level,
+                target,
+                targetDecisionMaker
+        )) {
             CapitalDiplomaticAgreementCorrespondenceService
                     .sendNotice(
                             level,
@@ -219,5 +224,36 @@ final class CapitalDiplomaticWarService {
         }
 
         return true;
+    }
+
+    private static boolean isPlayerInsideCapital(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID playerId
+    ) {
+        if (level == null
+                || capital == null
+                || playerId == null) {
+            return false;
+        }
+
+        ServerPlayer player = level.getServer()
+                .getPlayerList()
+                .getPlayer(playerId);
+
+        if (player == null
+                || player.level() != level
+                || !player.isAlive()
+                || player.isSpectator()) {
+            return false;
+        }
+
+        var village = CapitalCampaignEligibilityService.getVillage(
+                level,
+                capital
+        );
+
+        return village != null
+                && village.isWithinBorder(player);
     }
 }

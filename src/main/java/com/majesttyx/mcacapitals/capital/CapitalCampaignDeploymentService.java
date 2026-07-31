@@ -7,7 +7,6 @@ import net.conczin.mca.entity.VillagerEntityMCA;
 import net.conczin.mca.server.world.data.Village;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffects;
@@ -206,7 +205,7 @@ final class CapitalCampaignDeploymentService {
                         + defendingName
                         + " to face "
                         + defenders.size()
-                        + " field defenders. The battle was set to begin after a short formation period.";
+                        + " field defenders. Prepare for battle!";
 
         CapitalChronicleService.addEntry(
                 level,
@@ -220,26 +219,6 @@ final class CapitalCampaignDeploymentService {
                 entry
         );
 
-        anchor.sendSystemMessage(
-                Component.literal(
-                        "Your full assembled force has arrived: "
-                                + deployedAttackers.size()
-                                + " attackers against "
-                                + defenders.size()
-                                + " field defenders. The battle begins in 5 seconds."
-                )
-        );
-
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        defendingCapital,
-                        Component.literal(
-                                "A campaign force from "
-                                        + attackingName
-                                        + " has formed inside the capital. The battle begins in 5 seconds."
-                        )
-                );
 
         return DeploymentResult.success();
     }
