@@ -1,27 +1,22 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.MCACapitals;
+import forge.net.mca.entity.ai.relationship.Gender;
+import forge.net.mca.server.world.data.FamilyTree;
+import forge.net.mca.server.world.data.FamilyTreeNode;
+import forge.net.mca.server.world.data.PlayerSaveData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 final class MCAPlayerBridge {
 
-    private static final String[] MCA_PLAYER_SAVE_DATA_CLASSES = new String[] {
-            "net.mca.server.world.data.PlayerSaveData",
-            "forge.net.mca.server.world.data.PlayerSaveData",
-            "fabric.net.mca.server.world.data.PlayerSaveData",
-            "quilt.net.mca.server.world.data.PlayerSaveData"
-    };
-
-    private static final String[] MCA_GENDER_CLASSES = new String[] {
-            "net.mca.entity.ai.relationship.Gender",
-            "forge.net.mca.entity.ai.relationship.Gender",
-            "fabric.net.mca.entity.ai.relationship.Gender",
-            "quilt.net.mca.entity.ai.relationship.Gender"
-    };
+    private static final Set<UUID> LOGGED_PLAYER_GENDER_RESOLUTION = ConcurrentHashMap.newKeySet();
 
     private MCAPlayerBridge() {
     }
@@ -31,31 +26,16 @@ final class MCAPlayerBridge {
             return Optional.empty();
         }
 
-        for (String className : MCA_PLAYER_SAVE_DATA_CLASSES) {
-            try {
-                Object saveData = getPlayerSaveData(level, player, className);
-                if (saveData == null) {
-                    continue;
-                }
-
-                Object value = MCAReflectionHelper.invoke(saveData, "getLastSeenVillageId");
-                if (value instanceof Optional<?> optional) {
-                    Object id = optional.orElse(null);
-                    if (id instanceof Integer villageId) {
-                        return Optional.of(villageId);
-                    }
-                }
-            } catch (Throwable t) {
-                MCAReflectionHelper.warnOnce(
-                        "MCAPlayerBridge#getLastSeenVillageId:" + className,
-                        "Failed to query MCA PlayerSaveData class {} ({})",
-                        className,
-                        t.toString()
-                );
-            }
+        try {
+            return PlayerSaveData.get(player).getLastSeenVillageId();
+        } catch (Throwable t) {
+            MCAReflectionHelper.warnOnce(
+                    "MCAPlayerBridge#getLastSeenVillageId:direct",
+                    "Failed to query MCA PlayerSaveData#getLastSeenVillageId directly ({})",
+                    t.toString()
+            );
+            return Optional.empty();
         }
-
-        return Optional.empty();
     }
 
     static boolean isPlayerInVillage(ServerLevel level, ServerPlayer player, Integer villageId) {
@@ -68,221 +48,192 @@ final class MCAPlayerBridge {
                 .orElse(false);
     }
 
+    static String getDialogueName(ServerPlayer player) {
+        if (player == null) {
+            return "";
+        }
+
+        try {
+            String name = PlayerSaveData.get(player).getFamilyEntry().getName();
+            if (name != null && !name.isBlank()) {
+                return name.trim();
+            }
+        } catch (Throwable t) {
+            MCAReflectionHelper.warnOnce(
+                    "MCAPlayerBridge#getDialogueName:familyTree",
+                    "Failed to resolve MCA dialogue player name from the family tree ({})",
+                    t.toString()
+            );
+        }
+
+        return player.getName().getString();
+    }
+
     static boolean isPlayerFemale(ServerLevel level, ServerPlayer player) {
         if (level == null || player == null) {
             return false;
         }
 
-        for (String className : MCA_PLAYER_SAVE_DATA_CLASSES) {
-            try {
-                Object saveData = getPlayerSaveData(level, player, className);
-                if (saveData == null) {
-                    continue;
-                }
+        try {
+            PlayerSaveData saveData = PlayerSaveData.get(player);
+            CompoundTag entityData = saveData.getEntityData();
 
-                Object saveDataGender = MCAReflectionHelper.invoke(saveData, "getGender");
-                GenderResult saveDataResult = resolveGenderObject(saveDataGender);
-                if (saveDataResult.assigned()) {
-                    return saveDataResult.isFemale();
-                }
+            Gender saveDataGender = saveData.getGender();
+            Gender trackedDataGender = resolveTrackedGender(entityData);
+            Gender familyTreeGender = resolveFamilyTreeGender(level, player.getUUID());
 
-                Object entityDataObject = MCAReflectionHelper.invoke(saveData, "getEntityData");
-                if (entityDataObject instanceof CompoundTag entityData) {
-                    GenderResult trackedResult = resolveGenderFromEntityData(entityData);
-                    if (trackedResult.assigned()) {
-                        return trackedResult.isFemale();
-                    }
-                }
-            } catch (Throwable t) {
-                MCAReflectionHelper.warnOnce(
-                        "MCAPlayerBridge#isPlayerFemale:" + className,
-                        "Failed to query MCA PlayerSaveData gender class {} ({})",
-                        className,
-                        t.toString()
-                );
+            Gender resolvedGender = resolveBestGender(saveDataGender, trackedDataGender, familyTreeGender);
+
+            if (saveDataGender == Gender.UNASSIGNED && trackedDataGender != Gender.UNASSIGNED) {
+                normalizePlayerSaveGender(player, saveData, entityData, trackedDataGender);
+                familyTreeGender = normalizeFamilyTreeGender(level, player, trackedDataGender);
             }
-        }
 
-        GenderResult familyTreeResult = resolveFamilyTreeGender(level, player.getUUID());
-        if (familyTreeResult.assigned()) {
-            return familyTreeResult.isFemale();
-        }
+            logResolvedGenderOnce(player, saveData, saveDataGender, trackedDataGender, familyTreeGender, resolvedGender);
 
-        return false;
+            return resolvedGender == Gender.FEMALE;
+        } catch (Throwable t) {
+            MCAReflectionHelper.warnOnce(
+                    "MCAPlayerBridge#isPlayerFemale:direct",
+                    "Failed to query MCA player gender directly ({})",
+                    t.toString()
+            );
+            return false;
+        }
     }
 
-    private static GenderResult resolveGenderFromEntityData(CompoundTag entityData) {
+    private static Gender resolveBestGender(Gender saveDataGender, Gender trackedDataGender, Gender familyTreeGender) {
+        if (saveDataGender == Gender.FEMALE || saveDataGender == Gender.MALE || saveDataGender == Gender.NEUTRAL) {
+            return saveDataGender;
+        }
+
+        if (trackedDataGender == Gender.FEMALE || trackedDataGender == Gender.MALE || trackedDataGender == Gender.NEUTRAL) {
+            return trackedDataGender;
+        }
+
+        if (familyTreeGender == Gender.FEMALE || familyTreeGender == Gender.MALE || familyTreeGender == Gender.NEUTRAL) {
+            return familyTreeGender;
+        }
+
+        return Gender.UNASSIGNED;
+    }
+
+    private static Gender resolveTrackedGender(CompoundTag entityData) {
         if (entityData == null) {
-            return GenderResult.unassigned();
+            return Gender.UNASSIGNED;
         }
 
         if (entityData.contains("Gender")) {
-            GenderResult result = resolveGenderId(entityData.getInt("Gender"));
-            if (result.assigned()) {
-                return result;
-            }
+            return Gender.byId(entityData.getInt("Gender"));
         }
 
         if (entityData.contains("gender")) {
-            GenderResult result = resolveGenderId(entityData.getInt("gender"));
-            if (result.assigned()) {
-                return result;
-            }
+            return Gender.byId(entityData.getInt("gender"));
         }
 
-        return GenderResult.unassigned();
+        return Gender.UNASSIGNED;
     }
 
-    private static GenderResult resolveGenderId(int id) {
-        for (String className : MCA_GENDER_CLASSES) {
-            try {
-                Class<?> genderClass = Class.forName(className);
-                Object gender = MCAReflectionHelper.invokeStatic(
-                        genderClass,
-                        "byId",
-                        new Class<?>[] {int.class},
-                        id
-                );
-
-                GenderResult result = resolveGenderObject(gender);
-                if (result.assigned()) {
-                    return result;
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-
-        if (id == 1) {
-            return GenderResult.female();
-        }
-
-        if (id == 0) {
-            return GenderResult.male();
-        }
-
-        return GenderResult.unassigned();
-    }
-
-    private static GenderResult resolveGenderObject(Object gender) {
-        if (gender == null) {
-            return GenderResult.unassigned();
-        }
-
-        Object dataName = MCAReflectionHelper.invoke(gender, "getDataName");
-        String resolved = dataName instanceof String
-                ? (String) dataName
-                : String.valueOf(gender);
-
-        if ("female".equalsIgnoreCase(resolved) || "FEMALE".equalsIgnoreCase(resolved)) {
-            return GenderResult.female();
-        }
-
-        if ("male".equalsIgnoreCase(resolved) || "MALE".equalsIgnoreCase(resolved)) {
-            return GenderResult.male();
-        }
-
-        if ("neutral".equalsIgnoreCase(resolved) || "NEUTRAL".equalsIgnoreCase(resolved)) {
-            return GenderResult.male();
-        }
-
-        return GenderResult.unassigned();
-    }
-
-    private static GenderResult resolveFamilyTreeGender(ServerLevel level, UUID playerId) {
+    private static Gender resolveFamilyTreeGender(ServerLevel level, UUID playerId) {
         if (level == null || playerId == null) {
-            return GenderResult.unassigned();
+            return Gender.UNASSIGNED;
         }
 
-        for (String className : MCAReflectionHelper.MCA_FAMILY_TREE_CLASSES) {
-            try {
-                Class<?> familyTreeClass = Class.forName(className);
-                Object familyTree = MCAReflectionHelper.invokeStatic(
-                        familyTreeClass,
-                        "get",
-                        new Class<?>[] {ServerLevel.class},
-                        level
-                );
-
-                if (familyTree == null) {
-                    continue;
-                }
-
-                Object optional = MCAReflectionHelper.invoke(
-                        familyTree,
-                        "getOrEmpty",
-                        new Class<?>[] {UUID.class},
-                        playerId
-                );
-
-                if (optional instanceof Optional<?> nodeOptional) {
-                    Object node = nodeOptional.orElse(null);
-                    if (node == null) {
-                        continue;
-                    }
-
-                    Object gender = MCAReflectionHelper.invoke(node, "gender");
-                    GenderResult result = resolveGenderObject(gender);
-                    if (result.assigned()) {
-                        return result;
-                    }
-                }
-            } catch (Throwable t) {
-                MCAReflectionHelper.warnOnce(
-                        "MCAPlayerBridge#resolveFamilyTreeGender:" + className,
-                        "Failed to query MCA FamilyTreeNode gender class {} ({})",
-                        className,
-                        t.toString()
-                );
-            }
+        try {
+            FamilyTree familyTree = FamilyTree.get(level);
+            Optional<FamilyTreeNode> node = familyTree.getOrEmpty(playerId);
+            return node.map(FamilyTreeNode::gender).orElse(Gender.UNASSIGNED);
+        } catch (Throwable t) {
+            MCAReflectionHelper.warnOnce(
+                    "MCAPlayerBridge#resolveFamilyTreeGender:direct",
+                    "Failed to query MCA FamilyTreeNode gender directly ({})",
+                    t.toString()
+            );
+            return Gender.UNASSIGNED;
         }
-
-        return GenderResult.unassigned();
     }
 
-    private static Object getPlayerSaveData(ServerLevel level, ServerPlayer player, String className) throws Exception {
-        Class<?> playerSaveDataClass = Class.forName(className);
+    private static void normalizePlayerSaveGender(ServerPlayer player, PlayerSaveData saveData, CompoundTag entityData, Gender gender) {
+        if (player == null || saveData == null || gender == null || gender == Gender.UNASSIGNED) {
+            return;
+        }
 
-        Object saveData = MCAReflectionHelper.invokeStatic(
-                playerSaveDataClass,
-                "get",
-                new Class<?>[] {ServerPlayer.class},
-                player
+        CompoundTag normalized = entityData == null ? new CompoundTag() : entityData;
+        normalized.putInt("gender", gender.getId());
+        normalized.putInt("Gender", gender.getId());
+
+        saveData.setEntityData(normalized);
+        saveData.setEntityDataSet(true);
+        saveData.setDirty();
+
+        MCACapitals.LOGGER.info(
+                "[MCACapitals] Normalized MCA player gender data. player='{}', gender='{}', dataName='{}', genderId={}",
+                player.getGameProfile().getName(),
+                gender.name(),
+                gender.getDataName(),
+                gender.getId()
         );
-
-        if (saveData == null) {
-            saveData = MCAReflectionHelper.invokeStatic(
-                    playerSaveDataClass,
-                    "get",
-                    new Class<?>[] {player.getClass()},
-                    player
-            );
-        }
-
-        if (saveData == null) {
-            saveData = MCAReflectionHelper.invokeStatic(
-                    playerSaveDataClass,
-                    "get",
-                    new Class<?>[] {ServerLevel.class, UUID.class},
-                    level,
-                    player.getUUID()
-            );
-        }
-
-        return saveData;
     }
 
-    private record GenderResult(boolean assigned, boolean isFemale) {
-
-        static GenderResult female() {
-            return new GenderResult(true, true);
+    private static Gender normalizeFamilyTreeGender(ServerLevel level, ServerPlayer player, Gender gender) {
+        if (level == null || player == null || gender == null || gender == Gender.UNASSIGNED) {
+            return Gender.UNASSIGNED;
         }
 
-        static GenderResult male() {
-            return new GenderResult(true, false);
+        try {
+            FamilyTree familyTree = FamilyTree.get(level);
+            FamilyTreeNode node = familyTree.getOrCreate(player);
+            node.setGender(gender);
+            familyTree.setDirty();
+            return gender;
+        } catch (Throwable t) {
+            MCAReflectionHelper.warnOnce(
+                    "MCAPlayerBridge#normalizeFamilyTreeGender:direct",
+                    "Failed to normalize MCA FamilyTreeNode gender directly ({})",
+                    t.toString()
+            );
+            return Gender.UNASSIGNED;
+        }
+    }
+
+    private static void logResolvedGenderOnce(
+            ServerPlayer player,
+            PlayerSaveData saveData,
+            Gender saveDataGender,
+            Gender trackedDataGender,
+            Gender familyTreeGender,
+            Gender resolvedGender
+    ) {
+        if (player == null || saveData == null) {
+            return;
         }
 
-        static GenderResult unassigned() {
-            return new GenderResult(false, false);
+        if (!LOGGED_PLAYER_GENDER_RESOLUTION.add(player.getUUID())) {
+            return;
         }
+
+        CompoundTag entityData = saveData.getEntityData();
+        int lowercaseGenderId = entityData != null && entityData.contains("gender")
+                ? entityData.getInt("gender")
+                : -1;
+        int trackedGenderId = entityData != null && entityData.contains("Gender")
+                ? entityData.getInt("Gender")
+                : -1;
+
+        MCACapitals.LOGGER.info(
+                "[MCACapitals] MCA player gender resolved. player='{}', playerSaveDataGender='{}', playerSaveDataDataName='{}', entityDataSet={}, entityData.gender={}, entityData.Gender={}, trackedDataGender='{}', trackedDataDataName='{}', familyTreeGender='{}', familyTreeDataName='{}', resolvedGender='{}', resolvedDataName='{}'",
+                player.getGameProfile().getName(),
+                saveDataGender == null ? "null" : saveDataGender.name(),
+                saveDataGender == null ? "null" : saveDataGender.getDataName(),
+                saveData.isEntityDataSet(),
+                lowercaseGenderId,
+                trackedGenderId,
+                trackedDataGender == null ? "null" : trackedDataGender.name(),
+                trackedDataGender == null ? "null" : trackedDataGender.getDataName(),
+                familyTreeGender == null ? "null" : familyTreeGender.name(),
+                familyTreeGender == null ? "null" : familyTreeGender.getDataName(),
+                resolvedGender == null ? "null" : resolvedGender.name(),
+                resolvedGender == null ? "null" : resolvedGender.getDataName()
+        );
     }
 }

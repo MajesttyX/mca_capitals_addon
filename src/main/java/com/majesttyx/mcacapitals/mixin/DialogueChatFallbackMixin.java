@@ -7,6 +7,7 @@ import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueRuntime;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueService;
+import com.majesttyx.mcacapitals.dialogue.CapitalPoliticalDialogueService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -23,7 +24,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.resources.data.dialogue.Actions", remap = false)
+@Mixin(
+        targets = "forge.net.mca.resources.data.dialogue.Actions",
+        remap = false
+)
 public abstract class DialogueChatFallbackMixin {
 
     private static final String MCA_CHAT_TOPIC = "chat.topic";
@@ -48,7 +52,9 @@ public abstract class DialogueChatFallbackMixin {
             @Coerce Object villagerObj,
             ServerPlayer player
     ) {
-        if (nextKey == null || player == null || villagerObj == null) {
+        if (nextKey == null
+                || player == null
+                || villagerObj == null) {
             return nextKey;
         }
 
@@ -56,58 +62,109 @@ public abstract class DialogueChatFallbackMixin {
             return nextKey;
         }
 
-        if (!MCA_CHAT_TOPIC.equals(nextKey) && !MCA_CHAT_FAIL.equals(nextKey)) {
+        if (!MCA_CHAT_TOPIC.equals(nextKey)
+                && !MCA_CHAT_FAIL.equals(nextKey)) {
             return nextKey;
         }
 
         ServerLevel level = player.serverLevel();
-        CapitalRecord capital = resolveCapital(level, villager.getUUID());
-        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
+
+        CapitalRecord capital = resolveCapital(
+                level,
+                villager.getUUID()
+        );
+
+        if (capital == null
+                || capital.getState() != CapitalState.ACTIVE) {
             return nextKey;
         }
 
-        if (isBabyOrToddler(level, villager)) {
+        if (isBabyOrToddler(
+                level,
+                villager
+        )) {
             return nextKey;
         }
 
         if (MCA_CHAT_TOPIC.equals(nextKey)) {
-            String newsDialogueId = CapitalDialogueService.maybeResolveCapitalNewsDialogueId(player, villager);
-            if (newsDialogueId != null && !newsDialogueId.isBlank()) {
+            String newsDialogueId =
+                    CapitalDialogueService
+                            .maybeResolveCapitalNewsDialogueId(
+                                    player,
+                                    villager
+                            );
+
+            if (newsDialogueId != null
+                    && !newsDialogueId.isBlank()) {
                 MCACapitals.LOGGER.info(
                         "[MCACapitals] Redirected capital chat topic to chronicle news. villager='{}', player='{}', next='{}'",
                         villager.getName().getString(),
                         player.getName().getString(),
                         newsDialogueId
                 );
+
                 return newsDialogueId;
             }
 
-            String playerSovereignDialogueId = CapitalDialogueService.maybeResolvePlayerSovereignDialogueId(player, villager);
+            String politicalDialogueId =
+                    CapitalPoliticalDialogueService
+                            .maybeResolvePoliticalDialogueId(
+                                    player,
+                                    villager
+                            );
+
+            if (politicalDialogueId != null
+                    && !politicalDialogueId.isBlank()) {
+                return politicalDialogueId;
+            }
+
+            String playerSovereignDialogueId =
+                    CapitalDialogueService
+                            .maybeResolvePlayerSovereignDialogueId(
+                                    player,
+                                    villager
+                            );
+
             if (playerSovereignDialogueId != null
                     && !playerSovereignDialogueId.isBlank()
-                    && level.random.nextInt(100) < PLAYER_SOVEREIGN_CHAT_CHANCE) {
+                    && level.random.nextInt(100)
+                    < PLAYER_SOVEREIGN_CHAT_CHANCE) {
                 return playerSovereignDialogueId;
             }
 
-            String rankDialogueId = CapitalDialogueService.maybeResolveCapitalRankDialogueId(player, villager);
+            String rankDialogueId =
+                    CapitalDialogueService
+                            .maybeResolveCapitalRankDialogueId(
+                                    player,
+                                    villager
+                            );
+
             if (rankDialogueId != null
                     && !rankDialogueId.isBlank()
-                    && level.random.nextInt(100) < RANK_CHAT_CHANCE) {
+                    && level.random.nextInt(100)
+                    < RANK_CHAT_CHANCE) {
                 return rankDialogueId;
             }
 
-            if (level.random.nextInt(100) < GENERAL_ALL_RANKS_CHANCE) {
+            if (level.random.nextInt(100)
+                    < GENERAL_ALL_RANKS_CHANCE) {
                 return CapitalDialogueRuntime.GENERAL_ALL_RANKS;
             }
 
-            if (level.random.nextInt(100) < GENERAL_SUCCESS_CHANCE) {
+            if (level.random.nextInt(100)
+                    < GENERAL_SUCCESS_CHANCE) {
                 return CapitalDialogueRuntime.GENERAL_SUCCESS;
             }
 
             return nextKey;
         }
 
-        if (level.random.nextInt(100) < GENERAL_FAIL_CHANCE) {
+        if (isUntitledCommoner(
+                level,
+                villager.getUUID()
+        )
+                && level.random.nextInt(100)
+                < GENERAL_FAIL_CHANCE) {
             return CapitalDialogueRuntime.GENERAL_FAIL;
         }
 
@@ -126,7 +183,9 @@ public abstract class DialogueChatFallbackMixin {
             ServerPlayer player,
             CallbackInfo ci
     ) {
-        if (nextKey == null || player == null || villagerObj == null) {
+        if (nextKey == null
+                || player == null
+                || villagerObj == null) {
             return;
         }
 
@@ -134,46 +193,120 @@ public abstract class DialogueChatFallbackMixin {
             return;
         }
 
-        if (!CapitalDialogueRuntime.isManagedRuntimeKey(nextKey)) {
+        if (!CapitalDialogueRuntime.isManagedRuntimeKey(
+                nextKey
+        )) {
             return;
         }
 
         ServerLevel level = player.serverLevel();
-        CapitalRecord capital = resolveCapital(level, villager.getUUID());
-        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
-            MCAIntegrationBridge.stopInteracting(villager);
+
+        CapitalRecord capital = resolveCapital(
+                level,
+                villager.getUUID()
+        );
+
+        if (capital == null
+                || capital.getState() != CapitalState.ACTIVE) {
+            MCAIntegrationBridge.stopInteracting(
+                    villager
+            );
+
             ci.cancel();
             return;
         }
 
-        String line = CapitalDialogueRuntime.formatManagedRuntimeLine(nextKey, player, villager, level, capital);
+        String line =
+                CapitalDialogueRuntime
+                        .formatManagedRuntimeLine(
+                                nextKey,
+                                player,
+                                villager,
+                                level,
+                                capital
+                        );
+
         if (line == null || line.isBlank()) {
-            MCAIntegrationBridge.stopInteracting(villager);
+            MCAIntegrationBridge.stopInteracting(
+                    villager
+            );
+
             ci.cancel();
             return;
         }
 
-        player.sendSystemMessage(Component.literal(villager.getName().getString() + ": " + line));
-        MCAIntegrationBridge.stopInteracting(villager);
+        player.sendSystemMessage(
+                Component.literal(
+                        villager.getName().getString()
+                                + ": "
+                                + line
+                )
+        );
+
+        MCAIntegrationBridge.stopInteracting(
+                villager
+        );
+
         ci.cancel();
     }
 
-    private static boolean isBabyOrToddler(ServerLevel level, Entity villager) {
+    private static boolean isBabyOrToddler(
+            ServerLevel level,
+            Entity villager
+    ) {
         if (level == null || villager == null) {
             return false;
         }
 
-        String ageState = MCAIntegrationBridge.getAgeState(level, villager.getUUID());
-        return "BABY".equalsIgnoreCase(ageState) || "TODDLER".equalsIgnoreCase(ageState);
+        String ageState = MCAIntegrationBridge.getAgeState(
+                level,
+                villager.getUUID()
+        );
+
+        return "BABY".equalsIgnoreCase(ageState)
+                || "TODDLER".equalsIgnoreCase(ageState);
     }
 
-    private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {
-        CapitalRecord byTitle = CapitalTitleResolver.findCapitalForEntity(villagerId);
+    private static boolean isUntitledCommoner(
+            ServerLevel level,
+            UUID villagerId
+    ) {
+        String title =
+                CapitalTitleResolver
+                        .getDisplayTitleForEntity(
+                                level,
+                                villagerId
+                        );
+
+        return title == null
+                || title.isBlank()
+                || "Commoner".equals(title)
+                || "None".equals(title);
+    }
+
+    private static CapitalRecord resolveCapital(
+            ServerLevel level,
+            UUID villagerId
+    ) {
+        CapitalRecord byTitle =
+                CapitalTitleResolver
+                        .findCapitalForEntity(
+                                villagerId
+                        );
+
         if (byTitle != null) {
             return byTitle;
         }
 
-        Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        Integer villageId =
+                MCAIntegrationBridge
+                        .getVillageIdForResident(
+                                level,
+                                villagerId
+                        );
+
+        return CapitalManager.getCapitalByVillageId(
+                villageId
+        );
     }
 }

@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.data;
 
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CrownStanding;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -69,6 +70,7 @@ final class CapitalSavedDataWriter {
             }
 
             capitalTag.putBoolean(CapitalSavedData.KEY_MONARCHY_REJECTED, capital.isMonarchyRejected());
+            capitalTag.putBoolean(CapitalSavedData.KEY_ROYAL_CHARTER_ISSUED, capital.isRoyalCharterIssued());
 
             capitalTag.putBoolean(CapitalSavedData.KEY_MOURNING_ACTIVE, capital.isMourningActive());
             capitalTag.putLong(CapitalSavedData.KEY_MOURNING_END_DAY, capital.getMourningEndDay());
@@ -141,6 +143,17 @@ final class CapitalSavedDataWriter {
             }
             capitalTag.putBoolean(CapitalSavedData.KEY_GRAND_MAESTER_FEMALE, capital.isGrandMaesterFemale());
 
+            if (capital.getMasterOfLaws() != null) {
+                capitalTag.putUUID(CapitalSavedData.KEY_MASTER_OF_LAWS, capital.getMasterOfLaws());
+            }
+            capitalTag.putBoolean(CapitalSavedData.KEY_MASTER_OF_LAWS_FEMALE, capital.isMasterOfLawsFemale());
+
+            if (capital.getLastCrownStandingSovereign() != null) {
+                capitalTag.putUUID(CapitalSavedData.KEY_LAST_CROWN_STANDING_SOVEREIGN, capital.getLastCrownStandingSovereign());
+            }
+            capitalTag.putLong(CapitalSavedData.KEY_LAST_NATURAL_DUKEDOM_DAY, capital.getLastNaturalDukedomDay());
+            capitalTag.put(CapitalSavedData.KEY_CROWN_STANDINGS, writeCrownStandingMap(capital.getCrownStandings()));
+
             capitalTag.putLong(CapitalSavedData.KEY_LAST_COMMANDER_RAID_BLESSING_GAME_TIME, capital.getLastCommanderRaidBlessingGameTime());
             capitalTag.putLong(CapitalSavedData.KEY_LAST_COMMANDER_RANDOM_BLESSING_DAY, capital.getLastCommanderRandomBlessingDay());
 
@@ -188,6 +201,21 @@ final class CapitalSavedDataWriter {
             CompoundTag tag = new CompoundTag();
             tag.putUUID(CapitalSavedData.KEY_ID, entry.getKey());
             tag.putUUID(CapitalSavedData.KEY_ENTITY_ID, entry.getValue());
+            list.add(tag);
+        }
+        return list;
+    }
+
+    private static ListTag writeCrownStandingMap(Map<UUID, CrownStanding> map) {
+        ListTag list = new ListTag();
+        for (Map.Entry<UUID, CrownStanding> entry : map.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+
+            CompoundTag tag = new CompoundTag();
+            tag.putUUID(CapitalSavedData.KEY_ID, entry.getKey());
+            tag.putString(CapitalSavedData.KEY_STANDING, entry.getValue().name());
             list.add(tag);
         }
         return list;

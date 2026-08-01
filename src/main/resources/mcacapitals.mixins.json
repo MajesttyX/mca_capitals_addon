@@ -6,22 +6,43 @@
   "refmap": "mcacapitals.refmap.json",
   "mixins": [
     "VillagerCommandHandlerMixin",
+    "VillagerExecutionAuthorityMixin",
+    "MayorConstraintCapitalAuthorityMixin",
     "DialogueChatFallbackMixin",
     "DialogueCrownAuthorityAnswerMixin",
+    "MessengerCapitalDialogueMixin",
     "PlayerSaveDataMarriageMixin",
+    "PlayerEditorGenderSyncMixin",
     "VillagerTasksMCARoyalGuardMixin",
+    "ResidencyCampaignMixin",
+    "GuardEnemiesSensorCampaignMixin",
+    "VillagerTasksMCACampaignCombatMixin",
+    "CapitalCampaignChildSovereignDecisionMixin",
     "BreedableRelationshipGiftMixin",
-    "FamilyTreeNodeMarriageSurnameMixin",
+    "SealedPurseGiftMixin",
+    "EntitySprintingRoyalGuardMixin",
+    "GetInteractDataRequestIdentityMixin",
+    "EntityRelationshipMarriageSurnameMixin",
     "FamilyTreeNodeAdoptionIdentityMixin",
     "BabyItemBirthIdentityMixin",
-    "EntitySprintingRoyalGuardMixin",
     "PregnancyBirthIdentityMixin",
     "NamesRegionFilterMixin",
-    "GetInteractDataRequestIdentityMixin"
+    "TasksCapitalRankMixin",
+    "GetVillageRequestCapitalAuthorityMixin",
+    "SaveVillageMessageCapitalAuthorityMixin",
+    "RankCriterionSuppressionMixin",
+    "CapitalSuccessionServiceInterregnumMixin",
+    "CapitalPopulationScannerInterregnumMixin",
+    "CapitalTitleResolverInterregnumMixin",
+    "InteractionDialogueInitMessageMixin",
+    "AbstractContainerMenuForeignStorageMixin",
+    "ServerPlayerGameModeForeignStorageMixin",
+    "HopperBlockEntityForeignStorageMixin"
   ],
   "client": [
     "InteractScreenBetrothalMixin",
-    "InteractScreenIdentityMixin"
+    "InteractScreenIdentityMixin",
+    "BlueprintScreenCapitalAuthorityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

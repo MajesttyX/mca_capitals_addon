@@ -38,10 +38,34 @@ public class ModNetwork {
 
         CHANNEL.registerMessage(
                 nextId++,
+                OpenAmbassadorCommunicationPacket.class,
+                OpenAmbassadorCommunicationPacket::encode,
+                OpenAmbassadorCommunicationPacket::decode,
+                OpenAmbassadorCommunicationPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
                 OpenBetrothalSelectionPacket.class,
                 OpenBetrothalSelectionPacket::encode,
                 OpenBetrothalSelectionPacket::decode,
                 OpenBetrothalSelectionPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
+                OpenAccusationSelectionPacket.class,
+                OpenAccusationSelectionPacket::encode,
+                OpenAccusationSelectionPacket::decode,
+                OpenAccusationSelectionPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
+                OpenSealedPurseCaseSelectionPacket.class,
+                OpenSealedPurseCaseSelectionPacket::encode,
+                OpenSealedPurseCaseSelectionPacket::decode,
+                OpenSealedPurseCaseSelectionPacket::handle
         );
 
         CHANNEL.registerMessage(
@@ -70,18 +94,26 @@ public class ModNetwork {
 
         CHANNEL.registerMessage(
                 nextId++,
-                SubmitDecreeOfTheHousePacket.class,
-                SubmitDecreeOfTheHousePacket::encode,
-                SubmitDecreeOfTheHousePacket::decode,
-                SubmitDecreeOfTheHousePacket::handle
-        );
-
-        CHANNEL.registerMessage(
-                nextId++,
                 SyncVillagerIdentityPacket.class,
                 SyncVillagerIdentityPacket::encode,
                 SyncVillagerIdentityPacket::decode,
                 SyncVillagerIdentityPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
+                SyncBlueprintAuthorityPacket.class,
+                SyncBlueprintAuthorityPacket::encode,
+                SyncBlueprintAuthorityPacket::decode,
+                SyncBlueprintAuthorityPacket::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
+                SubmitDecreeOfTheHousePacket.class,
+                SubmitDecreeOfTheHousePacket::encode,
+                SubmitDecreeOfTheHousePacket::decode,
+                SubmitDecreeOfTheHousePacket::handle
         );
 
         registered = true;
@@ -91,7 +123,19 @@ public class ModNetwork {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
+    public static void sendToPlayer(ServerPlayer player, OpenAmbassadorCommunicationPacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
     public static void sendToPlayer(ServerPlayer player, OpenBetrothalSelectionPacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenAccusationSelectionPacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenSealedPurseCaseSelectionPacket packet) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
@@ -108,6 +152,10 @@ public class ModNetwork {
     }
 
     public static void sendToPlayer(ServerPlayer player, SyncVillagerIdentityPacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendToPlayer(ServerPlayer player, SyncBlueprintAuthorityPacket packet) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 }

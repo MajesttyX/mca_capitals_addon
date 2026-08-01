@@ -8,6 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -51,6 +52,22 @@ public final class MCAIntegrationBridge {
 
     public static boolean isPlayerInVillage(ServerLevel level, ServerPlayer player, Integer villageId) {
         return MCAPlayerBridge.isPlayerInVillage(level, player, villageId);
+    }
+
+    public static String getPlayerDialogueName(ServerPlayer player) {
+        return MCAPlayerBridge.getDialogueName(player);
+    }
+
+    public static boolean forceVillageResidency(
+            ServerLevel level,
+            UUID villagerId,
+            int villageId
+    ) {
+        return MCAVillageResidencyBridge.forceVillageResidency(
+                level,
+                villagerId,
+                villageId
+        );
     }
 
     public static boolean isPlayerFemale(ServerLevel level, ServerPlayer player) {
@@ -190,6 +207,22 @@ public final class MCAIntegrationBridge {
 
     public static Set<UUID> getVillageResidents(ServerLevel level, int villageId) {
         return MCAVillageBridge.getVillageResidents(level, villageId);
+    }
+
+    public static Map<UUID, String> getVillageResidentNames(ServerLevel level, int villageId) {
+        return MCAVillageBridge.getVillageResidentNames(level, villageId);
+    }
+
+    public static int countBuildingsOfType(ServerLevel level, Integer villageId, String buildingType) {
+        return MCAVillageBridge.countBuildingsOfType(level, villageId, buildingType);
+    }
+
+    public static List<AABB> getBuildingBoundsOfType(ServerLevel level, Integer villageId, String buildingType) {
+        return MCAVillageBridge.getBuildingBoundsOfType(level, villageId, buildingType);
+    }
+
+    public static List<BlockPos> getBuildingCentersOfType(ServerLevel level, Integer villageId, String buildingType) {
+        return MCAVillageBridge.getBuildingCentersOfType(level, villageId, buildingType);
     }
 
     public static int getHeartsWithPlayer(ServerLevel level, UUID villagerId, UUID playerId) {

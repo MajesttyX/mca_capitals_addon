@@ -39,6 +39,7 @@ public class CapitalSavedData extends SavedData {
     static final String KEY_PLAYER_CONSORT_NAME = "PlayerConsortName";
 
     static final String KEY_MONARCHY_REJECTED = "MonarchyRejected";
+    static final String KEY_ROYAL_CHARTER_ISSUED = "RoyalCharterIssued";
 
     static final String KEY_MOURNING_ACTIVE = "MourningActive";
     static final String KEY_MOURNING_END_DAY = "MourningEndDay";
@@ -83,6 +84,12 @@ public class CapitalSavedData extends SavedData {
     static final String KEY_HERALD_DISPLAY_NAME = "HeraldDisplayName";
     static final String KEY_GRAND_MAESTER = "GrandMaester";
     static final String KEY_GRAND_MAESTER_FEMALE = "GrandMaesterFemale";
+    static final String KEY_MASTER_OF_LAWS = "MasterOfLaws";
+    static final String KEY_MASTER_OF_LAWS_FEMALE = "MasterOfLawsFemale";
+    static final String KEY_LAST_CROWN_STANDING_SOVEREIGN = "LastCrownStandingSovereign";
+    static final String KEY_LAST_NATURAL_DUKEDOM_DAY = "LastNaturalDukedomDay";
+    static final String KEY_CROWN_STANDINGS = "CrownStandings";
+    static final String KEY_STANDING = "Standing";
     static final String KEY_LAST_COMMANDER_RAID_BLESSING_GAME_TIME = "LastCommanderRaidBlessingGameTime";
     static final String KEY_LAST_COMMANDER_RANDOM_BLESSING_DAY = "LastCommanderRandomBlessingDay";
 

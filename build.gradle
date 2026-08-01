@@ -54,24 +54,44 @@ minecraft {
     }
 }
 
-sourceSets.main.resources { srcDir 'src/generated/resources' }
+sourceSets.main.resources {
+    srcDir 'src/generated/resources'
+}
 
 repositories {
     mavenLocal()
-    maven { url = "https://maven.architectury.dev/" }
-    maven { url = "https://maven.conczin.net/Artifacts" }
-    maven { url = "https://maven.minecraftforge.net/" }
+
+    maven {
+        url = "https://maven.architectury.dev/"
+    }
+
+    maven {
+        url = "https://maven.conczin.net/Artifacts"
+    }
+
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+
+    maven {
+        url = "https://maven.minecraftforge.net/"
+    }
+
     mavenCentral()
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    compileOnly fg.deobf("net.mca:mca:7.6.15+1.20.1+forge")
-    runtimeOnly fg.deobf("net.mca:mca:7.6.15+1.20.1+forge")
+    compileOnly fg.deobf("maven.modrinth:minecraft-comes-alive-reborn:${mca_version}")
+    runtimeOnly fg.deobf("maven.modrinth:minecraft-comes-alive-reborn:${mca_version}")
 
-    compileOnly fg.deobf("dev.architectury:architectury-forge:9.2.14")
-    runtimeOnly fg.deobf("dev.architectury:architectury-forge:9.2.14")
+    compileOnly fg.deobf("dev.architectury:architectury-forge:${architectury_version}")
+    runtimeOnly fg.deobf("dev.architectury:architectury-forge:${architectury_version}")
 
     compileOnly "org.spongepowered:mixin:0.8.5"
     annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
@@ -84,6 +104,8 @@ tasks.named('processResources', ProcessResources).configure {
             forge_version          : forge_version,
             forge_version_range    : forge_version_range,
             loader_version_range   : loader_version_range,
+            mca_version            : mca_version,
+            mca_version_range      : mca_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
@@ -91,6 +113,7 @@ tasks.named('processResources', ProcessResources).configure {
             mod_authors            : mod_authors,
             mod_description        : mod_description,
     ]
+
     inputs.properties replaceProperties
 
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
@@ -121,6 +144,7 @@ publishing {
             artifact jar
         }
     }
+
     repositories {
         maven {
             url "file://${project.projectDir}/mcmodsrepo"

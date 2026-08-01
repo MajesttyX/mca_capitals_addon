@@ -22,6 +22,11 @@ public final class CapitalDialogueRuntime {
     public static final String GENERAL_SUCCESS = "mcacapitals_chat_general_success";
     public static final String GENERAL_PLAYER_SOVEREIGN = "mcacapitals_chat_general_player_sovereign";
 
+    public static final String POLITICAL_HINT_FRIEND = "mcacapitals_chat_political_hint_friend";
+    public static final String POLITICAL_HINT_ENEMY = "mcacapitals_chat_political_hint_enemy";
+    public static final String POLITICAL_PRIVATE_FRIEND = "mcacapitals_chat_political_private_friend";
+    public static final String POLITICAL_PRIVATE_ENEMY = "mcacapitals_chat_political_private_enemy";
+
     public static final String RANK_COMMONER = "mcacapitals_chat_rank_commoner";
     public static final String RANK_KNIGHT = "mcacapitals_chat_rank_knight";
     public static final String RANK_LORD_COMMANDER = "mcacapitals_chat_rank_lord_commander";
@@ -82,14 +87,41 @@ public final class CapitalDialogueRuntime {
     public static final String MCA_CAPITAL_IDLE_EVENING_CHATTER = "mcacapitals_capital_idle_evening_chatter";
 
     private static final Map<String, Integer> BUCKET_SIZES = buildBucketSizes();
+    private static final Map<String, List<String>> INLINE_BUCKET_LINES = buildInlineBucketLines();
+
     private static final List<String> KNOWN_TITLES = List.of(
-            "High Queen", "High King", "Dowager Queen", "Dowager King",
-            "Queen Consort", "King Consort", "Heir Apparent", "Crown Princess", "Crown Prince",
-            "Dowager Princess", "Dowager Prince", "Princess Consort", "Prince Consort",
-            "Hand of the Queen", "Hand of the King",
-            "Grand Maester", "Maester", "Court Herald", "Lord Commander",
-            "Dowager Duchess", "Dowager Duke", "Duchess", "Duke", "Princess", "Prince",
-            "Lady", "Lord", "Dame", "Sir", "Queen", "King"
+            "High Queen",
+            "High King",
+            "Dowager Queen",
+            "Dowager King",
+            "Queen Consort",
+            "King Consort",
+            "Heir Apparent",
+            "Crown Princess",
+            "Crown Prince",
+            "Dowager Princess",
+            "Dowager Prince",
+            "Princess Consort",
+            "Prince Consort",
+            "Hand of the Queen",
+            "Hand of the King",
+            "Grand Maester",
+            "Master of Laws",
+            "Maester",
+            "Court Herald",
+            "Lord Commander",
+            "Dowager Duchess",
+            "Dowager Duke",
+            "Duchess",
+            "Duke",
+            "Princess",
+            "Prince",
+            "Lady",
+            "Lord",
+            "Dame",
+            "Sir",
+            "Queen",
+            "King"
     );
 
     private static final Map<UUID, LastLineState> LAST_LINE_STATE = new HashMap<>();
@@ -98,7 +130,8 @@ public final class CapitalDialogueRuntime {
     }
 
     public static boolean isManagedRuntimeKey(String key) {
-        return key != null && key.startsWith(RUNTIME_PREFIX);
+        return key != null
+                && key.startsWith(RUNTIME_PREFIX);
     }
 
     public static String runtimeKeyForBucket(String bucketKey) {
@@ -112,49 +145,135 @@ public final class CapitalDialogueRuntime {
             ServerLevel level,
             CapitalRecord capital
     ) {
-        if (runtimeKey == null || player == null || speaker == null || level == null || capital == null) {
+        if (runtimeKey == null
+                || player == null
+                || speaker == null
+                || level == null
+                || capital == null) {
             return null;
         }
 
-        String bucketKey = runtimeKey.substring(RUNTIME_PREFIX.length());
-        int bucketSize = BUCKET_SIZES.getOrDefault(bucketKey, 0);
+        String bucketKey = runtimeKey.substring(
+                RUNTIME_PREFIX.length()
+        );
+
+        List<String> inlineLines = INLINE_BUCKET_LINES.get(
+                bucketKey
+        );
+
+        if (inlineLines != null && !inlineLines.isEmpty()) {
+            int index = pickLineIndex(
+                    speaker.getUUID(),
+                    bucketKey,
+                    inlineLines.size(),
+                    level
+            );
+
+            DialogueContext context = DialogueContext.create(
+                    level,
+                    capital,
+                    player,
+                    speaker
+            );
+
+            return applyTags(
+                    inlineLines.get(index),
+                    context
+            );
+        }
+
+        int bucketSize = BUCKET_SIZES.getOrDefault(
+                bucketKey,
+                0
+        );
+
         if (bucketSize <= 0) {
             return null;
         }
 
-        int index = pickLineIndex(speaker.getUUID(), bucketKey, bucketSize, level);
-        String templateKey = "dialogue." + bucketKey + "_" + String.format("%02d", index + 1);
-        String template = Language.getInstance().getOrDefault(templateKey);
-        if (template == null || template.isBlank() || template.equals(templateKey)) {
+        int index = pickLineIndex(
+                speaker.getUUID(),
+                bucketKey,
+                bucketSize,
+                level
+        );
+
+        String templateKey =
+                "dialogue."
+                        + bucketKey
+                        + "_"
+                        + String.format(
+                        "%02d",
+                        index + 1
+                );
+
+        String template = Language.getInstance().getOrDefault(
+                templateKey
+        );
+
+        if (template == null
+                || template.isBlank()
+                || template.equals(templateKey)) {
             return null;
         }
 
-        DialogueContext context = DialogueContext.create(level, capital, player, speaker);
-        return applyTags(template, context);
+        DialogueContext context = DialogueContext.create(
+                level,
+                capital,
+                player,
+                speaker
+        );
+
+        return applyTags(
+                template,
+                context
+        );
     }
 
-    private static int pickLineIndex(UUID speakerId, String bucketKey, int size, ServerLevel level) {
+    private static int pickLineIndex(
+            UUID speakerId,
+            String bucketKey,
+            int size,
+            ServerLevel level
+    ) {
         if (size <= 1) {
             return 0;
         }
 
-        int index = level.random.nextInt(size);
-        LastLineState state = LAST_LINE_STATE.computeIfAbsent(speakerId, ignored -> new LastLineState());
+        int index = level.random.nextInt(
+                size
+        );
 
-        if (bucketKey.equals(state.lastBucket) && index == state.lastIndex) {
+        LastLineState state = LAST_LINE_STATE.computeIfAbsent(
+                speakerId,
+                ignored -> new LastLineState()
+        );
+
+        if (bucketKey.equals(state.lastBucket)
+                && index == state.lastIndex) {
             index = (index + 1) % size;
         }
 
         state.lastBucket = bucketKey;
         state.lastIndex = index;
+
         return index;
     }
 
-    private static String applyTags(String template, DialogueContext context) {
+    private static String applyTags(
+            String template,
+            DialogueContext context
+    ) {
         String result = template;
-        for (Map.Entry<String, String> entry : context.values.entrySet()) {
-            result = result.replace(entry.getKey(), entry.getValue());
+
+        for (Map.Entry<String, String> entry :
+                context.values.entrySet()) {
+            result = result.replace(
+                    entry.getKey(),
+                    entry.getValue()
+            );
         }
+
         return result;
     }
 
@@ -228,7 +347,76 @@ public final class CapitalDialogueRuntime {
         return sizes;
     }
 
+    private static Map<String, List<String>> buildInlineBucketLines() {
+        Map<String, List<String>> lines = new HashMap<>();
+
+        lines.put(
+                POLITICAL_HINT_FRIEND,
+                List.of(
+                        "Some crowns sit heavy, but {sovereign_name} has not forgotten who keeps {capital_name} standing.",
+                        "I sleep easier when the court is steady. That is all I will say about politics.",
+                        "There are worse hands for {capital_name} to be in than {sovereign_name}'s.",
+                        "A loyal subject does not need to shout loyalty in the square.",
+                        "If trouble comes for the Crown, some of us will remember our oaths.",
+                        "People complain about rule until they see what disorder costs.",
+                        "The sovereign has enemies, of course. Any ruler worth following does.",
+                        "I would rather mend the realm quietly than tear it apart loudly.",
+                        "The court is not perfect, but neither is the world outside its walls.",
+                        "If you are asking where I stand, I stand where the peace holds."
+                )
+        );
+
+        lines.put(
+                POLITICAL_HINT_ENEMY,
+                List.of(
+                        "A crown casts a long shadow. Some people just mistake shade for safety.",
+                        "I keep my opinions folded away. Loose words find ropes too quickly.",
+                        "The court calls it order. Others might call it obedience with better clothes.",
+                        "Not every oath is sworn with a willing tongue.",
+                        "A wise villager praises the Crown where guards can hear them.",
+                        "Some rulers inherit loyalty. Others inherit silence.",
+                        "If the realm is at peace, it is a very nervous kind of peace.",
+                        "There are people in {capital_name} who remember how things were before.",
+                        "The herald announces victories. The market remembers costs.",
+                        "Ask me again when walls do not have ears."
+                )
+        );
+
+        lines.put(
+                POLITICAL_PRIVATE_FRIEND,
+                List.of(
+                        "I trust {sovereign_name}. If the Crown needs me, I will answer.",
+                        "You have earned honesty from me. I support {sovereign_name} and the rule of this Crown.",
+                        "I am a friend of the Crown. Quietly, but truly.",
+                        "Whatever people whisper, my loyalty is with {sovereign_name}.",
+                        "I want {capital_name} to hold, and I believe the Crown is how it holds.",
+                        "I would not say this to everyone, but I stand with the sovereign.",
+                        "The Crown has my support. Not blind support, but real support.",
+                        "If enemies move against {sovereign_name}, I will not be among them."
+                )
+        );
+
+        lines.put(
+                POLITICAL_PRIVATE_ENEMY,
+                List.of(
+                        "You have earned the truth. I do not support {sovereign_name}.",
+                        "I am no friend of this Crown. Be careful what you do with that knowledge.",
+                        "I keep my head bowed because I prefer it attached. That is not loyalty.",
+                        "The sovereign has my obedience, not my support.",
+                        "I do not believe {sovereign_name} should rule {capital_name}.",
+                        "You wanted honesty. I am an enemy of the Crown, though I am not eager to die for saying it.",
+                        "My loyalty belongs elsewhere. The Crown only has my silence.",
+                        "I would see another rule here, if such things could be said safely."
+                )
+        );
+
+        return Map.copyOf(
+                lines
+        );
+    }
+
     private static final class DialogueContext {
+
         private final Map<String, String> values = new HashMap<>();
 
         private static DialogueContext create(
@@ -240,43 +428,225 @@ public final class CapitalDialogueRuntime {
             DialogueContext context = new DialogueContext();
 
             CapitalDialogueEventModels.ChronicleEvent latestEvent =
-                    CapitalDialogueChronicleLogic.findLatestNotableEvent(level, capital);
+                    CapitalDialogueChronicleLogic.findLatestNotableEvent(
+                            level,
+                            capital
+                    );
 
-            context.put("{capital_name}", safeVillageName(level, capital));
-            context.put("{capital_population}", Integer.toString(safePopulation(level, capital)));
-            context.put("{mourning_status}", capital.isMourningActive() ? "in mourning" : "at peace again");
+            context.put(
+                    "{capital_name}",
+                    safeVillageName(
+                            level,
+                            capital
+                    )
+            );
 
-            context.put("{speaker_name}", resolveEntityName(level, capital, speaker == null ? null : speaker.getUUID()));
-            context.put("{speaker_title}", speaker == null ? "Commoner" : safeDisplayTitle(level, capital, speaker.getUUID()));
+            context.put(
+                    "{capital_population}",
+                    Integer.toString(
+                            safePopulation(
+                                    level,
+                                    capital
+                            )
+                    )
+            );
 
-            context.put("{sovereign_name}", resolveSovereignRawName(level, capital));
-            context.put("{sovereign_title}", resolveSovereignTitle(level, capital));
-            context.put("{consort_name}", resolveEntityName(level, capital, capital.getConsort()));
-            context.put("{consort_title}", safeDisplayTitle(level, capital, capital.getConsort()));
-            context.put("{heir_name}", resolveEntityName(level, capital, capital.getHeir()));
-            context.put("{heir_title}", safeDisplayTitle(level, capital, capital.getHeir()));
-            context.put("{hand_name}", resolveEntityName(level, capital, capital.getHand()));
-            context.put("{hand_title}", safeDisplayTitle(level, capital, capital.getHand()));
-            context.put("{commander_name}", resolveEntityName(level, capital, capital.getCommander()));
-            context.put("{commander_title}", safeDisplayTitle(level, capital, capital.getCommander()));
-            context.put("{herald_name}", resolveEntityName(level, capital, capital.getHerald()));
-            context.put("{grand_maester_name}", resolveEntityName(level, capital, capital.getGrandMaester()));
+            context.put(
+                    "{mourning_status}",
+                    capital.isMourningActive()
+                            ? "in mourning"
+                            : "at peace again"
+            );
 
-            context.put("{royal_child_count}", Integer.toString(capital.getRoyalChildren().size()));
-            context.put("{royal_household_count}", Integer.toString(capital.getRoyalHousehold().size()));
+            context.put(
+                    "{speaker_name}",
+                    resolveEntityName(
+                            level,
+                            capital,
+                            speaker == null
+                                    ? null
+                                    : speaker.getUUID()
+                    )
+            );
 
-            context.put("{latest_event}", latestEvent == null ? "recent court business" : latestEvent.text());
-            context.put("{latest_event_type}", latestEvent == null ? "court business" : latestEvent.type().name().toLowerCase());
-            context.put("{days_since_latest_event}", latestEvent == null ? "0" : Long.toString(Math.max(0L, currentDay(level) - latestEvent.day())));
+            context.put(
+                    "{speaker_title}",
+                    speaker == null
+                            ? "Commoner"
+                            : safeDisplayTitle(
+                            level,
+                            capital,
+                            speaker.getUUID()
+                    )
+            );
+
+            context.put(
+                    "{sovereign_name}",
+                    resolveSovereignRawName(
+                            level,
+                            capital
+                    )
+            );
+
+            context.put(
+                    "{sovereign_title}",
+                    resolveSovereignTitle(
+                            level,
+                            capital
+                    )
+            );
+
+            context.put(
+                    "{consort_name}",
+                    resolveEntityName(
+                            level,
+                            capital,
+                            capital.getConsort()
+                    )
+            );
+
+            context.put(
+                    "{consort_title}",
+                    safeDisplayTitle(
+                            level,
+                            capital,
+                            capital.getConsort()
+                    )
+            );
+
+            context.put(
+                    "{heir_name}",
+                    resolveEntityName(
+                            level,
+                            capital,
+                            capital.getHeir()
+                    )
+            );
+
+            context.put(
+                    "{heir_title}",
+                    safeDisplayTitle(
+                            level,
+                            capital,
+                            capital.getHeir()
+                    )
+            );
+
+            context.put(
+                    "{hand_name}",
+                    resolveEntityName(
+                            level,
+                            capital,
+                            capital.getHand()
+                    )
+            );
+
+            context.put(
+                    "{hand_title}",
+                    safeDisplayTitle(
+                            level,
+                            capital,
+                            capital.getHand()
+                    )
+            );
+
+            context.put(
+                    "{commander_name}",
+                    resolveEntityName(
+                            level,
+                            capital,
+                            capital.getCommander()
+                    )
+            );
+
+            context.put(
+                    "{commander_title}",
+                    safeDisplayTitle(
+                            level,
+                            capital,
+                            capital.getCommander()
+                    )
+            );
+
+            context.put(
+                    "{herald_name}",
+                    resolveEntityName(
+                            level,
+                            capital,
+                            capital.getHerald()
+                    )
+            );
+
+            context.put(
+                    "{grand_maester_name}",
+                    resolveEntityName(
+                            level,
+                            capital,
+                            capital.getGrandMaester()
+                    )
+            );
+
+            context.put(
+                    "{royal_child_count}",
+                    Integer.toString(
+                            capital.getRoyalChildren().size()
+                    )
+            );
+
+            context.put(
+                    "{royal_household_count}",
+                    Integer.toString(
+                            capital.getRoyalHousehold().size()
+                    )
+            );
+
+            context.put(
+                    "{latest_event}",
+                    latestEvent == null
+                            ? "recent court business"
+                            : latestEvent.text()
+            );
+
+            context.put(
+                    "{latest_event_type}",
+                    latestEvent == null
+                            ? "court business"
+                            : latestEvent.type()
+                            .name()
+                            .toLowerCase()
+            );
+
+            context.put(
+                    "{days_since_latest_event}",
+                    latestEvent == null
+                            ? "0"
+                            : Long.toString(
+                            Math.max(
+                                    0L,
+                                    currentDay(level)
+                                            - latestEvent.day()
+                            )
+                    )
+            );
 
             return context;
         }
 
-        private void put(String key, String value) {
-            values.put(key, value == null || value.isBlank() ? fallbackFor(key) : value);
+        private void put(
+                String key,
+                String value
+        ) {
+            values.put(
+                    key,
+                    value == null || value.isBlank()
+                            ? fallbackFor(key)
+                            : value
+            );
         }
 
-        private static String fallbackFor(String key) {
+        private static String fallbackFor(
+                String key
+        ) {
             return switch (key) {
                 case "{capital_name}" -> "the capital";
                 case "{capital_population}" -> "0";
@@ -304,38 +674,94 @@ public final class CapitalDialogueRuntime {
             };
         }
 
-        private static long currentDay(ServerLevel level) {
-            return Math.max(1L, level.getDayTime() / 24000L + 1L);
+        private static long currentDay(
+                ServerLevel level
+        ) {
+            return Math.max(
+                    1L,
+                    level.getDayTime() / 24000L + 1L
+            );
         }
 
-        private static int safePopulation(ServerLevel level, CapitalRecord capital) {
+        private static int safePopulation(
+                ServerLevel level,
+                CapitalRecord capital
+        ) {
             Integer villageId = capital.getVillageId();
-            return villageId == null ? 0 : Math.max(0, MCAIntegrationBridge.getVillagePopulation(level, villageId));
+
+            return villageId == null
+                    ? 0
+                    : Math.max(
+                    0,
+                    MCAIntegrationBridge.getVillagePopulation(
+                            level,
+                            villageId
+                    )
+            );
         }
 
-        private static String safeVillageName(ServerLevel level, CapitalRecord capital) {
+        private static String safeVillageName(
+                ServerLevel level,
+                CapitalRecord capital
+        ) {
             Integer villageId = capital.getVillageId();
-            String name = villageId == null ? null : MCAIntegrationBridge.getVillageName(level, villageId);
-            return name == null || name.isBlank() ? "the capital" : name;
+
+            String name = villageId == null
+                    ? null
+                    : MCAIntegrationBridge.getVillageName(
+                    level,
+                    villageId
+            );
+
+            return name == null || name.isBlank()
+                    ? "the capital"
+                    : name;
         }
 
-        private static String resolveSovereignRawName(ServerLevel level, CapitalRecord capital) {
+        private static String resolveSovereignRawName(
+                ServerLevel level,
+                CapitalRecord capital
+        ) {
             if (capital.isPlayerSovereign()
                     && capital.getPlayerSovereignName() != null
                     && !capital.getPlayerSovereignName().isBlank()) {
-                return stripKnownTitles(capital.getPlayerSovereignName());
+                return stripKnownTitles(
+                        capital.getPlayerSovereignName()
+                );
             }
-            return resolveEntityName(level, capital, capital.getSovereign());
+
+            return resolveEntityName(
+                    level,
+                    capital,
+                    capital.getSovereign()
+            );
         }
 
-        private static String resolveSovereignTitle(ServerLevel level, CapitalRecord capital) {
-            if (capital.isPlayerSovereign() && capital.getPlayerSovereignId() != null) {
-                return safeDisplayTitle(level, capital, capital.getPlayerSovereignId());
+        private static String resolveSovereignTitle(
+                ServerLevel level,
+                CapitalRecord capital
+        ) {
+            if (capital.isPlayerSovereign()
+                    && capital.getPlayerSovereignId() != null) {
+                return safeDisplayTitle(
+                        level,
+                        capital,
+                        capital.getPlayerSovereignId()
+                );
             }
-            return safeDisplayTitle(level, capital, capital.getSovereign());
+
+            return safeDisplayTitle(
+                    level,
+                    capital,
+                    capital.getSovereign()
+            );
         }
 
-        private static String resolveEntityName(ServerLevel level, CapitalRecord capital, UUID id) {
+        private static String resolveEntityName(
+                ServerLevel level,
+                CapitalRecord capital,
+                UUID id
+        ) {
             if (id == null) {
                 return "";
             }
@@ -345,33 +771,66 @@ public final class CapitalDialogueRuntime {
                     && capital.getPlayerSovereignId().equals(id)
                     && capital.getPlayerSovereignName() != null
                     && !capital.getPlayerSovereignName().isBlank()) {
-                return stripKnownTitles(capital.getPlayerSovereignName());
+                return stripKnownTitles(
+                        capital.getPlayerSovereignName()
+                );
             }
 
             if (level.getServer() != null) {
-                ServerPlayer onlinePlayer = level.getServer().getPlayerList().getPlayer(id);
+                ServerPlayer onlinePlayer =
+                        level.getServer()
+                                .getPlayerList()
+                                .getPlayer(id);
+
                 if (onlinePlayer != null) {
-                    return stripKnownTitles(onlinePlayer.getName().getString());
+                    return stripKnownTitles(
+                            onlinePlayer.getName()
+                                    .getString()
+                    );
                 }
             }
 
-            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
-            if (entity != null && entity.getName() != null) {
-                return stripKnownTitles(entity.getName().getString());
+            Entity entity = MCAIntegrationBridge.getEntityByUuid(
+                    level,
+                    id
+            );
+
+            if (entity != null
+                    && entity.getName() != null) {
+                return stripKnownTitles(
+                        entity.getName()
+                                .getString()
+                );
             }
 
             return "";
         }
 
-        private static String safeDisplayTitle(ServerLevel level, CapitalRecord capital, UUID id) {
+        private static String safeDisplayTitle(
+                ServerLevel level,
+                CapitalRecord capital,
+                UUID id
+        ) {
             if (id == null) {
                 return "";
             }
-            String title = CapitalTitleResolver.getDisplayTitle(level, capital, id);
-            return title == null || title.isBlank() || "None".equals(title) ? "" : title;
+
+            String title = CapitalTitleResolver.getDisplayTitle(
+                    level,
+                    capital,
+                    id
+            );
+
+            return title == null
+                    || title.isBlank()
+                    || "None".equals(title)
+                    ? ""
+                    : title;
         }
 
-        private static String stripKnownTitles(String value) {
+        private static String stripKnownTitles(
+                String value
+        ) {
             if (value == null || value.isBlank()) {
                 return "";
             }
@@ -379,19 +838,34 @@ public final class CapitalDialogueRuntime {
             String result = value.trim();
 
             if (result.endsWith(" of the Kingsguard")) {
-                result = result.substring(0, result.length() - " of the Kingsguard".length()).trim();
+                result = result.substring(
+                        0,
+                        result.length()
+                                - " of the Kingsguard".length()
+                ).trim();
             }
+
             if (result.endsWith(" of the Queensguard")) {
-                result = result.substring(0, result.length() - " of the Queensguard".length()).trim();
+                result = result.substring(
+                        0,
+                        result.length()
+                                - " of the Queensguard".length()
+                ).trim();
             }
 
             boolean changed = true;
+
             while (changed) {
                 changed = false;
+
                 for (String title : KNOWN_TITLES) {
                     String prefix = title + " ";
+
                     if (result.startsWith(prefix)) {
-                        result = result.substring(prefix.length()).trim();
+                        result = result.substring(
+                                prefix.length()
+                        ).trim();
+
                         changed = true;
                         break;
                     }
@@ -403,6 +877,7 @@ public final class CapitalDialogueRuntime {
     }
 
     private static final class LastLineState {
+
         private String lastBucket = "";
         private int lastIndex = -1;
     }

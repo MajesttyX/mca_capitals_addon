@@ -36,6 +36,15 @@ public class ModItems {
     public static final RegistryObject<Item> CAPITAL_CHRONICLE =
             ITEMS.register("capital_chronicle", CapitalChronicleItem::new);
 
+    public static final RegistryObject<Item> SEALED_PURSE =
+            ITEMS.register("sealed_purse", SealedPurseItem::new);
+
+    public static final RegistryObject<Item> ROYAL_PARDON =
+            ITEMS.register("royal_pardon", RoyalPardonItem::new);
+
+    public static final RegistryObject<Item> DIPLOMATIC_PACKAGE =
+            ITEMS.register("diplomatic_package", DiplomaticPackageItem::new);
+
     public static final RegistryObject<Item> DECREE_OF_THE_HOUSE =
             ITEMS.register("decree_of_the_house", DecreeOfTheHouseItem::new);
 

@@ -1,0 +1,17 @@
+{
+  "silent": true,
+  "auto": true,
+  "answers": [
+    {
+      "name": "political",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "next": "mcacapitals_runtime_mcacapitals_chat_political_private_enemy"
+          }
+        }
+      ]
+    }
+  ]
+}

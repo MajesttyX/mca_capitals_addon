@@ -24,9 +24,16 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.${mod_id}]]
+modId="architectury"
+mandatory=true
+versionRange="[9.2.14,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
 modId="mca"
 mandatory=true
-versionRange="[7.6.16,7.7.0)"
+versionRange="${mca_version_range}"
 ordering="AFTER"
 side="BOTH"
 

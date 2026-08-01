@@ -1,8 +1,52 @@
 {
   "answers": [
     {
-      "name": "mcacapitals_petition",
+      "name": "mcacapitals_manage_diplomacy",
+      "priority": 1002,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_manage_diplomacy"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_review_crown_justice",
+      "priority": 1000,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_review_crown_justice"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_accuse_enemy",
       "priority": 999,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_accuse_enemy"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_request_royal_pardon",
+      "priority": 998,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_request_royal_pardon"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_petition",
+      "priority": 997,
       "results": [
         {
           "actions": {
@@ -13,7 +57,7 @@
     },
     {
       "name": "mcacapitals_request",
-      "priority": 998,
+      "priority": 996,
       "results": [
         {
           "actions": {
@@ -24,11 +68,44 @@
     },
     {
       "name": "mcacapitals_seize_throne",
-      "priority": 997,
+      "priority": 995,
       "results": [
         {
           "actions": {
             "command": "mcacapitals_seize_throne"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_declare_for_capital",
+      "priority": 994,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_declare_for_capital"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_pay_warrant_fine",
+      "priority": 993,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_pay_warrant_fine"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_surrender_warrant",
+      "priority": 992,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_surrender_warrant"
           }
         }
       ]
