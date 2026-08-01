@@ -8,6 +8,8 @@ import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalRoyalGuardService;
 import com.majesttyx.mcacapitals.capital.CapitalRoyalHouseholdService;
 import com.majesttyx.mcacapitals.capital.CapitalState;
+import com.majesttyx.mcacapitals.capital.CapitalWartimeSuccessionService;
+import com.majesttyx.mcacapitals.data.CapitalInterregnumRecord;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
@@ -23,13 +25,28 @@ final class CapitalPetitionOutcomes {
     }
 
     static void performCoup(ServerLevel level, CapitalRecord capital, ServerPlayer player) {
+        CapitalInterregnumRecord interregnum =
+                CapitalWartimeSuccessionService.getRecord(
+                        level,
+                        capital.getCapitalId()
+                );
+
         UUID formerSovereignId = capital.getSovereign();
-        String formerSovereignName = resolveLoadedName(level, formerSovereignId);
+        if (formerSovereignId == null && interregnum != null) {
+            formerSovereignId = interregnum.getDeceasedSovereignId();
+        }
+
+        String formerSovereignName = formerSovereignId == null
+                ? "the vacant throne"
+                : resolveLoadedName(level, formerSovereignId);
         String playerName = player.getName().getString();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
         boolean female = MCAIntegrationBridge.isPlayerFemale(level, player);
 
         Set<UUID> formerRoyalFamily = collectRoyalFamily(capital);
+        if (formerSovereignId != null) {
+            formerRoyalFamily.add(formerSovereignId);
+        }
         formerRoyalFamily.remove(player.getUUID());
 
         CapitalFoundationService.appointPlayerSovereign(level, capital, player.getUUID(), female);
@@ -51,8 +68,23 @@ final class CapitalPetitionOutcomes {
         CapitalChronicleService.addEntry(
                 level,
                 capital,
-                playerName + " seized the throne of " + villageName
-                        + " from " + formerSovereignName + " by force."
+                interregnum != null
+                        && interregnum.mayVictoriousPlayerSeize(player.getUUID())
+                        ? playerName
+                        + " seized the vacant throne of "
+                        + villageName
+                        + " after winning the War of Deposition."
+                        : playerName
+                        + " seized the throne of "
+                        + villageName
+                        + " from "
+                        + formerSovereignName
+                        + " by force."
+        );
+
+        CapitalWartimeSuccessionService.clear(
+                level,
+                capital.getCapitalId()
         );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
@@ -161,6 +193,10 @@ final class CapitalPetitionOutcomes {
     }
 
     private static String resolveLoadedName(ServerLevel level, UUID entityId) {
+        if (entityId == null) {
+            return "Unknown";
+        }
+
         var entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
         return entity != null ? entity.getName().getString() : entityId.toString();
     }

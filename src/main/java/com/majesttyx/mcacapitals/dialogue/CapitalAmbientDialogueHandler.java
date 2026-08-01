@@ -4,12 +4,15 @@ import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import forge.net.mca.entity.ai.Messenger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.village.poi.PoiManager;
+import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -23,17 +26,18 @@ import java.util.UUID;
 public class CapitalAmbientDialogueHandler {
 
     private static final long SCAN_INTERVAL_TICKS = 20L * 10L;
-    private static final long CAPITAL_COOLDOWN_TICKS = 20L * 75L;
+    private static final long CAPITAL_COOLDOWN_TICKS = 20L * 15L;
     private static final long VILLAGER_COOLDOWN_TICKS = 20L * 180L;
-    private static final int EVENING_START_TIME = 9500;
-    private static final int EVENING_END_TIME = 12500;
-    private static final int CHAT_CHANCE_PERCENT = 35;
-    private static final double BELL_RADIUS = 18.0D;
+    private static final int EVENING_START_TIME = 9000;
+    private static final int EVENING_END_TIME = 12000;
+    private static final int BELL_SEARCH_RADIUS = 72;
+    private static final double BELL_RADIUS = 20.0D;
     private static final double PLAYER_HEAR_RADIUS = 24.0D;
-    private static final double PLAYER_NEAR_BELL_RADIUS = 40.0D;
+    private static final double PLAYER_NEAR_BELL_RADIUS = 36.0D;
 
-    private final Map<UUID, Long> lastCapitalChatterTick = new HashMap<>();
-    private final Map<UUID, Long> lastVillagerChatterTick = new HashMap<>();
+    private final Map<UUID, Long> nextCapitalChatterTick = new HashMap<>();
+    private final Map<UUID, Long> nextVillagerChatterTick = new HashMap<>();
+    private final Map<UUID, UUID> lastCapitalSpeaker = new HashMap<>();
 
     @SubscribeEvent
     public void onLevelTick(TickEvent.LevelTickEvent event) {
@@ -65,26 +69,23 @@ public class CapitalAmbientDialogueHandler {
             return;
         }
 
-        long lastCapitalTick = lastCapitalChatterTick.getOrDefault(capital.getCapitalId(), Long.MIN_VALUE);
-        if (gameTime - lastCapitalTick < CAPITAL_COOLDOWN_TICKS) {
+        UUID capitalId = capital.getCapitalId();
+        if (gameTime < nextCapitalChatterTick.getOrDefault(capitalId, 0L)) {
             return;
         }
 
-        if (level.random.nextInt(100) >= CHAT_CHANCE_PERCENT) {
+        BlockPos villageCenter = MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId());
+        if (villageCenter == null || villageCenter.equals(BlockPos.ZERO)) {
             return;
         }
 
-        BlockPos center = MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId());
-        if (center == null || center.equals(BlockPos.ZERO)) {
-            return;
-        }
-
-        ServerPlayer player = nearestPlayerNearBell(level, center);
+        BlockPos meetingPoint = findMeetingPoint(level, villageCenter);
+        ServerPlayer player = nearestPlayerNearBell(level, meetingPoint);
         if (player == null) {
             return;
         }
 
-        Entity speaker = pickSpeakerNearBell(level, center, gameTime);
+        Entity speaker = pickSpeakerNearBell(level, meetingPoint, capitalId, gameTime);
         if (speaker == null) {
             return;
         }
@@ -94,32 +95,80 @@ public class CapitalAmbientDialogueHandler {
             return;
         }
 
+        if (speaker instanceof Messenger messenger) {
+            messenger.playSpeechEffect();
+        }
+
         sendToNearbyPlayers(level, speaker, line);
-        lastCapitalChatterTick.put(capital.getCapitalId(), gameTime);
-        lastVillagerChatterTick.put(speaker.getUUID(), gameTime);
+        nextCapitalChatterTick.put(capitalId, gameTime + CAPITAL_COOLDOWN_TICKS);
+        nextVillagerChatterTick.put(speaker.getUUID(), gameTime + VILLAGER_COOLDOWN_TICKS);
+        lastCapitalSpeaker.put(capitalId, speaker.getUUID());
+    }
+
+    private BlockPos findMeetingPoint(ServerLevel level, BlockPos villageCenter) {
+        return level.getPoiManager()
+                .findClosest(
+                        holder -> holder.is(PoiTypes.MEETING),
+                        villageCenter,
+                        BELL_SEARCH_RADIUS,
+                        PoiManager.Occupancy.ANY
+                )
+                .orElse(villageCenter);
     }
 
     private ServerPlayer nearestPlayerNearBell(ServerLevel level, BlockPos center) {
         return level.players().stream()
                 .filter(player -> player.blockPosition().closerThan(center, PLAYER_NEAR_BELL_RADIUS))
-                .min(Comparator.comparingDouble(player -> player.distanceToSqr(center.getX() + 0.5D, center.getY() + 0.5D, center.getZ() + 0.5D)))
+                .min(Comparator.comparingDouble(player -> player.distanceToSqr(
+                        center.getX() + 0.5D,
+                        center.getY() + 0.5D,
+                        center.getZ() + 0.5D
+                )))
                 .orElse(null);
     }
 
-    private Entity pickSpeakerNearBell(ServerLevel level, BlockPos center, long gameTime) {
+    private Entity pickSpeakerNearBell(ServerLevel level, BlockPos center, UUID capitalId, long gameTime) {
         AABB area = new AABB(center).inflate(BELL_RADIUS, 8.0D, BELL_RADIUS);
         List<Entity> villagers = MCAIntegrationBridge.getNearbyMCAVillagers(level, area).stream()
-                .filter(villager -> canSpeak(level, villager, gameTime))
+                .filter(villager -> canParticipate(level, villager))
                 .toList();
 
         if (villagers.isEmpty()) {
             return null;
         }
 
+        UUID previousSpeaker = lastCapitalSpeaker.get(capitalId);
+
+        List<Entity> preferred = villagers.stream()
+                .filter(villager -> !villager.getUUID().equals(previousSpeaker))
+                .filter(villager -> gameTime >= nextVillagerChatterTick.getOrDefault(villager.getUUID(), 0L))
+                .toList();
+        if (!preferred.isEmpty()) {
+            return randomSpeaker(level, preferred);
+        }
+
+        List<Entity> rested = villagers.stream()
+                .filter(villager -> gameTime >= nextVillagerChatterTick.getOrDefault(villager.getUUID(), 0L))
+                .toList();
+        if (!rested.isEmpty()) {
+            return randomSpeaker(level, rested);
+        }
+
+        List<Entity> alternate = villagers.stream()
+                .filter(villager -> !villager.getUUID().equals(previousSpeaker))
+                .toList();
+        if (!alternate.isEmpty()) {
+            return randomSpeaker(level, alternate);
+        }
+
+        return randomSpeaker(level, villagers);
+    }
+
+    private Entity randomSpeaker(ServerLevel level, List<Entity> villagers) {
         return villagers.get(level.random.nextInt(villagers.size()));
     }
 
-    private boolean canSpeak(ServerLevel level, Entity villager, long gameTime) {
+    private boolean canParticipate(ServerLevel level, Entity villager) {
         if (villager == null || !villager.isAlive()) {
             return false;
         }
@@ -129,12 +178,7 @@ public class CapitalAmbientDialogueHandler {
         }
 
         String ageState = MCAIntegrationBridge.getAgeState(level, villager.getUUID());
-        if ("BABY".equalsIgnoreCase(ageState) || "TODDLER".equalsIgnoreCase(ageState)) {
-            return false;
-        }
-
-        long lastVillagerTick = lastVillagerChatterTick.getOrDefault(villager.getUUID(), Long.MIN_VALUE);
-        return gameTime - lastVillagerTick >= VILLAGER_COOLDOWN_TICKS;
+        return !"BABY".equalsIgnoreCase(ageState) && !"TODDLER".equalsIgnoreCase(ageState);
     }
 
     private void sendToNearbyPlayers(ServerLevel level, Entity speaker, String line) {

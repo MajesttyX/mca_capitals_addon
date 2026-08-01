@@ -8,6 +8,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 
 import java.util.UUID;
 
@@ -56,11 +58,14 @@ public class SuccessionDecreeHandler {
             return;
         }
 
-        SuccessionDecreeClient.openScreen(
-                capitalId,
-                SuccessionDecreeItem.getBoundCapitalName(held),
-                livingTarget.getUUID(),
-                livingTarget.getName().getString()
+        DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> SuccessionDecreeClient.openScreen(
+                        capitalId,
+                        SuccessionDecreeItem.getBoundCapitalName(held),
+                        livingTarget.getUUID(),
+                        livingTarget.getName().getString()
+                )
         );
     }
 }

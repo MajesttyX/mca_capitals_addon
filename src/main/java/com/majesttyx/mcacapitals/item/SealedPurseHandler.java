@@ -258,9 +258,6 @@ public class SealedPurseHandler {
             statusesByTarget.computeIfAbsent(targetId, ignored -> new LinkedHashSet<>()).add("In Custody");
         }
 
-        for (UUID targetId : CapitalJusticeDataAccess.getDiscoveredExiles(level, capital.getCapitalId())) {
-            statusesByTarget.computeIfAbsent(targetId, ignored -> new LinkedHashSet<>()).add("Discovered in Exile");
-        }
 
         List<OpenSealedPurseCaseSelectionPacket.CaseEntry> cases = new ArrayList<>();
         for (Map.Entry<UUID, Set<String>> entry : statusesByTarget.entrySet()) {
@@ -280,8 +277,7 @@ public class SealedPurseHandler {
 
     private static boolean hasActiveCase(ServerLevel level, CapitalRecord capital, UUID targetId) {
         return CapitalJusticeDataAccess.hasArrestWarrant(level, capital.getCapitalId(), targetId)
-                || CapitalJusticeDataAccess.isDetainedPrisoner(level, capital.getCapitalId(), targetId)
-                || CapitalJusticeDataAccess.hasDiscoveredExile(level, capital.getCapitalId(), targetId);
+                || CapitalJusticeDataAccess.isDetainedPrisoner(level, capital.getCapitalId(), targetId);
     }
 
     private static CapitalRecord resolveMasterOfLawsCapital(UUID masterOfLawsId) {

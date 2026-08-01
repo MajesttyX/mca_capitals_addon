@@ -16,13 +16,8 @@ final class CapitalCommanderSelection {
     private CapitalCommanderSelection() {
     }
 
-    static boolean isEligibleForNewCommander(
-            ServerLevel level,
-            CapitalRecord capital
-    ) {
-        if (level == null
-                || capital == null
-                || capital.getVillageId() == null) {
+    static boolean isEligibleForNewCommander(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null || capital.getVillageId() == null) {
             return false;
         }
 
@@ -37,72 +32,48 @@ final class CapitalCommanderSelection {
             CapitalRecord capital,
             Set<UUID> residents
     ) {
-        BlockPos center =
-                capital.getVillageId() != null
-                        ? MCAIntegrationBridge.getVillageCenter(
-                        level,
-                        capital.getVillageId()
-                )
-                        : BlockPos.ZERO;
+        BlockPos center = capital.getVillageId() != null
+                ? MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId())
+                : BlockPos.ZERO;
 
-        List<UUID> candidates =
-                new ArrayList<>();
+        List<UUID> candidates = new ArrayList<>();
 
         for (UUID residentId : residents) {
-            if (CapitalAmbassadorService.isAmbassador(
-                    level,
-                    residentId
-            )) {
+            if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, residentId)) {
                 continue;
             }
 
-            if (!MCAIntegrationBridge.isMCAGuard(
-                    level,
-                    residentId
-            )) {
+            if (CapitalAmbassadorService.isAmbassador(level, residentId)) {
                 continue;
             }
 
-            Entity entity =
-                    MCAIntegrationBridge.getEntityByUuid(
-                            level,
-                            residentId
-                    );
+            if (!MCAIntegrationBridge.isMCAGuard(level, residentId)) {
+                continue;
+            }
 
-            if (!MCAIntegrationBridge
-                    .isAliveMCAVillagerEntity(entity)) {
+            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, residentId);
+            if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
                 continue;
             }
 
             candidates.add(residentId);
         }
 
-        candidates.sort(
-                Comparator
-                        .comparingDouble(
-                                (UUID id) -> {
-                                    Entity entity =
-                                            MCAIntegrationBridge
-                                                    .getEntityByUuid(
-                                                            level,
-                                                            id
-                                                    );
+        candidates.sort(Comparator
+                .comparing((UUID id) -> !CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparingDouble(id -> {
+                    Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
+                    return entity == null
+                            ? Double.MAX_VALUE
+                            : entity.distanceToSqr(
+                            center.getX() + 0.5D,
+                            center.getY() + 0.5D,
+                            center.getZ() + 0.5D
+                    );
+                })
+                .thenComparing(UUID::toString));
 
-                                    return entity == null
-                                            ? Double.MAX_VALUE
-                                            : entity.distanceToSqr(
-                                            center.getX() + 0.5D,
-                                            center.getY() + 0.5D,
-                                            center.getZ() + 0.5D
-                                    );
-                                }
-                        )
-                        .thenComparing(UUID::toString)
-        );
-
-        return candidates.isEmpty()
-                ? null
-                : candidates.get(0);
+        return candidates.isEmpty() ? null : candidates.get(0);
     }
 
     static boolean isValidCommander(
@@ -114,29 +85,17 @@ final class CapitalCommanderSelection {
             return false;
         }
 
-        if (residents != null
-                && !residents.contains(commanderId)) {
+        if (residents != null && !residents.contains(commanderId)) {
             return false;
         }
 
-        if (CapitalAmbassadorService.isAmbassador(
-                level,
-                commanderId
-        )) {
+        if (CapitalAmbassadorService.isAmbassador(level, commanderId)) {
             return false;
         }
 
-        Entity entity =
-                MCAIntegrationBridge.getEntityByUuid(
-                        level,
-                        commanderId
-                );
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, commanderId);
 
-        return MCAIntegrationBridge
-                .isAliveMCAVillagerEntity(entity)
-                && MCAIntegrationBridge.isMCAGuard(
-                level,
-                commanderId
-        );
+        return MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)
+                && MCAIntegrationBridge.isMCAGuard(level, commanderId);
     }
 }

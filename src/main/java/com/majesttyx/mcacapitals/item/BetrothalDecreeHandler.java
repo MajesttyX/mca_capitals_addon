@@ -4,7 +4,10 @@ import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalRoyalBetrothalService;
+import com.majesttyx.mcacapitals.capital.CapitalDiplomaticState;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.PendingVillagerBetrothalAccess;
 import com.majesttyx.mcacapitals.data.PendingVillagerBetrothalSavedData;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
@@ -133,6 +136,8 @@ public class BetrothalDecreeHandler {
             return;
         }
 
+        CapitalRoyalBetrothalService.tickEscorts(level);
+
         List<PendingVillagerBetrothalSavedData.PendingPair> pairs =
                 PendingVillagerBetrothalAccess.getPairs(level);
 
@@ -156,6 +161,48 @@ public class BetrothalDecreeHandler {
                 continue;
             }
 
+            Integer firstVillageId =
+                    MCAIntegrationBridge
+                            .getVillageIdForResident(
+                                    level,
+                                    firstId
+                            );
+
+            Integer secondVillageId =
+                    MCAIntegrationBridge
+                            .getVillageIdForResident(
+                                    level,
+                                    secondId
+                            );
+
+            if (firstVillageId == null
+                    || !firstVillageId.equals(
+                    secondVillageId
+            )
+                    || CapitalManager.getCapitalByVillageId(
+                    firstVillageId
+            ) == null) {
+                continue;
+            }
+
+            PendingVillagerBetrothalSavedData.RoyalEscortRecord escort =
+                    PendingVillagerBetrothalAccess
+                            .getRoyalEscort(
+                                    level,
+                                    firstId,
+                                    secondId
+                            );
+
+            if (escort != null
+                    && CapitalDiplomacyDataAccess
+                    .getDiplomaticState(
+                            level,
+                            escort.originCapitalId(),
+                            escort.destinationCapitalId()
+                    ) == CapitalDiplomaticState.WAR) {
+                continue;
+            }
+
             MCARelationshipBridge.BetrothalResult result =
                     MCARelationshipBridge.marryVillagerToVillagerDirect(firstVillager, secondVillager);
 
@@ -163,8 +210,19 @@ public class BetrothalDecreeHandler {
                 continue;
             }
 
-            PendingVillagerBetrothalAccess.removePendingBetrothal(level, firstId, secondId);
             handleMarriageResult(level, firstVillager, secondVillager);
+
+            if (escort != null) {
+                CapitalRoyalBetrothalService
+                        .completeRoyalMarriage(
+                                level,
+                                escort,
+                                firstVillager,
+                                secondVillager
+                        );
+            }
+
+            PendingVillagerBetrothalAccess.removePendingBetrothal(level, firstId, secondId);
         }
     }
 

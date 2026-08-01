@@ -19,8 +19,7 @@ public abstract class AbstractContainerMenuForeignStorageMixin {
 
     @Inject(
             method = "clicked(IILnet/minecraft/world/inventory/ClickType;Lnet/minecraft/world/entity/player/Player;)V",
-            at = @At("HEAD"),
-            remap = false
+            at = @At("HEAD")
     )
     private void mcacapitals$captureForeignStorage(
             int slotId,
@@ -41,8 +40,7 @@ public abstract class AbstractContainerMenuForeignStorageMixin {
 
     @Inject(
             method = "clicked(IILnet/minecraft/world/inventory/ClickType;Lnet/minecraft/world/entity/player/Player;)V",
-            at = @At("RETURN"),
-            remap = false
+            at = @At("RETURN")
     )
     private void mcacapitals$recordForeignStorageRaid(
             int slotId,

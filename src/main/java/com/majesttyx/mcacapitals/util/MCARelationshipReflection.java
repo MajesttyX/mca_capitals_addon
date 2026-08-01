@@ -8,17 +8,11 @@ import java.lang.reflect.Method;
 final class MCARelationshipReflection {
 
     private static final String[] MCA_PLAYER_SAVE_DATA_CLASSES = new String[] {
-            "net.mca.server.world.data.PlayerSaveData",
-            "forge.net.mca.server.world.data.PlayerSaveData",
-            "fabric.net.mca.server.world.data.PlayerSaveData",
-            "quilt.net.mca.server.world.data.PlayerSaveData"
+            "forge.net.mca.server.world.data.PlayerSaveData"
     };
 
     private static final String[] MCA_CONFIG_CLASSES = new String[] {
-            "net.mca.Config",
-            "forge.net.mca.Config",
-            "fabric.net.mca.Config",
-            "quilt.net.mca.Config"
+            "forge.net.mca.Config"
     };
 
     private MCARelationshipReflection() {

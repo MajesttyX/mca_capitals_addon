@@ -14,7 +14,7 @@ import java.util.UUID;
 @Mixin(Entity.class)
 public abstract class EntitySprintingRoyalGuardMixin {
 
-    @Inject(method = "m_6858_", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(method = "setSprinting", at = @At("HEAD"), cancellable = true)
     private void mcacapitals$disableRoyalGuardSprinting(boolean sprinting, CallbackInfo ci) {
         if (!sprinting) {
             return;

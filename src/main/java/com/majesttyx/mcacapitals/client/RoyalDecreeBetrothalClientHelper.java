@@ -36,7 +36,12 @@ public final class RoyalDecreeBetrothalClientHelper {
             }
 
             Entity partner = MCAIntegrationBridge.getEntityByUuid(level, partnerId);
-            String partnerName = partner != null ? partner.getName().getString() : "Unknown";
+            String storedPartnerName = PendingVillagerBetrothalAccess.getPartnerName(level, villagerId);
+            String partnerName = partner != null
+                    ? partner.getName().getString()
+                    : storedPartnerName == null || storedPartnerName.isBlank()
+                    ? "Unknown"
+                    : storedPartnerName;
 
             return new BetrothalDisplayData(villagerId, partnerId, partnerName);
         }

@@ -353,11 +353,7 @@ public final class BirthIdentityService {
         }
 
         String[] classNames = new String[] {
-                "net.mca.entity.ai.relationship.EntityRelationship",
-                "forge.net.mca.entity.ai.relationship.EntityRelationship",
-                "fabric.net.mca.entity.ai.relationship.EntityRelationship",
-                "quilt.net.mca.entity.ai.relationship.EntityRelationship",
-                "net.conczin.mca.entity.ai.relationship.EntityRelationship"
+                "forge.net.mca.entity.ai.relationship.EntityRelationship"
         };
 
         for (String className : classNames) {

@@ -2,6 +2,8 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.BetrothalSelectionClient;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
@@ -67,7 +69,10 @@ public class OpenBetrothalSelectionPacket {
 
     public static void handle(OpenBetrothalSelectionPacket packet, Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> BetrothalSelectionClient.open(packet));
+        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> BetrothalSelectionClient.open(packet)
+        ));
         context.setPacketHandled(true);
     }
 

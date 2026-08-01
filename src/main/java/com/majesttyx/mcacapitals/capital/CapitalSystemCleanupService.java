@@ -7,6 +7,8 @@ import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalInterregnumDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalJusticeDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalRefugeeDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
+import com.majesttyx.mcacapitals.data.PendingVillagerBetrothalAccess;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import net.minecraft.server.level.ServerLevel;
 
@@ -64,7 +66,19 @@ public final class CapitalSystemCleanupService {
                         capitalId
                 );
 
+        changed |= CapitalWarDataAccess
+                .removeCapital(
+                        level,
+                        capitalId
+                );
+
         changed |= CapitalRefugeeDataAccess
+                .removeCapital(
+                        level,
+                        capitalId
+                );
+
+        changed |= PendingVillagerBetrothalAccess
                 .removeCapital(
                         level,
                         capitalId

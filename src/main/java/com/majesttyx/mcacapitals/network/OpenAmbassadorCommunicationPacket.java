@@ -2,6 +2,8 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.AmbassadorCommunicationClient;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
@@ -149,7 +151,10 @@ public final class OpenAmbassadorCommunicationPacket {
             Supplier<NetworkEvent.Context> contextSupplier
     ) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> AmbassadorCommunicationClient.open(packet));
+        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> AmbassadorCommunicationClient.open(packet)
+        ));
         context.setPacketHandled(true);
     }
 

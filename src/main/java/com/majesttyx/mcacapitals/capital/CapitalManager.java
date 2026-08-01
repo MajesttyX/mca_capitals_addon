@@ -121,6 +121,7 @@ public class CapitalManager {
                 || residentId.equals(capital.getCommander())
                 || residentId.equals(capital.getPlayerSovereignId())
                 || residentId.equals(capital.getPlayerConsortId())
+                || residentId.equals(CapitalAmbassadorService.getCachedAmbassador(capital))
                 || capital.isRoyalChild(residentId)
                 || capital.isDisinheritedRoyalChild(residentId)
                 || capital.isLegitimizedRoyalChild(residentId)

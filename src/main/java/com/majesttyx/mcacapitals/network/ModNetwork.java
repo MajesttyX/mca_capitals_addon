@@ -4,8 +4,11 @@ import com.majesttyx.mcacapitals.MCACapitals;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
+
+import java.util.Optional;
 
 public class ModNetwork {
 
@@ -33,7 +36,8 @@ public class ModNetwork {
                 OpenCapitalChroniclePacket.class,
                 OpenCapitalChroniclePacket::encode,
                 OpenCapitalChroniclePacket::decode,
-                OpenCapitalChroniclePacket::handle
+                OpenCapitalChroniclePacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -41,7 +45,8 @@ public class ModNetwork {
                 OpenAmbassadorCommunicationPacket.class,
                 OpenAmbassadorCommunicationPacket::encode,
                 OpenAmbassadorCommunicationPacket::decode,
-                OpenAmbassadorCommunicationPacket::handle
+                OpenAmbassadorCommunicationPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -49,7 +54,8 @@ public class ModNetwork {
                 OpenBetrothalSelectionPacket.class,
                 OpenBetrothalSelectionPacket::encode,
                 OpenBetrothalSelectionPacket::decode,
-                OpenBetrothalSelectionPacket::handle
+                OpenBetrothalSelectionPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -57,7 +63,8 @@ public class ModNetwork {
                 OpenAccusationSelectionPacket.class,
                 OpenAccusationSelectionPacket::encode,
                 OpenAccusationSelectionPacket::decode,
-                OpenAccusationSelectionPacket::handle
+                OpenAccusationSelectionPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -65,7 +72,8 @@ public class ModNetwork {
                 OpenSealedPurseCaseSelectionPacket.class,
                 OpenSealedPurseCaseSelectionPacket::encode,
                 OpenSealedPurseCaseSelectionPacket::decode,
-                OpenSealedPurseCaseSelectionPacket::handle
+                OpenSealedPurseCaseSelectionPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -73,7 +81,8 @@ public class ModNetwork {
                 OpenRoyalCharterDecisionPacket.class,
                 OpenRoyalCharterDecisionPacket::encode,
                 OpenRoyalCharterDecisionPacket::decode,
-                OpenRoyalCharterDecisionPacket::handle
+                OpenRoyalCharterDecisionPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -81,7 +90,8 @@ public class ModNetwork {
                 OpenPlayerHouseSetupPacket.class,
                 OpenPlayerHouseSetupPacket::encode,
                 OpenPlayerHouseSetupPacket::decode,
-                OpenPlayerHouseSetupPacket::handle
+                OpenPlayerHouseSetupPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -89,7 +99,8 @@ public class ModNetwork {
                 OpenDecreeOfTheHousePacket.class,
                 OpenDecreeOfTheHousePacket::encode,
                 OpenDecreeOfTheHousePacket::decode,
-                OpenDecreeOfTheHousePacket::handle
+                OpenDecreeOfTheHousePacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -97,7 +108,8 @@ public class ModNetwork {
                 SyncVillagerIdentityPacket.class,
                 SyncVillagerIdentityPacket::encode,
                 SyncVillagerIdentityPacket::decode,
-                SyncVillagerIdentityPacket::handle
+                SyncVillagerIdentityPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -105,7 +117,8 @@ public class ModNetwork {
                 SyncBlueprintAuthorityPacket.class,
                 SyncBlueprintAuthorityPacket::encode,
                 SyncBlueprintAuthorityPacket::decode,
-                SyncBlueprintAuthorityPacket::handle
+                SyncBlueprintAuthorityPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
 
         CHANNEL.registerMessage(
@@ -113,7 +126,8 @@ public class ModNetwork {
                 SubmitDecreeOfTheHousePacket.class,
                 SubmitDecreeOfTheHousePacket::encode,
                 SubmitDecreeOfTheHousePacket::decode,
-                SubmitDecreeOfTheHousePacket::handle
+                SubmitDecreeOfTheHousePacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
         registered = true;

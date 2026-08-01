@@ -2,6 +2,8 @@ package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalWartimeSuccessionService;
+import com.majesttyx.mcacapitals.data.CapitalInterregnumRecord;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.MCAReputationBridge;
@@ -127,7 +129,20 @@ final class CapitalPetitionSovereignActions {
             return;
         }
 
-        if (!CapitalPetitionRequirements.hasAdvancement(player, requiredAdvancementId)) {
+        CapitalInterregnumRecord interregnum =
+                CapitalWartimeSuccessionService.getRecord(
+                        level,
+                        capital.getCapitalId()
+                );
+
+        boolean victoriousDepositionClaim =
+                interregnum != null
+                        && interregnum.mayVictoriousPlayerSeize(
+                        player.getUUID()
+                );
+
+        if (!victoriousDepositionClaim
+                && !CapitalPetitionRequirements.hasAdvancement(player, requiredAdvancementId)) {
             CapitalPetitionOutcomes.applyCapitalPenalty(level, residents, player.getUUID(), -50);
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_ADVANCEMENT);
             return;
@@ -141,7 +156,9 @@ final class CapitalPetitionSovereignActions {
                 commanderHearts
         );
 
-        if (!playerIsCommander && !commanderAligned) {
+        if (!victoriousDepositionClaim
+                && !playerIsCommander
+                && !commanderAligned) {
             CapitalPetitionOutcomes.applyCapitalPenalty(level, residents, player.getUUID(), -50);
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_COMMANDER_SUPPORT);
             return;

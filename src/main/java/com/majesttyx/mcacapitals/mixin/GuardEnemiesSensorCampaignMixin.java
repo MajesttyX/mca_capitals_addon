@@ -55,12 +55,12 @@ public abstract class GuardEnemiesSensorCampaignMixin {
             remap = false
     )
     private void mcacapitals$findCampaignEnemyBeyondLegacyRange(
-            LivingEntity guard,
+            VillagerEntityMCA guard,
             CallbackInfoReturnable<Optional<LivingEntity>> cir
     ) {
         if (cir.getReturnValue().isPresent()
-                || !(guard instanceof VillagerEntityMCA villager)
-                || !(guard.level() instanceof ServerLevel level)) {
+                || !(guard.level()
+                instanceof ServerLevel level)) {
             return;
         }
 
@@ -85,7 +85,7 @@ public abstract class GuardEnemiesSensorCampaignMixin {
                         )
                         .stream()
                         .filter(candidate ->
-                                villager.getSensing()
+                                guard.getSensing()
                                         .hasLineOfSight(candidate)
                         )
                         .min(
@@ -94,6 +94,8 @@ public abstract class GuardEnemiesSensorCampaignMixin {
                                 )
                         );
 
-        campaignEnemy.ifPresent(cir::setReturnValue);
+        if (campaignEnemy.isPresent()) {
+            cir.setReturnValue(campaignEnemy);
+        }
     }
 }

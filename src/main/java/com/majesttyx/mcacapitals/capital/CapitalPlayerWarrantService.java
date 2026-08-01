@@ -14,7 +14,7 @@ import java.util.UUID;
 
 public final class CapitalPlayerWarrantService {
 
-    public static final int WARRANT_FINE_EMERALDS = 32;
+    public static final int WARRANT_FINE_EMERALDS = 16;
     public static final long LEAVE_ORDER_TICKS = 20L * 120L;
     public static final long SENTENCE_TICKS = 20L * 300L;
 
@@ -71,7 +71,7 @@ public final class CapitalPlayerWarrantService {
 
         if (countEmeralds(player) < WARRANT_FINE_EMERALDS) {
             player.sendSystemMessage(Component.literal(
-                    "You need exactly 32 emerald items to pay this warrant fine. Emerald blocks are not accepted."
+                    "You need exactly 16 emerald items to pay this warrant fine. Emerald blocks are not accepted."
             ));
             return 0;
         }
@@ -84,7 +84,7 @@ public final class CapitalPlayerWarrantService {
         );
         player.getInventory().setChanged();
         player.sendSystemMessage(Component.literal(
-                "You paid 32 emeralds. The warrant issued by "
+                "You paid 16 emeralds. The warrant issued by "
                         + CapitalDiplomaticAgreementText.capitalName(
                         player.serverLevel(),
                         issuingCapital

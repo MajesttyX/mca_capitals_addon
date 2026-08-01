@@ -3,12 +3,11 @@ package com.majesttyx.mcacapitals.client.screen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.UUID;
 
-public class RoyalScepterActionScreen extends Screen {
+public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
 
     private final UUID targetId;
     private final String targetName;
@@ -107,8 +106,6 @@ public class RoyalScepterActionScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics);
-
         int centerX = this.width / 2;
         int titleY = this.height / 2 - 98;
 

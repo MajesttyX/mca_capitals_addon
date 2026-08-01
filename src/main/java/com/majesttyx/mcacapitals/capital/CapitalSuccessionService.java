@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -24,9 +25,16 @@ public class CapitalSuccessionService {
             return false;
         }
 
+        if (isSurvivalPlayerSovereignDeath(level, capital)) {
+            return false;
+        }
+
         if (isValidLivingSovereign(level, sovereign)) {
             return false;
         }
+
+        boolean oldPlayerSovereign = capital.isPlayerSovereign();
+        UUID oldPlayerSovereignId = capital.getPlayerSovereignId();
 
         UUID oldConsort = capital.getConsort();
         boolean oldConsortFemale = capital.isConsortFemale();
@@ -51,6 +59,8 @@ public class CapitalSuccessionService {
             capital.setHeirFemale(false);
             capital.setHeirMode(CapitalRecord.HeirMode.NONE);
             capital.setState(CapitalState.PENDING);
+
+            clearDeadPlayerSovereignState(level, capital, oldPlayerSovereign, oldPlayerSovereignId);
 
             if (isValidRelationshipPerson(level, oldConsort)) {
                 capital.setDowager(oldConsort);
@@ -111,6 +121,8 @@ public class CapitalSuccessionService {
         capital.setConsort(null);
         capital.setConsortFemale(false);
         capital.setState(CapitalState.ACTIVE);
+
+        clearDeadPlayerSovereignState(level, capital, oldPlayerSovereign, oldPlayerSovereignId);
 
         CapitalFoundationService.refreshCourt(level, capital);
 
@@ -319,6 +331,25 @@ public class CapitalSuccessionService {
         }
 
         return null;
+    }
+
+    private static boolean isSurvivalPlayerSovereignDeath(ServerLevel level, CapitalRecord capital) {
+        return capital.isPlayerSovereign()
+                && level != null
+                && level.getServer() != null
+                && !level.getServer().isHardcore();
+    }
+
+    private static void clearDeadPlayerSovereignState(ServerLevel level, CapitalRecord capital, boolean oldPlayerSovereign, UUID oldPlayerSovereignId) {
+        if (!oldPlayerSovereign) {
+            return;
+        }
+
+        CapitalSovereignAppointmentService.clearPlayerSovereignState(capital);
+
+        if (oldPlayerSovereignId != null && capital.getCapitalId() != null) {
+            PlayerCapitalTitleService.clear(level, oldPlayerSovereignId, capital.getCapitalId());
+        }
     }
 
     private static List<UUID> orderedRoyalSuccessors(CapitalRecord capital) {

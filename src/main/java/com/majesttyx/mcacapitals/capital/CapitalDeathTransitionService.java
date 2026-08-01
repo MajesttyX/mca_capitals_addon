@@ -33,6 +33,11 @@ public final class CapitalDeathTransitionService {
 
             boolean changed = false;
 
+            if (CapitalAmbassadorService.isAmbassador(level, capital, deadId)) {
+                CapitalAmbassadorService.clearCapital(level, capital.getCapitalId());
+                CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+            }
+
             for (UUID holder : Set.copyOf(capital.getPrinceConsortSources().keySet())) {
                 UUID source = capital.getPrinceConsortSource(holder);
                 if (!deadId.equals(source)) {
@@ -57,7 +62,10 @@ public final class CapitalDeathTransitionService {
                 changed = true;
             }
 
-            List<PlayerCapitalTitleRecord> playerRecords = new ArrayList<>(PlayerCapitalTitleSavedData.get(level).getRecords().values());
+            List<PlayerCapitalTitleRecord> playerRecords = new ArrayList<>(
+                    PlayerCapitalTitleSavedData.get(level).getRecords().values()
+            );
+
             for (PlayerCapitalTitleRecord record : playerRecords) {
                 if (record == null) {
                     continue;
@@ -69,7 +77,12 @@ public final class CapitalDeathTransitionService {
                     continue;
                 }
 
-                PlayerCapitalTitleService.transitionMarriageToDowager(level, capital, record.getPlayerId(), deadId);
+                PlayerCapitalTitleService.transitionMarriageToDowager(
+                        level,
+                        capital,
+                        record.getPlayerId(),
+                        deadId
+                );
                 changed = true;
             }
 

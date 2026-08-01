@@ -7,12 +7,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.UUID;
 
-public class DecreeOfTheHouseScreen extends Screen {
+public class DecreeOfTheHouseScreen extends CapitalNoBlurScreen {
 
     private static final int PANEL_WIDTH = 240;
     private static final int PANEL_HEIGHT = 150;

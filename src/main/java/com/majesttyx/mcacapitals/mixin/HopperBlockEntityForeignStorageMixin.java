@@ -16,8 +16,7 @@ public abstract class HopperBlockEntityForeignStorageMixin {
     @Inject(
             method = "canTakeItemFromContainer(Lnet/minecraft/world/Container;Lnet/minecraft/world/Container;Lnet/minecraft/world/item/ItemStack;ILnet/minecraft/core/Direction;)Z",
             at = @At("HEAD"),
-            cancellable = true,
-            remap = false
+            cancellable = true
     )
     private static void mcacapitals$protectRecognizedStorageFromAutomation(
             Container destination,

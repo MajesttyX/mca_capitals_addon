@@ -13,6 +13,7 @@
     "MessengerCapitalDialogueMixin",
     "PlayerSaveDataMarriageMixin",
     "PlayerEditorGenderSyncMixin",
+    "BrainActivityAccessor",
     "VillagerTasksMCARoyalGuardMixin",
     "ResidencyCampaignMixin",
     "GuardEnemiesSensorCampaignMixin",

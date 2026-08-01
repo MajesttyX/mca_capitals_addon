@@ -137,10 +137,6 @@ public class PlayerHouseSavedData extends SavedData {
     }
 
     private static PlayerHouseInheritanceMode parseMode(String value) {
-        try {
-            return PlayerHouseInheritanceMode.valueOf(value);
-        } catch (Exception ignored) {
-            return PlayerHouseInheritanceMode.FOLLOW_CAPITAL_LAW;
-        }
+        return PlayerHouseInheritanceMode.PRESERVE_PLAYER_HOUSE;
     }
 }

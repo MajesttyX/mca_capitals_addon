@@ -2,6 +2,8 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.SealedPurseCaseSelectionClient;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
@@ -63,7 +65,10 @@ public class OpenSealedPurseCaseSelectionPacket {
             Supplier<NetworkEvent.Context> contextSupplier
     ) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> SealedPurseCaseSelectionClient.open(packet));
+        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> SealedPurseCaseSelectionClient.open(packet)
+        ));
         context.setPacketHandled(true);
     }
 

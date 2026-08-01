@@ -2,6 +2,8 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.AccusationSelectionClient;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
@@ -62,7 +64,10 @@ public class OpenAccusationSelectionPacket {
             Supplier<NetworkEvent.Context> contextSupplier
     ) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> AccusationSelectionClient.open(packet));
+        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> AccusationSelectionClient.open(packet)
+        ));
         context.setPacketHandled(true);
     }
 

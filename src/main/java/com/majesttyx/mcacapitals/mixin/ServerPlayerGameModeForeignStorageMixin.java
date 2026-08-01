@@ -16,10 +16,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ServerPlayerGameMode.class)
 public abstract class ServerPlayerGameModeForeignStorageMixin {
 
-    @Shadow(remap = false)
+    @Shadow
     protected ServerLevel level;
 
-    @Shadow(remap = false)
+    @Shadow
     @Final
     protected ServerPlayer player;
 
@@ -28,8 +28,7 @@ public abstract class ServerPlayerGameModeForeignStorageMixin {
 
     @Inject(
             method = "destroyBlock(Lnet/minecraft/core/BlockPos;)Z",
-            at = @At("HEAD"),
-            remap = false
+            at = @At("HEAD")
     )
     private void mcacapitals$captureStorageBeforeBreak(
             BlockPos pos,
@@ -43,8 +42,7 @@ public abstract class ServerPlayerGameModeForeignStorageMixin {
 
     @Inject(
             method = "destroyBlock(Lnet/minecraft/core/BlockPos;)Z",
-            at = @At("RETURN"),
-            remap = false
+            at = @At("RETURN")
     )
     private void mcacapitals$recordStorageBreakRaid(
             BlockPos pos,

@@ -1,10 +1,10 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.identity.PlayerHouseIdentityService;
+import forge.net.mca.server.world.data.FamilyTreeNode;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -19,7 +19,7 @@ public abstract class FamilyTreeNodeAdoptionIdentityMixin {
             require = 0
     )
     private void mcacapitals$applyPlayerHouseAfterAdoption(
-            @Coerce Object parent,
+            FamilyTreeNode parent,
             CallbackInfoReturnable<Boolean> cir
     ) {
         if (!Boolean.TRUE.equals(cir.getReturnValue())) {

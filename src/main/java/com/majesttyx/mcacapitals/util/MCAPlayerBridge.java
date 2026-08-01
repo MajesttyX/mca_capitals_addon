@@ -1,11 +1,14 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.MCACapitals;
+import forge.net.mca.entity.VillagerEntityMCA;
+import forge.net.mca.entity.ai.Genetics;
 import forge.net.mca.entity.ai.relationship.Gender;
 import forge.net.mca.server.world.data.FamilyTree;
 import forge.net.mca.server.world.data.FamilyTreeNode;
 import forge.net.mca.server.world.data.PlayerSaveData;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -123,15 +126,13 @@ final class MCAPlayerBridge {
             return Gender.UNASSIGNED;
         }
 
-        if (entityData.contains("Gender")) {
-            return Gender.byId(entityData.getInt("Gender"));
+        CompoundTag mcaData = getMcaDataOrSelf(entityData);
+        Gender gender = Genetics.readGender(mcaData);
+        if (gender != Gender.UNASSIGNED || mcaData == entityData) {
+            return gender;
         }
 
-        if (entityData.contains("gender")) {
-            return Gender.byId(entityData.getInt("gender"));
-        }
-
-        return Gender.UNASSIGNED;
+        return Genetics.readGender(entityData);
     }
 
     private static Gender resolveFamilyTreeGender(ServerLevel level, UUID playerId) {
@@ -158,9 +159,18 @@ final class MCAPlayerBridge {
             return;
         }
 
-        CompoundTag normalized = entityData == null ? new CompoundTag() : entityData;
-        normalized.putInt("gender", gender.getId());
-        normalized.putInt("Gender", gender.getId());
+        CompoundTag normalized = entityData == null
+                ? new CompoundTag()
+                : entityData.copy();
+        CompoundTag mcaData = normalized.contains(
+                VillagerEntityMCA.MCA_DATA_KEY,
+                Tag.TAG_COMPOUND
+        )
+                ? normalized.getCompound(VillagerEntityMCA.MCA_DATA_KEY)
+                : new CompoundTag();
+
+        Genetics.writeGender(mcaData, gender);
+        normalized.put(VillagerEntityMCA.MCA_DATA_KEY, mcaData);
 
         saveData.setEntityData(normalized);
         saveData.setEntityDataSet(true);
@@ -196,6 +206,19 @@ final class MCAPlayerBridge {
         }
     }
 
+    private static CompoundTag getMcaDataOrSelf(CompoundTag entityData) {
+        if (entityData == null) {
+            return null;
+        }
+
+        return entityData.contains(
+                VillagerEntityMCA.MCA_DATA_KEY,
+                Tag.TAG_COMPOUND
+        )
+                ? entityData.getCompound(VillagerEntityMCA.MCA_DATA_KEY)
+                : entityData;
+    }
+
     private static void logResolvedGenderOnce(
             ServerPlayer player,
             PlayerSaveData saveData,
@@ -213,20 +236,19 @@ final class MCAPlayerBridge {
         }
 
         CompoundTag entityData = saveData.getEntityData();
-        int lowercaseGenderId = entityData != null && entityData.contains("gender")
-                ? entityData.getInt("gender")
-                : -1;
-        int trackedGenderId = entityData != null && entityData.contains("Gender")
-                ? entityData.getInt("Gender")
-                : -1;
+        CompoundTag mcaData = entityData == null
+                ? null
+                : getMcaDataOrSelf(entityData);
+        int trackedGenderId = mcaData == null
+                ? -1
+                : Genetics.readGender(mcaData).getId();
 
         MCACapitals.LOGGER.info(
-                "[MCACapitals] MCA player gender resolved. player='{}', playerSaveDataGender='{}', playerSaveDataDataName='{}', entityDataSet={}, entityData.gender={}, entityData.Gender={}, trackedDataGender='{}', trackedDataDataName='{}', familyTreeGender='{}', familyTreeDataName='{}', resolvedGender='{}', resolvedDataName='{}'",
+                "[MCACapitals] MCA player gender resolved. player='{}', playerSaveDataGender='{}', playerSaveDataDataName='{}', entityDataSet={}, MCAData.genderId={}, trackedDataGender='{}', trackedDataDataName='{}', familyTreeGender='{}', familyTreeDataName='{}', resolvedGender='{}', resolvedDataName='{}'",
                 player.getGameProfile().getName(),
                 saveDataGender == null ? "null" : saveDataGender.name(),
                 saveDataGender == null ? "null" : saveDataGender.getDataName(),
                 saveData.isEntityDataSet(),
-                lowercaseGenderId,
                 trackedGenderId,
                 trackedDataGender == null ? "null" : trackedDataGender.name(),
                 trackedDataGender == null ? "null" : trackedDataGender.getDataName(),

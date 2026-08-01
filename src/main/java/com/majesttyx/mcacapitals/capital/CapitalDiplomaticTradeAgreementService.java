@@ -244,6 +244,15 @@ final class CapitalDiplomaticTradeAgreementService {
             return 0;
         }
 
+        CapitalDiplomacyDataAccess.adjustRelationship(
+                level,
+                source.getCapitalId(),
+                target.getCapitalId(),
+                -5,
+                "Trade Agreement ended",
+                source.getCapitalId()
+        );
+
         String targetName =
                 CapitalDiplomaticAgreementText.capitalName(
                         level,

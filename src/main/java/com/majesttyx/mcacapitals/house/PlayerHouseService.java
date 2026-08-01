@@ -47,7 +47,7 @@ public final class PlayerHouseService {
         PlayerHouseSavedData data = PlayerHouseSavedData.get(level);
         PlayerHouseRecord record = data.getOrCreate(player.getUUID());
         record.setHouseName(normalized);
-        record.setInheritanceMode(mode == null ? PlayerHouseInheritanceMode.FOLLOW_CAPITAL_LAW : mode);
+        record.setInheritanceMode(PlayerHouseInheritanceMode.PRESERVE_PLAYER_HOUSE);
         record.setHouseNameSetAtGameTime(level.getGameTime());
         record.setHouseNameSetInCapitalId(capitalId);
         record.setHouseNameSetInCapitalName(capitalName);
@@ -77,7 +77,7 @@ public final class PlayerHouseService {
         PlayerHouseRecord record = data.getOrCreate(player.getUUID());
 
         if (record.getInheritanceMode() == null) {
-            record.setInheritanceMode(PlayerHouseInheritanceMode.FOLLOW_CAPITAL_LAW);
+            record.setInheritanceMode(PlayerHouseInheritanceMode.PRESERVE_PLAYER_HOUSE);
         }
 
         record.setHouseName(normalizedHouseName);

@@ -9,6 +9,7 @@ import com.majesttyx.mcacapitals.dialogue.CapitalDialogueRuntime;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueService;
 import com.majesttyx.mcacapitals.dialogue.CapitalPoliticalDialogueService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import forge.net.mca.entity.VillagerEntityMCA;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,7 +17,6 @@ import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -49,16 +49,12 @@ public abstract class DialogueChatFallbackMixin {
     private static String mcacapitals$redirectCapitalChatDialogue(
             String nextKey,
             String ignoredCurrentQuestion,
-            @Coerce Object villagerObj,
+            VillagerEntityMCA villager,
             ServerPlayer player
     ) {
         if (nextKey == null
                 || player == null
-                || villagerObj == null) {
-            return nextKey;
-        }
-
-        if (!(villagerObj instanceof Entity villager)) {
+                || villager == null) {
             return nextKey;
         }
 
@@ -179,17 +175,13 @@ public abstract class DialogueChatFallbackMixin {
     )
     private static void mcacapitals$handleManagedRuntimeDialogue(
             String nextKey,
-            @Coerce Object villagerObj,
+            VillagerEntityMCA villager,
             ServerPlayer player,
             CallbackInfo ci
     ) {
         if (nextKey == null
                 || player == null
-                || villagerObj == null) {
-            return;
-        }
-
-        if (!(villagerObj instanceof Entity villager)) {
+                || villager == null) {
             return;
         }
 

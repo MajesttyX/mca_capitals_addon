@@ -1,11 +1,15 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.MCACapitals;
+import forge.net.mca.entity.VillagerEntityMCA;
+import forge.net.mca.entity.ai.Genetics;
 import forge.net.mca.entity.ai.relationship.Gender;
 import forge.net.mca.server.world.data.FamilyTree;
 import forge.net.mca.server.world.data.FamilyTreeNode;
 import forge.net.mca.server.world.data.PlayerSaveData;
+import forge.net.mca.network.NbtDataMessage;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,14 +33,10 @@ public abstract class PlayerEditorGenderSyncMixin {
     @Final
     private UUID uuid;
 
-    @Shadow(remap = false)
-    public abstract CompoundTag getData();
-
     @Inject(
             method = "receive(Lnet/minecraft/server/level/ServerPlayer;)V",
             at = @At("HEAD"),
-            remap = false,
-            require = 0
+            remap = false
     )
     private void mcacapitals$persistPlayerGenderSelection(ServerPlayer player, CallbackInfo ci) {
         if (player == null) {
@@ -51,7 +51,7 @@ public abstract class PlayerEditorGenderSyncMixin {
             return;
         }
 
-        CompoundTag editorData = getData();
+        CompoundTag editorData = ((NbtDataMessage) (Object) this).getData();
         Gender gender = resolveGenderFromEditorData(editorData);
         if (gender == Gender.UNASSIGNED) {
             return;
@@ -60,14 +60,20 @@ public abstract class PlayerEditorGenderSyncMixin {
         try {
             PlayerSaveData saveData = PlayerSaveData.get(player);
             CompoundTag entityData = saveData.getEntityData();
-            if (entityData == null) {
-                entityData = new CompoundTag();
-            }
+            CompoundTag normalized = entityData == null
+                    ? new CompoundTag()
+                    : entityData.copy();
+            CompoundTag mcaData = normalized.contains(
+                    VillagerEntityMCA.MCA_DATA_KEY,
+                    Tag.TAG_COMPOUND
+            )
+                    ? normalized.getCompound(VillagerEntityMCA.MCA_DATA_KEY)
+                    : new CompoundTag();
 
-            entityData.putInt("gender", gender.getId());
-            entityData.putInt("Gender", gender.getId());
+            Genetics.writeGender(mcaData, gender);
+            normalized.put(VillagerEntityMCA.MCA_DATA_KEY, mcaData);
 
-            saveData.setEntityData(entityData);
+            saveData.setEntityData(normalized);
             saveData.setEntityDataSet(true);
             saveData.setDirty();
 
@@ -98,14 +104,18 @@ public abstract class PlayerEditorGenderSyncMixin {
             return Gender.UNASSIGNED;
         }
 
-        if (data.contains("Gender")) {
-            return Gender.byId(data.getInt("Gender"));
+        CompoundTag mcaData = data.contains(
+                VillagerEntityMCA.MCA_DATA_KEY,
+                Tag.TAG_COMPOUND
+        )
+                ? data.getCompound(VillagerEntityMCA.MCA_DATA_KEY)
+                : data;
+
+        Gender gender = Genetics.readGender(mcaData);
+        if (gender != Gender.UNASSIGNED || mcaData == data) {
+            return gender;
         }
 
-        if (data.contains("gender")) {
-            return Gender.byId(data.getInt("gender"));
-        }
-
-        return Gender.UNASSIGNED;
+        return Genetics.readGender(data);
     }
 }

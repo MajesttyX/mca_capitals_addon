@@ -16,7 +16,7 @@ public class PlayerHouseRecord {
         this.playerId = playerId;
         this.houseName = "";
         this.houseWords = "";
-        this.inheritanceMode = PlayerHouseInheritanceMode.FOLLOW_CAPITAL_LAW;
+        this.inheritanceMode = PlayerHouseInheritanceMode.PRESERVE_PLAYER_HOUSE;
         this.houseNameSetAtGameTime = 0L;
         this.houseNameSetInCapitalId = null;
         this.houseNameSetInCapitalName = "";
@@ -47,7 +47,7 @@ public class PlayerHouseRecord {
     }
 
     public void setInheritanceMode(PlayerHouseInheritanceMode inheritanceMode) {
-        this.inheritanceMode = inheritanceMode == null ? PlayerHouseInheritanceMode.FOLLOW_CAPITAL_LAW : inheritanceMode;
+        this.inheritanceMode = PlayerHouseInheritanceMode.PRESERVE_PLAYER_HOUSE;
     }
 
     public long getHouseNameSetAtGameTime() {

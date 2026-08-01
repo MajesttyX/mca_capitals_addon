@@ -11,6 +11,8 @@ import forge.net.mca.server.world.data.Village;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.Set;
@@ -183,7 +185,10 @@ public class SyncBlueprintAuthorityPacket {
             Supplier<NetworkEvent.Context> contextSupplier
     ) {
         NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> BlueprintAuthorityClientCache.put(packet));
+        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> BlueprintAuthorityClientCache.put(packet)
+        ));
         context.setPacketHandled(true);
     }
 

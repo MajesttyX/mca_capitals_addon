@@ -14,80 +14,41 @@ final class CapitalAmbassadorSelection {
     private CapitalAmbassadorSelection() {
     }
 
-    static UUID findCandidate(
-            ServerLevel level,
-            CapitalRecord capital,
-            Set<UUID> residents
-    ) {
-        if (level == null
-                || capital == null
-                || residents == null) {
+    static UUID findCandidate(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (level == null || capital == null || residents == null) {
             return null;
         }
 
         List<UUID> candidates = new ArrayList<>();
-
         for (UUID residentId : residents) {
-            if (isEligible(
-                    level,
-                    capital,
-                    residentId,
-                    residents
-            )) {
+            if (isEligible(level, capital, residentId, residents)) {
                 candidates.add(residentId);
             }
         }
 
-        candidates.sort(
-                Comparator.comparing(UUID::toString)
-        );
-
-        return candidates.isEmpty()
-                ? null
-                : candidates.get(0);
+        candidates.sort(Comparator
+                .comparing((UUID id) -> !CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparing(UUID::toString));
+        return candidates.isEmpty() ? null : candidates.get(0);
     }
 
-    static boolean isValid(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID ambassadorId,
-            Set<UUID> residents
-    ) {
-        if (level == null
-                || capital == null
-                || ambassadorId == null) {
+    static boolean isValid(ServerLevel level, CapitalRecord capital, UUID ambassadorId, Set<UUID> residents) {
+        if (level == null || capital == null || ambassadorId == null) {
             return false;
         }
 
-        if (!CapitalRoleValidation
-                .isExistingRoleStillResolvable(
-                        level,
-                        ambassadorId,
-                        residents
-                )) {
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(level, ambassadorId, residents)) {
             return false;
         }
 
-        if (!CapitalRoleValidation.isCurrentlyLoaded(
-                level,
-                ambassadorId
-        )) {
+        if (!CapitalRoleValidation.isCurrentlyLoaded(level, ambassadorId)) {
             return true;
         }
 
-        return isEligibleIgnoringResidentScan(
-                level,
-                capital,
-                ambassadorId
-        );
+        return isEligibleIgnoringResidentScan(level, capital, ambassadorId);
     }
 
-    static boolean isEligible(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID candidateId,
-            Set<UUID> residents
-    ) {
+    static boolean isEligible(ServerLevel level, CapitalRecord capital, UUID candidateId, Set<UUID> residents) {
         if (level == null
                 || capital == null
                 || candidateId == null
@@ -96,37 +57,24 @@ final class CapitalAmbassadorSelection {
             return false;
         }
 
-        if (!MCAIntegrationBridge.isAliveMCAVillager(
-                level,
-                candidateId
-        )) {
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, candidateId)) {
             return false;
         }
 
-        if (!MCAIntegrationBridge.isTeenOrAdultVillager(
-                level,
-                candidateId
-        )) {
+        if (!MCAIntegrationBridge.isAliveMCAVillager(level, candidateId)) {
             return false;
         }
 
-        if (MCAIntegrationBridge.isMCAGuard(
-                level,
-                candidateId
-        )
-                || MCAIntegrationBridge
-                .isMasterProfessionVillager(
-                        level,
-                        candidateId
-                )) {
+        if (!MCAIntegrationBridge.isTeenOrAdultVillager(level, candidateId)) {
             return false;
         }
 
-        return isEligibleIgnoringResidentScan(
-                level,
-                capital,
-                candidateId
-        );
+        if (MCAIntegrationBridge.isMCAGuard(level, candidateId)
+                || MCAIntegrationBridge.isMasterProfessionVillager(level, candidateId)) {
+            return false;
+        }
+
+        return isEligibleIgnoringResidentScan(level, capital, candidateId);
     }
 
     private static boolean isEligibleIgnoringResidentScan(
@@ -161,9 +109,6 @@ final class CapitalAmbassadorSelection {
             return false;
         }
 
-        return !CapitalRoleValidation.isLoadedDeadOrRemoved(
-                level,
-                candidateId
-        );
+        return !CapitalRoleValidation.isLoadedDeadOrRemoved(level, candidateId);
     }
 }
