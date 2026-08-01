@@ -2,12 +2,14 @@ package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.capital.CapitalAmbassadorService;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
+import com.majesttyx.mcacapitals.capital.CapitalCommanderService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalHandService;
 import com.majesttyx.mcacapitals.capital.CapitalHeraldService;
 import com.majesttyx.mcacapitals.capital.CapitalMaesterService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
+import com.majesttyx.mcacapitals.capital.CapitalRankConflictService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.capital.CapitalRoyalGuardService;
@@ -691,6 +693,18 @@ public final class RoyalScepterCommands {
             return 0;
         }
 
+        if (!CapitalCommanderService.isEligibleVillagerCommander(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.literal(
+                    "That villager is not eligible to serve as Commander of the Army."
+            ));
+            return 0;
+        }
+
         UUID previousVillagerCommander = capital.getCommander();
         UUID previousPlayerCommander =
                 PlayerCapitalTitleService.getCommanderHolder(
@@ -905,6 +919,13 @@ public final class RoyalScepterCommands {
         if (!residents.contains(villagerId)) {
             source.sendFailure(Component.literal(
                     "That villager is not a resident of the capital."
+            ));
+            return 0;
+        }
+
+        if (!CapitalRankConflictService.canReceiveDirectNobleRank(level, capital, villagerId)) {
+            source.sendFailure(Component.literal(
+                    "That villager already holds a rank that cannot be replaced by a ducal appointment."
             ));
             return 0;
         }
