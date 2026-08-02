@@ -38,14 +38,15 @@ import com.majesttyx.mcacapitals.util.CapitalHouseFoundationCommands;
 import com.majesttyx.mcacapitals.util.CapitalIdentityCommands;
 import com.majesttyx.mcacapitals.util.CapitalIntegrationTestCommands;
 import com.majesttyx.mcacapitals.util.CapitalJusticeCommands;
-import com.majesttyx.mcacapitals.util.CapitalOathsCommands;
 import com.majesttyx.mcacapitals.util.CapitalLawCommands;
 import com.majesttyx.mcacapitals.util.CapitalLifecycleHandler;
+import com.majesttyx.mcacapitals.util.CapitalOathsCommands;
 import com.majesttyx.mcacapitals.util.CapitalPetitionCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalEscortCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.majesttyx.mcacapitals.util.CapitalTestCommands;
 import com.majesttyx.mcacapitals.util.RoyalScepterCommands;
+import com.majesttyx.mcacapitals.util.RoyalScepterOfficeCommands;
 import com.majesttyx.mcacapitals.util.SuccessionDecreeCommands;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.MinecraftForge;
@@ -257,6 +258,10 @@ public class MCACapitals {
         );
 
         RoyalScepterCommands.register(
+                event.getDispatcher()
+        );
+
+        RoyalScepterOfficeCommands.register(
                 event.getDispatcher()
         );
 

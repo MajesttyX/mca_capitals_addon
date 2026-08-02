@@ -20,27 +20,27 @@ public enum CapitalRelationshipBand {
     }
 
     public static CapitalRelationshipBand fromScore(int score) {
-        if (score >= 75) {
+        if (score >= 250) {
             return EXCELLENT;
         }
 
-        if (score >= 40) {
+        if (score >= 100) {
             return FRIENDLY;
         }
 
-        if (score >= 10) {
+        if (score >= 30) {
             return CORDIAL;
         }
 
-        if (score >= -9) {
+        if (score >= -29) {
             return NEUTRAL;
         }
 
-        if (score >= -39) {
+        if (score >= -99) {
             return STRAINED;
         }
 
-        if (score >= -74) {
+        if (score >= -249) {
             return HOSTILE;
         }
 

@@ -28,6 +28,7 @@ public class CapitalCommanderService {
         }
 
         boolean changed = false;
+
         UUID playerCommander =
                 PlayerCapitalTitleService.getCommanderHolder(
                         level,
@@ -38,6 +39,7 @@ public class CapitalCommanderService {
 
         if (!CapitalCommanderSelection.isValidCommander(
                 level,
+                capital,
                 previousCommander,
                 residents
         )) {
@@ -57,16 +59,18 @@ public class CapitalCommanderService {
 
         if (playerCommander == null
                 && capital.getCommander() == null
-                && CapitalCommanderSelection.isEligibleForNewCommander(
-                level,
-                capital
-        )) {
+                && CapitalCommanderSelection
+                .isEligibleForNewCommander(
+                        level,
+                        capital
+                )) {
             UUID newCommander =
-                    CapitalCommanderSelection.findBestCommanderCandidate(
-                            level,
-                            capital,
-                            residents
-                    );
+                    CapitalCommanderSelection
+                            .findBestCommanderCandidate(
+                                    level,
+                                    capital,
+                                    residents
+                            );
 
             if (newCommander != null) {
                 capital.setCommander(newCommander);
@@ -157,40 +161,23 @@ public class CapitalCommanderService {
     ) {
         if (level == null
                 || capital == null
-                || villagerId == null) {
+                || villagerId == null
+                || residents == null) {
             return false;
         }
 
-        if (residents != null
-                && !residents.contains(villagerId)) {
+        if (!CapitalCommanderSelection.isEligibleForNewCommander(
+                level,
+                capital
+        )) {
             return false;
         }
 
-        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(
+        return CapitalCommanderSelection.isEligibleCandidate(
                 level,
                 capital,
-                villagerId
-        )) {
-            return false;
-        }
-
-        if (CapitalAmbassadorService.isAmbassador(
-                level,
-                villagerId
-        )) {
-            return false;
-        }
-
-        Entity entity =
-                MCAIntegrationBridge.getEntityByUuid(
-                        level,
-                        villagerId
-                );
-
-        return MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)
-                && MCAIntegrationBridge.isMCAGuard(
-                level,
-                villagerId
+                villagerId,
+                residents
         );
     }
 
@@ -210,7 +197,9 @@ public class CapitalCommanderService {
             UUID playerId
     ) {
         UUID holder = getPlayerCommander(level, capital);
-        return holder != null && !holder.equals(playerId);
+
+        return holder != null
+                && !holder.equals(playerId);
     }
 
     public static boolean appointPlayerCommander(
@@ -224,6 +213,25 @@ public class CapitalCommanderService {
             return false;
         }
 
+        UUID playerId = player.getUUID();
+
+        if (playerId.equals(capital.getSovereign())
+                || playerId.equals(capital.getPlayerSovereignId())
+                || PlayerCapitalTitleService.isHand(
+                level,
+                capital,
+                playerId
+        )) {
+            return false;
+        }
+
+        if (!CapitalCommanderSelection.isEligibleForNewCommander(
+                level,
+                capital
+        )) {
+            return false;
+        }
+
         UUID existingPlayerCommander =
                 getPlayerCommander(
                         level,
@@ -231,9 +239,7 @@ public class CapitalCommanderService {
                 );
 
         if (existingPlayerCommander != null
-                && !existingPlayerCommander.equals(
-                player.getUUID()
-        )) {
+                && !existingPlayerCommander.equals(playerId)) {
             return false;
         }
 
@@ -244,9 +250,7 @@ public class CapitalCommanderService {
                 );
 
         if (capital.getCommander() != null
-                && !capital.getCommander().equals(
-                player.getUUID()
-        )) {
+                && !capital.getCommander().equals(playerId)) {
             String formerName =
                     resolveDisplayName(
                             level,
@@ -275,14 +279,14 @@ public class CapitalCommanderService {
         PlayerCapitalTitleService.grantCommander(
                 level,
                 capital,
-                player.getUUID()
+                playerId
         );
 
         String commanderName =
                 resolveDisplayName(
                         level,
                         capital,
-                        player.getUUID()
+                        playerId
                 );
 
         CapitalChronicleService.addEntry(
@@ -351,10 +355,10 @@ public class CapitalCommanderService {
             return;
         }
 
-        for (ServerPlayer serverPlayer
-                : level.getServer()
-                .getPlayerList()
-                .getPlayers()) {
+        for (ServerPlayer serverPlayer :
+                level.getServer()
+                        .getPlayerList()
+                        .getPlayers()) {
             Integer playerVillage =
                     MCAIntegrationBridge.getVillageIdForResident(
                             level,

@@ -1,8 +1,9 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import forge.net.mca.entity.VillagerEntityMCA;
 import forge.net.mca.cobalt.network.NetworkHandler;
+import forge.net.mca.entity.VillagerEntityMCA;
+import forge.net.mca.network.s2c.InteractionDialogueQuestionResponse;
 import forge.net.mca.network.s2c.InteractionDialogueResponse;
 import forge.net.mca.resources.Dialogues;
 import forge.net.mca.resources.data.dialogue.Question;
@@ -30,8 +31,11 @@ public final class CapitalSovereignDeclarationPromptService {
         }
 
         ServerLevel level = player.serverLevel();
+
         PlayerCapitalAllegianceService.synchronizePlayerSovereignDeclaration(player);
+
         CapitalRecord capital = resolveCapital(level, villager);
+
         return capital != null
                 && capital.getState() == CapitalState.ACTIVE
                 && villager.getUUID().equals(capital.getSovereign())
@@ -45,25 +49,50 @@ public final class CapitalSovereignDeclarationPromptService {
             ServerPlayer player,
             VillagerEntityMCA villager
     ) {
-        CapitalRecord capital = resolveCapital(player.serverLevel(), villager);
+        if (player == null || villager == null) {
+            return;
+        }
+
+        CapitalRecord capital = resolveCapital(
+                player.serverLevel(),
+                villager
+        );
+
         if (capital == null) {
             continueNormalConversation(player, villager);
             return;
         }
 
-        player.sendSystemMessage(Component.literal(
-                villager.getName().getString()
-                        + ": Before we continue, will you declare for "
+        Question question = Dialogues.getInstance().getQuestion(QUESTION_ID);
+
+        if (question == null) {
+            continueNormalConversation(player, villager);
+            return;
+        }
+
+        Component promptText = Component.literal(
+                "Before we continue, will you declare for "
                         + CapitalDiplomaticAgreementText.capitalName(
                         player.serverLevel(),
                         capital
                 )
                         + "?"
-        ));
+        );
 
-        Question question = Dialogues.getInstance().getQuestion(QUESTION_ID);
         NetworkHandler.sendToPlayer(
-                new InteractionDialogueResponse(question, player, villager),
+                new InteractionDialogueResponse(
+                        question,
+                        player,
+                        villager
+                ),
+                player
+        );
+
+        NetworkHandler.sendToPlayer(
+                new InteractionDialogueQuestionResponse(
+                        question.isSilent(),
+                        promptText
+                ),
                 player
         );
     }
@@ -79,8 +108,13 @@ public final class CapitalSovereignDeclarationPromptService {
             return false;
         }
 
-        CapitalRecord capital = resolveCapital(player.serverLevel(), villager);
-        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
+        CapitalRecord capital = resolveCapital(
+                player.serverLevel(),
+                villager
+        );
+
+        if (capital == null
+                || capital.getState() != CapitalState.ACTIVE) {
             return false;
         }
 
@@ -88,9 +122,17 @@ public final class CapitalSovereignDeclarationPromptService {
             if (!villager.getUUID().equals(capital.getSovereign())) {
                 return false;
             }
+
             PlayerCapitalAllegianceService.DeclarationResult result =
-                    PlayerCapitalAllegianceService.declare(player, capital);
-            player.sendSystemMessage(Component.literal(result.message()));
+                    PlayerCapitalAllegianceService.declare(
+                            player,
+                            capital
+                    );
+
+            player.sendSystemMessage(
+                    Component.literal(result.message())
+            );
+
             continueNormalConversation(player, villager);
             return true;
         }
@@ -99,6 +141,7 @@ public final class CapitalSovereignDeclarationPromptService {
             if (!villager.getUUID().equals(capital.getSovereign())) {
                 return false;
             }
+
             continueNormalConversation(player, villager);
             return true;
         }
@@ -108,9 +151,17 @@ public final class CapitalSovereignDeclarationPromptService {
                     && !villager.getUUID().equals(capital.getHand())) {
                 return false;
             }
+
             PlayerCapitalAllegianceService.DeclarationResult result =
-                    PlayerCapitalAllegianceService.declare(player, capital);
-            player.sendSystemMessage(Component.literal(result.message()));
+                    PlayerCapitalAllegianceService.declare(
+                            player,
+                            capital
+                    );
+
+            player.sendSystemMessage(
+                    Component.literal(result.message())
+            );
+
             MCAIntegrationBridge.stopInteracting(villager);
             return true;
         }
@@ -123,9 +174,12 @@ public final class CapitalSovereignDeclarationPromptService {
             VillagerEntityMCA villager
     ) {
         CapitalRecord capital = resolveCapital(
-                player == null ? null : player.serverLevel(),
+                player == null
+                        ? null
+                        : player.serverLevel(),
                 villager
         );
+
         return player != null
                 && villager != null
                 && capital != null
@@ -144,6 +198,7 @@ public final class CapitalSovereignDeclarationPromptService {
         if (level == null || villager == null) {
             return null;
         }
+
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital != null
                     && capital.getState() == CapitalState.ACTIVE
@@ -153,12 +208,17 @@ public final class CapitalSovereignDeclarationPromptService {
                 return capital;
             }
         }
+
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(
                 level,
                 villager.getUUID()
         );
-        CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId);
-        return capital != null && capital.getState() == CapitalState.ACTIVE
+
+        CapitalRecord capital =
+                CapitalManager.getCapitalByVillageId(villageId);
+
+        return capital != null
+                && capital.getState() == CapitalState.ACTIVE
                 ? capital
                 : null;
     }
@@ -167,7 +227,17 @@ public final class CapitalSovereignDeclarationPromptService {
             ServerPlayer player,
             VillagerEntityMCA villager
     ) {
+        if (player == null || villager == null) {
+            return;
+        }
+
         Question root = Dialogues.getInstance().getQuestion("root");
+
+        if (root == null) {
+            MCAIntegrationBridge.stopInteracting(villager);
+            return;
+        }
+
         if (root.isAuto()) {
             Dialogues.getInstance().selectAnswer(
                     villager,
@@ -177,8 +247,13 @@ public final class CapitalSovereignDeclarationPromptService {
             );
             return;
         }
+
         NetworkHandler.sendToPlayer(
-                new InteractionDialogueResponse(root, player, villager),
+                new InteractionDialogueResponse(
+                        root,
+                        player,
+                        villager
+                ),
                 player
         );
     }

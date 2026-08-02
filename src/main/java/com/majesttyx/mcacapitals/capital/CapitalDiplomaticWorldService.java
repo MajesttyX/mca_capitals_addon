@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.UUID;
 
 final class CapitalDiplomaticWorldService {
-
     private static final int NPC_INITIATIVE_CHANCE = 15;
     private static final long NPC_INITIATIVE_COOLDOWN_DAYS = 3L;
 
@@ -25,7 +24,6 @@ final class CapitalDiplomaticWorldService {
         }
 
         long gameDay = currentDay(level);
-
         if (CapitalDiplomacyDataAccess
                 .getLastRelationshipDriftDay(level) < gameDay) {
             processRelationshipDrift(level);
@@ -169,7 +167,11 @@ final class CapitalDiplomaticWorldService {
             }
         }
 
-        if (adjustment != 0) {
+        if (adjustment == 0) {
+            return;
+        }
+
+        if (state == CapitalDiplomaticState.PEACE) {
             CapitalDiplomacyDataAccess
                     .adjustRelationshipOrganic(
                             level,
@@ -178,6 +180,15 @@ final class CapitalDiplomaticWorldService {
                             adjustment,
                             reason
                     );
+        } else {
+            CapitalDiplomacyDataAccess.adjustRelationship(
+                    level,
+                    first.getCapitalId(),
+                    second.getCapitalId(),
+                    adjustment,
+                    reason,
+                    null
+            );
         }
     }
 
@@ -368,11 +379,7 @@ final class CapitalDiplomaticWorldService {
 
             for (DiplomaticProposalType type :
                     DiplomaticProposalType.values()) {
-                if (type != DiplomaticProposalType.TRUCE && score < 30) {
-                    continue;
-                }
-                if (type == DiplomaticProposalType.TRUCE
-                        && score < -74) {
+                if (score < type.getMinimumRelationship()) {
                     continue;
                 }
 
@@ -469,9 +476,10 @@ final class CapitalDiplomaticWorldService {
         CapitalChronicleService.addEntry(
                 level,
                 source,
-                CapitalDiplomaticAgreementText.capitalizedWithIndefiniteArticle(
-                        type.getDisplayName()
-                )
+                CapitalDiplomaticAgreementText
+                        .capitalizedWithIndefiniteArticle(
+                                type.getDisplayName()
+                        )
                         + " was proposed to "
                         + CapitalDiplomaticAgreementText
                         .capitalName(level, target)

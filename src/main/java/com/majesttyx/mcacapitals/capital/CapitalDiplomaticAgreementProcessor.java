@@ -7,7 +7,6 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public final class CapitalDiplomaticAgreementProcessor {
-
     @SubscribeEvent
     public void onLevelTick(
             TickEvent.LevelTickEvent event
@@ -16,13 +15,11 @@ public final class CapitalDiplomaticAgreementProcessor {
             return;
         }
 
-        if (!(event.level
-                instanceof ServerLevel level)) {
+        if (!(event.level instanceof ServerLevel level)) {
             return;
         }
 
-        if (level
-                != level.getServer().overworld()) {
+        if (level != level.getServer().overworld()) {
             return;
         }
 
@@ -30,9 +27,8 @@ public final class CapitalDiplomaticAgreementProcessor {
             return;
         }
 
-        CapitalDiplomaticAgreementService
-                .expireTruces(level);
-
+        CapitalDiplomaticAgreementService.expireTruces(level);
+        CapitalDiplomaticTradeAgreementService.tick(level);
         CapitalDiplomaticWorldService.tick(level);
 
         for (DiplomaticProposal proposal :

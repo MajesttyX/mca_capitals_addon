@@ -1,8 +1,11 @@
 package com.majesttyx.mcacapitals.capital;
 
+import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
+import com.majesttyx.mcacapitals.identity.VillagerIdentitySyncService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,7 +33,6 @@ public final class CapitalAmbassadorService {
         }
 
         UUID capitalId = capital.getCapitalId();
-
         UUID currentAmbassador =
                 getAmbassador(
                         level,
@@ -52,6 +54,7 @@ public final class CapitalAmbassadorService {
                 );
 
                 AMBASSADOR_CACHE.remove(capitalId);
+                sync(level, currentAmbassador);
                 changed = true;
             }
         }
@@ -59,10 +62,11 @@ public final class CapitalAmbassadorService {
         if (getAmbassador(level, capital) == null
                 && capital.getState() == CapitalState.ACTIVE
                 && capital.getSovereign() != null
-                && CapitalBuildingService.hasAmbassadorBuildings(
-                level,
-                capital
-        )) {
+                && CapitalBuildingService
+                .hasAmbassadorBuildings(
+                        level,
+                        capital
+                )) {
             UUID candidate =
                     CapitalAmbassadorSelection.findCandidate(
                             level,
@@ -71,40 +75,13 @@ public final class CapitalAmbassadorService {
                     );
 
             if (candidate != null) {
-                CapitalDiplomacyDataAccess.setAmbassador(
-                        level,
-                        capitalId,
-                        candidate
-                );
-
-                AMBASSADOR_CACHE.put(
-                        capitalId,
-                        candidate
-                );
-
-                String name =
-                        CapitalNameService.resolveDisplayName(
-                                level,
-                                capital,
-                                candidate
-                        );
-
-                String capitalName =
-                        MCAIntegrationBridge.getVillageName(
-                                level,
-                                capital.getVillageId()
-                        );
-
-                CapitalChronicleService.addEntry(
+                changed = appoint(
                         level,
                         capital,
-                        name
-                                + " was appointed Ambassador of "
-                                + capitalName
-                                + "."
-                );
-
-                changed = true;
+                        candidate,
+                        residents,
+                        false
+                ) || changed;
             }
         }
 
@@ -121,6 +98,51 @@ public final class CapitalAmbassadorService {
         }
 
         return changed;
+    }
+
+    public static boolean appointAmbassador(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID villagerId,
+            Set<UUID> residents
+    ) {
+        if (level == null
+                || capital == null
+                || capital.getCapitalId() == null
+                || villagerId == null
+                || residents == null
+                || capital.getState() != CapitalState.ACTIVE
+                || capital.getSovereign() == null
+                || !CapitalBuildingService
+                .hasAmbassadorBuildings(
+                        level,
+                        capital
+                )
+                || !CapitalAmbassadorSelection.isEligible(
+                        level,
+                        capital,
+                        villagerId,
+                        residents
+                )) {
+            return false;
+        }
+
+        if (villagerId.equals(
+                getAmbassador(
+                        level,
+                        capital
+                )
+        )) {
+            return false;
+        }
+
+        return appoint(
+                level,
+                capital,
+                villagerId,
+                residents,
+                true
+        );
     }
 
     public static UUID getAmbassador(
@@ -177,8 +199,8 @@ public final class CapitalAmbassadorService {
         if (level != null) {
             for (UUID ambassadorId :
                     CapitalDiplomacyDataAccess
-                            .getAmbassadorsSnapshot(level)
-                            .values()) {
+                    .getAmbassadorsSnapshot(level)
+                    .values()) {
                 if (entityId.equals(ambassadorId)) {
                     return true;
                 }
@@ -205,9 +227,9 @@ public final class CapitalAmbassadorService {
                 level == null
                         ? getCachedAmbassador(capital)
                         : getAmbassador(
-                        level,
-                        capital
-                );
+                                level,
+                                capital
+                        );
 
         return entityId.equals(ambassador);
     }
@@ -226,6 +248,115 @@ public final class CapitalAmbassadorService {
             CapitalDiplomacyDataAccess.clearAmbassador(
                     level,
                     capitalId
+            );
+        }
+    }
+
+    private static boolean appoint(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID villagerId,
+            Set<UUID> residents,
+            boolean recordReplacement
+    ) {
+        UUID capitalId = capital.getCapitalId();
+        UUID previous = getAmbassador(
+                level,
+                capital
+        );
+
+        if (villagerId.equals(previous)) {
+            return false;
+        }
+
+        String capitalName =
+                MCAIntegrationBridge.getVillageName(
+                        level,
+                        capital.getVillageId()
+                );
+
+        if (recordReplacement
+                && previous != null) {
+            String previousName =
+                    CapitalNameService.resolveDisplayName(
+                            level,
+                            capital,
+                            previous
+                    );
+
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    previousName
+                            + " was relieved of the office of Ambassador of "
+                            + capitalName
+                            + "."
+            );
+        }
+
+        CapitalDiplomacyDataAccess.setAmbassador(
+                level,
+                capitalId,
+                villagerId
+        );
+
+        AMBASSADOR_CACHE.put(
+                capitalId,
+                villagerId
+        );
+
+        CapitalNameService.refreshCapitalNames(
+                level,
+                capital,
+                residents
+        );
+
+        CapitalCourtWatcher.clearFingerprint(
+                capitalId
+        );
+
+        sync(level, previous);
+        sync(level, villagerId);
+
+        CapitalDataAccess.markDirty(level);
+
+        String name =
+                CapitalNameService.resolveDisplayName(
+                        level,
+                        capital,
+                        villagerId
+                );
+
+        CapitalChronicleService.addEntry(
+                level,
+                capital,
+                name
+                        + " was appointed Ambassador of "
+                        + capitalName
+                        + "."
+        );
+
+        return true;
+    }
+
+    private static void sync(
+            ServerLevel level,
+            UUID entityId
+    ) {
+        if (entityId == null) {
+            return;
+        }
+
+        Entity entity =
+                MCAIntegrationBridge.findLoadedEntityByUuid(
+                        level,
+                        entityId
+                );
+
+        if (entity != null) {
+            VillagerIdentitySyncService.syncToNearbyPlayers(
+                    level,
+                    entity
             );
         }
     }

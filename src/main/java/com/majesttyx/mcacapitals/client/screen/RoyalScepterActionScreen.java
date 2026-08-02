@@ -12,10 +12,17 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
     private final UUID targetId;
     private final String targetName;
 
-    public RoyalScepterActionScreen(UUID targetId, String targetName) {
+    public RoyalScepterActionScreen(
+            UUID targetId,
+            String targetName
+    ) {
         super(Component.literal("Royal Scepter"));
         this.targetId = targetId;
-        this.targetName = targetName == null || targetName.isBlank() ? "Unnamed" : targetName;
+        this.targetName =
+                targetName == null
+                        || targetName.isBlank()
+                        ? "Unnamed"
+                        : targetName;
     }
 
     @Override
@@ -26,60 +33,81 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         int buttonWidth = 240;
         int buttonHeight = 20;
         int left = centerX - buttonWidth / 2;
-        int top = this.height / 2 - 60;
-
-        addRenderableWidget(
-                Button.builder(
-                                Component.literal("Name Heir Apparent"),
-                                button -> runCommand("royalscepter heir " + targetId)
-                        )
-                        .bounds(left, top, buttonWidth, buttonHeight)
-                        .build()
+        int top = Math.max(
+                42,
+                this.height / 2 - 104
         );
 
-        addRenderableWidget(
-                Button.builder(
-                                Component.literal("Name Hand of the Crown"),
-                                button -> runCommand("royalscepter hand " + targetId)
-                        )
-                        .bounds(left, top + 24, buttonWidth, buttonHeight)
-                        .build()
+        addButton(
+                left,
+                top,
+                buttonWidth,
+                buttonHeight,
+                "Name Heir Apparent",
+                "royalscepter heir " + targetId
         );
 
-        addRenderableWidget(
-                Button.builder(
-                                Component.literal("Name Grand Maester"),
-                                button -> runCommand("royalscepter grandmaester " + targetId)
-                        )
-                        .bounds(left, top + 48, buttonWidth, buttonHeight)
-                        .build()
+        addButton(
+                left,
+                top + 24,
+                buttonWidth,
+                buttonHeight,
+                "Name Hand of the Crown",
+                "royalscepter hand " + targetId
         );
 
-        addRenderableWidget(
-                Button.builder(
-                                Component.literal("Appoint Lord Commander"),
-                                button -> runCommand("royalscepter commander " + targetId)
-                        )
-                        .bounds(left, top + 72, buttonWidth, buttonHeight)
-                        .build()
+        addButton(
+                left,
+                top + 48,
+                buttonWidth,
+                buttonHeight,
+                "Name Grand Maester",
+                "royalscepter grandmaester " + targetId
         );
 
-        addRenderableWidget(
-                Button.builder(
-                                Component.literal("Appoint to the Royal Guard"),
-                                button -> runCommand("royalscepter royalguard " + targetId)
-                        )
-                        .bounds(left, top + 96, buttonWidth, buttonHeight)
-                        .build()
+        addButton(
+                left,
+                top + 72,
+                buttonWidth,
+                buttonHeight,
+                "Appoint Lord Commander",
+                "royalscepter commander " + targetId
         );
 
-        addRenderableWidget(
-                Button.builder(
-                                Component.literal("Bestow Dukedom"),
-                                button -> runCommand("royalscepter duke " + targetId)
-                        )
-                        .bounds(left, top + 120, buttonWidth, buttonHeight)
-                        .build()
+        addButton(
+                left,
+                top + 96,
+                buttonWidth,
+                buttonHeight,
+                "Appoint to the Royal Guard",
+                "royalscepter royalguard " + targetId
+        );
+
+        addButton(
+                left,
+                top + 120,
+                buttonWidth,
+                buttonHeight,
+                "Appoint Ambassador",
+                "royalscepteroffice ambassador " + targetId
+        );
+
+        addButton(
+                left,
+                top + 144,
+                buttonWidth,
+                buttonHeight,
+                "Appoint Master of Laws",
+                "royalscepteroffice masteroflaws " + targetId
+        );
+
+        addButton(
+                left,
+                top + 168,
+                buttonWidth,
+                buttonHeight,
+                "Bestow Dukedom",
+                "royalscepter duke " + targetId
         );
 
         addRenderableWidget(
@@ -87,33 +115,102 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
                                 Component.literal("Cancel"),
                                 button -> onClose()
                         )
-                        .bounds(left, top + 152, buttonWidth, buttonHeight)
+                        .bounds(
+                                left,
+                                top + 200,
+                                buttonWidth,
+                                buttonHeight
+                        )
+                        .build()
+        );
+    }
+
+    private void addButton(
+            int left,
+            int top,
+            int width,
+            int height,
+            String label,
+            String command
+    ) {
+        addRenderableWidget(
+                Button.builder(
+                                Component.literal(label),
+                                button -> runCommand(command)
+                        )
+                        .bounds(
+                                left,
+                                top,
+                                width,
+                                height
+                        )
                         .build()
         );
     }
 
     private void runCommand(String command) {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player != null && minecraft.player.connection != null) {
-            minecraft.player.connection.sendCommand(command);
+        Minecraft minecraft =
+                Minecraft.getInstance();
+
+        if (minecraft.player != null
+                && minecraft.player.connection != null) {
+            minecraft.player.connection
+                    .sendCommand(command);
         }
+
         onClose();
     }
 
     private String getTrimmedTargetName() {
-        return this.font.plainSubstrByWidth(this.targetName, 220);
+        return this.font.plainSubstrByWidth(
+                this.targetName,
+                220
+        );
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void render(
+            GuiGraphics guiGraphics,
+            int mouseX,
+            int mouseY,
+            float partialTick
+    ) {
         int centerX = this.width / 2;
-        int titleY = this.height / 2 - 98;
+        int titleY = Math.max(
+                8,
+                this.height / 2 - 142
+        );
 
-        guiGraphics.drawCenteredString(this.font, "Royal Scepter", centerX, titleY, 0xFFFFFF);
-        guiGraphics.drawCenteredString(this.font, "Choose appointment for:", centerX, titleY + 14, 0xCCCCCC);
-        guiGraphics.drawCenteredString(this.font, getTrimmedTargetName(), centerX, titleY + 26, 0xCCCCCC);
+        guiGraphics.drawCenteredString(
+                this.font,
+                "Royal Scepter",
+                centerX,
+                titleY,
+                0xFFFFFF
+        );
 
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+        guiGraphics.drawCenteredString(
+                this.font,
+                "Choose appointment for:",
+                centerX,
+                titleY + 14,
+                0xCCCCCC
+        );
+
+        guiGraphics.drawCenteredString(
+                this.font,
+                getTrimmedTargetName(),
+                centerX,
+                titleY + 26,
+                0xCCCCCC
+        );
+
+        super.render(
+                guiGraphics,
+                mouseX,
+                mouseY,
+                partialTick
+        );
     }
 
     @Override

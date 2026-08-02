@@ -26,8 +26,7 @@ public final class CapitalAsylumScreenService {
             ServerPlayer player,
             UUID ambassadorId
     ) {
-        CapitalDiplomaticAgreementValidation
-                .AudienceValidation audience =
+        CapitalDiplomaticAgreementValidation.AudienceValidation audience =
                 CapitalDiplomaticAgreementValidation
                         .validateMenuAudience(
                                 player,
@@ -67,8 +66,7 @@ public final class CapitalAsylumScreenService {
             ServerPlayer player,
             UUID ambassadorId
     ) {
-        CapitalDiplomaticAgreementValidation
-                .AudienceValidation audience =
+        CapitalDiplomaticAgreementValidation.AudienceValidation audience =
                 CapitalDiplomaticAgreementValidation
                         .validateMenuAudience(
                                 player,
@@ -81,8 +79,9 @@ public final class CapitalAsylumScreenService {
                         player,
                         "Asylum Requests",
                         audience.failureMessage(),
-                        "/capitaldiplomacy targets "
-                                + ambassadorId
+                        continuationCommand(
+                                ambassadorId
+                        )
                 );
             }
 
@@ -105,8 +104,9 @@ public final class CapitalAsylumScreenService {
                     player,
                     "Asylum Requests",
                     "Only the sovereign, or the Hand serving a villager sovereign, may grant asylum.",
-                    "/capitaldiplomacy targets "
-                            + ambassadorId
+                    continuationCommand(
+                            ambassadorId
+                    )
             );
 
             return 0;
@@ -120,8 +120,9 @@ public final class CapitalAsylumScreenService {
                     player,
                     "Asylum Requests",
                     "The capital requires an operational Inn before refugees can request asylum.",
-                    "/capitaldiplomacy targets "
-                            + ambassadorId
+                    continuationCommand(
+                            ambassadorId
+                    )
             );
 
             return 0;
@@ -138,8 +139,9 @@ public final class CapitalAsylumScreenService {
                     player,
                     "Asylum Requests",
                     "The capital's MCA village record is unavailable.",
-                    "/capitaldiplomacy targets "
-                            + ambassadorId
+                    continuationCommand(
+                            ambassadorId
+                    )
             );
 
             return 0;
@@ -156,20 +158,9 @@ public final class CapitalAsylumScreenService {
                     player,
                     "Asylum Requests",
                     "No refugees are currently seeking asylum inside the capital.",
-                    "/capitaldiplomacy targets "
-                            + ambassadorId
-            );
-
-            return 0;
-        }
-
-        if (!targetVillage.hasSpace()) {
-            sendMessage(
-                    player,
-                    "Asylum Requests",
-                    "The capital has no free MCA residence capacity for a refugee.",
-                    "/capitaldiplomacy targets "
-                            + ambassadorId
+                    continuationCommand(
+                            ambassadorId
+                    )
             );
 
             return 0;
@@ -178,8 +169,7 @@ public final class CapitalAsylumScreenService {
         List<OpenAmbassadorCommunicationPacket.Entry> entries =
                 new ArrayList<>();
 
-        for (CapitalRefugeeRecord record :
-                candidates) {
+        for (CapitalRefugeeRecord record : candidates) {
             Entity refugee =
                     MCAIntegrationBridge
                             .findLoadedMCAVillagerByUuid(
@@ -216,7 +206,8 @@ public final class CapitalAsylumScreenService {
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
-                        OpenAmbassadorCommunicationPacket.Mode.ASYLUM_REQUESTS,
+                        OpenAmbassadorCommunicationPacket.Mode
+                                .ASYLUM_REQUESTS,
                         "Asylum Requests",
                         CapitalDiplomaticAgreementText
                                 .capitalName(
@@ -224,8 +215,9 @@ public final class CapitalAsylumScreenService {
                                         targetCapital
                                 ),
                         "Choose a refugee to admit as a resident of the capital.",
-                        "/capitaldiplomacy targets "
-                                + ambassadorId,
+                        continuationCommand(
+                                ambassadorId
+                        ),
                         entries,
                         List.of()
                 )
@@ -243,7 +235,8 @@ public final class CapitalAsylumScreenService {
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
-                        OpenAmbassadorCommunicationPacket.Mode.MESSAGE,
+                        OpenAmbassadorCommunicationPacket.Mode
+                                .MESSAGE,
                         title,
                         "",
                         message,
@@ -254,15 +247,13 @@ public final class CapitalAsylumScreenService {
         );
     }
 
-    private static List<CapitalRefugeeRecord>
-    findCandidates(
+    private static List<CapitalRefugeeRecord> findCandidates(
             ServerLevel level,
             CapitalRecord targetCapital
     ) {
         if (level == null
                 || targetCapital == null
-                || targetCapital.getCapitalId()
-                == null) {
+                || targetCapital.getCapitalId() == null) {
             return List.of();
         }
 
@@ -293,6 +284,7 @@ public final class CapitalAsylumScreenService {
                         isPresentCandidate(
                                 level,
                                 village,
+                                targetCapital,
                                 record
                         )
                 )
@@ -312,6 +304,7 @@ public final class CapitalAsylumScreenService {
     private static boolean isPresentCandidate(
             ServerLevel level,
             Village village,
+            CapitalRecord targetCapital,
             CapitalRefugeeRecord record
     ) {
         Entity entity =
@@ -321,21 +314,28 @@ public final class CapitalAsylumScreenService {
                                 record.getRefugeeId()
                         );
 
-        if (!(entity
-                instanceof VillagerEntityMCA villager)
+        if (!(entity instanceof VillagerEntityMCA villager)
                 || !villager.isAlive()
                 || !MCAIntegrationBridge
                 .isTeenOrAdultVillager(
                         level,
                         record.getRefugeeId()
-                )) {
+                )
+                || !village.isWithinBorder(
+                villager
+        )) {
             return false;
         }
 
-        return village.isWithinBorder(villager)
-                && villager.getResidency()
-                .getHomeVillage()
-                .isEmpty();
+        Village currentHome =
+                villager.getResidency()
+                        .getHomeVillage()
+                        .orElse(null);
+
+        return currentHome == null
+                || targetCapital.getVillageId() != null
+                && currentHome.getId()
+                == targetCapital.getVillageId();
     }
 
     private static String candidateName(
@@ -369,5 +369,14 @@ public final class CapitalAsylumScreenService {
                         capital.getVillageId()
                 )
                 .orElse(null);
+    }
+
+    private static String continuationCommand(
+            UUID ambassadorId
+    ) {
+        return ambassadorId == null
+                ? ""
+                : "/capitalurgent continue "
+                + ambassadorId;
     }
 }

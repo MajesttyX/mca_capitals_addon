@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CapitalCourtWatcher {
-
     private static final Map<UUID, String> CAPITAL_FINGERPRINTS = new HashMap<>();
     private static final Map<UUID, Map<UUID, UUID>> ROYAL_SPOUSE_SNAPSHOTS = new HashMap<>();
 
@@ -33,7 +32,10 @@ public class CapitalCourtWatcher {
             return false;
         }
 
-        Set<UUID> resolvedResidents = residents != null ? residents : CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> resolvedResidents = residents != null
+                ? residents
+                : CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+
         String newFingerprint = buildFingerprint(level, capital, resolvedResidents);
         String oldFingerprint = CAPITAL_FINGERPRINTS.get(capital.getCapitalId());
 
@@ -45,37 +47,95 @@ public class CapitalCourtWatcher {
         UUID oldDowager = capital.getDowager();
         UUID oldHeir = capital.getHeir();
 
+        String oldConsortDisplayName = oldConsort == null
+                ? null
+                : resolveDisplayName(level, capital, oldConsort);
+
+        String oldDowagerDisplayName = oldDowager == null
+                ? null
+                : resolveDisplayName(level, capital, oldDowager);
+
+        String oldHeirDisplayName = oldHeir == null
+                ? null
+                : resolveDisplayName(level, capital, oldHeir);
+
         cleanupSubordinateDowagers(level, capital);
         recordRoyalMarriageEntries(level, capital, resolvedResidents);
 
         CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), newFingerprint);
 
         if (capital.getSovereign() != null) {
-            UUID sovereignSpouse = CapitalCourtMarriageResolver.findActualSpouse(level, capital.getSovereign());
+            UUID sovereignSpouse = CapitalCourtMarriageResolver.findActualSpouse(
+                    level,
+                    capital.getSovereign()
+            );
+
             if (!Objects.equals(sovereignSpouse, capital.getConsort())) {
                 CapitalCourtBuilder.applySovereignMarriage(level, capital);
             }
 
-            if (oldConsort != null && capital.getConsort() == null && isConfirmedDead(level, oldConsort)) {
-                String name = resolveDisplayName(level, capital, oldConsort);
-                CapitalMourningService.startMourning(level, capital, name + " died.");
-                CapitalChronicleService.addEntry(level, capital, name + " died and the court entered mourning.");
+            if (oldConsort != null
+                    && capital.getConsort() == null
+                    && isConfirmedDead(level, oldConsort)) {
+                String titledName = oldConsortDisplayName == null
+                        ? resolveDisplayName(level, capital, oldConsort)
+                        : oldConsortDisplayName;
+
+                CapitalMourningService.startMourning(
+                        level,
+                        capital,
+                        titledName + " died."
+                );
+
+                CapitalChronicleService.addEntry(
+                        level,
+                        capital,
+                        titledName + " died and the court entered mourning."
+                );
             }
 
-            if (oldDowager != null && isConfirmedDead(level, oldDowager)) {
-                String name = resolveDisplayName(level, capital, oldDowager);
+            if (oldDowager != null
+                    && isConfirmedDead(level, oldDowager)) {
+                String titledName = oldDowagerDisplayName == null
+                        ? resolveDisplayName(level, capital, oldDowager)
+                        : oldDowagerDisplayName;
+
                 capital.setDowager(null);
                 capital.setDowagerFemale(false);
-                CapitalMourningService.startMourning(level, capital, name + " died.");
-                CapitalChronicleService.addEntry(level, capital, name + " died and the court entered mourning.");
+
+                CapitalMourningService.startMourning(
+                        level,
+                        capital,
+                        titledName + " died."
+                );
+
+                CapitalChronicleService.addEntry(
+                        level,
+                        capital,
+                        titledName + " died and the court entered mourning."
+                );
             }
 
             if (!CapitalSuccessionService.isHeirStillValid(level, capital)) {
-                if (oldHeir != null && isConfirmedDead(level, oldHeir)) {
-                    String name = resolveDisplayName(level, capital, oldHeir);
-                    CapitalMourningService.startMourning(level, capital, name + " died.");
-                    CapitalChronicleService.addEntry(level, capital, name + " died and the court entered mourning.");
+                if (oldHeir != null
+                        && isConfirmedDead(level, oldHeir)) {
+                    String titledName = oldHeirDisplayName == null
+                            ? resolveDisplayName(level, capital, oldHeir)
+                            : oldHeirDisplayName;
+
+                    CapitalMourningService.startMourning(
+                            level,
+                            capital,
+                            titledName + " died."
+                    );
+
+                    CapitalChronicleService.addEntry(
+                            level,
+                            capital,
+                            titledName + " died and the court entered mourning."
+                    );
                 }
+
                 capital.setHeir(null);
             }
 
@@ -90,13 +150,26 @@ public class CapitalCourtWatcher {
     }
 
     public static void seedCurrentState(ServerLevel level, CapitalRecord capital) {
-        if (level == null || capital == null || capital.getCapitalId() == null) {
+        if (level == null
+                || capital == null
+                || capital.getCapitalId() == null) {
             return;
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        CAPITAL_FINGERPRINTS.put(capital.getCapitalId(), buildFingerprint(level, capital, residents));
-        ROYAL_SPOUSE_SNAPSHOTS.put(capital.getCapitalId(), buildRoyalSpouseSnapshot(level, capital));
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
+        CAPITAL_FINGERPRINTS.put(
+                capital.getCapitalId(),
+                buildFingerprint(level, capital, residents)
+        );
+
+        ROYAL_SPOUSE_SNAPSHOTS.put(
+                capital.getCapitalId(),
+                buildRoyalSpouseSnapshot(level, capital)
+        );
     }
 
     public static void clearFingerprint(UUID capitalId) {
@@ -109,13 +182,20 @@ public class CapitalCourtWatcher {
         ROYAL_SPOUSE_SNAPSHOTS.clear();
     }
 
-    private static void recordRoyalMarriageEntries(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+    private static void recordRoyalMarriageEntries(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents
+    ) {
         if (level == null || capital == null) {
             return;
         }
 
-        Map<UUID, UUID> previousSnapshot = ROYAL_SPOUSE_SNAPSHOTS.get(capital.getCapitalId());
-        Map<UUID, UUID> currentSnapshot = buildRoyalSpouseSnapshot(level, capital);
+        Map<UUID, UUID> previousSnapshot =
+                ROYAL_SPOUSE_SNAPSHOTS.get(capital.getCapitalId());
+
+        Map<UUID, UUID> currentSnapshot =
+                buildRoyalSpouseSnapshot(level, capital);
 
         for (Map.Entry<UUID, UUID> entry : currentSnapshot.entrySet()) {
             UUID nobleId = entry.getKey();
@@ -126,6 +206,7 @@ public class CapitalCourtWatcher {
             }
 
             UUID previousSpouse = previousSnapshot.get(nobleId);
+
             if (Objects.equals(previousSpouse, currentSpouse)) {
                 continue;
             }
@@ -134,31 +215,58 @@ public class CapitalCourtWatcher {
                 continue;
             }
 
-            boolean spouseIsResident = residents != null && residents.contains(currentSpouse);
-            boolean spouseIsPlayer = !MCAIntegrationBridge.isMCAVillager(level, currentSpouse);
+            boolean spouseIsResident =
+                    residents != null && residents.contains(currentSpouse);
+
+            boolean spouseIsPlayer =
+                    !MCAIntegrationBridge.isMCAVillager(level, currentSpouse);
 
             if (!spouseIsResident && !spouseIsPlayer) {
                 continue;
             }
 
-            if (!CapitalCourtMarriageResolver.isValidMarriedConsort(level, nobleId, currentSpouse)) {
+            if (!CapitalCourtMarriageResolver.isValidMarriedConsort(
+                    level,
+                    nobleId,
+                    currentSpouse
+            )) {
                 continue;
             }
 
-            String nobleName = stripKnownTitles(resolveBaseName(level, capital, nobleId));
-            String spouseName = stripKnownTitles(CapitalCourtMarriageResolver.resolveSpouseName(level, nobleId));
+            String nobleName =
+                    stripKnownTitles(
+                            resolveBaseName(level, capital, nobleId)
+                    );
+
+            String spouseName =
+                    stripKnownTitles(
+                            CapitalCourtMarriageResolver.resolveSpouseName(
+                                    level,
+                                    nobleId
+                            )
+                    );
 
             if (!hasMarriageEntry(capital, nobleName, spouseName)) {
-                CapitalChronicleService.addEntry(level, capital,
-                        nobleName + " was married to " + spouseName + ".");
+                CapitalChronicleService.addEntry(
+                        level,
+                        capital,
+                        nobleName + " was married to " + spouseName + "."
+                );
             }
         }
 
-        ROYAL_SPOUSE_SNAPSHOTS.put(capital.getCapitalId(), currentSnapshot);
+        ROYAL_SPOUSE_SNAPSHOTS.put(
+                capital.getCapitalId(),
+                currentSnapshot
+        );
     }
 
-    private static Map<UUID, UUID> buildRoyalSpouseSnapshot(ServerLevel level, CapitalRecord capital) {
+    private static Map<UUID, UUID> buildRoyalSpouseSnapshot(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
         Map<UUID, UUID> snapshot = new HashMap<>();
+
         if (level == null || capital == null) {
             return snapshot;
         }
@@ -173,69 +281,151 @@ public class CapitalCourtWatcher {
             if (nobleId == null) {
                 continue;
             }
-            snapshot.put(nobleId, CapitalCourtMarriageResolver.findActualSpouse(level, nobleId));
+
+            snapshot.put(
+                    nobleId,
+                    CapitalCourtMarriageResolver.findActualSpouse(
+                            level,
+                            nobleId
+                    )
+            );
         }
 
         return snapshot;
     }
 
-    private static void cleanupSubordinateDowagers(ServerLevel level, CapitalRecord capital) {
-        for (UUID holder : new HashSet<>(capital.getDowagerPrinceSources().keySet())) {
+    private static void cleanupSubordinateDowagers(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
+        for (UUID holder :
+                new HashSet<>(capital.getDowagerPrinceSources().keySet())) {
             if (holder == null || isConfirmedDead(level, holder)) {
                 capital.removeDowagerPrinceSource(holder);
                 continue;
             }
 
-            UUID actualLivingSpouse = CapitalCourtMarriageResolver.findActualSpouse(level, holder);
-            if (actualLivingSpouse != null && !actualLivingSpouse.equals(capital.getDowagerPrinceSource(holder))) {
+            UUID actualLivingSpouse =
+                    CapitalCourtMarriageResolver.findActualSpouse(
+                            level,
+                            holder
+                    );
+
+            if (actualLivingSpouse != null
+                    && !actualLivingSpouse.equals(
+                    capital.getDowagerPrinceSource(holder)
+            )) {
                 capital.removeDowagerPrinceSource(holder);
             }
         }
 
-        for (UUID holder : new HashSet<>(capital.getDowagerDukeSources().keySet())) {
+        for (UUID holder :
+                new HashSet<>(capital.getDowagerDukeSources().keySet())) {
             if (holder == null || isConfirmedDead(level, holder)) {
                 capital.removeDowagerDukeSource(holder);
                 continue;
             }
 
-            UUID actualLivingSpouse = CapitalCourtMarriageResolver.findActualSpouse(level, holder);
-            if (actualLivingSpouse != null && !actualLivingSpouse.equals(capital.getDowagerDukeSource(holder))) {
+            UUID actualLivingSpouse =
+                    CapitalCourtMarriageResolver.findActualSpouse(
+                            level,
+                            holder
+                    );
+
+            if (actualLivingSpouse != null
+                    && !actualLivingSpouse.equals(
+                    capital.getDowagerDukeSource(holder)
+            )) {
                 capital.removeDowagerDukeSource(holder);
             }
         }
     }
 
-    private static String buildFingerprint(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+    private static String buildFingerprint(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents
+    ) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("capital=").append(capital.getCapitalId()).append('|');
-        sb.append("villageId=").append(capital.getVillageId()).append('|');
-        sb.append("state=").append(capital.getState()).append('|');
-        sb.append("sovereign=").append(capital.getSovereign()).append('|');
-        sb.append("consort=").append(capital.getConsort()).append('|');
-        sb.append("dowager=").append(capital.getDowager()).append('|');
-        sb.append("heir=").append(capital.getHeir()).append('|');
-        sb.append("mourningActive=").append(capital.isMourningActive()).append('|');
-        sb.append("mourningEndDay=").append(capital.getMourningEndDay()).append('|');
-        sb.append("royalOrder=").append(capital.getRoyalSuccessionOrder()).append('|');
-        sb.append("disinherited=").append(capital.getDisinheritedRoyalChildren()).append('|');
-        sb.append("legitimized=").append(capital.getLegitimizedRoyalChildren()).append('|');
-        sb.append("princeConsortSources=").append(capital.getPrinceConsortSources()).append('|');
-        sb.append("marriageDukeSources=").append(capital.getMarriageDukeSources()).append('|');
-        sb.append("dowagerPrinceSources=").append(capital.getDowagerPrinceSources()).append('|');
-        sb.append("dowagerDukeSources=").append(capital.getDowagerDukeSources()).append('|');
+        sb.append("capital=")
+                .append(capital.getCapitalId())
+                .append('|');
+
+        sb.append("villageId=")
+                .append(capital.getVillageId())
+                .append('|');
+
+        sb.append("state=")
+                .append(capital.getState())
+                .append('|');
+
+        sb.append("sovereign=")
+                .append(capital.getSovereign())
+                .append('|');
+
+        sb.append("consort=")
+                .append(capital.getConsort())
+                .append('|');
+
+        sb.append("dowager=")
+                .append(capital.getDowager())
+                .append('|');
+
+        sb.append("heir=")
+                .append(capital.getHeir())
+                .append('|');
+
+        sb.append("mourningActive=")
+                .append(capital.isMourningActive())
+                .append('|');
+
+        sb.append("mourningEndDay=")
+                .append(capital.getMourningEndDay())
+                .append('|');
+
+        sb.append("royalOrder=")
+                .append(capital.getRoyalSuccessionOrder())
+                .append('|');
+
+        sb.append("disinherited=")
+                .append(capital.getDisinheritedRoyalChildren())
+                .append('|');
+
+        sb.append("legitimized=")
+                .append(capital.getLegitimizedRoyalChildren())
+                .append('|');
+
+        sb.append("princeConsortSources=")
+                .append(capital.getPrinceConsortSources())
+                .append('|');
+
+        sb.append("marriageDukeSources=")
+                .append(capital.getMarriageDukeSources())
+                .append('|');
+
+        sb.append("dowagerPrinceSources=")
+                .append(capital.getDowagerPrinceSources())
+                .append('|');
+
+        sb.append("dowagerDukeSources=")
+                .append(capital.getDowagerDukeSources())
+                .append('|');
 
         Set<UUID> watchSet = new HashSet<>(residents);
 
         if (capital.getSovereign() != null) {
             watchSet.add(capital.getSovereign());
         }
+
         if (capital.getConsort() != null) {
             watchSet.add(capital.getConsort());
         }
+
         if (capital.getDowager() != null) {
             watchSet.add(capital.getDowager());
         }
+
         if (capital.getHeir() != null) {
             watchSet.add(capital.getHeir());
         }
@@ -251,67 +441,177 @@ public class CapitalCourtWatcher {
 
         for (UUID entityId : watchSet.stream().sorted().toList()) {
             sb.append(entityId).append(':');
-            sb.append("resident=").append(residents.contains(entityId)).append(',');
-            sb.append("isMCA=").append(MCAIntegrationBridge.isMCAVillager(level, entityId)).append(',');
-            sb.append("hasFamilyNode=").append(MCAIntegrationBridge.hasFamilyNode(level, entityId)).append(',');
-            sb.append("isFemale=").append(MCAIntegrationBridge.isFemale(level, entityId)).append(',');
-            sb.append("isAlive=").append(MCAIntegrationBridge.isAliveAdultOrChildVillager(level, entityId)).append(',');
-            sb.append("isGuard=").append(MCAIntegrationBridge.isMCAGuard(level, entityId)).append(',');
-            sb.append("isMaster=").append(MCAIntegrationBridge.isMasterProfessionVillager(level, entityId)).append(',');
 
-            UUID spouse = CapitalCourtMarriageResolver.findActualSpouse(level, entityId);
-            sb.append("spouse=").append(spouse == null ? "none" : spouse).append(',');
+            sb.append("resident=")
+                    .append(residents.contains(entityId))
+                    .append(',');
+
+            sb.append("isMCA=")
+                    .append(
+                            MCAIntegrationBridge.isMCAVillager(
+                                    level,
+                                    entityId
+                            )
+                    )
+                    .append(',');
+
+            sb.append("hasFamilyNode=")
+                    .append(
+                            MCAIntegrationBridge.hasFamilyNode(
+                                    level,
+                                    entityId
+                            )
+                    )
+                    .append(',');
+
+            sb.append("isFemale=")
+                    .append(
+                            MCAIntegrationBridge.isFemale(
+                                    level,
+                                    entityId
+                            )
+                    )
+                    .append(',');
+
+            sb.append("isAlive=")
+                    .append(
+                            MCAIntegrationBridge.isAliveAdultOrChildVillager(
+                                    level,
+                                    entityId
+                            )
+                    )
+                    .append(',');
+
+            sb.append("isGuard=")
+                    .append(
+                            MCAIntegrationBridge.isMCAGuard(
+                                    level,
+                                    entityId
+                            )
+                    )
+                    .append(',');
+
+            sb.append("isMaster=")
+                    .append(
+                            MCAIntegrationBridge.isMasterProfessionVillager(
+                                    level,
+                                    entityId
+                            )
+                    )
+                    .append(',');
+
+            UUID spouse =
+                    CapitalCourtMarriageResolver.findActualSpouse(
+                            level,
+                            entityId
+                    );
+
+            sb.append("spouse=")
+                    .append(spouse == null ? "none" : spouse)
+                    .append(',');
+
             sb.append('|');
         }
 
         return sb.toString();
     }
 
-    private static boolean isConfirmedDead(ServerLevel level, UUID id) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
-        return entity != null && (!entity.isAlive() || entity.isRemoved());
+    private static boolean isConfirmedDead(
+            ServerLevel level,
+            UUID id
+    ) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(
+                level,
+                id
+        );
+
+        return entity != null
+                && (!entity.isAlive() || entity.isRemoved());
     }
 
-    private static String resolveDisplayName(ServerLevel level, CapitalRecord capital, UUID id) {
+    private static String resolveDisplayName(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID id
+    ) {
         if (id == null) {
             return "Unknown";
         }
 
-        String baseName = stripKnownTitles(resolveBaseName(level, capital, id));
-        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, id);
+        String baseName =
+                stripKnownTitles(
+                        resolveBaseName(level, capital, id)
+                );
 
-        if (title == null || title.isBlank() || "Commoner".equalsIgnoreCase(title) || "None".equalsIgnoreCase(title)) {
+        String title =
+                CapitalTitleResolver.getDisplayTitleForEntity(
+                        level,
+                        id
+                );
+
+        if (title == null
+                || title.isBlank()
+                || "Commoner".equalsIgnoreCase(title)
+                || "None".equalsIgnoreCase(title)) {
             return baseName;
         }
 
-        CapitalRecord sourceCapital = CapitalTitleResolver.findCapitalForEntity(level, id);
-        if (sourceCapital != null && sourceCapital.isRoyalGuard(id) && ("Sir".equals(title) || "Dame".equals(title))) {
-            String suffix = sourceCapital.isSovereignFemale() ? " of the Queensguard" : " of the Kingsguard";
+        CapitalRecord sourceCapital =
+                CapitalTitleResolver.findCapitalForEntity(
+                        level,
+                        id
+                );
+
+        if (sourceCapital != null
+                && sourceCapital.isRoyalGuard(id)
+                && ("Sir".equals(title) || "Dame".equals(title))) {
+            String suffix = sourceCapital.isSovereignFemale()
+                    ? " of the Queensguard"
+                    : " of the Kingsguard";
+
             return title + " " + baseName + suffix;
         }
 
         return title + " " + baseName;
     }
 
-    private static String resolveBaseName(ServerLevel level, CapitalRecord capital, UUID id) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
+    private static String resolveBaseName(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID id
+    ) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(
+                level,
+                id
+        );
+
         if (entity != null) {
             String name = entity.getName().getString();
+
             if (name != null && !name.isBlank()) {
                 return name;
             }
         }
 
-        if (capital != null && capital.isPlayerConsort() && id.equals(capital.getPlayerConsortId())) {
+        if (capital != null
+                && capital.isPlayerConsort()
+                && id.equals(capital.getPlayerConsortId())) {
             String storedName = capital.getPlayerConsortName();
+
             if (storedName != null && !storedName.isBlank()) {
                 return storedName;
             }
         }
 
-        ServerPlayer player = level.getServer().getPlayerList().getPlayer(id);
+        ServerPlayer player =
+                level.getServer()
+                        .getPlayerList()
+                        .getPlayer(id);
+
         if (player != null) {
-            String profileName = player.getGameProfile().getName();
+            String profileName =
+                    player.getGameProfile().getName();
+
             if (profileName != null && !profileName.isBlank()) {
                 return profileName;
             }
@@ -320,13 +620,20 @@ public class CapitalCourtWatcher {
         return "Unknown";
     }
 
-    private static boolean hasMarriageEntry(CapitalRecord capital, String nobleName, String spouseName) {
-        String needle = nobleName + " was married to " + spouseName + ".";
+    private static boolean hasMarriageEntry(
+            CapitalRecord capital,
+            String nobleName,
+            String spouseName
+    ) {
+        String needle =
+                nobleName + " was married to " + spouseName + ".";
+
         for (String entry : capital.getChronicleEntries()) {
             if (needle.equals(entry) || entry.endsWith(needle)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -336,6 +643,7 @@ public class CapitalCourtWatcher {
         }
 
         String result = name.trim();
+
         String[] knownTitles = {
                 "High Queen",
                 "High King",
@@ -367,6 +675,7 @@ public class CapitalCourtWatcher {
 
         for (String knownTitle : knownTitles) {
             String prefix = knownTitle + " ";
+
             if (result.startsWith(prefix)) {
                 return result.substring(prefix.length()).trim();
             }
