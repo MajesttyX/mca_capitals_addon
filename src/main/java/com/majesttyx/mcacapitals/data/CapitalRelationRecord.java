@@ -14,7 +14,6 @@ import java.util.UUID;
 public final class CapitalRelationRecord {
 
     private static final int MAX_HISTORY = 12;
-
     private static final String KEY_FIRST_CAPITAL_ID =
             "FirstCapitalId";
 
@@ -29,7 +28,6 @@ public final class CapitalRelationRecord {
     private final CapitalRelationKey key;
 
     private int score;
-
     private CapitalDiplomaticState diplomaticState;
 
     private long truceUntil;
@@ -62,7 +60,6 @@ public final class CapitalRelationRecord {
 
         this.key = key;
         this.score = clampScore(score);
-
         this.diplomaticState =
                 diplomaticState == null
                         ? CapitalDiplomaticState.PEACE
@@ -113,22 +110,35 @@ public final class CapitalRelationRecord {
         int lowerBound = Math.max(-300, minimum);
         int upperBound = Math.min(300, maximum);
 
-        if (lowerBound > upperBound) {
+        if (lowerBound > upperBound || amount == 0) {
             return 0;
         }
 
         int previous = score;
 
-        score = Math.max(
-                lowerBound,
-                Math.min(
-                        upperBound,
-                        score + amount
-                )
-        );
+        if (amount > 0) {
+            if (score >= upperBound) {
+                return 0;
+            }
+
+            score = Math.min(
+                    upperBound,
+                    score + amount
+            );
+        } else {
+            if (score <= lowerBound) {
+                return 0;
+            }
+
+            score = Math.max(
+                    lowerBound,
+                    score + amount
+            );
+        }
+
+        score = clampScore(score);
 
         int applied = score - previous;
-
         if (applied != 0) {
             addHistory(
                     new CapitalRelationshipEvent(
@@ -182,7 +192,6 @@ public final class CapitalRelationRecord {
                 KEY_FIRST_CAPITAL_ID,
                 key.first()
         );
-
         tag.putUUID(
                 KEY_SECOND_CAPITAL_ID,
                 key.second()
@@ -205,7 +214,6 @@ public final class CapitalRelationRecord {
         for (CapitalRelationshipEvent event : history) {
             historyTag.add(event.save());
         }
-
         tag.put(KEY_HISTORY, historyTag);
 
         return tag;
@@ -263,7 +271,7 @@ public final class CapitalRelationRecord {
         history.add(event);
 
         while (history.size() > MAX_HISTORY) {
-            history.removeFirst();
+            history.remove(0);
         }
     }
 

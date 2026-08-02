@@ -7,7 +7,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 public final class CapitalDiplomaticAgreementProcessor {
-
     @SubscribeEvent
     public void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) {
@@ -23,6 +22,7 @@ public final class CapitalDiplomaticAgreementProcessor {
         }
 
         CapitalDiplomaticAgreementService.expireTruces(level);
+        CapitalDiplomaticTradeAgreementService.tick(level);
         CapitalDiplomaticWorldService.tick(level);
 
         for (DiplomaticProposal proposal :

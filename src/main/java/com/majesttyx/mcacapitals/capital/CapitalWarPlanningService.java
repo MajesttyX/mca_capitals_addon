@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class CapitalWarPlanningService {
+    private static final int ENTRENCHED_HOSTILITY_THRESHOLD = -200;
 
     private CapitalWarPlanningService() {
     }
@@ -28,11 +29,13 @@ public final class CapitalWarPlanningService {
             return CapitalWarCause.UNJUST;
         }
 
-        CapitalWarCause grievance = CapitalWarDataAccess.getGrievance(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId()
-        );
+        CapitalWarCause grievance =
+                CapitalWarDataAccess.getGrievance(
+                        level,
+                        source.getCapitalId(),
+                        target.getCapitalId()
+                );
+
         if (grievance != null) {
             return grievance;
         }
@@ -41,12 +44,14 @@ public final class CapitalWarPlanningService {
             return CapitalWarCause.ALLY_ATTACKED;
         }
 
-        int score = CapitalDiplomacyDataAccess.getRelationshipScore(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId()
-        );
-        if (score <= -90) {
+        int score =
+                CapitalDiplomacyDataAccess.getRelationshipScore(
+                        level,
+                        source.getCapitalId(),
+                        target.getCapitalId()
+                );
+
+        if (score <= ENTRENCHED_HOSTILITY_THRESHOLD) {
             return CapitalWarCause.HOSTILE_RELATIONS;
         }
 
@@ -58,7 +63,12 @@ public final class CapitalWarPlanningService {
             CapitalRecord source,
             CapitalRecord target
     ) {
-        CapitalWarCause cause = resolveCause(level, source, target);
+        CapitalWarCause cause = resolveCause(
+                level,
+                source,
+                target
+        );
+
         return cause.isJustified()
                 ? "Cause: " + cause.getDisplayName() + "."
                 : "No recognized cause exists. This will be an unjust war and will damage relations with every known capital.";
@@ -74,11 +84,15 @@ public final class CapitalWarPlanningService {
             return "The attacking capital is unavailable.";
         }
 
-        long currentDay = CapitalWarDataAccess.currentDay(level);
-        long availableDay = CapitalWarDataAccess.getCampaignAvailableDay(
-                level,
-                source.getCapitalId()
-        );
+        long currentDay =
+                CapitalWarDataAccess.currentDay(level);
+
+        long availableDay =
+                CapitalWarDataAccess.getCampaignAvailableDay(
+                        level,
+                        source.getCapitalId()
+                );
+
         if (availableDay > currentDay) {
             return "The capital is recovering from its previous campaign and cannot plan another war until day "
                     + availableDay
@@ -97,10 +111,12 @@ public final class CapitalWarPlanningService {
         UUID targetId = target.getCapitalId();
 
         for (Map.Entry<CapitalRelationKey, CapitalRelationRecord> entry :
-                CapitalDiplomacyDataAccess.getRelationshipsSnapshot(level)
+                CapitalDiplomacyDataAccess
+                        .getRelationshipsSnapshot(level)
                         .entrySet()) {
             CapitalRelationKey key = entry.getKey();
             CapitalRelationRecord relation = entry.getValue();
+
             if (key == null
                     || relation == null
                     || relation.getDiplomaticState()
@@ -109,6 +125,7 @@ public final class CapitalWarPlanningService {
             }
 
             UUID allyId = null;
+
             if (sourceId.equals(key.first())) {
                 allyId = key.second();
             } else if (sourceId.equals(key.second())) {

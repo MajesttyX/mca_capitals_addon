@@ -40,7 +40,8 @@ public final class CapitalRoyalBetrothalService {
             return "That Royal Betrothal proposal is invalid.";
         }
 
-        if (state == CapitalDiplomaticState.WAR || state == CapitalDiplomaticState.TRUCE) {
+        if (state == CapitalDiplomaticState.WAR
+                || state == CapitalDiplomaticState.TRUCE) {
             return "A Royal Betrothal cannot be proposed during war or a truce.";
         }
 
@@ -114,25 +115,53 @@ public final class CapitalRoyalBetrothalService {
             return 0;
         }
 
-        List<OpenAmbassadorCommunicationPacket.Entry> entries = new ArrayList<>();
-        for (UUID royalId : eligibleRoyals(context.level(), context.source())) {
-            String name = royalName(context.level(), context.source(), royalId);
-            String title = royalTitle(context.level(), context.source(), royalId);
-            entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                    title + " " + name,
-                    isCrownHeir(context.source(), royalId)
-                            ? "The Crown heir must remain in " + capitalName(context.level(), context.source()) + "."
-                            : "Eligible unmarried member of the royal family.",
-                    "",
-                    "",
-                    "Choose " + name,
-                    "/capitaldiplomacy betrothal_target "
-                            + ambassadorId + " "
-                            + targetCapitalId + " "
-                            + royalId,
-                    true,
-                    ""
-            ));
+        List<OpenAmbassadorCommunicationPacket.Entry> entries =
+                new ArrayList<>();
+
+        for (UUID royalId :
+                eligibleRoyals(
+                        context.level(),
+                        context.source()
+                )) {
+            String name = royalName(
+                    context.level(),
+                    context.source(),
+                    royalId
+            );
+
+            String title = royalTitle(
+                    context.level(),
+                    context.source(),
+                    royalId
+            );
+
+            entries.add(
+                    new OpenAmbassadorCommunicationPacket.Entry(
+                            title + " " + name,
+                            isCrownHeir(
+                                    context.source(),
+                                    royalId
+                            )
+                                    ? "The Crown heir must remain in "
+                                    + capitalName(
+                                    context.level(),
+                                    context.source()
+                            )
+                                    + "."
+                                    : "Eligible unmarried member of the royal family.",
+                            "",
+                            "",
+                            "Choose " + name,
+                            "/capitaldiplomacy betrothal_target "
+                                    + ambassadorId
+                                    + " "
+                                    + targetCapitalId
+                                    + " "
+                                    + royalId,
+                            true,
+                            ""
+                    )
+            );
         }
 
         openSelectionScreen(
@@ -143,8 +172,12 @@ public final class CapitalRoyalBetrothalService {
                 entries.isEmpty()
                         ? "Your capital has no eligible unmarried royal."
                         : "Choose the royal who will enter the proposed betrothal.",
-                "/capitaldiplomacy options " + ambassadorId + " " + targetCapitalId
+                "/capitaldiplomacy options "
+                        + ambassadorId
+                        + " "
+                        + targetCapitalId
         );
+
         return 1;
     }
 
@@ -154,50 +187,104 @@ public final class CapitalRoyalBetrothalService {
             UUID targetCapitalId,
             UUID sourceRoyalId
     ) {
-        SelectionContext context = validateSelectionContext(player, ambassadorId, targetCapitalId);
+        SelectionContext context =
+                validateSelectionContext(
+                        player,
+                        ambassadorId,
+                        targetCapitalId
+                );
+
         if (!context.valid()) {
-            sendFailure(player, context.failureMessage());
+            sendFailure(
+                    player,
+                    context.failureMessage()
+            );
+
             return 0;
         }
 
-        if (!isEligibleRoyal(context.level(), context.source(), sourceRoyalId)) {
-            sendFailure(player, "That royal is no longer eligible for betrothal.");
+        if (!isEligibleRoyal(
+                context.level(),
+                context.source(),
+                sourceRoyalId
+        )) {
+            sendFailure(
+                    player,
+                    "That royal is no longer eligible for betrothal."
+            );
+
             return 0;
         }
 
-        List<OpenAmbassadorCommunicationPacket.Entry> entries = new ArrayList<>();
-        for (UUID targetRoyalId : eligibleRoyals(context.level(), context.target())) {
-            if (isCrownHeir(context.source(), sourceRoyalId)
-                    && isCrownHeir(context.target(), targetRoyalId)) {
-                continue;
-            }
+        List<OpenAmbassadorCommunicationPacket.Entry> entries =
+                new ArrayList<>();
 
-            if (MCAIntegrationBridge.areCloselyRelatedForMarriage(
-                    context.level(),
-                    sourceRoyalId,
+        for (UUID targetRoyalId :
+                eligibleRoyals(
+                        context.level(),
+                        context.target()
+                )) {
+            if (isCrownHeir(
+                    context.source(),
+                    sourceRoyalId
+            )
+                    && isCrownHeir(
+                    context.target(),
                     targetRoyalId
             )) {
                 continue;
             }
 
-            String name = royalName(context.level(), context.target(), targetRoyalId);
-            String title = royalTitle(context.level(), context.target(), targetRoyalId);
-            entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                    title + " " + name,
-                    isCrownHeir(context.target(), targetRoyalId)
-                            ? "The Crown heir must remain in " + capitalName(context.level(), context.target()) + "."
-                            : "Eligible unmarried member of the foreign royal family.",
-                    "",
-                    "",
-                    "Choose " + name,
-                    "/capitaldiplomacy betrothal_settlement "
-                            + ambassadorId + " "
-                            + targetCapitalId + " "
-                            + sourceRoyalId + " "
-                            + targetRoyalId,
-                    true,
-                    ""
-            ));
+            if (MCAIntegrationBridge
+                    .areCloselyRelatedForMarriage(
+                            context.level(),
+                            sourceRoyalId,
+                            targetRoyalId
+                    )) {
+                continue;
+            }
+
+            String name = royalName(
+                    context.level(),
+                    context.target(),
+                    targetRoyalId
+            );
+
+            String title = royalTitle(
+                    context.level(),
+                    context.target(),
+                    targetRoyalId
+            );
+
+            entries.add(
+                    new OpenAmbassadorCommunicationPacket.Entry(
+                            title + " " + name,
+                            isCrownHeir(
+                                    context.target(),
+                                    targetRoyalId
+                            )
+                                    ? "The Crown heir must remain in "
+                                    + capitalName(
+                                    context.level(),
+                                    context.target()
+                            )
+                                    + "."
+                                    : "Eligible unmarried member of the foreign royal family.",
+                            "",
+                            "",
+                            "Choose " + name,
+                            "/capitaldiplomacy betrothal_settlement "
+                                    + ambassadorId
+                                    + " "
+                                    + targetCapitalId
+                                    + " "
+                                    + sourceRoyalId
+                                    + " "
+                                    + targetRoyalId,
+                            true,
+                            ""
+                    )
+            );
         }
 
         openSelectionScreen(
@@ -207,9 +294,19 @@ public final class CapitalRoyalBetrothalService {
                 entries,
                 entries.isEmpty()
                         ? "The other capital has no compatible eligible royal. Two Crown heirs cannot be betrothed to each other."
-                        : "Choose the royal to be matched with " + royalName(context.level(), context.source(), sourceRoyalId) + ".",
-                "/capitaldiplomacy betrothal_source " + ambassadorId + " " + targetCapitalId
+                        : "Choose the royal to be matched with "
+                        + royalName(
+                        context.level(),
+                        context.source(),
+                        sourceRoyalId
+                )
+                        + ".",
+                "/capitaldiplomacy betrothal_source "
+                        + ambassadorId
+                        + " "
+                        + targetCapitalId
         );
+
         return 1;
     }
 
@@ -220,58 +317,113 @@ public final class CapitalRoyalBetrothalService {
             UUID sourceRoyalId,
             UUID targetRoyalId
     ) {
-        SelectionContext context = validateSelectionContext(player, ambassadorId, targetCapitalId);
+        SelectionContext context =
+                validateSelectionContext(
+                        player,
+                        ambassadorId,
+                        targetCapitalId
+                );
+
         if (!context.valid()) {
-            sendFailure(player, context.failureMessage());
+            sendFailure(
+                    player,
+                    context.failureMessage()
+            );
+
             return 0;
         }
 
-        if (!isValidPair(context.level(), context.source(), context.target(), sourceRoyalId, targetRoyalId)) {
-            sendFailure(player, "That royal pair is no longer eligible for betrothal.");
-            return 0;
-        }
-
-        UUID forcedDestination = forcedDestination(
+        if (!isValidPair(
+                context.level(),
                 context.source(),
                 context.target(),
                 sourceRoyalId,
                 targetRoyalId
-        );
+        )) {
+            sendFailure(
+                    player,
+                    "That royal pair is no longer eligible for betrothal."
+            );
 
-        List<OpenAmbassadorCommunicationPacket.Entry> entries = new ArrayList<>();
+            return 0;
+        }
+
+        UUID forcedDestination =
+                forcedDestination(
+                        context.source(),
+                        context.target(),
+                        sourceRoyalId,
+                        targetRoyalId
+                );
+
+        List<OpenAmbassadorCommunicationPacket.Entry> entries =
+                new ArrayList<>();
+
         if (forcedDestination != null) {
-            CapitalRecord destination = CapitalManager.getCapital(forcedDestination);
-            String destinationName = capitalName(context.level(), destination);
-            entries.add(settlementEntry(
-                    ambassadorId,
-                    targetCapitalId,
-                    sourceRoyalId,
-                    targetRoyalId,
-                    forcedDestination,
-                    destinationName,
-                    "A Crown heir must remain in the capital they are destined to inherit."
-            ));
+            CapitalRecord destination =
+                    CapitalManager.getCapital(
+                            forcedDestination
+                    );
+
+            String destinationName =
+                    capitalName(
+                            context.level(),
+                            destination
+                    );
+
+            entries.add(
+                    settlementEntry(
+                            ambassadorId,
+                            targetCapitalId,
+                            sourceRoyalId,
+                            targetRoyalId,
+                            forcedDestination,
+                            destinationName,
+                            "A Crown heir must remain in the capital they are destined to inherit."
+                    )
+            );
         } else {
-            entries.add(settlementEntry(
-                    ambassadorId,
-                    targetCapitalId,
-                    sourceRoyalId,
-                    targetRoyalId,
-                    context.source().getCapitalId(),
-                    capitalName(context.level(), context.source()),
-                    royalName(context.level(), context.target(), targetRoyalId)
-                            + " will be escorted here after acceptance."
-            ));
-            entries.add(settlementEntry(
-                    ambassadorId,
-                    targetCapitalId,
-                    sourceRoyalId,
-                    targetRoyalId,
-                    context.target().getCapitalId(),
-                    capitalName(context.level(), context.target()),
-                    royalName(context.level(), context.source(), sourceRoyalId)
-                            + " will be escorted there after acceptance."
-            ));
+            entries.add(
+                    settlementEntry(
+                            ambassadorId,
+                            targetCapitalId,
+                            sourceRoyalId,
+                            targetRoyalId,
+                            context.source()
+                                    .getCapitalId(),
+                            capitalName(
+                                    context.level(),
+                                    context.source()
+                            ),
+                            royalName(
+                                    context.level(),
+                                    context.target(),
+                                    targetRoyalId
+                            )
+                                    + " will be escorted here after acceptance."
+                    )
+            );
+
+            entries.add(
+                    settlementEntry(
+                            ambassadorId,
+                            targetCapitalId,
+                            sourceRoyalId,
+                            targetRoyalId,
+                            context.target()
+                                    .getCapitalId(),
+                            capitalName(
+                                    context.level(),
+                                    context.target()
+                            ),
+                            royalName(
+                                    context.level(),
+                                    context.source(),
+                                    sourceRoyalId
+                            )
+                                    + " will be escorted there after acceptance."
+                    )
+            );
         }
 
         openSelectionScreen(
@@ -280,15 +432,26 @@ public final class CapitalRoyalBetrothalService {
                 "Choose the Couple's Capital",
                 entries,
                 "Choose where "
-                        + royalName(context.level(), context.source(), sourceRoyalId)
+                        + royalName(
+                        context.level(),
+                        context.source(),
+                        sourceRoyalId
+                )
                         + " and "
-                        + royalName(context.level(), context.target(), targetRoyalId)
+                        + royalName(
+                        context.level(),
+                        context.target(),
+                        targetRoyalId
+                )
                         + " will establish their household.",
                 "/capitaldiplomacy betrothal_target "
-                        + ambassadorId + " "
-                        + targetCapitalId + " "
+                        + ambassadorId
+                        + " "
+                        + targetCapitalId
+                        + " "
                         + sourceRoyalId
         );
+
         return 1;
     }
 
@@ -300,32 +463,48 @@ public final class CapitalRoyalBetrothalService {
             UUID targetRoyalId,
             UUID destinationCapitalId
     ) {
-        SelectionContext context = validateSelectionContext(player, ambassadorId, targetCapitalId);
+        SelectionContext context =
+                validateSelectionContext(
+                        player,
+                        ambassadorId,
+                        targetCapitalId
+                );
+
         if (!context.valid()) {
-            sendFailure(player, context.failureMessage());
+            sendFailure(
+                    player,
+                    context.failureMessage()
+            );
+
             return 0;
         }
 
-        Match match = createMatch(
-                context.level(),
-                context.source(),
-                context.target(),
-                sourceRoyalId,
-                targetRoyalId,
-                destinationCapitalId
-        );
+        Match match =
+                createMatch(
+                        context.level(),
+                        context.source(),
+                        context.target(),
+                        sourceRoyalId,
+                        targetRoyalId,
+                        destinationCapitalId
+                );
 
         if (match == null) {
-            sendFailure(player, "That royal pair or settlement is no longer eligible.");
+            sendFailure(
+                    player,
+                    "That royal pair or settlement is no longer eligible."
+            );
+
             return 0;
         }
 
-        return CapitalDiplomaticProposalService.proposeRoyalBetrothal(
-                player,
-                ambassadorId,
-                targetCapitalId,
-                match
-        );
+        return CapitalDiplomaticProposalService
+                .proposeRoyalBetrothal(
+                        player,
+                        ambassadorId,
+                        targetCapitalId,
+                        match
+                );
     }
 
     static boolean establish(
@@ -334,210 +513,398 @@ public final class CapitalRoyalBetrothalService {
             CapitalRecord source,
             CapitalRecord target
     ) {
-        if (level == null || proposal == null || source == null || target == null
-                || !proposal.hasRoyalBetrothalDetails()) {
+        if (level == null
+                || proposal == null
+                || source == null
+                || target == null
+                || !proposal
+                .hasRoyalBetrothalDetails()) {
             return false;
         }
 
-        Match match = createMatch(
+        Match match =
+                createMatch(
+                        level,
+                        source,
+                        target,
+                        proposal.getSourceRoyalId(),
+                        proposal.getTargetRoyalId(),
+                        proposal.getDestinationCapitalId()
+                );
+
+        if (match == null
+                || !match.relocatingRoyalId()
+                .equals(
+                        proposal.getRelocatingRoyalId()
+                )) {
+            return false;
+        }
+
+        String firstName =
+                royalName(
+                        level,
+                        source,
+                        match.sourceRoyalId()
+                );
+
+        String secondName =
+                royalName(
+                        level,
+                        target,
+                        match.targetRoyalId()
+                );
+
+        PendingVillagerBetrothalAccess
+                .setRoyalEscort(
+                        level,
+                        match.sourceRoyalId(),
+                        firstName,
+                        match.targetRoyalId(),
+                        secondName,
+                        match.originCapitalId(),
+                        match.destinationCapitalId(),
+                        match.relocatingRoyalId()
+                );
+
+        String sourceName =
+                capitalName(
+                        level,
+                        source
+                );
+
+        String targetName =
+                capitalName(
+                        level,
+                        target
+                );
+
+        String entry =
+                firstName
+                        + " and "
+                        + secondName
+                        + " were betrothed by agreement between "
+                        + sourceName
+                        + " and "
+                        + targetName
+                        + ". They will establish their household in "
+                        + capitalName(
+                        level,
+                        CapitalManager.getCapital(
+                                match.destinationCapitalId()
+                        )
+                )
+                        + ".";
+
+        CapitalChronicleService.addEntry(
+                level,
+                source,
+                entry
+        );
+
+        CapitalChronicleService.addEntry(
+                level,
+                target,
+                entry
+        );
+
+        notifyEscortRequest(
                 level,
                 source,
                 target,
-                proposal.getSourceRoyalId(),
-                proposal.getTargetRoyalId(),
-                proposal.getDestinationCapitalId()
+                proposal
         );
 
-        if (match == null
-                || !match.relocatingRoyalId().equals(proposal.getRelocatingRoyalId())) {
-            return false;
-        }
-
-        String firstName = royalName(level, source, match.sourceRoyalId());
-        String secondName = royalName(level, target, match.targetRoyalId());
-
-        PendingVillagerBetrothalAccess.setRoyalEscort(
-                level,
-                match.sourceRoyalId(),
-                firstName,
-                match.targetRoyalId(),
-                secondName,
-                match.originCapitalId(),
-                match.destinationCapitalId(),
-                match.relocatingRoyalId()
-        );
-
-        String sourceName = capitalName(level, source);
-        String targetName = capitalName(level, target);
-        String entry = firstName + " and " + secondName
-                + " were betrothed by agreement between "
-                + sourceName + " and " + targetName
-                + ". They will establish their household in "
-                + capitalName(level, CapitalManager.getCapital(match.destinationCapitalId()))
-                + ".";
-
-        CapitalChronicleService.addEntry(level, source, entry);
-        CapitalChronicleService.addEntry(level, target, entry);
-        notifyEscortRequest(level, source, target, proposal);
         return true;
     }
 
-    public static boolean hasOpenEscortRequests(ServerLevel level, CapitalRecord capital) {
-        if (level == null || capital == null || capital.getCapitalId() == null) {
+    public static boolean hasOpenEscortRequests(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
+        if (level == null
+                || capital == null
+                || capital.getCapitalId() == null) {
             return false;
         }
 
         for (PendingVillagerBetrothalSavedData.RoyalEscortRecord record :
-                PendingVillagerBetrothalAccess.getRoyalEscorts(level)) {
+                PendingVillagerBetrothalAccess
+                        .getRoyalEscorts(level)) {
             if (!record.isCompleted()
-                    && (capital.getCapitalId().equals(record.originCapitalId())
-                    || capital.getCapitalId().equals(record.destinationCapitalId()))) {
+                    && (capital.getCapitalId()
+                    .equals(
+                            record.originCapitalId()
+                    )
+                    || capital.getCapitalId()
+                    .equals(
+                            record.destinationCapitalId()
+                    ))) {
                 return true;
             }
         }
+
         return false;
     }
 
-    public static int openEscortRequests(ServerPlayer player, UUID ambassadorId) {
-        if (player == null || ambassadorId == null) {
+    public static int openEscortRequests(
+            ServerPlayer player,
+            UUID ambassadorId
+    ) {
+        if (player == null
+                || ambassadorId == null) {
             return 0;
         }
 
-        ServerLevel level = player.serverLevel();
-        Entity ambassador = level.getEntity(ambassadorId);
-        CapitalRecord audience = resolveAmbassadorCapital(level, player, ambassador);
+        ServerLevel level =
+                player.serverLevel();
+
+        Entity ambassador =
+                level.getEntity(
+                        ambassadorId
+                );
+
+        CapitalRecord audience =
+                resolveAmbassadorCapital(
+                        level,
+                        player,
+                        ambassador
+                );
 
         if (audience == null) {
-            player.sendSystemMessage(Component.literal("The Ambassador is unavailable."));
+            player.sendSystemMessage(
+                    Component.literal(
+                            "The Ambassador is unavailable."
+                    )
+            );
+
             return 0;
         }
 
-        List<OpenAmbassadorCommunicationPacket.Entry> entries = new ArrayList<>();
+        List<OpenAmbassadorCommunicationPacket.Entry> entries =
+                new ArrayList<>();
+
         for (PendingVillagerBetrothalSavedData.RoyalEscortRecord record :
-                PendingVillagerBetrothalAccess.getRoyalEscorts(level)) {
+                PendingVillagerBetrothalAccess
+                        .getRoyalEscorts(level)) {
             if (record.isCompleted()
-                    || !audience.getCapitalId().equals(record.originCapitalId())
-                    && !audience.getCapitalId().equals(record.destinationCapitalId())) {
+                    || !audience.getCapitalId()
+                    .equals(
+                            record.originCapitalId()
+                    )
+                    && !audience.getCapitalId()
+                    .equals(
+                            record.destinationCapitalId()
+                    )) {
                 continue;
             }
 
-            CapitalRecord origin = CapitalManager.getCapital(record.originCapitalId());
-            CapitalRecord destination = CapitalManager.getCapital(record.destinationCapitalId());
-            String relocatingName = record.nameFor(record.relocatingRoyalId());
-            String partnerName = record.partnerNameFor(record.relocatingRoyalId());
+            CapitalRecord origin =
+                    CapitalManager.getCapital(
+                            record.originCapitalId()
+                    );
 
-            entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                    relocatingName + " and " + partnerName,
-                    "Escort " + relocatingName + " from " + capitalName(level, origin) + ".",
-                    "Destination: " + capitalName(level, destination),
-                    "No time limit. Marriage waits until both royals are adults and officially married.",
-                    "Escort Pending",
-                    "",
-                    false,
-                    "Lead the relocating royal into the destination capital."
-            ));
+            CapitalRecord destination =
+                    CapitalManager.getCapital(
+                            record.destinationCapitalId()
+                    );
+
+            String relocatingName =
+                    record.nameFor(
+                            record.relocatingRoyalId()
+                    );
+
+            String partnerName =
+                    record.partnerNameFor(
+                            record.relocatingRoyalId()
+                    );
+
+            entries.add(
+                    new OpenAmbassadorCommunicationPacket.Entry(
+                            relocatingName
+                                    + " and "
+                                    + partnerName,
+                            "Escort "
+                                    + relocatingName
+                                    + " from "
+                                    + capitalName(
+                                    level,
+                                    origin
+                            )
+                                    + ".",
+                            "Destination: "
+                                    + capitalName(
+                                    level,
+                                    destination
+                            ),
+                            "The escort is complete when both betrothed royals are alive and physically present inside the destination capital. Their later marriage is separate.",
+                            "Escort Pending",
+                            "",
+                            false,
+                            "Bring both betrothed royals together inside the chosen destination capital."
+                    )
+            );
         }
 
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
-                        OpenAmbassadorCommunicationPacket.Mode.ROYAL_ESCORT_REQUESTS,
+                        OpenAmbassadorCommunicationPacket.Mode
+                                .ROYAL_ESCORT_REQUESTS,
                         "Royal Escort Requests",
-                        ambassador.getName().getString(),
+                        ambassador.getName()
+                                .getString(),
                         entries.isEmpty()
                                 ? "There are no pending royal escorts connected to this capital."
-                                : "These accepted betrothals are waiting for a royal to be escorted to the chosen settlement capital.",
-                        "",
+                                : "These accepted betrothals remain pending until both betrothed royals are together inside the chosen capital.",
+                        "/capitalurgent continue "
+                                + ambassadorId,
                         entries,
                         List.of()
                 )
         );
+
         return 1;
     }
 
-    public static void tickEscorts(ServerLevel level) {
+    public static void tickEscorts(
+            ServerLevel level
+    ) {
         if (level == null) {
             return;
         }
 
         for (PendingVillagerBetrothalSavedData.RoyalEscortRecord record :
-                PendingVillagerBetrothalAccess.getRoyalEscorts(level)) {
-            if (record.isCompleted()) {
+                PendingVillagerBetrothalAccess
+                        .getRoyalEscorts(level)) {
+            if (record == null
+                    || record.isCompleted()) {
                 continue;
             }
 
-            CapitalRecord destination = CapitalManager.getCapital(record.destinationCapitalId());
-            if (destination == null
-                    || destination.getState() != CapitalState.ACTIVE
-                    || destination.getVillageId() == null) {
-                continue;
-            }
-
-            if (CapitalDiplomacyDataAccess.getDiplomaticState(
-                    level,
-                    record.originCapitalId(),
-                    record.destinationCapitalId()
-            ) == CapitalDiplomaticState.WAR) {
-                continue;
-            }
-
-            Entity entity = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(
-                    level,
-                    record.relocatingRoyalId()
-            );
-            if (!(entity instanceof VillagerEntityMCA villager) || !villager.isAlive()) {
-                continue;
-            }
-
-            Village destinationVillage = VillageManager.get(level)
-                    .getOrEmpty(destination.getVillageId())
-                    .orElse(null);
-            if (destinationVillage == null || !destinationVillage.isWithinBorder(villager)) {
-                continue;
-            }
-
-            boolean alreadyResident = villager.getResidency()
-                    .getHomeVillage()
-                    .map(home -> home.getId() == destination.getVillageId())
-                    .orElse(false);
-
-            if (!alreadyResident && destinationVillage.hasSpace()) {
-                alreadyResident = MCAIntegrationBridge.forceVillageResidency(
-                        level,
-                        villager.getUUID(),
-                        destination.getVillageId()
-                );
-            }
-
-            if (!alreadyResident) {
-                continue;
-            }
-
-            if (PendingVillagerBetrothalAccess.completeRoyalEscort(
-                    level,
-                    record.pair().first(),
-                    record.pair().second()
-            )) {
-                CapitalRecord origin = CapitalManager.getCapital(record.originCapitalId());
-                String relocatingName = record.nameFor(record.relocatingRoyalId());
-                String destinationName = capitalName(level, destination);
-
-                if (origin != null) {
-                    CapitalChronicleService.addEntry(
-                            level,
-                            origin,
-                            relocatingName + " departed for " + destinationName
-                                    + " under a royal betrothal agreement."
+            CapitalRecord destination =
+                    CapitalManager.getCapital(
+                            record.destinationCapitalId()
                     );
-                }
 
+            if (destination == null
+                    || destination.getState()
+                    != CapitalState.ACTIVE
+                    || destination.getVillageId()
+                    == null) {
+                continue;
+            }
+
+            if (CapitalDiplomacyDataAccess
+                    .getDiplomaticState(
+                            level,
+                            record.originCapitalId(),
+                            record.destinationCapitalId()
+                    )
+                    == CapitalDiplomaticState.WAR) {
+                continue;
+            }
+
+            Village destinationVillage =
+                    VillageManager.get(level)
+                            .getOrEmpty(
+                                    destination.getVillageId()
+                            )
+                            .orElse(null);
+
+            if (destinationVillage == null) {
+                continue;
+            }
+
+            Entity firstEntity =
+                    MCAIntegrationBridge
+                            .findLoadedMCAVillagerByUuid(
+                                    level,
+                                    record.pair().first()
+                            );
+
+            Entity secondEntity =
+                    MCAIntegrationBridge
+                            .findLoadedMCAVillagerByUuid(
+                                    level,
+                                    record.pair().second()
+                            );
+
+            if (!(firstEntity
+                    instanceof VillagerEntityMCA firstVillager)
+                    || !(secondEntity
+                    instanceof VillagerEntityMCA secondVillager)) {
+                continue;
+            }
+
+            if (!firstVillager.isAlive()
+                    || firstVillager.isRemoved()
+                    || !secondVillager.isAlive()
+                    || secondVillager.isRemoved()) {
+                continue;
+            }
+
+            if (!destinationVillage
+                    .isWithinBorder(
+                            firstVillager
+                    )
+                    || !destinationVillage
+                    .isWithinBorder(
+                            secondVillager
+                    )) {
+                continue;
+            }
+
+            if (!PendingVillagerBetrothalAccess
+                    .completeRoyalEscort(
+                            level,
+                            record.pair().first(),
+                            record.pair().second()
+                    )) {
+                continue;
+            }
+
+            CapitalRecord origin =
+                    CapitalManager.getCapital(
+                            record.originCapitalId()
+                    );
+
+            String firstName =
+                    record.nameFor(
+                            record.pair().first()
+                    );
+
+            String secondName =
+                    record.nameFor(
+                            record.pair().second()
+                    );
+
+            String destinationName =
+                    capitalName(
+                            level,
+                            destination
+                    );
+
+            String completionEntry =
+                    firstName
+                            + " and "
+                            + secondName
+                            + " arrived together in "
+                            + destinationName
+                            + ", completing the royal escort required by their betrothal.";
+
+            if (origin != null) {
                 CapitalChronicleService.addEntry(
                         level,
-                        destination,
-                        relocatingName + " arrived in " + destinationName
-                                + " under a royal betrothal agreement."
+                        origin,
+                        completionEntry
                 );
             }
+
+            CapitalChronicleService.addEntry(
+                    level,
+                    destination,
+                    completionEntry
+            );
         }
     }
 
@@ -547,31 +914,67 @@ public final class CapitalRoyalBetrothalService {
             Entity firstVillager,
             Entity secondVillager
     ) {
-        if (level == null || escort == null || firstVillager == null || secondVillager == null) {
+        if (level == null
+                || escort == null
+                || firstVillager == null
+                || secondVillager == null) {
             return;
         }
 
-        CapitalRecord origin = CapitalManager.getCapital(escort.originCapitalId());
-        CapitalRecord destination = CapitalManager.getCapital(escort.destinationCapitalId());
-        if (origin == null || destination == null) {
+        CapitalRecord origin =
+                CapitalManager.getCapital(
+                        escort.originCapitalId()
+                );
+
+        CapitalRecord destination =
+                CapitalManager.getCapital(
+                        escort.destinationCapitalId()
+                );
+
+        if (origin == null
+                || destination == null) {
             return;
         }
 
-        CapitalDiplomacyDataAccess.adjustRelationship(
+        CapitalDiplomacyDataAccess
+                .adjustRelationship(
+                        level,
+                        origin.getCapitalId(),
+                        destination.getCapitalId(),
+                        25,
+                        "Royal marriage completed",
+                        destination.getCapitalId()
+                );
+
+        String entry =
+                firstVillager.getName()
+                        .getString()
+                        + " and "
+                        + secondVillager.getName()
+                        .getString()
+                        + " completed the royal marriage joining "
+                        + capitalName(
+                        level,
+                        origin
+                )
+                        + " and "
+                        + capitalName(
+                        level,
+                        destination
+                )
+                        + ".";
+
+        CapitalChronicleService.addEntry(
                 level,
-                origin.getCapitalId(),
-                destination.getCapitalId(),
-                25,
-                "Royal marriage completed",
-                destination.getCapitalId()
+                origin,
+                entry
         );
 
-        String entry = firstVillager.getName().getString()
-                + " and " + secondVillager.getName().getString()
-                + " completed the royal marriage joining "
-                + capitalName(level, origin) + " and " + capitalName(level, destination) + ".";
-        CapitalChronicleService.addEntry(level, origin, entry);
-        CapitalChronicleService.addEntry(level, destination, entry);
+        CapitalChronicleService.addEntry(
+                level,
+                destination,
+                entry
+        );
     }
 
     static String proposalDescription(
@@ -580,67 +983,175 @@ public final class CapitalRoyalBetrothalService {
             CapitalRecord source,
             CapitalRecord target
     ) {
-        if (proposal == null || !proposal.hasRoyalBetrothalDetails()) {
+        if (proposal == null
+                || !proposal
+                .hasRoyalBetrothalDetails()) {
             return "a Royal Betrothal";
         }
 
         return "the betrothal of "
-                + royalName(level, source, proposal.getSourceRoyalId())
+                + royalName(
+                level,
+                source,
+                proposal.getSourceRoyalId()
+        )
                 + " and "
-                + royalName(level, target, proposal.getTargetRoyalId())
+                + royalName(
+                level,
+                target,
+                proposal.getTargetRoyalId()
+        )
                 + ", who will settle in "
-                + capitalName(level, CapitalManager.getCapital(proposal.getDestinationCapitalId()));
+                + capitalName(
+                level,
+                CapitalManager.getCapital(
+                        proposal.getDestinationCapitalId()
+                )
+        );
     }
 
-    static List<UUID> eligibleRoyals(ServerLevel level, CapitalRecord capital) {
-        Set<UUID> candidates = new LinkedHashSet<>();
+    static List<UUID> eligibleRoyals(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
+        Set<UUID> candidates =
+                new LinkedHashSet<>();
+
         if (capital == null) {
             return List.of();
         }
 
         if (capital.getHeir() != null) {
-            candidates.add(capital.getHeir());
+            candidates.add(
+                    capital.getHeir()
+            );
         }
-        candidates.addAll(capital.getRoyalChildren());
-        candidates.addAll(capital.getLegitimizedRoyalChildren());
-        candidates.addAll(capital.getRoyalHousehold());
 
-        UUID sovereignId = capital.getSovereign();
+        candidates.addAll(
+                capital.getRoyalChildren()
+        );
+
+        candidates.addAll(
+                capital.getLegitimizedRoyalChildren()
+        );
+
+        candidates.addAll(
+                capital.getRoyalHousehold()
+        );
+
+        UUID sovereignId =
+                capital.getSovereign();
+
         if (sovereignId != null) {
-            candidates.addAll(MCAIntegrationBridge.getChildren(level, sovereignId));
+            candidates.addAll(
+                    MCAIntegrationBridge
+                            .getChildren(
+                                    level,
+                                    sovereignId
+                            )
+            );
         }
 
-        List<UUID> result = new ArrayList<>();
+        List<UUID> result =
+                new ArrayList<>();
+
         for (UUID candidate : candidates) {
-            if (isEligibleRoyal(level, capital, candidate)) {
+            if (isEligibleRoyal(
+                    level,
+                    capital,
+                    candidate
+            )) {
                 result.add(candidate);
             }
         }
 
-        result.sort(Comparator
-                .comparingInt((UUID id) -> isCrownHeir(capital, id) ? 0 : 1)
-                .thenComparing(id -> royalName(level, capital, id), String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(UUID::toString));
+        result.sort(
+                Comparator
+                        .comparingInt(
+                                (UUID id) ->
+                                        isCrownHeir(
+                                                capital,
+                                                id
+                                        )
+                                                ? 0
+                                                : 1
+                        )
+                        .thenComparing(
+                                id ->
+                                        royalName(
+                                                level,
+                                                capital,
+                                                id
+                                        ),
+                                String.CASE_INSENSITIVE_ORDER
+                        )
+                        .thenComparing(
+                                UUID::toString
+                        )
+        );
+
         return result;
     }
 
-    static boolean isEligibleRoyal(ServerLevel level, CapitalRecord capital, UUID royalId) {
-        if (level == null || capital == null || royalId == null) {
+    static boolean isEligibleRoyal(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID royalId
+    ) {
+        if (level == null
+                || capital == null
+                || royalId == null) {
             return false;
         }
 
-        UUID sovereignId = capital.getSovereign();
-        boolean recognizedRoyal = royalId.equals(capital.getHeir())
-                || capital.isRoyalChild(royalId)
-                || capital.isLegitimizedRoyalChild(royalId)
-                || capital.getRoyalHousehold().contains(royalId)
-                || sovereignId != null && MCAIntegrationBridge.isChildOf(level, royalId, sovereignId);
+        UUID sovereignId =
+                capital.getSovereign();
+
+        boolean recognizedRoyal =
+                royalId.equals(
+                        capital.getHeir()
+                )
+                        || capital.isRoyalChild(
+                        royalId
+                )
+                        || capital
+                        .isLegitimizedRoyalChild(
+                                royalId
+                        )
+                        || capital
+                        .getRoyalHousehold()
+                        .contains(
+                                royalId
+                        )
+                        || sovereignId != null
+                        && MCAIntegrationBridge
+                        .isChildOf(
+                                level,
+                                royalId,
+                                sovereignId
+                        );
 
         return recognizedRoyal
-                && !capital.isDisinheritedRoyalChild(royalId)
-                && !PendingVillagerBetrothalAccess.hasPendingBetrothal(level, royalId)
-                && MCAIntegrationBridge.getSpouse(level, royalId) == null
-                && !MCAIntegrationBridge.isFamilyNodeDeceased(level, royalId);
+                && !capital
+                .isDisinheritedRoyalChild(
+                        royalId
+                )
+                && !PendingVillagerBetrothalAccess
+                .hasPendingBetrothal(
+                        level,
+                        royalId
+                )
+                && MCAIntegrationBridge
+                .getSpouse(
+                        level,
+                        royalId
+                )
+                == null
+                && !MCAIntegrationBridge
+                .isFamilyNodeDeceased(
+                        level,
+                        royalId
+                );
     }
 
     private static boolean isValidPair(
@@ -650,10 +1161,30 @@ public final class CapitalRoyalBetrothalService {
             UUID sourceRoyalId,
             UUID targetRoyalId
     ) {
-        return isEligibleRoyal(level, source, sourceRoyalId)
-                && isEligibleRoyal(level, target, targetRoyalId)
-                && !(isCrownHeir(source, sourceRoyalId) && isCrownHeir(target, targetRoyalId))
-                && !MCAIntegrationBridge.areCloselyRelatedForMarriage(level, sourceRoyalId, targetRoyalId);
+        return isEligibleRoyal(
+                level,
+                source,
+                sourceRoyalId
+        )
+                && isEligibleRoyal(
+                level,
+                target,
+                targetRoyalId
+        )
+                && !(isCrownHeir(
+                source,
+                sourceRoyalId
+        )
+                && isCrownHeir(
+                target,
+                targetRoyalId
+        ))
+                && !MCAIntegrationBridge
+                .areCloselyRelatedForMarriage(
+                        level,
+                        sourceRoyalId,
+                        targetRoyalId
+                );
     }
 
     private static Match createMatch(
@@ -664,24 +1195,55 @@ public final class CapitalRoyalBetrothalService {
             UUID targetRoyalId,
             UUID destinationCapitalId
     ) {
-        if (!isValidPair(level, source, target, sourceRoyalId, targetRoyalId)
+        if (!isValidPair(
+                level,
+                source,
+                target,
+                sourceRoyalId,
+                targetRoyalId
+        )
                 || destinationCapitalId == null) {
             return null;
         }
 
-        UUID forced = forcedDestination(source, target, sourceRoyalId, targetRoyalId);
-        if (forced != null && !forced.equals(destinationCapitalId)) {
+        UUID forced =
+                forcedDestination(
+                        source,
+                        target,
+                        sourceRoyalId,
+                        targetRoyalId
+                );
+
+        if (forced != null
+                && !forced.equals(
+                destinationCapitalId
+        )) {
             return null;
         }
 
-        if (!destinationCapitalId.equals(source.getCapitalId())
-                && !destinationCapitalId.equals(target.getCapitalId())) {
+        if (!destinationCapitalId.equals(
+                source.getCapitalId()
+        )
+                && !destinationCapitalId.equals(
+                target.getCapitalId()
+        )) {
             return null;
         }
 
-        boolean settlesInSource = destinationCapitalId.equals(source.getCapitalId());
-        UUID relocatingRoyalId = settlesInSource ? targetRoyalId : sourceRoyalId;
-        UUID originCapitalId = settlesInSource ? target.getCapitalId() : source.getCapitalId();
+        boolean settlesInSource =
+                destinationCapitalId.equals(
+                        source.getCapitalId()
+                );
+
+        UUID relocatingRoyalId =
+                settlesInSource
+                        ? targetRoyalId
+                        : sourceRoyalId;
+
+        UUID originCapitalId =
+                settlesInSource
+                        ? target.getCapitalId()
+                        : source.getCapitalId();
 
         return new Match(
                 sourceRoyalId,
@@ -698,20 +1260,36 @@ public final class CapitalRoyalBetrothalService {
             UUID sourceRoyalId,
             UUID targetRoyalId
     ) {
-        if (isCrownHeir(source, sourceRoyalId)) {
+        if (isCrownHeir(
+                source,
+                sourceRoyalId
+        )) {
             return source.getCapitalId();
         }
-        if (isCrownHeir(target, targetRoyalId)) {
+
+        if (isCrownHeir(
+                target,
+                targetRoyalId
+        )) {
             return target.getCapitalId();
         }
+
         return null;
     }
 
-    private static boolean isCrownHeir(CapitalRecord capital, UUID royalId) {
-        return capital != null && royalId != null && royalId.equals(capital.getHeir());
+    private static boolean isCrownHeir(
+            CapitalRecord capital,
+            UUID royalId
+    ) {
+        return capital != null
+                && royalId != null
+                && royalId.equals(
+                capital.getHeir()
+        );
     }
 
-    private static OpenAmbassadorCommunicationPacket.Entry settlementEntry(
+    private static OpenAmbassadorCommunicationPacket.Entry
+    settlementEntry(
             UUID ambassadorId,
             UUID targetCapitalId,
             UUID sourceRoyalId,
@@ -721,63 +1299,115 @@ public final class CapitalRoyalBetrothalService {
             String explanation
     ) {
         return new OpenAmbassadorCommunicationPacket.Entry(
-                "Settle in " + destinationName,
+                "Settle in "
+                        + destinationName,
                 explanation,
                 "",
                 "",
-                "Choose " + destinationName,
+                "Choose "
+                        + destinationName,
                 "/capitaldiplomacy betrothal_send "
-                        + ambassadorId + " "
-                        + targetCapitalId + " "
-                        + sourceRoyalId + " "
-                        + targetRoyalId + " "
+                        + ambassadorId
+                        + " "
+                        + targetCapitalId
+                        + " "
+                        + sourceRoyalId
+                        + " "
+                        + targetRoyalId
+                        + " "
                         + destinationCapitalId,
                 true,
                 ""
         );
     }
 
-    private static SelectionContext validateSelectionContext(
+    private static SelectionContext
+    validateSelectionContext(
             ServerPlayer player,
             UUID ambassadorId,
             UUID targetCapitalId
     ) {
-        if (player == null || ambassadorId == null || targetCapitalId == null) {
-            return SelectionContext.failure("That Royal Betrothal selection is invalid.");
+        if (player == null
+                || ambassadorId == null
+                || targetCapitalId == null) {
+            return SelectionContext.failure(
+                    "That Royal Betrothal selection is invalid."
+            );
         }
 
-        CapitalDiplomaticAgreementValidation.AudienceValidation audience =
-                CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
+        CapitalDiplomaticAgreementValidation
+                .AudienceValidation audience =
+                CapitalDiplomaticAgreementValidation
+                        .validateAudience(
+                                player,
+                                ambassadorId
+                        );
+
         if (!audience.valid()) {
-            return SelectionContext.failure(audience.failureMessage());
+            return SelectionContext.failure(
+                    audience.failureMessage()
+            );
         }
 
-        CapitalRecord target = CapitalManager.getCapital(targetCapitalId);
-        String targetFailure = CapitalDiplomaticAgreementValidation.validateTarget(
-                audience.sourceCapital(),
-                target
-        );
+        CapitalRecord target =
+                CapitalManager.getCapital(
+                        targetCapitalId
+                );
+
+        String targetFailure =
+                CapitalDiplomaticAgreementValidation
+                        .validateTarget(
+                                audience.sourceCapital(),
+                                target
+                        );
+
         if (targetFailure != null) {
-            return SelectionContext.failure(targetFailure);
+            return SelectionContext.failure(
+                    targetFailure
+            );
         }
 
-        ServerLevel level = player.serverLevel();
-        CapitalDiplomaticState state = CapitalDiplomacyDataAccess.getDiplomaticState(
-                level,
-                audience.sourceCapital().getCapitalId(),
-                target.getCapitalId()
-        );
-        int score = CapitalDiplomacyDataAccess.getRelationshipScore(
-                level,
-                audience.sourceCapital().getCapitalId(),
-                target.getCapitalId()
-        );
-        String failure = validateProposal(level, audience.sourceCapital(), target, state, score);
+        ServerLevel level =
+                player.serverLevel();
+
+        CapitalDiplomaticState state =
+                CapitalDiplomacyDataAccess
+                        .getDiplomaticState(
+                                level,
+                                audience.sourceCapital()
+                                        .getCapitalId(),
+                                target.getCapitalId()
+                        );
+
+        int score =
+                CapitalDiplomacyDataAccess
+                        .getRelationshipScore(
+                                level,
+                                audience.sourceCapital()
+                                        .getCapitalId(),
+                                target.getCapitalId()
+                        );
+
+        String failure =
+                validateProposal(
+                        level,
+                        audience.sourceCapital(),
+                        target,
+                        state,
+                        score
+                );
+
         if (failure != null) {
-            return SelectionContext.failure(failure);
+            return SelectionContext.failure(
+                    failure
+            );
         }
 
-        Entity ambassador = level.getEntity(ambassadorId);
+        Entity ambassador =
+                level.getEntity(
+                        ambassadorId
+                );
+
         return SelectionContext.success(
                 level,
                 audience.sourceCapital(),
@@ -797,9 +1427,13 @@ public final class CapitalRoyalBetrothalService {
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
-                        OpenAmbassadorCommunicationPacket.Mode.ROYAL_ESCORT_REQUESTS,
+                        OpenAmbassadorCommunicationPacket.Mode
+                                .ROYAL_ESCORT_REQUESTS,
                         title,
-                        ambassador == null ? "Ambassador" : ambassador.getName().getString(),
+                        ambassador == null
+                                ? "Ambassador"
+                                : ambassador.getName()
+                                .getString(),
                         description,
                         backCommand,
                         entries,
@@ -808,47 +1442,103 @@ public final class CapitalRoyalBetrothalService {
         );
     }
 
-    private static String royalName(ServerLevel level, CapitalRecord capital, UUID royalId) {
+    private static String royalName(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID royalId
+    ) {
         if (royalId == null) {
             return "Unknown Royal";
         }
+
         if (capital != null) {
-            return CapitalNameService.resolveDisplayName(level, capital, royalId);
+            return CapitalNameService
+                    .resolveDisplayName(
+                            level,
+                            capital,
+                            royalId
+                    );
         }
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, royalId);
-        return entity == null ? royalId.toString() : entity.getName().getString();
+
+        Entity entity =
+                MCAIntegrationBridge
+                        .getEntityByUuid(
+                                level,
+                                royalId
+                        );
+
+        return entity == null
+                ? royalId.toString()
+                : entity.getName()
+                .getString();
     }
 
-    private static String royalTitle(ServerLevel level, CapitalRecord capital, UUID royalId) {
-        String title = CapitalTitleResolver.getDisplayTitle(level, capital, royalId);
-        return title == null || title.isBlank() || "None".equals(title)
+    private static String royalTitle(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID royalId
+    ) {
+        String title =
+                CapitalTitleResolver
+                        .getDisplayTitle(
+                                level,
+                                capital,
+                                royalId
+                        );
+
+        return title == null
+                || title.isBlank()
+                || "None".equals(title)
                 ? "Royal"
                 : title;
     }
 
-    private static String capitalName(ServerLevel level, CapitalRecord capital) {
-        return CapitalDiplomaticAgreementText.capitalName(level, capital);
+    private static String capitalName(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
+        return CapitalDiplomaticAgreementText
+                .capitalName(
+                        level,
+                        capital
+                );
     }
 
-    private static CapitalRecord resolveAmbassadorCapital(
+    private static CapitalRecord
+    resolveAmbassadorCapital(
             ServerLevel level,
             ServerPlayer player,
             Entity ambassador
     ) {
-        if (level == null || player == null || ambassador == null
+        if (level == null
+                || player == null
+                || ambassador == null
                 || !ambassador.isAlive()
-                || player.level() != ambassador.level()
-                || player.distanceToSqr(ambassador) > 144.0D) {
+                || player.level()
+                != ambassador.level()
+                || player.distanceToSqr(
+                ambassador
+        )
+                > 144.0D) {
             return null;
         }
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+        for (CapitalRecord capital :
+                CapitalManager
+                        .getAllCapitalRecords()) {
             if (capital != null
-                    && capital.getState() == CapitalState.ACTIVE
-                    && CapitalAmbassadorService.isAmbassador(level, capital, ambassador.getUUID())) {
+                    && capital.getState()
+                    == CapitalState.ACTIVE
+                    && CapitalAmbassadorService
+                    .isAmbassador(
+                            level,
+                            capital,
+                            ambassador.getUUID()
+                    )) {
                 return capital;
             }
         }
+
         return null;
     }
 
@@ -858,41 +1548,115 @@ public final class CapitalRoyalBetrothalService {
             CapitalRecord target,
             DiplomaticProposal proposal
     ) {
-        CapitalRecord origin = CapitalManager.getCapital(
-                proposal.getDestinationCapitalId().equals(source.getCapitalId())
-                        ? target.getCapitalId()
-                        : source.getCapitalId()
-        );
-        CapitalRecord destination = CapitalManager.getCapital(proposal.getDestinationCapitalId());
-        String relocatingName = royalName(level, origin, proposal.getRelocatingRoyalId());
-        String message = "The Royal Betrothal has been accepted. Escort "
-                + relocatingName + " from " + capitalName(level, origin)
-                + " to " + capitalName(level, destination)
-                + ". The request has no time limit, and the marriage will not occur until both betrothed royals are adults and officially married.";
+        CapitalRecord origin =
+                CapitalManager.getCapital(
+                        proposal
+                                .getDestinationCapitalId()
+                                .equals(
+                                        source.getCapitalId()
+                                )
+                                ? target.getCapitalId()
+                                : source.getCapitalId()
+                );
 
-        UUID sourcePlayer = CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(level, source);
-        UUID targetPlayer = CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(level, target);
+        CapitalRecord destination =
+                CapitalManager.getCapital(
+                        proposal.getDestinationCapitalId()
+                );
+
+        String relocatingName =
+                royalName(
+                        level,
+                        origin,
+                        proposal.getRelocatingRoyalId()
+                );
+
+        String firstName =
+                royalName(
+                        level,
+                        source,
+                        proposal.getSourceRoyalId()
+                );
+
+        String secondName =
+                royalName(
+                        level,
+                        target,
+                        proposal.getTargetRoyalId()
+                );
+
+        String destinationName =
+                capitalName(
+                        level,
+                        destination
+                );
+
+        String message =
+                "The Royal Betrothal has been accepted. Escort "
+                        + relocatingName
+                        + " from "
+                        + capitalName(
+                        level,
+                        origin
+                )
+                        + " to "
+                        + destinationName
+                        + ". The escort will be complete as soon as "
+                        + firstName
+                        + " and "
+                        + secondName
+                        + " are both alive and physically present inside "
+                        + destinationName
+                        + ". Their marriage will occur separately once MCA considers them eligible.";
+
+        UUID sourcePlayer =
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                source
+                        );
+
+        UUID targetPlayer =
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                target
+                        );
+
         if (sourcePlayer != null) {
-            CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
-                    level,
-                    sourcePlayer,
-                    "Royal Escort Request",
-                    message
-            );
+            CapitalDiplomaticAgreementCorrespondenceService
+                    .sendNotice(
+                            level,
+                            sourcePlayer,
+                            "Royal Escort Request",
+                            message
+                    );
         }
-        if (targetPlayer != null && !targetPlayer.equals(sourcePlayer)) {
-            CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
-                    level,
-                    targetPlayer,
-                    "Royal Escort Request",
-                    message
-            );
+
+        if (targetPlayer != null
+                && !targetPlayer.equals(
+                sourcePlayer
+        )) {
+            CapitalDiplomaticAgreementCorrespondenceService
+                    .sendNotice(
+                            level,
+                            targetPlayer,
+                            "Royal Escort Request",
+                            message
+                    );
         }
     }
 
-    private static void sendFailure(ServerPlayer player, String message) {
+    private static void sendFailure(
+            ServerPlayer player,
+            String message
+    ) {
         if (player != null) {
-            player.sendSystemMessage(Component.literal(message));
+            player.sendSystemMessage(
+                    Component.literal(
+                            message
+                    )
+            );
         }
     }
 
@@ -919,11 +1683,27 @@ public final class CapitalRoyalBetrothalService {
                 CapitalRecord target,
                 Entity ambassador
         ) {
-            return new SelectionContext(true, level, source, target, ambassador, null);
+            return new SelectionContext(
+                    true,
+                    level,
+                    source,
+                    target,
+                    ambassador,
+                    null
+            );
         }
 
-        private static SelectionContext failure(String message) {
-            return new SelectionContext(false, null, null, null, null, message);
+        private static SelectionContext failure(
+                String message
+        ) {
+            return new SelectionContext(
+                    false,
+                    null,
+                    null,
+                    null,
+                    null,
+                    message
+            );
         }
     }
 }

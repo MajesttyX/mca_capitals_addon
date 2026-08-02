@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.capital.CapitalAmbassadorUrgentMatterService;
 import com.majesttyx.mcacapitals.capital.CapitalAsylumScreenService;
 import com.majesttyx.mcacapitals.capital.CapitalAsylumService;
 import com.mojang.brigadier.CommandDispatcher;
@@ -20,62 +21,50 @@ public final class CapitalAsylumCommands {
             CommandDispatcher<CommandSourceStack> dispatcher
     ) {
         dispatcher.register(
-                Commands.literal(
-                                "capitalasylum"
-                        )
+                Commands.literal("capitalasylum")
                         .then(
-                                Commands.literal(
-                                                "review"
-                                        )
+                                Commands.literal("review")
                                         .then(
                                                 Commands.argument(
                                                                 "ambassadorId",
-                                                                StringArgumentType
-                                                                        .word()
+                                                                StringArgumentType.word()
                                                         )
                                                         .executes(
                                                                 context ->
                                                                         review(
                                                                                 context.getSource(),
-                                                                                StringArgumentType
-                                                                                        .getString(
-                                                                                                context,
-                                                                                                "ambassadorId"
-                                                                                        )
+                                                                                StringArgumentType.getString(
+                                                                                        context,
+                                                                                        "ambassadorId"
+                                                                                )
                                                                         )
                                                         )
                                         )
                         )
                         .then(
-                                Commands.literal(
-                                                "grant"
-                                        )
+                                Commands.literal("grant")
                                         .then(
                                                 Commands.argument(
                                                                 "ambassadorId",
-                                                                StringArgumentType
-                                                                        .word()
+                                                                StringArgumentType.word()
                                                         )
                                                         .then(
                                                                 Commands.argument(
                                                                                 "refugeeId",
-                                                                                StringArgumentType
-                                                                                        .word()
+                                                                                StringArgumentType.word()
                                                                         )
                                                                         .executes(
                                                                                 context ->
                                                                                         grant(
                                                                                                 context.getSource(),
-                                                                                                StringArgumentType
-                                                                                                        .getString(
-                                                                                                                context,
-                                                                                                                "ambassadorId"
-                                                                                                        ),
-                                                                                                StringArgumentType
-                                                                                                        .getString(
-                                                                                                                context,
-                                                                                                                "refugeeId"
-                                                                                                        )
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "ambassadorId"
+                                                                                                ),
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "refugeeId"
+                                                                                                )
                                                                                         )
                                                                         )
                                                         )
@@ -138,12 +127,20 @@ public final class CapitalAsylumCommands {
             return 0;
         }
 
-        return CapitalAsylumService
-                .grantAsylum(
+        int result =
+                CapitalAsylumService.grantAsylum(
                         player,
                         ambassadorId,
                         refugeeId
                 );
+
+        CapitalAmbassadorUrgentMatterService
+                .continueConversation(
+                        player,
+                        ambassadorId
+                );
+
+        return result;
     }
 
     private static UUID parseUuid(
@@ -152,9 +149,7 @@ public final class CapitalAsylumCommands {
             String failureMessage
     ) {
         try {
-            return UUID.fromString(
-                    rawValue
-            );
+            return UUID.fromString(rawValue);
         } catch (IllegalArgumentException ignored) {
             source.sendFailure(
                     Component.literal(

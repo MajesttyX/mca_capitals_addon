@@ -80,17 +80,36 @@ public class CapitalChronicleService {
     private CapitalChronicleService() {
     }
 
-    public static void addEntry(ServerLevel level, CapitalRecord capital, String entry) {
-        if (level == null || capital == null || entry == null || entry.isBlank()) {
+    public static void addEntry(
+            ServerLevel level,
+            CapitalRecord capital,
+            String entry
+    ) {
+        if (level == null
+                || capital == null
+                || entry == null
+                || entry.isBlank()) {
             return;
         }
 
         String normalized = entry.trim();
-        if (!hasChronicleEntry(capital, normalized)) {
-            capital.addChronicleEntry(normalized);
+
+        if (hasChronicleEntry(
+                capital,
+                normalized
+        )) {
+            return;
         }
 
-        announceThroughHerald(level, capital, normalized);
+        capital.addChronicleEntry(
+                normalized
+        );
+
+        announceThroughHerald(
+                level,
+                capital,
+                normalized
+        );
     }
 
     public static void addEntryWithoutHerald(CapitalRecord capital, String entry) {

@@ -23,13 +23,16 @@ public class CapitalExileDiscoveryHandler {
     private static final int TICK_INTERVAL =
             20 * 30;
 
-    private static final int NATURAL_DISCOVERY_CHANCE_PERCENT =
+    private static final int
+            NATURAL_DISCOVERY_CHANCE_PERCENT =
             10;
 
-    private static final long NATURAL_DISCOVERY_COOLDOWN_DAYS =
+    private static final long
+            NATURAL_DISCOVERY_COOLDOWN_DAYS =
             4L;
 
-    private static final double CAPITAL_RADIUS_SQR =
+    private static final double
+            CAPITAL_RADIUS_SQR =
             96.0D * 96.0D;
 
     @SubscribeEvent
@@ -49,7 +52,8 @@ public class CapitalExileDiscoveryHandler {
         boolean changed = false;
 
         for (CapitalRecord capital :
-                CapitalManager.getAllCapitalRecords()) {
+                CapitalManager
+                        .getAllCapitalRecords()) {
             if (tickCapital(
                     level,
                     capital
@@ -76,7 +80,8 @@ public class CapitalExileDiscoveryHandler {
         }
 
         if (capital.getVillageId() == null
-                || capital.getMasterOfLaws() == null) {
+                || capital.getMasterOfLaws()
+                == null) {
             return false;
         }
 
@@ -109,17 +114,19 @@ public class CapitalExileDiscoveryHandler {
                         currentDay
                 );
 
-        CapitalNaturalEnemyDiscoverySavedData discoveryData =
-                CapitalNaturalEnemyDiscoverySavedData.get(
-                        level
-                );
+        CapitalNaturalEnemyDiscoverySavedData
+                discoveryData =
+                CapitalNaturalEnemyDiscoverySavedData
+                        .get(level);
 
         long lastDiscoveryDay =
-                discoveryData.getLastDiscoveryDay(
-                        capital.getCapitalId()
-                );
+                discoveryData
+                        .getLastDiscoveryDay(
+                                capital.getCapitalId()
+                        );
 
-        if (lastDiscoveryDay != Long.MIN_VALUE
+        if (lastDiscoveryDay
+                != Long.MIN_VALUE
                 && currentDay - lastDiscoveryDay
                 < NATURAL_DISCOVERY_COOLDOWN_DAYS) {
             return false;
@@ -168,10 +175,11 @@ public class CapitalExileDiscoveryHandler {
             CapitalRecord capital
     ) {
         Set<UUID> residents =
-                CapitalResidentScanner.scanResidents(
-                        level,
-                        capital.getCapitalId()
-                );
+                CapitalResidentScanner
+                        .scanResidents(
+                                level,
+                                capital.getCapitalId()
+                        );
 
         List<UUID> candidates =
                 new ArrayList<>();
@@ -200,7 +208,9 @@ public class CapitalExileDiscoveryHandler {
             return false;
         }
 
-        if (targetId.equals(capital.getSovereign())
+        if (targetId.equals(
+                capital.getSovereign()
+        )
                 || targetId.equals(
                 capital.getPlayerSovereignId()
         )
@@ -210,44 +220,51 @@ public class CapitalExileDiscoveryHandler {
             return false;
         }
 
-        if (CapitalCrownStandingService.getStanding(
-                level,
-                capital,
-                targetId
-        ) != CrownStanding.ENEMY_OF_CROWN) {
+        if (CapitalCrownStandingService
+                .getStanding(
+                        level,
+                        capital,
+                        targetId
+                )
+                != CrownStanding.ENEMY_OF_CROWN) {
             return false;
         }
 
-        if (!MCAIntegrationBridge.isLoadedAndAlive(
-                level,
-                targetId
-        )
+        if (!MCAIntegrationBridge
+                .isLoadedAndAlive(
+                        level,
+                        targetId
+                )
                 || !MCAIntegrationBridge
                 .isTeenOrAdultVillager(
                         level,
                         targetId
                 )
-                || !MCAIntegrationBridge.isMCAVillager(
-                level,
-                targetId
-        )) {
+                || !MCAIntegrationBridge
+                .isMCAVillager(
+                        level,
+                        targetId
+                )) {
             return false;
         }
 
-        if (CapitalJusticeDataAccess.hasArrestWarrant(
-                level,
-                capital.getCapitalId(),
-                targetId
-        )
-                || CapitalJusticeDataAccess.isDetainedPrisoner(
-                level,
-                capital.getCapitalId(),
-                targetId
-        )
-                || MCAExecutionBridge.isMarkedForExecution(
-                level,
-                targetId
-        )) {
+        if (CapitalJusticeDataAccess
+                .hasArrestWarrant(
+                        level,
+                        capital.getCapitalId(),
+                        targetId
+                )
+                || CapitalJusticeDataAccess
+                .isDetainedPrisoner(
+                        level,
+                        capital.getCapitalId(),
+                        targetId
+                )
+                || MCAExecutionBridge
+                .isMarkedForExecution(
+                        level,
+                        targetId
+                )) {
             return false;
         }
 
@@ -292,11 +309,41 @@ public class CapitalExileDiscoveryHandler {
         }
 
         String targetName =
-                CapitalNameService.resolveDisplayName(
+                CapitalNameService
+                        .resolveDisplayName(
+                                level,
+                                capital,
+                                targetId
+                        );
+
+        if (!CapitalCrownJusticeService
+                .onCorrectAccusation(
                         level,
                         capital,
                         targetId
+                )) {
+            return false;
+        }
+
+        CapitalResidentScanner.clearCache(level);
+
+        Set<UUID> residents =
+                CapitalResidentScanner
+                        .scanResidents(
+                                level,
+                                capital.getCapitalId()
+                        );
+
+        CapitalNameService
+                .refreshCapitalNames(
+                        level,
+                        capital,
+                        residents
                 );
+
+        CapitalCourtWatcher.clearFingerprint(
+                capital.getCapitalId()
+        );
 
         String discoveryLine =
                 targetName
@@ -356,10 +403,11 @@ public class CapitalExileDiscoveryHandler {
         }
 
         BlockPos center =
-                MCAIntegrationBridge.getVillageCenter(
-                        level,
-                        capital.getVillageId()
-                );
+                MCAIntegrationBridge
+                        .getVillageCenter(
+                                level,
+                                capital.getVillageId()
+                        );
 
         if (center == null) {
             return false;
@@ -372,7 +420,8 @@ public class CapitalExileDiscoveryHandler {
                         center.getZ() + 0.5D
                 );
 
-        return distance <= CAPITAL_RADIUS_SQR;
+        return distance
+                <= CAPITAL_RADIUS_SQR;
     }
 
     private long currentDay(
