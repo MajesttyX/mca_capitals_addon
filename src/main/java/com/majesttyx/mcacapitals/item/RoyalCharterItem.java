@@ -18,6 +18,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Item.TooltipContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
@@ -44,7 +45,7 @@ public class RoyalCharterItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.literal("Used to found a monarchy in an eligible village.").withStyle(ChatFormatting.GRAY));
         tooltipComponents.add(Component.literal("Right-click to choose the first sovereign.").withStyle(ChatFormatting.GRAY));
     }
@@ -78,7 +79,7 @@ public class RoyalCharterItem extends Item {
         }
 
         ItemStack stack = new ItemStack(ModItems.ROYAL_CHARTER.get());
-        CompoundTag tag = stack.getOrCreateTag();
+        CompoundTag tag = new CompoundTag();
 
         tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
         tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId());

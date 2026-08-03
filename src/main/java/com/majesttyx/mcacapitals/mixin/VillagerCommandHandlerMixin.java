@@ -1,6 +1,10 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.MCACapitals;
+import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementService;
+import com.majesttyx.mcacapitals.capital.CapitalDiplomaticGiftService;
+import com.majesttyx.mcacapitals.capital.CapitalForeignRelationsMenuService;
+import com.majesttyx.mcacapitals.capital.CapitalForeignAffairsService;
 import com.majesttyx.mcacapitals.dialogue.CapitalPetitionService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -13,11 +17,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.reflect.Field;
 
 @Pseudo
-@Mixin(targets = "fabric.net.mca.entity.interaction.EntityCommandHandler", remap = false)
+@Mixin(targets = "net.conczin.mca.entity.interaction.EntityCommandHandler", remap = false)
 public class VillagerCommandHandlerMixin {
 
-    @Inject(method = "handle", at = @At("HEAD"), cancellable = true, remap = false, require = 0)
-    private void mcacapitals$handlePetitionCommand(ServerPlayer player, String command, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(
+            method = "handle",
+            at = @At("HEAD"),
+            cancellable = true,
+            remap = false,
+            require = 0
+    )
+    private void mcacapitals$handleCustomCommand(
+            ServerPlayer player,
+            String command,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
         if (command == null || !command.startsWith("mcacapitals_")) {
             return;
         }
@@ -34,8 +48,25 @@ public class VillagerCommandHandlerMixin {
             return;
         }
 
-        boolean handled = CapitalPetitionService.handleCustomCommand(player, entity, command);
-        MCACapitals.LOGGER.info("[MCACapitals] Petition command handled={}", handled);
+        boolean handled;
+        if (CapitalDiplomaticAgreementService.DIALOGUE_COMMAND.equals(command)) {
+            handled = CapitalForeignRelationsMenuService.openTargets(player, entity);
+        } else if (CapitalForeignAffairsService.DIALOGUE_COMMAND.equals(command)) {
+            handled = CapitalForeignAffairsService.showReport(player, entity);
+        } else if (CapitalDiplomaticGiftService.DIALOGUE_COMMAND.equals(command)) {
+            handled = CapitalDiplomaticGiftService.openDestinationList(player, entity);
+        } else {
+            handled = CapitalPetitionService.handleCustomCommand(
+                    player,
+                    entity,
+                    command
+            );
+        }
+
+        MCACapitals.LOGGER.info(
+                "[MCACapitals] Custom villager command handled={}",
+                handled
+        );
 
         if (handled) {
             cir.setReturnValue(true);
@@ -63,7 +94,6 @@ public class VillagerCommandHandlerMixin {
 
             type = type.getSuperclass();
         }
-
         return null;
     }
 }

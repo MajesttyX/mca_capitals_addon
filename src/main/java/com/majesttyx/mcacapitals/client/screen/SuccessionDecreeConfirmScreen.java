@@ -57,7 +57,7 @@ public class SuccessionDecreeConfirmScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics);
+        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
 
         int centerX = this.width / 2;
         int top = this.height / 2 - 58;

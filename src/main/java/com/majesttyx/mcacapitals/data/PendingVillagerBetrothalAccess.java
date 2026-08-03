@@ -18,12 +18,28 @@ public final class PendingVillagerBetrothalAccess {
         return get(level).getPairs();
     }
 
+    public static List<PendingVillagerBetrothalSavedData.RoyalEscortRecord> getRoyalEscorts(ServerLevel level) {
+        return get(level).getRoyalEscorts();
+    }
+
     public static boolean hasPendingBetrothal(ServerLevel level, UUID villagerId) {
         return get(level).hasPendingBetrothal(villagerId);
     }
 
     public static UUID getPartner(ServerLevel level, UUID villagerId) {
         return get(level).getPartner(villagerId);
+    }
+
+    public static String getPartnerName(ServerLevel level, UUID villagerId) {
+        return get(level).getPartnerName(villagerId);
+    }
+
+    public static PendingVillagerBetrothalSavedData.RoyalEscortRecord getRoyalEscort(
+            ServerLevel level,
+            UUID firstId,
+            UUID secondId
+    ) {
+        return get(level).getRoyalEscort(firstId, secondId);
     }
 
     public static boolean containsPair(ServerLevel level, UUID firstId, UUID secondId) {
@@ -34,8 +50,38 @@ public final class PendingVillagerBetrothalAccess {
         get(level).setPair(firstId, secondId);
     }
 
+    public static void setRoyalEscort(
+            ServerLevel level,
+            UUID firstId,
+            String firstName,
+            UUID secondId,
+            String secondName,
+            UUID originCapitalId,
+            UUID destinationCapitalId,
+            UUID relocatingRoyalId
+    ) {
+        get(level).setRoyalEscort(
+                firstId,
+                firstName,
+                secondId,
+                secondName,
+                originCapitalId,
+                destinationCapitalId,
+                relocatingRoyalId,
+                level.getGameTime()
+        );
+    }
+
+    public static boolean completeRoyalEscort(ServerLevel level, UUID firstId, UUID secondId) {
+        return get(level).completeRoyalEscort(firstId, secondId, level.getGameTime());
+    }
+
     public static void removePendingBetrothal(ServerLevel level, UUID firstId, UUID secondId) {
         get(level).removePair(firstId, secondId);
+    }
+
+    public static boolean removeCapital(ServerLevel level, UUID capitalId) {
+        return get(level).removeCapital(capitalId);
     }
 
     public static void removeVillager(ServerLevel level, UUID villagerId) {

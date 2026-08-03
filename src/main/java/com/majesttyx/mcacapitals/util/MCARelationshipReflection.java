@@ -8,6 +8,7 @@ import java.lang.reflect.Method;
 final class MCARelationshipReflection {
 
     private static final String[] MCA_PLAYER_SAVE_DATA_CLASSES = new String[] {
+            "net.conczin.mca.server.world.data.PlayerSaveData",
             "net.mca.server.world.data.PlayerSaveData",
             "forge.net.mca.server.world.data.PlayerSaveData",
             "fabric.net.mca.server.world.data.PlayerSaveData",
@@ -15,6 +16,7 @@ final class MCARelationshipReflection {
     };
 
     private static final String[] MCA_CONFIG_CLASSES = new String[] {
+            "net.conczin.mca.Config",
             "net.mca.Config",
             "forge.net.mca.Config",
             "fabric.net.mca.Config",

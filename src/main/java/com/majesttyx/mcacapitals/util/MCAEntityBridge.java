@@ -233,6 +233,55 @@ final class MCAEntityBridge {
         }
     }
 
+    static boolean leaveHome(ServerLevel level, UUID entityId) {
+        Entity entity = findLoadedMCAVillagerByUuid(level, entityId);
+        if (entity == null || !entity.isAlive() || entity.isRemoved()) {
+            return false;
+        }
+
+        Object residency = MCAReflectionHelper.invoke(entity, "getResidency");
+        if (residency == null) {
+            return false;
+        }
+
+        MCAReflectionHelper.invoke(residency, "leaveHome");
+        Object homeVillage = MCAReflectionHelper.invoke(residency, "getHomeVillage");
+        return homeVillage instanceof java.util.Optional<?> optional && optional.isEmpty();
+    }
+
+    static boolean forceVillageResidency(ServerLevel level, UUID entityId, int villageId) {
+        Entity entity = findLoadedMCAVillagerByUuid(level, entityId);
+        if (entity == null || !entity.isAlive() || entity.isRemoved()) {
+            return false;
+        }
+
+        Object residency = MCAReflectionHelper.invoke(entity, "getResidency");
+        if (residency == null) {
+            return false;
+        }
+
+        Object homeVillage = MCAReflectionHelper.invoke(residency, "getHomeVillage");
+        if (isVillageId(homeVillage, villageId)) {
+            return true;
+        }
+
+        MCAReflectionHelper.invoke(residency, "leaveHome");
+        MCAReflectionHelper.invoke(residency, "seekHome");
+
+        homeVillage = MCAReflectionHelper.invoke(residency, "getHomeVillage");
+        return isVillageId(homeVillage, villageId);
+    }
+
+    private static boolean isVillageId(Object optionalVillage, int villageId) {
+        if (!(optionalVillage instanceof java.util.Optional<?> optional) || optional.isEmpty()) {
+            return false;
+        }
+
+        Object village = optional.get();
+        Object rawId = MCAReflectionHelper.invoke(village, "getId");
+        return rawId instanceof Integer id && id == villageId;
+    }
+
     static boolean moveTo(Entity entity, double x, double y, double z, double speed) {
         if (!isMCAVillagerEntity(entity)) {
             return false;

@@ -1,11 +1,22 @@
 package com.majesttyx.mcacapitals.network;
 
+import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.client.DecreeOfTheHouseClient;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.UUID;
 
-public class OpenDecreeOfTheHousePacket {
+public class OpenDecreeOfTheHousePacket implements CustomPacketPayload {
+
+    public static final Type<OpenDecreeOfTheHousePacket> TYPE = new Type<>(
+            ResourceLocation.fromNamespaceAndPath(MCACapitals.MODID, "open_decree_of_the_house")
+    );
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, OpenDecreeOfTheHousePacket> CODEC =
+            StreamCodec.ofMember(OpenDecreeOfTheHousePacket::encode, OpenDecreeOfTheHousePacket::decode);
 
     private final UUID targetId;
     private final boolean playerTarget;
@@ -61,17 +72,17 @@ public class OpenDecreeOfTheHousePacket {
         return houseWords;
     }
 
-    public static void encode(OpenDecreeOfTheHousePacket packet, FriendlyByteBuf buffer) {
-        buffer.writeUUID(packet.targetId);
-        buffer.writeBoolean(packet.playerTarget);
-        buffer.writeUtf(packet.firstName);
-        buffer.writeUtf(packet.currentSurname);
-        buffer.writeBoolean(packet.houseFounded);
-        buffer.writeUtf(packet.houseName);
-        buffer.writeUtf(packet.houseWords);
+    public void encode(RegistryFriendlyByteBuf buffer) {
+        buffer.writeUUID(targetId);
+        buffer.writeBoolean(playerTarget);
+        buffer.writeUtf(firstName);
+        buffer.writeUtf(currentSurname);
+        buffer.writeBoolean(houseFounded);
+        buffer.writeUtf(houseName);
+        buffer.writeUtf(houseWords);
     }
 
-    public static OpenDecreeOfTheHousePacket decode(FriendlyByteBuf buffer) {
+    public static OpenDecreeOfTheHousePacket decode(RegistryFriendlyByteBuf buffer) {
         UUID targetId = buffer.readUUID();
         boolean playerTarget = buffer.readBoolean();
         String firstName = buffer.readUtf();
@@ -93,5 +104,10 @@ public class OpenDecreeOfTheHousePacket {
 
     public static void handle(OpenDecreeOfTheHousePacket packet) {
         DecreeOfTheHouseClient.open(packet);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

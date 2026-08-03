@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.data;
 
 import com.majesttyx.mcacapitals.house.PlayerHouseInheritanceMode;
 import com.majesttyx.mcacapitals.house.PlayerHouseRecord;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -32,8 +33,11 @@ public class PlayerHouseSavedData extends SavedData {
                 .overworld()
                 .getDataStorage()
                 .computeIfAbsent(
-                        PlayerHouseSavedData::load,
-                        PlayerHouseSavedData::new,
+                        new SavedData.Factory<>(
+                                PlayerHouseSavedData::new,
+                                PlayerHouseSavedData::load,
+                                null
+                        ),
                         DATA_NAME
                 );
     }
@@ -69,7 +73,7 @@ public class PlayerHouseSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
 
         for (PlayerHouseRecord record : records.values()) {
@@ -99,7 +103,7 @@ public class PlayerHouseSavedData extends SavedData {
         return tag;
     }
 
-    public static PlayerHouseSavedData load(CompoundTag tag) {
+    public static PlayerHouseSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         PlayerHouseSavedData data = new PlayerHouseSavedData();
         ListTag list = tag.getList(KEY_RECORDS, Tag.TAG_COMPOUND);
 

@@ -41,7 +41,8 @@ public final class CapitalPetitionService {
     private static final int DUKE_PETITION_MIN_POPULATION = 20;
 
     private static final double MAX_AUDIENCE_DISTANCE_SQR = 12.0D * 12.0D;
-    private static final ResourceLocation COVER_ME_IN_DIAMONDS_ID = new ResourceLocation("minecraft", "story/shiny_gear");
+    private static final ResourceLocation COVER_ME_IN_DIAMONDS_ID =
+            ResourceLocation.fromNamespaceAndPath("minecraft", "story/shiny_gear");
 
     private CapitalPetitionService() {
     }

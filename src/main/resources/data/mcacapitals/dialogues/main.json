@@ -1,8 +1,41 @@
 {
   "answers": [
     {
+      "name": "mcacapitals_manage_diplomacy",
+      "priority": 1005,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_manage_diplomacy"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_ask_foreign_affairs",
+      "priority": 1003,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_ask_foreign_affairs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_send_gift",
+      "priority": 1001,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_send_gift"
+          }
+        }
+      ]
+    },
+    {
       "name": "mcacapitals_petition",
-      "priority": 999,
+      "priority": 997,
       "results": [
         {
           "actions": {
@@ -13,7 +46,7 @@
     },
     {
       "name": "mcacapitals_request",
-      "priority": 998,
+      "priority": 996,
       "results": [
         {
           "actions": {
@@ -24,7 +57,7 @@
     },
     {
       "name": "mcacapitals_seize_throne",
-      "priority": 997,
+      "priority": 995,
       "results": [
         {
           "actions": {

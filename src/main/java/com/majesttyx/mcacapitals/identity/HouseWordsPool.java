@@ -29,31 +29,27 @@ final class HouseWordsPool {
 
     static final String UNASSIGNED = "UNASSIGNED";
 
-    private static final ResourceLocation HOUSE_WORDS = new ResourceLocation(
+    private static final ResourceLocation HOUSE_WORDS = ResourceLocation.fromNamespaceAndPath(
             MCACapitals.MODID,
             "house_words/house_words.json"
     );
 
-    /*
-     * Forge 1.20.1 / MCA Reborn 7.6.x personality buckets.
-     *
-     * These are personality values, not MCA traits.
-     */
     private static final List<String> PERSONALITY_BUCKET_ORDER = List.of(
             UNASSIGNED,
-            "ATHLETIC",
-            "CONFIDENT",
             "FRIENDLY",
             "FLIRTY",
-            "WITTY",
-            "SHY",
+            "PLAYFUL",
             "GLOOMY",
             "SENSITIVE",
             "GREEDY",
             "ODD",
-            "LAZY",
-            "GRUMPY",
-            "PEPPY"
+            "CRABBY",
+            "EXTROVERTED",
+            "INTROVERTED",
+            "RELAXED",
+            "ANXIOUS",
+            "PEACEFUL",
+            "UPBEAT"
     );
 
     private static Map<String, List<String>> cachedHouseWords;
@@ -86,7 +82,6 @@ final class HouseWordsPool {
             if (bucket.equals(preferred) || bucket.equals(UNASSIGNED)) {
                 continue;
             }
-
             if (!usedBucketsInCapital.contains(bucket)) {
                 capitalFreshBuckets.add(bucket);
             }
@@ -102,7 +97,6 @@ final class HouseWordsPool {
             if (bucket.equals(preferred) || bucket.equals(UNASSIGNED)) {
                 continue;
             }
-
             anyOtherBuckets.add(bucket);
         }
 
@@ -222,7 +216,6 @@ final class HouseWordsPool {
         for (String bucket : PERSONALITY_BUCKET_ORDER) {
             buckets.put(bucket, Collections.emptyList());
         }
-
         return Collections.unmodifiableMap(buckets);
     }
 

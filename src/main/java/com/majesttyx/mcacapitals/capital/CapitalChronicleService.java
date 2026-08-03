@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -53,6 +54,19 @@ public class CapitalChronicleService {
         if (isProclamation(trimmed)) {
             broadcastProclamation(level, capital, trimmed);
         }
+    }
+
+    public static void addEntryWithoutHerald(CapitalRecord capital, String text) {
+        if (capital == null || text == null || text.isBlank()) {
+            return;
+        }
+
+        String trimmed = text.trim();
+        if (hasChronicleText(capital, trimmed)) {
+            return;
+        }
+
+        capital.addChronicleEntry(trimmed);
     }
 
     private static boolean hasChronicleText(CapitalRecord capital, String text) {
@@ -255,10 +269,11 @@ public class CapitalChronicleService {
             return;
         }
 
-        CompoundTag tag = stack.getOrCreateTag();
-        tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
-        tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId() == null ? -1 : capital.getVillageId());
-        tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+        ModItemStackData.updateCustomData(stack, tag -> {
+            tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
+            tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId() == null ? -1 : capital.getVillageId());
+            tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+        });
     }
 
     public static void writeChronicleBook(ServerLevel level, CapitalRecord capital, ItemStack stack) {
@@ -269,7 +284,7 @@ public class CapitalChronicleService {
         List<String> pages = createPages(level, capital);
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
-        CompoundTag tag = stack.getOrCreateTag();
+        CompoundTag tag = ModItemStackData.getCustomData(stack);
         tag.putString(ModDataKeys.BOOK_TITLE, "Chronicle of " + villageName);
         tag.putString(ModDataKeys.BOOK_AUTHOR, "The Royal Chancery");
         tag.putBoolean(ModDataKeys.BOOK_RESOLVED, true);
@@ -281,13 +296,16 @@ public class CapitalChronicleService {
             if (count >= MAX_PAGES) {
                 break;
             }
-            String json = Component.Serializer.toJson(Component.literal(page));
+            String json = Component.Serializer.toJson(Component.literal(page), level.registryAccess());
             pageList.add(StringTag.valueOf(json));
             count++;
         }
 
         tag.put(ModDataKeys.BOOK_PAGES, pageList);
-        bindChronicleItem(level, capital, stack);
+        tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
+        tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId() == null ? -1 : capital.getVillageId());
+        tag.putString(ModDataKeys.VILLAGE_NAME, villageName);
+        ModItemStackData.setCustomData(stack, tag);
     }
 
     private static List<String> createPages(ServerLevel level, CapitalRecord capital) {

@@ -10,8 +10,12 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CapitalNameService {
-
     private static final String[] KNOWN_TITLES = new String[] {
+            "Deposed Queen",
+            "Deposed King",
+            "Late Queen",
+            "Late King",
+            "Regent",
             "High Queen",
             "High King",
             "Dowager Queen",
@@ -28,8 +32,10 @@ public class CapitalNameService {
             "Hand of the Queen",
             "Hand of the King",
             "Grand Maester",
+            "Master of Laws",
             "Maester",
             "Court Herald",
+            "Ambassador",
             "Princess",
             "Prince",
             "Lord Commander",
@@ -75,6 +81,14 @@ public class CapitalNameService {
         if (capital.getGrandMaester() != null) {
             allRelevant.add(capital.getGrandMaester());
         }
+        if (capital.getMasterOfLaws() != null) {
+            allRelevant.add(capital.getMasterOfLaws());
+        }
+
+        UUID ambassador = CapitalAmbassadorService.getAmbassador(level, capital);
+        if (ambassador != null) {
+            allRelevant.add(ambassador);
+        }
 
         allRelevant.addAll(capital.getRoyalChildren());
         allRelevant.addAll(capital.getPrinceConsortSources().keySet());
@@ -106,17 +120,38 @@ public class CapitalNameService {
         }
     }
 
-    private static String buildDisplayName(ServerLevel level, UUID entityId, String baseName) {
-        CapitalRecord royalGuardCapital = findRoyalGuardCapital(entityId);
-        if (royalGuardCapital != null) {
-            return CapitalRoyalGuardService.buildRoyalGuardDisplayName(level, royalGuardCapital, entityId);
+    public static String resolveDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (level == null || entityId == null) {
+            return "Unknown";
         }
 
-        CapitalRecord displayCapital = CapitalTitleResolver.findCapitalForEntity(level, entityId);
-        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, entityId);
+        Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
+        if (entity == null) {
+            if (capital != null && capital.getVillageId() != null) {
+                String savedName = MCAIntegrationBridge.getVillageResidentNames(level, capital.getVillageId()).get(entityId);
+                if (savedName != null && !savedName.isBlank()) {
+                    return normalizeBaseName(savedName);
+                }
+            }
+            return entityId.toString();
+        }
 
+        String currentName = entity.getCustomName() != null
+                ? entity.getCustomName().getString()
+                : entity.getName().getString();
+
+        return normalizeBaseName(currentName);
+    }
+
+    private static String buildDisplayName(ServerLevel level, UUID entityId, String baseName) {
+        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, entityId);
         if (title == null || title.isBlank() || "Commoner".equals(title) || "None".equals(title)) {
             return baseName;
+        }
+
+        CapitalRecord royalGuardCapital = findRoyalGuardCapital(entityId);
+        if (royalGuardCapital != null && ("Sir".equals(title) || "Dame".equals(title))) {
+            return CapitalRoyalGuardService.buildRoyalGuardDisplayName(level, royalGuardCapital, entityId);
         }
 
         return title + " " + baseName;

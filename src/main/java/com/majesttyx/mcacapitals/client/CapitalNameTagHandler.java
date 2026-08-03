@@ -7,6 +7,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityAttachment;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
@@ -15,6 +17,8 @@ import java.util.Locale;
 import java.util.UUID;
 
 public final class CapitalNameTagHandler {
+
+    private static final double MAX_NAME_TAG_DISTANCE_SQR = 4096.0D;
 
     private static final List<String> KNOWN_TITLES = List.of(
             "Hand of the Queen",
@@ -53,14 +57,40 @@ public final class CapitalNameTagHandler {
     private CapitalNameTagHandler() {
     }
 
+    public static boolean shouldUseCustomNameTag(Entity entity) {
+        if (entity == null || !MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
+            return false;
+        }
+
+        VillagerIdentityClientCache.ClientVillagerIdentity identity = VillagerIdentityClientCache.get(entity.getUUID());
+        if (identity == null) {
+            return false;
+        }
+
+        return !buildLines(entity.getDisplayName().getString(), identity).isEmpty();
+    }
+
     public static boolean renderCustomNameTag(
             Entity entity,
             Component originalContent,
             PoseStack poseStack,
             MultiBufferSource bufferSource,
-            int packedLight
+            int packedLight,
+            float partialTick
     ) {
-        if (entity == null || originalContent == null || !MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
+        if (entity == null || originalContent == null || poseStack == null || bufferSource == null) {
+            return false;
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
+            return false;
+        }
+
+        if (!isWithinRenderDistance(entity)) {
+            return false;
+        }
+
+        if (!canPlayerSee(entity)) {
             return false;
         }
 
@@ -75,11 +105,33 @@ public final class CapitalNameTagHandler {
             return false;
         }
 
-        renderLayeredNameTag(entity, poseStack, bufferSource, packedLight, lines);
+        renderLayeredNameTag(entity, poseStack, bufferSource, packedLight, partialTick, lines);
         return true;
     }
 
+    private static boolean isWithinRenderDistance(Entity entity) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft == null || minecraft.getCameraEntity() == null) {
+            return true;
+        }
+
+        return entity.distanceToSqr(minecraft.getCameraEntity()) <= MAX_NAME_TAG_DISTANCE_SQR;
+    }
+
+    private static boolean canPlayerSee(Entity entity) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft == null || minecraft.player == null) {
+            return true;
+        }
+
+        return !entity.isInvisibleTo(minecraft.player);
+    }
+
     private static List<Component> buildLines(String originalName, VillagerIdentityClientCache.ClientVillagerIdentity identity) {
+        if (identity == null) {
+            return List.of();
+        }
+
         String cleanedOriginalName = normalizeSpaces(originalName);
 
         String statusLine = detectMcaStatusLine(cleanedOriginalName);
@@ -118,7 +170,7 @@ public final class CapitalNameTagHandler {
 
             if ("Sir".equals(guardTitle) || "Dame".equals(guardTitle)) {
                 lines.add(Component.literal(guardTitle + " " + guardName));
-            } else {
+            } else if (!guardName.isBlank()) {
                 lines.add(Component.literal(guardName));
             }
 
@@ -136,26 +188,38 @@ public final class CapitalNameTagHandler {
         }
 
         if ("Lady".equals(title) || "Lord".equals(title) || "Dame".equals(title) || "Sir".equals(title)) {
-            lines.add(Component.literal(title + " " + fullName));
+            if (!fullName.isBlank()) {
+                lines.add(Component.literal(title + " " + fullName));
+            } else {
+                lines.add(Component.literal(title));
+            }
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
         if (isCourtOfficeNameFirst(title)) {
-            lines.add(Component.literal(fullName));
+            if (!fullName.isBlank()) {
+                lines.add(Component.literal(fullName));
+            }
             lines.add(Component.literal(title));
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
         if (isInlineTitleName(title)) {
-            lines.add(Component.literal(title + " " + fullName));
+            if (!fullName.isBlank()) {
+                lines.add(Component.literal(title + " " + fullName));
+            } else {
+                lines.add(Component.literal(title));
+            }
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
         lines.add(Component.literal(title));
-        lines.add(Component.literal(fullName));
+        if (!fullName.isBlank()) {
+            lines.add(Component.literal(fullName));
+        }
         addStatusLineIfPresent(lines, statusLine);
         return lines;
     }
@@ -343,6 +407,7 @@ public final class CapitalNameTagHandler {
             PoseStack poseStack,
             MultiBufferSource bufferSource,
             int packedLight,
+            float partialTick,
             List<Component> lines
     ) {
         Minecraft minecraft = Minecraft.getInstance();
@@ -351,13 +416,18 @@ public final class CapitalNameTagHandler {
             return;
         }
 
+        Vec3 attachment = entity.getAttachments().getNullable(EntityAttachment.NAME_TAG, 0, entity.getViewYRot(partialTick));
+        if (attachment == null) {
+            return;
+        }
+
         Font font = minecraft.font;
         boolean normalRender = !entity.isDiscrete();
 
         poseStack.pushPose();
-        poseStack.translate(0.0D, entity.getBbHeight() + 0.5D, 0.0D);
+        poseStack.translate(attachment.x, attachment.y + 0.5D, attachment.z);
         poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
-        poseStack.scale(-0.025F, -0.025F, 0.025F);
+        poseStack.scale(0.025F, -0.025F, 0.025F);
 
         Matrix4f matrix = poseStack.last().pose();
         float opacity = minecraft.options.getBackgroundOpacity(0.25F);

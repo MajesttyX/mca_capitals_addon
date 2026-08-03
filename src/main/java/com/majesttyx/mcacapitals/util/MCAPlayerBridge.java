@@ -10,6 +10,7 @@ import java.util.UUID;
 final class MCAPlayerBridge {
 
     private static final String[] MCA_PLAYER_SAVE_DATA_CLASSES = new String[] {
+            "net.conczin.mca.server.world.data.PlayerSaveData",
             "net.mca.server.world.data.PlayerSaveData",
             "forge.net.mca.server.world.data.PlayerSaveData",
             "fabric.net.mca.server.world.data.PlayerSaveData",
@@ -17,6 +18,7 @@ final class MCAPlayerBridge {
     };
 
     private static final String[] MCA_GENDER_CLASSES = new String[] {
+            "net.conczin.mca.entity.ai.relationship.Gender",
             "net.mca.entity.ai.relationship.Gender",
             "forge.net.mca.entity.ai.relationship.Gender",
             "fabric.net.mca.entity.ai.relationship.Gender",

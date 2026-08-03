@@ -1,13 +1,24 @@
 package com.majesttyx.mcacapitals.network;
 
+import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.client.BetrothalSelectionClient;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class OpenBetrothalSelectionPacket {
+public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
+
+    public static final Type<OpenBetrothalSelectionPacket> TYPE = new Type<>(
+            ResourceLocation.fromNamespaceAndPath(MCACapitals.MODID, "open_betrothal_selection")
+    );
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, OpenBetrothalSelectionPacket> CODEC =
+            StreamCodec.ofMember(OpenBetrothalSelectionPacket::encode, OpenBetrothalSelectionPacket::decode);
 
     private final UUID capitalId;
     private final String villageName;
@@ -21,9 +32,9 @@ public class OpenBetrothalSelectionPacket {
             List<Candidate> recommendationCandidates
     ) {
         this.capitalId = capitalId;
-        this.villageName = villageName;
-        this.playerCandidates = new ArrayList<>(playerCandidates);
-        this.recommendationCandidates = new ArrayList<>(recommendationCandidates);
+        this.villageName = villageName == null ? "" : villageName;
+        this.playerCandidates = new ArrayList<>(playerCandidates == null ? List.of() : playerCandidates);
+        this.recommendationCandidates = new ArrayList<>(recommendationCandidates == null ? List.of() : recommendationCandidates);
     }
 
     public UUID capitalId() {
@@ -42,14 +53,14 @@ public class OpenBetrothalSelectionPacket {
         return recommendationCandidates;
     }
 
-    public static void encode(OpenBetrothalSelectionPacket packet, FriendlyByteBuf buffer) {
-        buffer.writeUUID(packet.capitalId);
-        buffer.writeUtf(packet.villageName);
-        writeCandidates(buffer, packet.playerCandidates);
-        writeCandidates(buffer, packet.recommendationCandidates);
+    public void encode(RegistryFriendlyByteBuf buffer) {
+        buffer.writeUUID(capitalId);
+        buffer.writeUtf(villageName);
+        writeCandidates(buffer, playerCandidates);
+        writeCandidates(buffer, recommendationCandidates);
     }
 
-    public static OpenBetrothalSelectionPacket decode(FriendlyByteBuf buffer) {
+    public static OpenBetrothalSelectionPacket decode(RegistryFriendlyByteBuf buffer) {
         UUID capitalId = buffer.readUUID();
         String villageName = buffer.readUtf();
         List<Candidate> playerCandidates = readCandidates(buffer);
@@ -67,7 +78,7 @@ public class OpenBetrothalSelectionPacket {
         BetrothalSelectionClient.open(packet);
     }
 
-    private static void writeCandidates(FriendlyByteBuf buffer, List<Candidate> candidates) {
+    private static void writeCandidates(RegistryFriendlyByteBuf buffer, List<Candidate> candidates) {
         buffer.writeInt(candidates.size());
         for (Candidate candidate : candidates) {
             buffer.writeUUID(candidate.id);
@@ -75,7 +86,7 @@ public class OpenBetrothalSelectionPacket {
         }
     }
 
-    private static List<Candidate> readCandidates(FriendlyByteBuf buffer) {
+    private static List<Candidate> readCandidates(RegistryFriendlyByteBuf buffer) {
         int size = buffer.readInt();
         List<Candidate> candidates = new ArrayList<>();
         for (int i = 0; i < size; i++) {
@@ -84,13 +95,18 @@ public class OpenBetrothalSelectionPacket {
         return candidates;
     }
 
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
     public static class Candidate {
         private final UUID id;
         private final String name;
 
         public Candidate(UUID id, String name) {
             this.id = id;
-            this.name = name;
+            this.name = name == null ? "" : name;
         }
 
         public UUID id() {

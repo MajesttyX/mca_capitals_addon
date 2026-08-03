@@ -11,11 +11,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
-@Mixin(targets = "net.mca.entity.ai.Pregnancy", remap = false)
+@Mixin(targets = "net.conczin.mca.entity.ai.Pregnancy", remap = false)
 public class PregnancyBirthIdentityMixin {
 
     @Inject(
-            method = "createChild(Lnet/mca/entity/ai/relationship/Gender;Lnet/mca/entity/VillagerEntityMCA;)Lnet/mca/entity/VillagerEntityMCA;",
+            method = "createChild(Lnet/conczin/mca/entity/ai/relationship/Gender;Lnet/conczin/mca/entity/VillagerEntityMCA;)Lnet/conczin/mca/entity/VillagerEntityMCA;",
             at = @At("RETURN"),
             remap = false
     )

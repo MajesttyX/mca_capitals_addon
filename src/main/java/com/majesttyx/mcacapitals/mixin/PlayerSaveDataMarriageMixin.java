@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "fabric.net.mca.server.world.data.PlayerSaveData", remap = false)
+@Mixin(targets = "net.conczin.mca.server.world.data.PlayerSaveData", remap = false)
 public class PlayerSaveDataMarriageMixin {
 
     @Inject(

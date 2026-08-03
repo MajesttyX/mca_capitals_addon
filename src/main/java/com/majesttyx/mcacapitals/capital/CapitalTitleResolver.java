@@ -47,7 +47,7 @@ public class CapitalTitleResolver {
             }
 
             ResolvedTitle resolved = resolveLocalTitle(level, capital, entityId);
-            if (resolved.rank() <= TitleRank.COMMONER.rankValue()) {
+            if (resolved.rank() >= TitleRank.COMMONER.rankValue()) {
                 continue;
             }
 
@@ -80,6 +80,28 @@ public class CapitalTitleResolver {
         return best == null ? "Commoner" : best.title();
     }
 
+    public static String getCourtOfficeLineForEntity(ServerLevel level, UUID entityId) {
+        if (entityId == null) {
+            return "";
+        }
+
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            if (capital == null) {
+                continue;
+            }
+
+            if (entityId.equals(capital.getMasterOfLaws())) {
+                return "Master of Laws";
+            }
+
+            if (CapitalAmbassadorService.isAmbassador(level, capital, entityId)) {
+                return "Ambassador";
+            }
+        }
+
+        return "";
+    }
+
     public static boolean isRoyalGuardTitle(ServerLevel level, UUID entityId) {
         if (entityId == null) {
             return false;
@@ -109,7 +131,7 @@ public class CapitalTitleResolver {
             return new ResolvedTitle(female ? "Queen" : "King", TitleRank.SOVEREIGN.rankValue(), capital);
         }
 
-        if (entityId.equals(capital.getConsort())) {
+        if (entityId.equals(capital.getConsort()) || entityId.equals(capital.getPlayerConsortId())) {
             return new ResolvedTitle(female ? "Queen Consort" : "King Consort", TitleRank.SOVEREIGN_CONSORT.rankValue(), capital);
         }
 
@@ -139,7 +161,7 @@ public class CapitalTitleResolver {
         }
 
         if (entityId.equals(capital.getHand()) || PlayerCapitalTitleService.isHand(level, capital, entityId)) {
-            return new ResolvedTitle(capital.isSovereignFemale() ? "Hand of the Queen" : "Hand of the King", TitleRank.HAND.rankValue(), capital);
+            return new ResolvedTitle(isCurrentSovereignFemale(level, capital) ? "Hand of the Queen" : "Hand of the King", TitleRank.HAND.rankValue(), capital);
         }
 
         if (entityId.equals(capital.getGrandMaester())) {
@@ -195,6 +217,10 @@ public class CapitalTitleResolver {
             return new ResolvedTitle(female ? "Dame" : "Sir", TitleRank.KNIGHT.rankValue(), capital);
         }
 
+        if (CapitalAmbassadorService.isAmbassador(level, capital, entityId)) {
+            return new ResolvedTitle("Ambassador", TitleRank.AMBASSADOR.rankValue(), capital);
+        }
+
         return new ResolvedTitle("Commoner", TitleRank.COMMONER.rankValue(), capital);
     }
 
@@ -217,7 +243,9 @@ public class CapitalTitleResolver {
 
         int sovereignCount = 0;
         for (CapitalRecord record : CapitalManager.getAllCapitalRecords()) {
-            if (record != null && entityId.equals(record.getPlayerSovereignId())) {
+            if (record != null
+                    && record.getState() == CapitalState.ACTIVE
+                    && entityId.equals(record.getPlayerSovereignId())) {
                 sovereignCount++;
                 if (sovereignCount >= 2) {
                     return true;
@@ -226,6 +254,18 @@ public class CapitalTitleResolver {
         }
 
         return false;
+    }
+
+    private static boolean isCurrentSovereignFemale(ServerLevel level, CapitalRecord capital) {
+        if (capital == null) {
+            return false;
+        }
+
+        if (capital.getPlayerSovereignId() != null) {
+            return MCAIntegrationBridge.isFemale(level, capital.getPlayerSovereignId());
+        }
+
+        return capital.isSovereignFemale();
     }
 
     private static boolean isFemaleForTitle(ServerLevel level, CapitalRecord capital, UUID entityId) {
@@ -334,6 +374,7 @@ public class CapitalTitleResolver {
     private enum TitleRank {
         NONE(999),
         COMMONER(900),
+        AMBASSADOR(195),
 
         KNIGHT(180),
         LORD(170),

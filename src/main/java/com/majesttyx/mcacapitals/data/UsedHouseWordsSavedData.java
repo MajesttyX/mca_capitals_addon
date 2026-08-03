@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.data;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -33,8 +34,11 @@ public class UsedHouseWordsSavedData extends SavedData {
                 .overworld()
                 .getDataStorage()
                 .computeIfAbsent(
-                        UsedHouseWordsSavedData::load,
-                        UsedHouseWordsSavedData::new,
+                        new SavedData.Factory<>(
+                                UsedHouseWordsSavedData::new,
+                                UsedHouseWordsSavedData::load,
+                                null
+                        ),
                         DATA_NAME
                 );
     }
@@ -88,7 +92,7 @@ public class UsedHouseWordsSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         ListTag list = new ListTag();
 
         for (UsedHouseWordsRecord record : records.values()) {
@@ -119,7 +123,7 @@ public class UsedHouseWordsSavedData extends SavedData {
         return tag;
     }
 
-    public static UsedHouseWordsSavedData load(CompoundTag tag) {
+    public static UsedHouseWordsSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         UsedHouseWordsSavedData data = new UsedHouseWordsSavedData();
         ListTag list = tag.getList(KEY_RECORDS, Tag.TAG_COMPOUND);
 

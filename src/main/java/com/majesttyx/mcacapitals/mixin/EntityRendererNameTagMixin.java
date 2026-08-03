@@ -15,19 +15,36 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class EntityRendererNameTagMixin {
 
     @Inject(
-            method = "renderNameTag",
-            at = @At("HEAD"),
-            cancellable = true
+            method = "render",
+            at = @At("TAIL")
     )
-    private void mcacapitals$renderCustomCapitalNameTag(
+    private void mcacapitals$renderCapitalNameTagFromEntityRender(
             Entity entity,
-            Component displayName,
+            float entityYaw,
+            float partialTick,
             PoseStack poseStack,
             MultiBufferSource bufferSource,
             int packedLight,
             CallbackInfo ci
     ) {
-        if (CapitalNameTagHandler.renderCustomNameTag(entity, displayName, poseStack, bufferSource, packedLight)) {
+        CapitalNameTagHandler.renderCustomNameTag(entity, entity.getDisplayName(), poseStack, bufferSource, packedLight, partialTick);
+    }
+
+    @Inject(
+            method = "renderNameTag",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void mcacapitals$cancelVanillaCapitalNameTag(
+            Entity entity,
+            Component displayName,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight,
+            float partialTick,
+            CallbackInfo ci
+    ) {
+        if (CapitalNameTagHandler.shouldUseCustomNameTag(entity)) {
             ci.cancel();
         }
     }

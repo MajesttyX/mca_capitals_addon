@@ -1,105 +1,170 @@
 package com.majesttyx.mcacapitals.mixin;
 
-import com.majesttyx.mcacapitals.ai.RoyalGuardFollowGoal;
+import com.google.common.collect.ImmutableList;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
-import net.minecraft.world.entity.PathfinderMob;
-import net.minecraft.world.entity.ai.goal.Goal;
-import org.spongepowered.asm.mixin.Final;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.schedule.Activity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Coerce;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "net.mca.entity.ai.brain.VillagerTasksMCA", remap = false)
-public abstract class VillagerTasksMCARoyalGuardMixin {
+@Mixin(targets = "net.conczin.mca.entity.ai.brain.VillagerTasksMCA", remap = false)
+public class VillagerTasksMCARoyalGuardMixin {
 
-    @Shadow(remap = false)
-    @Final
-    private PathfinderMob entity;
-
-    @Redirect(
-            method = "initCombatTasks",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/world/entity/ai/goal/GoalSelector;addGoal(ILnet/minecraft/world/entity/ai/goal/Goal;)V"
-            )
+    @Inject(
+            method = "initializeTasks",
+            at = @At("TAIL"),
+            remap = false
     )
-    private void mcacapitals$replaceRoyalGuardCombatFollowGoal(
-            net.minecraft.world.entity.ai.goal.GoalSelector selector,
-            int priority,
-            Goal goal
+    private static void mcacapitals$overrideRoyalGuardWorkPackage(
+            @Coerce Object villagerObj,
+            @Coerce Object brainObj,
+            CallbackInfoReturnable<Object> cir
     ) {
-        if (entity == null) {
-            selector.addGoal(priority, goal);
+        if (!(villagerObj instanceof Entity entity)) {
             return;
         }
 
-        CapitalRecord capital = CapitalManager.getCapitalForResident(entity.getUUID());
-        if (capital == null || !capital.isRoyalGuard(entity.getUUID())) {
-            selector.addGoal(priority, goal);
+        UUID villagerId = entity.getUUID();
+        if (!isRoyalGuard(villagerId)) {
             return;
         }
 
-        if (!isFollowGoal(goal)) {
-            selector.addGoal(priority, goal);
+        Object brain = cir.getReturnValue();
+        if (brain == null) {
+            brain = brainObj;
+        }
+
+        if (brain == null) {
             return;
         }
 
-        selector.addGoal(priority, new RoyalGuardFollowGoal(entity, capital.getCapitalId()));
+        Object stayingPackage = resolveStayingPackage();
+        if (!(stayingPackage instanceof ImmutableList<?> taskList)) {
+            return;
+        }
+
+        replaceActivityPackage(brain, Activity.WORK, taskList);
+        replaceActivityPackage(brain, Activity.RAID, taskList);
+        refreshActivities(brain, entity);
     }
 
-    private static boolean isFollowGoal(Goal goal) {
-        if (goal == null) {
+    private static boolean isRoyalGuard(UUID villagerId) {
+        if (villagerId == null) {
             return false;
         }
 
-        String name = goal.getClass().getName().toLowerCase();
-        return name.contains("follow") || name.contains("guard");
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            if (capital != null && capital.isRoyalGuard(villagerId)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    public static void refreshCombatTasks(Object tasks) {
-        if (tasks == null) {
+    private static Object resolveStayingPackage() {
+        try {
+            Class<?> tasksClass = Class.forName("net.conczin.mca.entity.ai.brain.VillagerTasksMCA");
+            Method method = tasksClass.getMethod("getStayingPackage");
+            return method.invoke(null);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static void replaceActivityPackage(Object brain, Activity activity, ImmutableList<?> taskList) {
+        if (brain == null || activity == null || taskList == null) {
             return;
         }
 
-        try {
-            Class<?> tasksClass = Class.forName("net.mca.entity.ai.brain.VillagerTasksMCA");
+        removeExistingActivityPackage(brain, activity);
+        addActivityPackage(brain, activity, taskList);
+    }
 
-            if (!tasksClass.isInstance(tasks)) {
+    private static void removeExistingActivityPackage(Object brain, Activity activity) {
+        removeActivityFromAvailableBehaviors(brain, activity);
+        removeActivityFromMapField(brain, "activityRequirements", activity);
+        removeActivityFromMapField(brain, "activityMemoriesToEraseWhenStopped", activity);
+    }
+
+    private static void removeActivityFromAvailableBehaviors(Object brain, Activity activity) {
+        try {
+            Field field = findField(brain.getClass(), "availableBehaviorsByPriority");
+            if (field == null) {
                 return;
             }
 
-            Method method = tasksClass.getDeclaredMethod("initCombatTasks");
-            method.setAccessible(true);
-            method.invoke(tasks);
+            field.setAccessible(true);
+            Object value = field.get(brain);
+            if (!(value instanceof Map<?, ?> outerMap)) {
+                return;
+            }
+
+            for (Object inner : outerMap.values()) {
+                if (inner instanceof Map<?, ?> rawMap) {
+                    ((Map<?, ?>) rawMap).remove(activity);
+                }
+            }
         } catch (Throwable ignored) {
         }
     }
 
-    public static Object getTasks(Object villager) {
-        if (villager == null) {
-            return null;
+    private static void removeActivityFromMapField(Object brain, String fieldName, Activity activity) {
+        try {
+            Field field = findField(brain.getClass(), fieldName);
+            if (field == null) {
+                return;
+            }
+
+            field.setAccessible(true);
+            Object value = field.get(brain);
+            if (value instanceof Map<?, ?> rawMap) {
+                ((Map<?, ?>) rawMap).remove(activity);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void addActivityPackage(Object brain, Activity activity, ImmutableList<?> taskList) {
+        try {
+            Method method = brain.getClass().getMethod("addActivity", Activity.class, ImmutableList.class);
+            method.invoke(brain, activity, taskList);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void refreshActivities(Object brain, Entity entity) {
+        if (brain == null || entity == null) {
+            return;
         }
 
-        Class<?> current = villager.getClass();
+        try {
+            Method method = brain.getClass().getMethod("updateActivityFromSchedule", long.class, long.class);
+            method.invoke(brain, entity.level().getDayTime(), entity.level().getGameTime());
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static Field findField(Class<?> type, String name) {
+        Class<?> current = type;
         while (current != null) {
             try {
-                Field field = current.getDeclaredField("tasks");
-                field.setAccessible(true);
-                return field.get(villager);
+                return current.getDeclaredField(name);
             } catch (NoSuchFieldException ignored) {
                 current = current.getSuperclass();
-            } catch (Throwable ignored) {
-                return null;
             }
         }
-
         return null;
     }
 }

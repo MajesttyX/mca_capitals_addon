@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.data;
 
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
+import com.majesttyx.mcacapitals.capital.CrownStanding;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -81,6 +82,7 @@ final class CapitalSavedDataReader {
             }
 
             capital.setMonarchyRejected(capitalTag.getBoolean(CapitalSavedData.KEY_MONARCHY_REJECTED));
+            capital.setRoyalCharterIssued(capitalTag.getBoolean(CapitalSavedData.KEY_ROYAL_CHARTER_ISSUED));
 
             capital.setMourningActive(capitalTag.getBoolean(CapitalSavedData.KEY_MOURNING_ACTIVE));
             capital.setMourningEndDay(capitalTag.getLong(CapitalSavedData.KEY_MOURNING_END_DAY));
@@ -153,6 +155,16 @@ final class CapitalSavedDataReader {
             }
             capital.setGrandMaesterFemale(capitalTag.getBoolean(CapitalSavedData.KEY_GRAND_MAESTER_FEMALE));
 
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_MASTER_OF_LAWS)) {
+                capital.setMasterOfLaws(capitalTag.getUUID(CapitalSavedData.KEY_MASTER_OF_LAWS));
+            }
+            capital.setMasterOfLawsFemale(capitalTag.getBoolean(CapitalSavedData.KEY_MASTER_OF_LAWS_FEMALE));
+            if (capitalTag.hasUUID(CapitalSavedData.KEY_LAST_CROWN_STANDING_SOVEREIGN)) {
+                capital.setLastCrownStandingSovereign(capitalTag.getUUID(CapitalSavedData.KEY_LAST_CROWN_STANDING_SOVEREIGN));
+            }
+            capital.setLastNaturalDukedomDay(capitalTag.getLong(CapitalSavedData.KEY_LAST_NATURAL_DUKEDOM_DAY));
+            readCrownStandingMap(capitalTag.getList(CapitalSavedData.KEY_CROWN_STANDINGS, Tag.TAG_COMPOUND), capital);
+
             capital.setLastCommanderRaidBlessingGameTime(capitalTag.getLong(CapitalSavedData.KEY_LAST_COMMANDER_RAID_BLESSING_GAME_TIME));
             capital.setLastCommanderRandomBlessingDay(capitalTag.getLong(CapitalSavedData.KEY_LAST_COMMANDER_RANDOM_BLESSING_DAY));
 
@@ -209,6 +221,22 @@ final class CapitalSavedDataReader {
             CompoundTag tag = (CompoundTag) entry;
             if (tag.hasUUID(CapitalSavedData.KEY_ENTITY_ID)) {
                 out.put(tag.getUUID(CapitalSavedData.KEY_ENTITY_ID), tag.getString(CapitalSavedData.KEY_CLOTHES));
+            }
+        }
+    }
+
+    private static void readCrownStandingMap(ListTag list, CapitalRecord capital) {
+        for (Tag entry : list) {
+            CompoundTag tag = (CompoundTag) entry;
+            if (!tag.hasUUID(CapitalSavedData.KEY_ID) || !tag.contains(CapitalSavedData.KEY_STANDING)) {
+                continue;
+            }
+            try {
+                capital.setCrownStanding(
+                        tag.getUUID(CapitalSavedData.KEY_ID),
+                        CrownStanding.valueOf(tag.getString(CapitalSavedData.KEY_STANDING))
+                );
+            } catch (IllegalArgumentException ignored) {
             }
         }
     }

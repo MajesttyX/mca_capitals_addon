@@ -1,0 +1,145 @@
+package com.majesttyx.mcacapitals.capital;
+
+import com.majesttyx.mcacapitals.data.DiplomaticProposal;
+import com.majesttyx.mcacapitals.data.DiplomaticProposalType;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+
+import java.util.List;
+import java.util.UUID;
+
+public final class CapitalDiplomaticAgreementService {
+
+    public static final String DIALOGUE_COMMAND = "mcacapitals_manage_diplomacy";
+    public static final long TRUCE_DURATION_TICKS =
+            CapitalDiplomaticTruceService.TRUCE_DURATION_TICKS;
+
+    private CapitalDiplomaticAgreementService() {
+    }
+
+    public static boolean canShowDialogueAnswer(
+            ServerPlayer player,
+            Entity ambassadorEntity
+    ) {
+        if (player == null || ambassadorEntity == null) {
+            return false;
+        }
+        return CapitalDiplomaticAgreementValidation.validateAudience(
+                player,
+                ambassadorEntity.getUUID()
+        ).valid();
+    }
+
+    public static int propose(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID targetCapitalId,
+            DiplomaticProposalType type
+    ) {
+        return CapitalDiplomaticProposalService.propose(
+                player,
+                ambassadorId,
+                targetCapitalId,
+                type
+        );
+    }
+
+    public static int openBetrothalSourceSelection(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID targetCapitalId
+    ) {
+        return CapitalRoyalBetrothalService.openSourceRoyalSelection(
+                player,
+                ambassadorId,
+                targetCapitalId
+        );
+    }
+
+    public static int openBetrothalTargetSelection(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID targetCapitalId,
+            UUID sourceRoyalId
+    ) {
+        return CapitalRoyalBetrothalService.openTargetRoyalSelection(
+                player,
+                ambassadorId,
+                targetCapitalId,
+                sourceRoyalId
+        );
+    }
+
+    public static int openBetrothalSettlementSelection(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID targetCapitalId,
+            UUID sourceRoyalId,
+            UUID targetRoyalId
+    ) {
+        return CapitalRoyalBetrothalService.openSettlementSelection(
+                player,
+                ambassadorId,
+                targetCapitalId,
+                sourceRoyalId,
+                targetRoyalId
+        );
+    }
+
+    public static int proposeSelectedBetrothal(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID targetCapitalId,
+            UUID sourceRoyalId,
+            UUID targetRoyalId,
+            UUID destinationCapitalId
+    ) {
+        return CapitalRoyalBetrothalService.proposeSelected(
+                player,
+                ambassadorId,
+                targetCapitalId,
+                sourceRoyalId,
+                targetRoyalId,
+                destinationCapitalId
+        );
+    }
+
+    public static int endTradeAgreement(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID targetCapitalId
+    ) {
+        return CapitalDiplomaticTradeAgreementService.endByPlayer(
+                player,
+                ambassadorId,
+                targetCapitalId
+        );
+    }
+
+    public static int accept(ServerPlayer player, UUID proposalId) {
+        return CapitalDiplomaticProposalResolutionService.accept(player, proposalId);
+    }
+
+    public static int reject(ServerPlayer player, UUID proposalId) {
+        return CapitalDiplomaticProposalResolutionService.reject(player, proposalId);
+    }
+
+    public static List<DiplomaticProposal> getPendingForPlayer(
+            ServerLevel level,
+            UUID playerId
+    ) {
+        return CapitalDiplomaticProposalService.getPendingForPlayer(level, playerId);
+    }
+
+    public static void processPendingProposal(
+            ServerLevel level,
+            DiplomaticProposal proposal
+    ) {
+        CapitalDiplomaticProposalService.processPendingProposal(level, proposal);
+    }
+
+    public static void expireTruces(ServerLevel level) {
+        CapitalDiplomaticTruceService.expireTruces(level);
+    }
+}

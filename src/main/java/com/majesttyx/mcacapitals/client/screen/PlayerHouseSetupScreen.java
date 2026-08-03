@@ -16,7 +16,7 @@ import java.util.UUID;
 public class PlayerHouseSetupScreen extends Screen {
 
     private static final ResourceLocation BACKGROUND =
-            new ResourceLocation("mcacapitals", "textures/gui/declaration_paper.png");
+            ResourceLocation.fromNamespaceAndPath("mcacapitals", "textures/gui/declaration_paper.png");
 
     private static final int BG_WIDTH = 256;
     private static final int BG_HEIGHT = 220;

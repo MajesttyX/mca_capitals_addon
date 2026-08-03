@@ -3,11 +3,18 @@ package com.majesttyx.mcacapitals.util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.AABB;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 final class MCAVillageBridge {
 
@@ -108,6 +115,71 @@ final class MCAVillageBridge {
         return village == null ? Collections.emptySet() : getVillageResidents(village);
     }
 
+    static Map<UUID, String> getVillageResidentNames(ServerLevel level, int villageId) {
+        Object village = getVillageObject(level, villageId);
+        if (village == null) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, String> loadedResidents = getLoadedVillageResidentNames(level, village);
+        if (!loadedResidents.isEmpty()) {
+            return loadedResidents;
+        }
+
+        Map<UUID, String> savedNames = getSavedVillageResidentNames(village);
+        if (!savedNames.isEmpty()) {
+            return savedNames;
+        }
+
+        Map<UUID, String> fallback = new LinkedHashMap<>();
+        for (UUID residentId : getVillageResidents(village)) {
+            if (residentId != null) {
+                fallback.put(residentId, residentId.toString());
+            }
+        }
+        return fallback;
+    }
+
+    static int countBuildingsOfType(ServerLevel level, Integer villageId, String buildingType) {
+        Object village = villageId == null ? null : getVillageObject(level, villageId);
+        if (village == null || buildingType == null || buildingType.isBlank()) {
+            return 0;
+        }
+        return getBuildingsOfType(village, buildingType).size();
+    }
+
+    static List<AABB> getBuildingBoundsOfType(ServerLevel level, Integer villageId, String buildingType) {
+        Object village = villageId == null ? null : getVillageObject(level, villageId);
+        if (village == null || buildingType == null || buildingType.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        List<AABB> result = new ArrayList<>();
+        for (Object building : getBuildingsOfType(village, buildingType)) {
+            AABB bounds = getBuildingBounds(building);
+            if (bounds != null) {
+                result.add(bounds);
+            }
+        }
+        return result;
+    }
+
+    static List<BlockPos> getBuildingCentersOfType(ServerLevel level, Integer villageId, String buildingType) {
+        Object village = villageId == null ? null : getVillageObject(level, villageId);
+        if (village == null || buildingType == null || buildingType.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        List<BlockPos> result = new ArrayList<>();
+        for (Object building : getBuildingsOfType(village, buildingType)) {
+            BlockPos center = getBuildingCenter(building);
+            if (center != null) {
+                result.add(center);
+            }
+        }
+        return result;
+    }
+
     private static Object getVillageObject(ServerLevel level, int villageId) {
         for (Object village : getAllVillages(level)) {
             Integer id = getVillageId(village);
@@ -170,5 +242,136 @@ final class MCAVillageBridge {
     private static Set<UUID> getVillageResidents(Object village) {
         Object value = MCAReflectionHelper.invoke(village, "getResidentsUUIDs");
         return MCAReflectionHelper.extractUuidSet(value);
+    }
+
+    private static Map<UUID, String> getLoadedVillageResidentNames(ServerLevel level, Object village) {
+        if (level == null || village == null) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, String> result = new LinkedHashMap<>();
+        Object residents = MCAReflectionHelper.invoke(
+                village,
+                "getResidents",
+                new Class<?>[] {ServerLevel.class},
+                level
+        );
+        if (residents instanceof Iterable<?> iterable) {
+            for (Object value : iterable) {
+                if (!(value instanceof Entity entity)) {
+                    continue;
+                }
+                if (!MCAEntityBridge.isAliveMCAVillagerEntity(entity)) {
+                    continue;
+                }
+                result.put(entity.getUUID(), entity.getName().getString());
+            }
+        }
+        return result;
+    }
+
+    private static Map<UUID, String> getSavedVillageResidentNames(Object village) {
+        if (village == null) {
+            return Collections.emptyMap();
+        }
+
+        Object value = MCAReflectionHelper.invoke(village, "getResidentNames");
+        if (!(value instanceof Map<?, ?> map)) {
+            return Collections.emptyMap();
+        }
+
+        Map<UUID, String> result = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            if (entry.getKey() instanceof UUID uuid && entry.getValue() instanceof String name) {
+                if (name != null && !name.isBlank()) {
+                    result.put(uuid, name);
+                }
+            }
+        }
+        return result;
+    }
+
+    private static List<Object> getBuildingsOfType(Object village, String buildingType) {
+        if (village == null || buildingType == null || buildingType.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        Object direct = MCAReflectionHelper.invoke(
+                village,
+                "getBuildingsOfType",
+                new Class<?>[] {String.class},
+                buildingType
+        );
+        List<Object> result = new ArrayList<>();
+        if (direct instanceof Stream<?> stream) {
+            try {
+                stream.filter(value -> value != null).forEach(result::add);
+            } finally {
+                stream.close();
+            }
+            return result;
+        }
+        if (direct instanceof Iterable<?> iterable) {
+            for (Object value : iterable) {
+                if (value != null) {
+                    result.add(value);
+                }
+            }
+            return result;
+        }
+
+        Object buildings = MCAReflectionHelper.invoke(village, "getBuildings");
+        if (buildings instanceof Map<?, ?> map) {
+            for (Object value : map.values()) {
+                if (value != null && buildingType.equals(getBuildingType(value))) {
+                    result.add(value);
+                }
+            }
+        }
+        return result;
+    }
+
+    private static String getBuildingType(Object building) {
+        if (building == null) {
+            return "";
+        }
+
+        String direct = MCAReflectionHelper.invokeString(building, "getType");
+        if (direct != null && !direct.isBlank()) {
+            return direct;
+        }
+
+        Object type = MCAReflectionHelper.invoke(building, "getBuildingType");
+        if (type == null) {
+            return "";
+        }
+
+        String name = MCAReflectionHelper.invokeString(type, "name");
+        return name == null ? "" : name;
+    }
+
+    private static BlockPos getBuildingCenter(Object building) {
+        Object value = MCAReflectionHelper.invoke(building, "getCenter");
+        if (value instanceof Vec3i vec) {
+            return new BlockPos(vec.getX(), vec.getY(), vec.getZ());
+        }
+        return null;
+    }
+
+    private static AABB getBuildingBounds(Object building) {
+        Object first = MCAReflectionHelper.invoke(building, "getPos0");
+        Object second = MCAReflectionHelper.invoke(building, "getPos1");
+        if (!(first instanceof Vec3i firstPos) || !(second instanceof Vec3i secondPos)) {
+            BlockPos center = getBuildingCenter(building);
+            return center == null ? null : new AABB(center);
+        }
+
+        int minX = Math.min(firstPos.getX(), secondPos.getX());
+        int minY = Math.min(firstPos.getY(), secondPos.getY());
+        int minZ = Math.min(firstPos.getZ(), secondPos.getZ());
+        int maxX = Math.max(firstPos.getX(), secondPos.getX()) + 1;
+        int maxY = Math.max(firstPos.getY(), secondPos.getY()) + 1;
+        int maxZ = Math.max(firstPos.getZ(), secondPos.getZ()) + 1;
+        return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
 }

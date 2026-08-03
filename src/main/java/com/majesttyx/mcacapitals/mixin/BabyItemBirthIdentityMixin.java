@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.identity.PlayerHouseIdentityService;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "net.mca.item.BabyItem", remap = false)
+@Mixin(targets = "net.conczin.mca.item.BabyItem", remap = false)
 public abstract class BabyItemBirthIdentityMixin {
 
     @Inject(
@@ -46,12 +47,12 @@ public abstract class BabyItemBirthIdentityMixin {
     }
 
     private static CompoundTag getBabyTag(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || !stack.hasTag()) {
+        if (stack == null || stack.isEmpty() || !ModItemStackData.hasCustomData(stack)) {
             return null;
         }
 
-        CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains("baby")) {
+        CompoundTag tag = ModItemStackData.getCustomData(stack);
+        if (!tag.contains("baby")) {
             return null;
         }
 

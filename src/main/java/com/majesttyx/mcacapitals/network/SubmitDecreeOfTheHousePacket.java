@@ -1,12 +1,23 @@
 package com.majesttyx.mcacapitals.network;
 
+import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.identity.DecreeOfTheHouseService;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.UUID;
 
-public class SubmitDecreeOfTheHousePacket {
+public class SubmitDecreeOfTheHousePacket implements CustomPacketPayload {
+
+    public static final Type<SubmitDecreeOfTheHousePacket> TYPE = new Type<>(
+            ResourceLocation.fromNamespaceAndPath(MCACapitals.MODID, "submit_decree_of_the_house")
+    );
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, SubmitDecreeOfTheHousePacket> CODEC =
+            StreamCodec.ofMember(SubmitDecreeOfTheHousePacket::encode, SubmitDecreeOfTheHousePacket::decode);
 
     private final UUID targetId;
     private final boolean playerTarget;
@@ -22,15 +33,35 @@ public class SubmitDecreeOfTheHousePacket {
         this.houseWords = houseWords == null ? "" : houseWords;
     }
 
-    public static void encode(SubmitDecreeOfTheHousePacket packet, FriendlyByteBuf buffer) {
-        buffer.writeUUID(packet.targetId);
-        buffer.writeBoolean(packet.playerTarget);
-        buffer.writeUtf(packet.firstName);
-        buffer.writeUtf(packet.currentSurname);
-        buffer.writeUtf(packet.houseWords);
+    public UUID targetId() {
+        return targetId;
     }
 
-    public static SubmitDecreeOfTheHousePacket decode(FriendlyByteBuf buffer) {
+    public boolean playerTarget() {
+        return playerTarget;
+    }
+
+    public String firstName() {
+        return firstName;
+    }
+
+    public String currentSurname() {
+        return currentSurname;
+    }
+
+    public String houseWords() {
+        return houseWords;
+    }
+
+    public void encode(RegistryFriendlyByteBuf buffer) {
+        buffer.writeUUID(targetId);
+        buffer.writeBoolean(playerTarget);
+        buffer.writeUtf(firstName);
+        buffer.writeUtf(currentSurname);
+        buffer.writeUtf(houseWords);
+    }
+
+    public static SubmitDecreeOfTheHousePacket decode(RegistryFriendlyByteBuf buffer) {
         UUID targetId = buffer.readUUID();
         boolean playerTarget = buffer.readBoolean();
         String firstName = buffer.readUtf();
@@ -41,7 +72,7 @@ public class SubmitDecreeOfTheHousePacket {
     }
 
     public static void handle(SubmitDecreeOfTheHousePacket packet, ServerPlayer player) {
-        if (player == null) {
+        if (packet == null || player == null) {
             return;
         }
 
@@ -53,5 +84,10 @@ public class SubmitDecreeOfTheHousePacket {
                 packet.currentSurname,
                 packet.houseWords
         );
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

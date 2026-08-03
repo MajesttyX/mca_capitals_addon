@@ -1,11 +1,22 @@
 package com.majesttyx.mcacapitals.network;
 
+import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.client.VillagerIdentityClientCache;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.UUID;
 
-public class SyncVillagerIdentityPacket {
+public class SyncVillagerIdentityPacket implements CustomPacketPayload {
+
+    public static final Type<SyncVillagerIdentityPacket> TYPE = new Type<>(
+            ResourceLocation.fromNamespaceAndPath(MCACapitals.MODID, "sync_villager_identity")
+    );
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, SyncVillagerIdentityPacket> CODEC =
+            StreamCodec.ofMember(SyncVillagerIdentityPacket::encode, SyncVillagerIdentityPacket::decode);
 
     private final UUID villagerId;
     private final String originVillageName;
@@ -82,20 +93,20 @@ public class SyncVillagerIdentityPacket {
         return houseWordsPersonality;
     }
 
-    public static void encode(SyncVillagerIdentityPacket packet, FriendlyByteBuf buffer) {
-        buffer.writeUUID(packet.villagerId);
-        buffer.writeUtf(packet.originVillageName);
-        buffer.writeUtf(packet.originSource);
-        buffer.writeUtf(packet.currentSurname);
-        buffer.writeUtf(packet.displayTitle);
-        buffer.writeUtf(packet.royalGuardOrderLine);
-        buffer.writeBoolean(packet.houseFounded);
-        buffer.writeUtf(packet.houseName);
-        buffer.writeUtf(packet.houseWords);
-        buffer.writeUtf(packet.houseWordsPersonality);
+    public void encode(RegistryFriendlyByteBuf buffer) {
+        buffer.writeUUID(villagerId);
+        buffer.writeUtf(originVillageName);
+        buffer.writeUtf(originSource);
+        buffer.writeUtf(currentSurname);
+        buffer.writeUtf(displayTitle);
+        buffer.writeUtf(royalGuardOrderLine);
+        buffer.writeBoolean(houseFounded);
+        buffer.writeUtf(houseName);
+        buffer.writeUtf(houseWords);
+        buffer.writeUtf(houseWordsPersonality);
     }
 
-    public static SyncVillagerIdentityPacket decode(FriendlyByteBuf buffer) {
+    public static SyncVillagerIdentityPacket decode(RegistryFriendlyByteBuf buffer) {
         UUID villagerId = buffer.readUUID();
         String originVillageName = buffer.readUtf();
         String originSource = buffer.readUtf();
@@ -123,5 +134,10 @@ public class SyncVillagerIdentityPacket {
 
     public static void handle(SyncVillagerIdentityPacket packet) {
         VillagerIdentityClientCache.put(packet);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 }

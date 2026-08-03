@@ -1,7 +1,9 @@
 package com.majesttyx.mcacapitals.util;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 
 import java.util.function.Consumer;
 
@@ -11,15 +13,25 @@ public final class ModItemStackData {
     }
 
     public static boolean hasCustomData(ItemStack stack) {
-        return stack != null && !stack.isEmpty() && stack.hasTag() && stack.getTag() != null && !stack.getTag().isEmpty();
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        return customData != null && !customData.copyTag().isEmpty();
     }
 
     public static CompoundTag getCustomData(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || !stack.hasTag() || stack.getTag() == null) {
+        if (stack == null || stack.isEmpty()) {
             return new CompoundTag();
         }
 
-        return stack.getTag().copy();
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData == null) {
+            return new CompoundTag();
+        }
+
+        return customData.copyTag();
     }
 
     public static void setCustomData(ItemStack stack, CompoundTag tag) {
@@ -27,7 +39,7 @@ public final class ModItemStackData {
             return;
         }
 
-        stack.setTag(tag.copy());
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag.copy()));
     }
 
     public static void updateCustomData(ItemStack stack, Consumer<CompoundTag> updater) {
@@ -35,8 +47,8 @@ public final class ModItemStackData {
             return;
         }
 
-        CompoundTag tag = stack.getOrCreateTag();
+        CompoundTag tag = getCustomData(stack);
         updater.accept(tag);
-        stack.setTag(tag);
+        setCustomData(stack, tag);
     }
 }

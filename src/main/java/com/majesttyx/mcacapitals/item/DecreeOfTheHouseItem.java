@@ -9,6 +9,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Item.TooltipContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
@@ -48,7 +49,7 @@ public class DecreeOfTheHouseItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.literal("Used to revise the recorded surname or House name of the target.").withStyle(ChatFormatting.GRAY));
         tooltipComponents.add(Component.literal("Right-click to revise your own House name and House Words.").withStyle(ChatFormatting.GRAY));
         tooltipComponents.add(Component.literal("Shift-right-click a villager to edit their surname and House Words if applicable.").withStyle(ChatFormatting.GRAY));

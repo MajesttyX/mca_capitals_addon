@@ -5,7 +5,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'net.fabricmc:fabric-loom:1.7.4'
+        classpath 'net.fabricmc:fabric-loom:1.16.3'
         classpath 'com.google.code.gson:gson:2.10.1'
     }
 
@@ -28,7 +28,7 @@ base {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
     withSourcesJar()
 }
 
@@ -45,6 +45,7 @@ repositories {
     maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
     maven { name = 'Architectury'; url = 'https://maven.architectury.dev/' }
     maven { name = 'Conczin'; url = 'https://maven.conczin.net/Artifacts' }
+    maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' }
 }
 
 dependencies {
@@ -53,9 +54,12 @@ dependencies {
 
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
-    modImplementation "dev.architectury:architectury-fabric:${architectury_version}"
 
-    modImplementation files("libs/minecraft-comes-alive-${mca_version}-universal.jar")
+    /*
+     * MCA Reborn 7.7.10 for 1.21.1 is a Fabric jar, not the old 1.20.1 universal jar.
+     * Put mca-fabric-7.7.10+1.21.1.jar in /libs.
+     */
+    modImplementation files("libs/mca-fabric-${mca_version}.jar")
 }
 
 processResources {
@@ -80,7 +84,7 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 17
+    options.release = 21
 }
 
 jar {

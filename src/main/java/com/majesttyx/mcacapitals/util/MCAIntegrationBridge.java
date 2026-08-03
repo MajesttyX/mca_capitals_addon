@@ -8,6 +8,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -192,6 +193,22 @@ public final class MCAIntegrationBridge {
         return MCAVillageBridge.getVillageResidents(level, villageId);
     }
 
+    public static Map<UUID, String> getVillageResidentNames(ServerLevel level, int villageId) {
+        return MCAVillageBridge.getVillageResidentNames(level, villageId);
+    }
+
+    public static int countBuildingsOfType(ServerLevel level, Integer villageId, String buildingType) {
+        return MCAVillageBridge.countBuildingsOfType(level, villageId, buildingType);
+    }
+
+    public static List<AABB> getBuildingBoundsOfType(ServerLevel level, Integer villageId, String buildingType) {
+        return MCAVillageBridge.getBuildingBoundsOfType(level, villageId, buildingType);
+    }
+
+    public static List<BlockPos> getBuildingCentersOfType(ServerLevel level, Integer villageId, String buildingType) {
+        return MCAVillageBridge.getBuildingCentersOfType(level, villageId, buildingType);
+    }
+
     public static int getHeartsWithPlayer(ServerLevel level, UUID villagerId, UUID playerId) {
         return MCAEntityBridge.getHeartsWithPlayer(level, villagerId, playerId);
     }
@@ -222,6 +239,14 @@ public final class MCAIntegrationBridge {
 
     public static void addEffect(Entity entity, MobEffectInstance effect) {
         MCAEntityBridge.addEffect(entity, effect);
+    }
+
+    public static boolean leaveHome(ServerLevel level, UUID entityId) {
+        return MCAEntityBridge.leaveHome(level, entityId);
+    }
+
+    public static boolean forceVillageResidency(ServerLevel level, UUID entityId, int villageId) {
+        return MCAEntityBridge.forceVillageResidency(level, entityId, villageId);
     }
 
     public static boolean moveTo(Entity entity, double x, double y, double z, double speed) {

@@ -8,7 +8,9 @@ import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenCapitalChroniclePacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -55,11 +57,12 @@ public class CapitalChronicleItem extends Item {
         CapitalChronicleService.bindChronicleItem(serverPlayer.serverLevel(), capital, previewBook);
         CapitalChronicleService.writeChronicleBook(serverPlayer.serverLevel(), capital, previewBook);
 
+        CompoundTag previewTag = ModItemStackData.getCustomData(previewBook);
         MCACapitals.LOGGER.info(
                 "[CapitalChronicle] Sending preview book to client for village '{}' with {} page entries.",
-                previewBook.getOrCreateTag().getString(ModDataKeys.VILLAGE_NAME),
-                previewBook.getOrCreateTag().contains(ModDataKeys.BOOK_PAGES)
-                        ? previewBook.getOrCreateTag().getList(ModDataKeys.BOOK_PAGES, 8).size()
+                previewTag.getString(ModDataKeys.VILLAGE_NAME),
+                previewTag.contains(ModDataKeys.BOOK_PAGES)
+                        ? previewTag.getList(ModDataKeys.BOOK_PAGES, 8).size()
                         : 0
         );
 
@@ -87,11 +90,11 @@ public class CapitalChronicleItem extends Item {
     }
 
     private CapitalRecord resolveBoundCapital(ItemStack stack) {
-        if (stack == null || !stack.hasTag()) {
+        if (stack == null || !ModItemStackData.hasCustomData(stack)) {
             return null;
         }
 
-        String raw = stack.getTag().getString(ModDataKeys.CAPITAL_ID);
+        String raw = ModItemStackData.getCustomData(stack).getString(ModDataKeys.CAPITAL_ID);
         if (raw == null || raw.isBlank()) {
             return null;
         }
