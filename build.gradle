@@ -5,7 +5,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'net.fabricmc:fabric-loom:1.16.3'
+        classpath 'net.fabricmc:fabric-loom:1.17.17'
         classpath 'com.google.code.gson:gson:2.10.1'
     }
 
