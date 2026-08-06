@@ -50,14 +50,64 @@ public final class CapitalMasterOfLawsSelection {
         if (level == null
                 || capital == null
                 || residents == null
-                || entityId == null) {
+                || entityId == null
+                || !residents.contains(entityId)) {
             return false;
         }
 
-        if (!residents.contains(entityId)) {
+        return isEligibleLoadedCandidate(level, capital, entityId);
+    }
+
+    /**
+     * Validates an already-appointed Master of Laws without treating a temporary
+     * resident-scan miss or an unloaded villager as a vacancy.
+     */
+    public static boolean isValidCurrentHolder(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents,
+            UUID entityId
+    ) {
+        if (level == null || capital == null || entityId == null) {
             return false;
         }
 
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(level, entityId, residents)) {
+            return false;
+        }
+
+        if (!isTrustedOfficeEligible(level, capital, entityId)
+                || isAmbassador(level, entityId)
+                || hasIncompatibleOffice(capital, entityId)) {
+            return false;
+        }
+
+        if (!CapitalRoleValidation.isCurrentlyLoaded(level, entityId)) {
+            return true;
+        }
+
+        Integer assignedVillageId = MCAIntegrationBridge.getVillageIdForResident(level, entityId);
+        if (assignedVillageId != null
+                && capital.getVillageId() != null
+                && !capital.getVillageId().equals(assignedVillageId)) {
+            return false;
+        }
+
+        if (assignedVillageId == null
+                && residents != null
+                && !residents.contains(entityId)) {
+            return false;
+        }
+
+        return MCAIntegrationBridge.isTeenOrAdultVillager(level, entityId)
+                && MCAIntegrationBridge.isAliveMCAVillager(level, entityId);
+    }
+
+    private static boolean isEligibleLoadedCandidate(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID entityId
+    ) {
         if (!isTrustedOfficeEligible(level, capital, entityId)) {
             return false;
         }
@@ -71,7 +121,11 @@ public final class CapitalMasterOfLawsSelection {
             return false;
         }
 
-        if (entityId.equals(capital.getSovereign())
+        return !hasIncompatibleOffice(capital, entityId);
+    }
+
+    private static boolean hasIncompatibleOffice(CapitalRecord capital, UUID entityId) {
+        return entityId.equals(capital.getSovereign())
                 || entityId.equals(capital.getConsort())
                 || entityId.equals(capital.getDowager())
                 || entityId.equals(capital.getHeir())
@@ -79,11 +133,7 @@ public final class CapitalMasterOfLawsSelection {
                 || entityId.equals(capital.getCommander())
                 || entityId.equals(capital.getHerald())
                 || entityId.equals(capital.getGrandMaester())
-                || capital.isRoyalGuard(entityId)) {
-            return false;
-        }
-
-        return true;
+                || capital.isRoyalGuard(entityId);
     }
 
     private static UUID firstEligibleDuke(

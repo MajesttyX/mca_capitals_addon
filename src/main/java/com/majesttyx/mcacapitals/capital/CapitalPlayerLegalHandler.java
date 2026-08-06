@@ -92,7 +92,6 @@ public final class CapitalPlayerLegalHandler {
         for (Map.Entry<UUID, Long> entry : sentences.entrySet()) {
             CapitalRecord capital = CapitalManager.getCapital(entry.getKey());
             if (capital == null
-                    || !CapitalBuildingService.hasPrison(player.serverLevel(), capital)
                     || !CapitalPlayerWarrantService.isInsidePrison(player, capital)) {
                 continue;
             }

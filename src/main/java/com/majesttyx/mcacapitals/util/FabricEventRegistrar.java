@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.capital.CapitalAmbassadorUrgentMatterHandler;
 import com.majesttyx.mcacapitals.capital.CapitalCampaignCombatDamageHandler;
 import com.majesttyx.mcacapitals.capital.CapitalCampaignCombatTickHandler;
 import com.majesttyx.mcacapitals.capital.CapitalCampaignProcessor;
@@ -23,7 +24,6 @@ import com.majesttyx.mcacapitals.item.DecreeOfTheHouseHandler;
 import com.majesttyx.mcacapitals.item.LegitimizationDecreeHandler;
 import com.majesttyx.mcacapitals.item.RoyalDisinheritanceHandler;
 import com.majesttyx.mcacapitals.item.RoyalPardonHandler;
-import com.majesttyx.mcacapitals.item.SealedPurseHandler;
 import com.majesttyx.mcacapitals.item.RoyalScepterHandler;
 import com.majesttyx.mcacapitals.item.SuccessionDecreeHandler;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -108,7 +108,16 @@ public final class FabricEventRegistrar {
         });
 
         UseEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
-            InteractionResult result = DecreeOfTheHouseHandler.handleEntityInteract(player, entity, hand);
+            InteractionResult result = CapitalAmbassadorUrgentMatterHandler.handleEntityInteract(
+                    player,
+                    entity,
+                    hand
+            );
+            if (result != InteractionResult.PASS) {
+                return result;
+            }
+
+            result = DecreeOfTheHouseHandler.handleEntityInteract(player, entity, hand);
             if (result != InteractionResult.PASS) {
                 return result;
             }
@@ -139,11 +148,6 @@ public final class FabricEventRegistrar {
             }
 
             result = RoyalPardonHandler.handleEntityInteract(player, entity, hand);
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
-
-            result = SealedPurseHandler.handleEntityInteract(player, entity, hand);
             if (result != InteractionResult.PASS) {
                 return result;
             }

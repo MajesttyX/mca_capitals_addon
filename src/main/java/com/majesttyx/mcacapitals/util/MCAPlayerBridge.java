@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.util;
 
+import net.conczin.mca.entity.ai.Messenger;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -58,6 +59,48 @@ final class MCAPlayerBridge {
         }
 
         return Optional.empty();
+    }
+
+    static String getDialogueName(ServerPlayer player) {
+        if (player == null) {
+            return "";
+        }
+
+        try {
+            String name = Messenger.getName(player);
+            if (name != null && !name.isBlank()) {
+                return name.trim();
+            }
+        } catch (Throwable t) {
+            MCAReflectionHelper.warnOnce(
+                    "MCAPlayerBridge#getDialogueName:messenger",
+                    "Failed to resolve MCA dialogue player name through Messenger#getName ({})",
+                    t.toString()
+            );
+        }
+
+        for (String className : MCA_PLAYER_SAVE_DATA_CLASSES) {
+            try {
+                Object saveData = getPlayerSaveData(player.serverLevel(), player, className);
+                if (saveData == null) {
+                    continue;
+                }
+                Object familyEntry = MCAReflectionHelper.invoke(saveData, "getFamilyEntry");
+                Object resolvedName = familyEntry == null ? null : MCAReflectionHelper.invoke(familyEntry, "getName");
+                if (resolvedName instanceof String name && !name.isBlank()) {
+                    return name.trim();
+                }
+            } catch (Throwable t) {
+                MCAReflectionHelper.warnOnce(
+                        "MCAPlayerBridge#getDialogueName:familyTree:" + className,
+                        "Failed to resolve MCA dialogue player name from the family tree using {} ({})",
+                        className,
+                        t.toString()
+                );
+            }
+        }
+
+        return player.getName().getString();
     }
 
     static boolean isPlayerInVillage(ServerLevel level, ServerPlayer player, Integer villageId) {

@@ -5,8 +5,10 @@ import com.majesttyx.mcacapitals.data.DiplomaticProposal;
 import com.majesttyx.mcacapitals.data.DiplomaticShipment;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenAmbassadorCommunicationPacket;
+import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 
 import java.util.ArrayList;
@@ -32,6 +34,8 @@ public final class CapitalAmbassadorUrgentMatterService {
         if (!summary.hasAny()) {
             return false;
         }
+
+        MCAIntegrationBridge.stopInteracting(ambassador);
         openHub(context, summary);
         return true;
     }
@@ -294,6 +298,42 @@ public final class CapitalAmbassadorUrgentMatterService {
         return 1;
     }
 
+    public static int continueConversation(
+            ServerPlayer player,
+            UUID ambassadorId
+    ) {
+        if (player == null || ambassadorId == null) {
+            return 0;
+        }
+
+        Entity ambassador = player.serverLevel().getEntity(ambassadorId);
+        if (ambassador == null || !ambassador.isAlive()) {
+            player.sendSystemMessage(
+                    net.minecraft.network.chat.Component.literal(
+                            "The Ambassador is unavailable."
+                    )
+            );
+            return 0;
+        }
+
+        Context context = resolveContext(player, ambassadorId);
+        if (!context.valid()) {
+            String failure = context.failureMessage();
+            player.sendSystemMessage(
+                    net.minecraft.network.chat.Component.literal(
+                            failure == null || failure.isBlank()
+                                    ? "The Ambassador is unavailable."
+                                    : failure
+                    )
+            );
+            return 0;
+        }
+
+        MCAIntegrationBridge.stopInteracting(ambassador);
+        ambassador.interact(player, InteractionHand.MAIN_HAND);
+        return 1;
+    }
+
     private static Context resolveContext(ServerPlayer player, UUID ambassadorId) {
         CapitalDiplomaticAgreementValidation.AudienceValidation audience =
                 CapitalDiplomaticAgreementValidation.validateMenuAudience(player, ambassadorId);
@@ -424,7 +464,7 @@ public final class CapitalAmbassadorUrgentMatterService {
                         entries.size() == 1 ? "An Urgent Matter" : "Urgent Matters",
                         titledPlayerName(context),
                         message,
-                        "",
+                        "/capitalurgent continue " + context.ambassadorId(),
                         entries,
                         List.of()
                 )

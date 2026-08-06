@@ -1,9 +1,18 @@
 package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.MCACapitals;
+import com.majesttyx.mcacapitals.capital.CapitalManager;
+import com.majesttyx.mcacapitals.capital.CapitalRankRequirements;
+import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalState;
+import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.identity.DecreeOfTheHouseService;
+import com.majesttyx.mcacapitals.item.ModItems;
+import com.majesttyx.mcacapitals.util.CapitalJusticeText;
+import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
@@ -21,6 +30,8 @@ public final class CapitalPetitionService {
     public static final String PETITION_BETROTHAL = "mcacapitals_petition_betrothal";
     public static final String PETITION_BETROTHAL_RECOMMEND = "mcacapitals_petition_betrothal_recommend";
     public static final String REQUEST_DECREE_OF_THE_HOUSE = "mcacapitals_request_decree_of_the_house";
+    public static final String REQUEST_ACCUSATION = "mcacapitals_accuse_enemy";
+    public static final String REQUEST_ROYAL_PARDON = "mcacapitals_request_royal_pardon";
 
     private static final int THRONE_PETITION_MIN_POPULATION = 25;
     private static final int THRONE_PETITION_MIN_HEARTS = 2500;
@@ -28,17 +39,7 @@ public final class CapitalPetitionService {
     private static final int SEIZURE_MIN_REPUTATION = 1500;
     private static final int SEIZURE_COMMANDER_HEARTS = 200;
 
-    private static final int COMMANDER_PETITION_MIN_POPULATION = 20;
-    private static final int COMMANDER_PETITION_MIN_HEARTS = 1000;
-
-    private static final int HAND_PETITION_MIN_VILLAGE_HEARTS = 800;
-    private static final int HAND_PETITION_MIN_SOVEREIGN_HEARTS = 200;
-
-    private static final int LORD_PETITION_MIN_HEARTS = 400;
-    private static final int LORD_PETITION_MIN_MASTER_VILLAGERS = 3;
-
-    private static final int DUKE_PETITION_MIN_HEARTS = 1500;
-    private static final int DUKE_PETITION_MIN_POPULATION = 20;
+    private static final int ROYAL_PARDON_MIN_HEARTS = 85;
 
     private static final double MAX_AUDIENCE_DISTANCE_SQR = 12.0D * 12.0D;
     private static final ResourceLocation COVER_ME_IN_DIAMONDS_ID =
@@ -69,7 +70,9 @@ public final class CapitalPetitionService {
                 () -> handleDukePetition(player, villagerEntity),
                 () -> handleBetrothalPetition(player, villagerEntity),
                 () -> handleBetrothalPetition(player, villagerEntity),
-                () -> handleDecreeOfTheHouseRequest(player, villagerEntity)
+                () -> handleDecreeOfTheHouseRequest(player, villagerEntity),
+                () -> handleAccusationRequest(player, villagerEntity),
+                () -> handleRoyalPardonRequest(player, villagerEntity)
         );
     }
 
@@ -106,8 +109,8 @@ public final class CapitalPetitionService {
         CapitalPetitionTitleActions.handleCommanderPetition(
                 player,
                 villagerEntity,
-                COMMANDER_PETITION_MIN_POPULATION,
-                COMMANDER_PETITION_MIN_HEARTS,
+                CapitalRankRequirements.LORD_COMMANDER_POPULATION,
+                CapitalRankRequirements.LORD_COMMANDER_REPUTATION,
                 MAX_AUDIENCE_DISTANCE_SQR
         );
     }
@@ -116,8 +119,8 @@ public final class CapitalPetitionService {
         CapitalPetitionTitleActions.handleHandPetition(
                 player,
                 villagerEntity,
-                HAND_PETITION_MIN_VILLAGE_HEARTS,
-                HAND_PETITION_MIN_SOVEREIGN_HEARTS,
+                CapitalRankRequirements.HAND_CAPITAL_REPUTATION,
+                CapitalRankRequirements.HAND_SOVEREIGN_REPUTATION,
                 MAX_AUDIENCE_DISTANCE_SQR
         );
     }
@@ -126,8 +129,8 @@ public final class CapitalPetitionService {
         CapitalPetitionTitleActions.handleLordPetition(
                 player,
                 villagerEntity,
-                LORD_PETITION_MIN_HEARTS,
-                LORD_PETITION_MIN_MASTER_VILLAGERS,
+                CapitalRankRequirements.LORD_REPUTATION,
+                CapitalRankRequirements.LORD_MASTER_PROFESSIONALS,
                 MAX_AUDIENCE_DISTANCE_SQR
         );
     }
@@ -136,8 +139,8 @@ public final class CapitalPetitionService {
         CapitalPetitionTitleActions.handleDukePetition(
                 player,
                 villagerEntity,
-                DUKE_PETITION_MIN_HEARTS,
-                DUKE_PETITION_MIN_POPULATION,
+                CapitalRankRequirements.DUKE_REPUTATION,
+                CapitalRankRequirements.DUKE_POPULATION,
                 MAX_AUDIENCE_DISTANCE_SQR
         );
     }
@@ -170,4 +173,71 @@ public final class CapitalPetitionService {
                 villagerEntity.getName().getString() + ": The records of a House are not changed lightly. Take this Decree and use it carefully."
         ));
     }
+    private static void handleAccusationRequest(ServerPlayer player, Entity villagerEntity) {
+        CapitalJusticeService.openAccusationSelection(player, villagerEntity);
+    }
+
+    private static void handleRoyalPardonRequest(ServerPlayer player, Entity villagerEntity) {
+        if (!CapitalPetitionRequirements.isAudienceValid(player, villagerEntity, MAX_AUDIENCE_DISTANCE_SQR)) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED
+            );
+            return;
+        }
+
+        ServerLevel level = player.serverLevel();
+        UUID villagerId = villagerEntity.getUUID();
+        CapitalRecord capital = resolveCapital(level, villagerId);
+        if (capital == null
+                || capital.getState() != CapitalState.ACTIVE
+                || !canGrantRoyalPardon(capital, villagerId)) {
+            player.sendSystemMessage(Component.literal(
+                    villagerEntity.getName().getString() + ": "
+                            + CapitalJusticeText.royalPardonNoAuthority(level, villagerId)
+            ));
+            return;
+        }
+
+        int hearts = MCAIntegrationBridge.getHeartsWithPlayer(
+                level,
+                villagerId,
+                player.getUUID()
+        );
+        if (hearts < ROYAL_PARDON_MIN_HEARTS) {
+            player.sendSystemMessage(Component.literal(
+                    villagerEntity.getName().getString() + ": "
+                            + CapitalJusticeText.royalPardonRefusedTrust(level, villagerId)
+            ));
+            return;
+        }
+
+        ItemStack pardon = new ItemStack(ModItems.ROYAL_PARDON.get());
+        boolean inserted = player.addItem(pardon);
+        if (!inserted) {
+            player.drop(pardon, false);
+        }
+        player.sendSystemMessage(Component.literal(
+                villagerEntity.getName().getString() + ": "
+                        + CapitalJusticeText.royalPardonGrantLine(level, capital, villagerId)
+        ));
+    }
+
+    private static boolean canGrantRoyalPardon(CapitalRecord capital, UUID villagerId) {
+        return villagerId != null
+                && (villagerId.equals(capital.getSovereign())
+                || villagerId.equals(capital.getHand())
+                || villagerId.equals(capital.getMasterOfLaws()));
+    }
+
+    private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {
+        CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(level, villagerId);
+        if (capital != null) {
+            return capital;
+        }
+        Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
+        return CapitalManager.getCapitalByVillageId(villageId);
+    }
+
 }

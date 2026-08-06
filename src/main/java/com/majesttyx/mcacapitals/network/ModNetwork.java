@@ -81,6 +81,10 @@ public final class ModNetwork {
                 SyncVillagerIdentityPacket.CODEC
         );
         PayloadTypeRegistry.playS2C().register(
+                SyncBlueprintAuthorityPacket.TYPE,
+                SyncBlueprintAuthorityPacket.CODEC
+        );
+        PayloadTypeRegistry.playS2C().register(
                 OpenSealedPurseCaseSelectionPacket.TYPE,
                 OpenSealedPurseCaseSelectionPacket.CODEC
         );
@@ -137,6 +141,13 @@ public final class ModNetwork {
                 SyncVillagerIdentityPacket.TYPE,
                 (packet, context) -> context.client().execute(
                         () -> SyncVillagerIdentityPacket.handle(packet)
+                )
+        );
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                SyncBlueprintAuthorityPacket.TYPE,
+                (packet, context) -> context.client().execute(
+                        () -> SyncBlueprintAuthorityPacket.handle(packet)
                 )
         );
 

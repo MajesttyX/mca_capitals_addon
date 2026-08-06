@@ -1,12 +1,13 @@
 package com.majesttyx.mcacapitals.mixin;
 
-import com.majesttyx.mcacapitals.item.BetrothalDecreeHandler;
 import com.majesttyx.mcacapitals.item.ModItems;
+import com.majesttyx.mcacapitals.item.SealedPurseHandler;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -14,8 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.reflect.Field;
 
 @Pseudo
-@Mixin(targets = "net.conczin.mca.entity.ai.BreedableRelationship", remap = false)
-public class BreedableRelationshipGiftMixin {
+@Mixin(
+        targets = "net.conczin.mca.entity.ai.BreedableRelationship",
+        remap = false
+)
+public class SealedPurseGiftMixin {
 
     @Inject(
             method = "handleSpecialCaseGift(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/item/ItemStack;)Z",
@@ -23,24 +27,35 @@ public class BreedableRelationshipGiftMixin {
             cancellable = true,
             remap = false
     )
-    private void mcacapitals$handleBetrothalDecreeGift(ServerPlayer player, ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
-        if (player == null || stack == null || !stack.is(ModItems.BETROTHAL_DECREE.get())) {
+    private void mcacapitals$handleSealedPurseGift(
+            ServerPlayer player,
+            ItemStack stack,
+            CallbackInfoReturnable<Boolean> cir
+    ) {
+        if (player == null
+                || stack == null
+                || !stack.is(ModItems.SEALED_PURSE.get())) {
             return;
         }
 
-        Entity villager = resolveEntity();
+        Entity villager = mcacapitals$resolveSealedPurseGiftEntity();
         if (villager == null) {
             return;
         }
 
-        boolean handled = BetrothalDecreeHandler.tryGiftBetrothalDecree(player, villager, stack);
+        boolean handled = SealedPurseHandler.tryGiftSealedPurse(
+                player,
+                villager,
+                stack
+        );
         if (handled) {
             cir.setReturnValue(true);
             cir.cancel();
         }
     }
 
-    private Entity resolveEntity() {
+    @Unique
+    private Entity mcacapitals$resolveSealedPurseGiftEntity() {
         Class<?> type = this.getClass();
 
         while (type != null) {
@@ -57,7 +72,6 @@ public class BreedableRelationshipGiftMixin {
             } catch (Throwable ignored) {
                 return null;
             }
-
             type = type.getSuperclass();
         }
 

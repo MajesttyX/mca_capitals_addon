@@ -38,8 +38,7 @@ public abstract class InteractScreenIdentityMixin {
     @Inject(
             method = "drawTextPopups",
             at = @At("TAIL"),
-            remap = false,
-            require = 0
+            remap = false
     )
     private void mcacapitals$drawOriginAndHouse(GuiGraphics graphics, CallbackInfo ci) {
         Entity villager = mcacapitals$getVillagerEntity();

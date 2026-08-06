@@ -1,0 +1,26 @@
+{
+  "answers": [
+    {
+      "name": "mcacapitals_declare_capital_accept",
+      "priority": 1000,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_declare_capital_accept"
+          }
+        }
+      ]
+    },
+    {
+      "name": "mcacapitals_declare_capital_decline",
+      "priority": 999,
+      "results": [
+        {
+          "actions": {
+            "command": "mcacapitals_declare_capital_decline"
+          }
+        }
+      ]
+    }
+  ]
+}

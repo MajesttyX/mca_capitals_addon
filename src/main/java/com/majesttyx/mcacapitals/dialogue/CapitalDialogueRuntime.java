@@ -21,6 +21,10 @@ public final class CapitalDialogueRuntime {
     public static final String GENERAL_FAIL = "mcacapitals_chat_capital_fail";
     public static final String GENERAL_SUCCESS = "mcacapitals_chat_general_success";
     public static final String GENERAL_PLAYER_SOVEREIGN = "mcacapitals_chat_general_player_sovereign";
+    public static final String POLITICAL_HINT_FRIEND = "mcacapitals_chat_political_hint_friend";
+    public static final String POLITICAL_HINT_ENEMY = "mcacapitals_chat_political_hint_enemy";
+    public static final String POLITICAL_PRIVATE_FRIEND = "mcacapitals_chat_political_private_friend";
+    public static final String POLITICAL_PRIVATE_ENEMY = "mcacapitals_chat_political_private_enemy";
 
     public static final String RANK_COMMONER = "mcacapitals_chat_rank_commoner";
     public static final String RANK_KNIGHT = "mcacapitals_chat_rank_knight";
@@ -82,12 +86,13 @@ public final class CapitalDialogueRuntime {
     public static final String MCA_CAPITAL_IDLE_EVENING_CHATTER = "mcacapitals_capital_idle_evening_chatter";
 
     private static final Map<String, Integer> BUCKET_SIZES = buildBucketSizes();
+    private static final Map<String, List<String>> INLINE_BUCKET_LINES = buildInlineBucketLines();
     private static final List<String> KNOWN_TITLES = List.of(
             "High Queen", "High King", "Dowager Queen", "Dowager King",
             "Queen Consort", "King Consort", "Heir Apparent", "Crown Princess", "Crown Prince",
             "Dowager Princess", "Dowager Prince", "Princess Consort", "Prince Consort",
             "Hand of the Queen", "Hand of the King",
-            "Grand Maester", "Maester", "Court Herald", "Lord Commander",
+            "Grand Maester", "Master of Laws", "Maester", "Court Herald", "Lord Commander",
             "Dowager Duchess", "Dowager Duke", "Duchess", "Duke", "Princess", "Prince",
             "Lady", "Lord", "Dame", "Sir", "Queen", "King"
     );
@@ -117,6 +122,12 @@ public final class CapitalDialogueRuntime {
         }
 
         String bucketKey = runtimeKey.substring(RUNTIME_PREFIX.length());
+        List<String> inlineLines = INLINE_BUCKET_LINES.get(bucketKey);
+        if (inlineLines != null && !inlineLines.isEmpty()) {
+            int index = pickLineIndex(speaker.getUUID(), bucketKey, inlineLines.size(), level);
+            DialogueContext context = DialogueContext.create(level, capital, player, speaker);
+            return applyTags(inlineLines.get(index), context);
+        }
         int bucketSize = BUCKET_SIZES.getOrDefault(bucketKey, 0);
         if (bucketSize <= 0) {
             return null;
@@ -228,6 +239,55 @@ public final class CapitalDialogueRuntime {
         return sizes;
     }
 
+    private static Map<String, List<String>> buildInlineBucketLines() {
+        Map<String, List<String>> lines = new HashMap<>();
+        lines.put(POLITICAL_HINT_FRIEND, List.of(
+                "Some crowns sit heavy, but {sovereign_name} has not forgotten who keeps {capital_name} standing.",
+                "I sleep easier when the court is steady. That is all I will say about politics.",
+                "There are worse hands for {capital_name} to be in than {sovereign_name}'s.",
+                "A loyal subject does not need to shout loyalty in the square.",
+                "If trouble comes for the Crown, some of us will remember our oaths.",
+                "People complain about rule until they see what disorder costs.",
+                "The sovereign has enemies, of course. Any ruler worth following does.",
+                "I would rather mend the realm quietly than tear it apart loudly.",
+                "The court is not perfect, but neither is the world outside its walls.",
+                "If you are asking where I stand, I stand where the peace holds."
+        ));
+        lines.put(POLITICAL_HINT_ENEMY, List.of(
+                "A crown casts a long shadow. Some people just mistake shade for safety.",
+                "I keep my opinions folded away. Loose words find ropes too quickly.",
+                "The court calls it order. Others might call it obedience with better clothes.",
+                "Not every oath is sworn with a willing tongue.",
+                "A wise villager praises the Crown where guards can hear them.",
+                "Some rulers inherit loyalty. Others inherit silence.",
+                "If the realm is at peace, it is a very nervous kind of peace.",
+                "There are people in {capital_name} who remember how things were before.",
+                "The herald announces victories. The market remembers costs.",
+                "Ask me again when walls do not have ears."
+        ));
+        lines.put(POLITICAL_PRIVATE_FRIEND, List.of(
+                "I trust {sovereign_name}. If the Crown needs me, I will answer.",
+                "You have earned honesty from me. I support {sovereign_name} and the rule of this Crown.",
+                "I am a friend of the Crown. Quietly, but truly.",
+                "Whatever people whisper, my loyalty is with {sovereign_name}.",
+                "I want {capital_name} to hold, and I believe the Crown is how it holds.",
+                "I would not say this to everyone, but I stand with the sovereign.",
+                "The Crown has my support. Not blind support, but real support.",
+                "If enemies move against {sovereign_name}, I will not be among them."
+        ));
+        lines.put(POLITICAL_PRIVATE_ENEMY, List.of(
+                "You have earned the truth. I do not support {sovereign_name}.",
+                "I am no friend of this Crown. Be careful what you do with that knowledge.",
+                "I keep my head bowed because I prefer it attached. That is not loyalty.",
+                "The sovereign has my obedience, not my support.",
+                "I do not believe {sovereign_name} should rule {capital_name}.",
+                "You wanted honesty. I am an enemy of the Crown, though I am not eager to die for saying it.",
+                "My loyalty belongs elsewhere. The Crown only has my silence.",
+                "I would see another rule here, if such things could be said safely."
+        ));
+        return Map.copyOf(lines);
+    }
+
     private static final class DialogueContext {
         private final Map<String, String> values = new HashMap<>();
 
@@ -242,6 +302,9 @@ public final class CapitalDialogueRuntime {
             CapitalDialogueEventModels.ChronicleEvent latestEvent =
                     CapitalDialogueChronicleLogic.findLatestNotableEvent(level, capital);
 
+            String playerName = MCAIntegrationBridge.getPlayerDialogueName(player);
+            context.put("{player_name}", playerName);
+            context.put("%1$s", playerName);
             context.put("{capital_name}", safeVillageName(level, capital));
             context.put("{capital_population}", Integer.toString(safePopulation(level, capital)));
             context.put("{mourning_status}", capital.isMourningActive() ? "in mourning" : "at peace again");
@@ -278,6 +341,7 @@ public final class CapitalDialogueRuntime {
 
         private static String fallbackFor(String key) {
             return switch (key) {
+                case "{player_name}", "%1$s" -> "traveler";
                 case "{capital_name}" -> "the capital";
                 case "{capital_population}" -> "0";
                 case "{mourning_status}" -> "at peace again";

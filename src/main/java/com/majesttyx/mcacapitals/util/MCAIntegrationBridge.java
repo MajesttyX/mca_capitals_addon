@@ -50,6 +50,10 @@ public final class MCAIntegrationBridge {
         return MCAPlayerBridge.getLastSeenVillageId(level, player);
     }
 
+    public static String getPlayerDialogueName(ServerPlayer player) {
+        return MCAPlayerBridge.getDialogueName(player);
+    }
+
     public static boolean isPlayerInVillage(ServerLevel level, ServerPlayer player, Integer villageId) {
         return MCAPlayerBridge.isPlayerInVillage(level, player, villageId);
     }

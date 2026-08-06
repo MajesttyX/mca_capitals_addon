@@ -18,6 +18,13 @@ public final class CapitalAmbassadorUrgentMatterCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("capitalurgent")
+                        .then(Commands.literal("continue")
+                                .then(Commands.argument("ambassadorId", StringArgumentType.word())
+                                        .executes(context -> withAmbassador(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "ambassadorId"),
+                                                CapitalAmbassadorUrgentMatterService::continueConversation
+                                        ))))
                         .then(Commands.literal("open")
                                 .then(Commands.argument("ambassadorId", StringArgumentType.word())
                                         .executes(context -> withAmbassador(

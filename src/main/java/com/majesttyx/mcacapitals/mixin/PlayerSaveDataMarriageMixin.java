@@ -27,10 +27,9 @@ import java.util.UUID;
 public class PlayerSaveDataMarriageMixin {
 
     @Inject(
-            method = "marry",
+            method = "marry(Lnet/minecraft/world/entity/Entity;)V",
             at = @At("TAIL"),
-            remap = false,
-            require = 0
+            remap = false
     )
     private void mcacapitals$onPlayerMarry(Entity spouse, CallbackInfo ci) {
         if (spouse == null) {

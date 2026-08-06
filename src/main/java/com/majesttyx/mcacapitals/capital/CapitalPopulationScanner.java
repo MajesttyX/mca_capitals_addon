@@ -117,6 +117,15 @@ public class CapitalPopulationScanner {
     }
 
     private void issuePendingCharters(ServerLevel level, CapitalRecord capital) {
+        if (capital == null
+                || capital.getCapitalId() == null
+                || CapitalWartimeSuccessionService.isInInterregnum(
+                level,
+                capital.getCapitalId()
+        )) {
+            return;
+        }
+
         if (capital.getSovereign() == null && !capital.isMonarchyRejected()) {
             if (issueRoyalCharterIfNeeded(level, capital)) {
                 CapitalDataAccess.markDirty(level);
@@ -125,6 +134,11 @@ public class CapitalPopulationScanner {
     }
 
     private boolean processSuccession(ServerLevel level, CapitalRecord capital) {
+        if (CapitalWartimeSuccessionService.handleIfNeeded(level, capital)) {
+            CapitalDataAccess.markDirty(level);
+            return true;
+        }
+
         if (capital.getSovereign() == null) {
             return false;
         }

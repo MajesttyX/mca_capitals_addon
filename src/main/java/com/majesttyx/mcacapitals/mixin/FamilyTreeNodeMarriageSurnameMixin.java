@@ -9,17 +9,33 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Applies Capitals surname and House rules after MCA updates a family-tree
+ * partnership. MCA Reborn 7.7.32 records marriage through
+ * FamilyTreeNode.updatePartner(Entity, RelationshipState); it does not expose
+ * BreedableRelationship.marry(Entity).
+ */
 @Pseudo
-@Mixin(targets = "net.conczin.mca.server.world.data.FamilyTreeNode", remap = false)
-public class FamilyTreeNodeMarriageSurnameMixin {
+@Mixin(
+        targets = "net.conczin.mca.server.world.data.FamilyTreeNode",
+        remap = false
+)
+public abstract class FamilyTreeNodeMarriageSurnameMixin {
 
     @Inject(
-            method = "updatePartner(Lnet/minecraft/class_1297;Lnet/conczin/mca/entity/ai/relationship/RelationshipState;)V",
+            method = "updatePartner(Lnet/minecraft/world/entity/Entity;Lnet/conczin/mca/entity/ai/relationship/RelationshipState;)V",
             at = @At("TAIL"),
-            remap = false,
-            require = 0
+            remap = false
     )
-    private void mcacapitals$onUpdatePartner(Entity partner, @Coerce Object state, CallbackInfo ci) {
-        MarriageSurnameService.onFamilyTreePartnerUpdate(this, partner, state);
+    private void mcacapitals$applyMarriageSurname(
+            Entity partner,
+            @Coerce Object relationshipState,
+            CallbackInfo ci
+    ) {
+        MarriageSurnameService.onFamilyTreePartnerUpdate(
+                this,
+                partner,
+                relationshipState
+        );
     }
 }

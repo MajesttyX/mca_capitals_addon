@@ -13,7 +13,6 @@
     "MessengerCapitalDialogueMixin",
     "VillagerTasksMCARoyalGuardMixin",
     "BreedableRelationshipGiftMixin",
-    "FamilyTreeNodeMarriageSurnameMixin",
     "FamilyTreeNodeAdoptionIdentityMixin",
     "BabyItemBirthIdentityMixin",
     "EntitySprintingRoyalGuardMixin",
@@ -31,12 +30,22 @@
     "LivingEntityCampaignDamageMixin",
     "CapitalCampaignChildSovereignDecisionMixin",
     "CapitalSuccessionServiceInterregnumMixin",
-    "CapitalTitleResolverInterregnumMixin"
+    "CapitalTitleResolverInterregnumMixin",
+    "VillagerExecutionAuthorityMixin",
+    "InteractionDialogueInitMessageMixin",
+    "GetVillageRequestCapitalAuthorityMixin",
+    "ResidencyCampaignMixin",
+    "GuardEnemiesSensorCampaignMixin",
+    "VillagerTasksMCACampaignCombatMixin",
+    "SealedPurseGiftMixin",
+    "FamilyTreeNodeMarriageSurnameMixin"
   ],
   "client": [
     "InteractScreenBetrothalMixin",
     "InteractScreenIdentityMixin",
-    "EntityRendererNameTagMixin"
+    "EntityRendererNameTagMixin",
+    "BlueprintScreenCapitalAuthorityMixin",
+    "ScreenNoBlurMixin"
   ],
   "injectors": {
     "defaultRequire": 1

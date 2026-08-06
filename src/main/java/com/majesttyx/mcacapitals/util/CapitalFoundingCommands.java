@@ -149,7 +149,7 @@ public class CapitalFoundingCommands {
                                                             }
 
                                                             capital.setMonarchyRejected(true);
-                                                            capital.setState(CapitalState.PENDING);
+                                                            capital.setState(CapitalState.ACTIVE);
                                                             CapitalDataAccess.markDirty(player.serverLevel());
                                                             consumeCharter(player, capitalId);
 

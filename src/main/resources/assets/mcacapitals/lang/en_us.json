@@ -1184,5 +1184,14 @@
   "dialogue.mcacapitals_capital_idle_evening_chatter_87": "One of them stared at me like I owed taxes.",
   "dialogue.mcacapitals_capital_idle_evening_chatter_88": "…maybe I do.",
   "dialogue.mcacapitals_capital_idle_evening_chatter_89": "…I heard someone wants another well.",
-  "dialogue.mcacapitals_capital_idle_evening_chatter_90": "…good. I want another well too."
+  "dialogue.mcacapitals_capital_idle_evening_chatter_90": "…good. I want another well too.",
+  "dialogue.main.mcacapitals_accuse_enemy": "Make an Accusation",
+  "dialogue.main.mcacapitals_request_royal_pardon": "Request a Royal Pardon",
+  "dialogue.main.mcacapitals_review_crown_justice": "Review Crown Standings",
+  "dialogue.main.mcacapitals_declare_for_capital": "Declare for this Capital",
+  "dialogue.main.mcacapitals_pay_warrant_fine": "Pay the Fine",
+  "dialogue.main.mcacapitals_surrender_warrant": "Surrender to the Capital",
+  "dialogue.mcacapitals_declaration_prompt": "Declare Your Home Capital",
+  "dialogue.mcacapitals_declaration_prompt.mcacapitals_declare_capital_accept": "Declare for this Capital",
+  "dialogue.mcacapitals_declaration_prompt.mcacapitals_declare_capital_decline": "Remain Undeclared"
 }

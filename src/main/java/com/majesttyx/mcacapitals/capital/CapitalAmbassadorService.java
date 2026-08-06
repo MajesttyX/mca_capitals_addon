@@ -1,8 +1,10 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
+import com.majesttyx.mcacapitals.identity.VillagerIdentitySyncService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -32,6 +34,7 @@ public final class CapitalAmbassadorService {
             if (currentAmbassador != null) {
                 CapitalDiplomacyDataAccess.clearAmbassador(level, capitalId);
                 AMBASSADOR_CACHE.remove(capitalId);
+                sync(level, currentAmbassador);
                 changed = true;
             }
         }
@@ -42,17 +45,7 @@ public final class CapitalAmbassadorService {
                 && CapitalBuildingService.hasAmbassadorBuildings(level, capital)) {
             UUID candidate = CapitalAmbassadorSelection.findCandidate(level, capital, residents);
             if (candidate != null) {
-                CapitalDiplomacyDataAccess.setAmbassador(level, capitalId, candidate);
-                AMBASSADOR_CACHE.put(capitalId, candidate);
-
-                String name = CapitalNameService.resolveDisplayName(level, capital, candidate);
-                String capitalName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        name + " was appointed Ambassador of " + capitalName + "."
-                );
-
+                setAmbassador(level, capital, candidate, residents, false);
                 changed = true;
             }
         }
@@ -63,6 +56,38 @@ public final class CapitalAmbassadorService {
         }
 
         return changed;
+    }
+
+    public static boolean isEligibleCandidate(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID candidateId,
+            Set<UUID> residents
+    ) {
+        return CapitalAmbassadorSelection.isEligible(level, capital, candidateId, residents);
+    }
+
+    public static boolean appointAmbassador(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID candidateId,
+            Set<UUID> residents
+    ) {
+        if (level == null
+                || capital == null
+                || capital.getCapitalId() == null
+                || candidateId == null
+                || residents == null
+                || !CapitalBuildingService.hasAmbassadorBuildings(level, capital)
+                || !isEligibleCandidate(level, capital, candidateId, residents)
+                || candidateId.equals(getAmbassador(level, capital))) {
+            return false;
+        }
+
+        setAmbassador(level, capital, candidateId, residents, true);
+        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        return true;
     }
 
     public static UUID getAmbassador(ServerLevel level, CapitalRecord capital) {
@@ -122,9 +147,65 @@ public final class CapitalAmbassadorService {
             return;
         }
 
+        UUID previous = level == null
+                ? AMBASSADOR_CACHE.get(capitalId)
+                : CapitalDiplomacyDataAccess.getAmbassador(level, capitalId);
+
         AMBASSADOR_CACHE.remove(capitalId);
         if (level != null) {
             CapitalDiplomacyDataAccess.clearAmbassador(level, capitalId);
+            sync(level, previous);
+        }
+    }
+
+    private static void setAmbassador(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID candidateId,
+            Set<UUID> residents,
+            boolean recordReplacement
+    ) {
+        UUID capitalId = capital.getCapitalId();
+        UUID previous = getAmbassador(level, capital);
+        String capitalName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+
+        if (recordReplacement && previous != null && !previous.equals(candidateId)) {
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    CapitalNameService.resolveDisplayName(level, capital, previous)
+                            + " was relieved of the office of Ambassador of "
+                            + capitalName
+                            + "."
+            );
+        }
+
+        CapitalDiplomacyDataAccess.setAmbassador(level, capitalId, candidateId);
+        AMBASSADOR_CACHE.put(capitalId, candidateId);
+
+        if (previous != null && !previous.equals(candidateId)) {
+            sync(level, previous);
+        }
+        sync(level, candidateId);
+
+        CapitalChronicleService.addEntry(
+                level,
+                capital,
+                CapitalNameService.resolveDisplayName(level, capital, candidateId)
+                        + " was appointed Ambassador of "
+                        + capitalName
+                        + "."
+        );
+    }
+
+    private static void sync(ServerLevel level, UUID entityId) {
+        if (level == null || entityId == null) {
+            return;
+        }
+
+        Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
+        if (entity != null) {
+            VillagerIdentitySyncService.syncToNearbyPlayers(level, entity);
         }
     }
 }

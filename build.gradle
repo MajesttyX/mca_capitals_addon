@@ -56,8 +56,8 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
 
     /*
-     * MCA Reborn 7.7.10 for 1.21.1 is a Fabric jar, not the old 1.20.1 universal jar.
-     * Put mca-fabric-7.7.10+1.21.1.jar in /libs.
+     * MCA Reborn 7.7.32 for 1.21.1 is a Fabric jar.
+     * Put mca-fabric-7.7.32+1.21.1.jar in /libs.
      */
     modImplementation files("libs/mca-fabric-${mca_version}.jar")
 }
