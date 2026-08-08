@@ -1,6 +1,5 @@
 package com.majesttyx.mcacapitals.capital;
 
-import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.identity.VillagerIdentitySyncService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
@@ -54,7 +53,6 @@ public final class CapitalAmbassadorService {
                 );
 
                 AMBASSADOR_CACHE.remove(capitalId);
-                sync(level, currentAmbassador);
                 changed = true;
             }
         }
@@ -62,11 +60,10 @@ public final class CapitalAmbassadorService {
         if (getAmbassador(level, capital) == null
                 && capital.getState() == CapitalState.ACTIVE
                 && capital.getSovereign() != null
-                && CapitalBuildingService
-                .hasAmbassadorBuildings(
-                        level,
-                        capital
-                )) {
+                && CapitalBuildingService.hasAmbassadorBuildings(
+                level,
+                capital
+        )) {
             UUID candidate =
                     CapitalAmbassadorSelection.findCandidate(
                             level,
@@ -75,13 +72,40 @@ public final class CapitalAmbassadorService {
                     );
 
             if (candidate != null) {
-                changed = appoint(
+                CapitalDiplomacyDataAccess.setAmbassador(
+                        level,
+                        capitalId,
+                        candidate
+                );
+
+                AMBASSADOR_CACHE.put(
+                        capitalId,
+                        candidate
+                );
+
+                String name =
+                        CapitalNameService.resolveDisplayName(
+                                level,
+                                capital,
+                                candidate
+                        );
+
+                String capitalName =
+                        MCAIntegrationBridge.getVillageName(
+                                level,
+                                capital.getVillageId()
+                        );
+
+                CapitalChronicleService.addEntry(
                         level,
                         capital,
-                        candidate,
-                        residents,
-                        false
-                ) || changed;
+                        name
+                                + " was appointed Ambassador of "
+                                + capitalName
+                                + "."
+                );
+
+                changed = true;
             }
         }
 
@@ -100,34 +124,42 @@ public final class CapitalAmbassadorService {
         return changed;
     }
 
+    public static boolean isEligibleCandidate(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID candidateId,
+            Set<UUID> residents
+    ) {
+        return CapitalAmbassadorSelection.isEligible(
+                level,
+                capital,
+                candidateId,
+                residents
+        );
+    }
+
     public static boolean appointAmbassador(
             ServerLevel level,
             CapitalRecord capital,
-            UUID villagerId,
+            UUID candidateId,
             Set<UUID> residents
     ) {
         if (level == null
                 || capital == null
                 || capital.getCapitalId() == null
-                || villagerId == null
+                || candidateId == null
                 || residents == null
-                || capital.getState() != CapitalState.ACTIVE
-                || capital.getSovereign() == null
-                || !CapitalBuildingService
-                .hasAmbassadorBuildings(
-                        level,
-                        capital
-                )
-                || !CapitalAmbassadorSelection.isEligible(
-                        level,
-                        capital,
-                        villagerId,
-                        residents
-                )) {
-            return false;
-        }
-
-        if (villagerId.equals(
+                || !CapitalBuildingService.hasAmbassadorBuildings(
+                level,
+                capital
+        )
+                || !isEligibleCandidate(
+                level,
+                capital,
+                candidateId,
+                residents
+        )
+                || candidateId.equals(
                 getAmbassador(
                         level,
                         capital
@@ -136,13 +168,82 @@ public final class CapitalAmbassadorService {
             return false;
         }
 
-        return appoint(
+        UUID previous =
+                getAmbassador(
+                        level,
+                        capital
+                );
+
+        String capitalName =
+                MCAIntegrationBridge.getVillageName(
+                        level,
+                        capital.getVillageId()
+                );
+
+        if (previous != null
+                && !previous.equals(candidateId)) {
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    CapitalNameService.resolveDisplayName(
+                            level,
+                            capital,
+                            previous
+                    )
+                            + " was relieved of the office of Ambassador of "
+                            + capitalName
+                            + "."
+            );
+        }
+
+        CapitalDiplomacyDataAccess.setAmbassador(
+                level,
+                capital.getCapitalId(),
+                candidateId
+        );
+
+        AMBASSADOR_CACHE.put(
+                capital.getCapitalId(),
+                candidateId
+        );
+
+        if (previous != null
+                && !previous.equals(candidateId)) {
+            sync(
+                    level,
+                    previous
+            );
+        }
+
+        sync(
+                level,
+                candidateId
+        );
+
+        CapitalNameService.refreshCapitalNames(
                 level,
                 capital,
-                villagerId,
-                residents,
-                true
+                residents
         );
+
+        CapitalCourtWatcher.clearFingerprint(
+                capital.getCapitalId()
+        );
+
+        CapitalChronicleService.addEntry(
+                level,
+                capital,
+                CapitalNameService.resolveDisplayName(
+                        level,
+                        capital,
+                        candidateId
+                )
+                        + " was appointed Ambassador of "
+                        + capitalName
+                        + "."
+        );
+
+        return true;
     }
 
     public static UUID getAmbassador(
@@ -199,8 +300,8 @@ public final class CapitalAmbassadorService {
         if (level != null) {
             for (UUID ambassadorId :
                     CapitalDiplomacyDataAccess
-                    .getAmbassadorsSnapshot(level)
-                    .values()) {
+                            .getAmbassadorsSnapshot(level)
+                            .values()) {
                 if (entityId.equals(ambassadorId)) {
                     return true;
                 }
@@ -227,9 +328,9 @@ public final class CapitalAmbassadorService {
                 level == null
                         ? getCachedAmbassador(capital)
                         : getAmbassador(
-                                level,
-                                capital
-                        );
+                        level,
+                        capital
+                );
 
         return entityId.equals(ambassador);
     }
@@ -252,98 +353,12 @@ public final class CapitalAmbassadorService {
         }
     }
 
-    private static boolean appoint(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID villagerId,
-            Set<UUID> residents,
-            boolean recordReplacement
-    ) {
-        UUID capitalId = capital.getCapitalId();
-        UUID previous = getAmbassador(
-                level,
-                capital
-        );
-
-        if (villagerId.equals(previous)) {
-            return false;
-        }
-
-        String capitalName =
-                MCAIntegrationBridge.getVillageName(
-                        level,
-                        capital.getVillageId()
-                );
-
-        if (recordReplacement
-                && previous != null) {
-            String previousName =
-                    CapitalNameService.resolveDisplayName(
-                            level,
-                            capital,
-                            previous
-                    );
-
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    previousName
-                            + " was relieved of the office of Ambassador of "
-                            + capitalName
-                            + "."
-            );
-        }
-
-        CapitalDiplomacyDataAccess.setAmbassador(
-                level,
-                capitalId,
-                villagerId
-        );
-
-        AMBASSADOR_CACHE.put(
-                capitalId,
-                villagerId
-        );
-
-        CapitalNameService.refreshCapitalNames(
-                level,
-                capital,
-                residents
-        );
-
-        CapitalCourtWatcher.clearFingerprint(
-                capitalId
-        );
-
-        sync(level, previous);
-        sync(level, villagerId);
-
-        CapitalDataAccess.markDirty(level);
-
-        String name =
-                CapitalNameService.resolveDisplayName(
-                        level,
-                        capital,
-                        villagerId
-                );
-
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                name
-                        + " was appointed Ambassador of "
-                        + capitalName
-                        + "."
-        );
-
-        return true;
-    }
-
     private static void sync(
             ServerLevel level,
             UUID entityId
     ) {
-        if (entityId == null) {
+        if (level == null
+                || entityId == null) {
             return;
         }
 

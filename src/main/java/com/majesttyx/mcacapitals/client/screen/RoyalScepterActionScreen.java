@@ -9,6 +9,10 @@ import java.util.UUID;
 
 public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
 
+    private static final int BUTTON_HEIGHT = 20;
+    private static final int ROW_GAP = 4;
+    private static final int COLUMN_GAP = 8;
+
     private final UUID targetId;
     private final String targetName;
 
@@ -19,8 +23,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         super(Component.literal("Royal Scepter"));
         this.targetId = targetId;
         this.targetName =
-                targetName == null
-                        || targetName.isBlank()
+                targetName == null || targetName.isBlank()
                         ? "Unnamed"
                         : targetName;
     }
@@ -29,85 +32,95 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
     protected void init() {
         clearWidgets();
 
-        int centerX = this.width / 2;
-        int buttonWidth = 240;
-        int buttonHeight = 20;
-        int left = centerX - buttonWidth / 2;
-        int top = Math.max(
-                42,
-                this.height / 2 - 104
-        );
+        int totalWidth =
+                Math.min(
+                        396,
+                        Math.max(
+                                280,
+                                this.width - 24
+                        )
+                );
 
-        addButton(
+        int columnWidth =
+                (totalWidth - COLUMN_GAP) / 2;
+
+        int left =
+                (this.width - totalWidth) / 2;
+
+        int right =
+                left + columnWidth + COLUMN_GAP;
+
+        int top =
+                Math.max(
+                        54,
+                        this.height / 2 - 50
+                );
+
+        int rowStep =
+                BUTTON_HEIGHT + ROW_GAP;
+
+        addActionButton(
+                "Name Heir Apparent",
+                "royalscepter heir " + targetId,
                 left,
                 top,
-                buttonWidth,
-                buttonHeight,
-                "Name Heir Apparent",
-                "royalscepter heir " + targetId
+                columnWidth
         );
 
-        addButton(
-                left,
-                top + 24,
-                buttonWidth,
-                buttonHeight,
+        addActionButton(
                 "Name Hand of the Crown",
-                "royalscepter hand " + targetId
+                "royalscepter hand " + targetId,
+                right,
+                top,
+                columnWidth
         );
 
-        addButton(
-                left,
-                top + 48,
-                buttonWidth,
-                buttonHeight,
+        addActionButton(
                 "Name Grand Maester",
-                "royalscepter grandmaester " + targetId
+                "royalscepter grandmaester " + targetId,
+                left,
+                top + rowStep,
+                columnWidth
         );
 
-        addButton(
-                left,
-                top + 72,
-                buttonWidth,
-                buttonHeight,
+        addActionButton(
                 "Appoint Lord Commander",
-                "royalscepter commander " + targetId
+                "royalscepter commander " + targetId,
+                right,
+                top + rowStep,
+                columnWidth
         );
 
-        addButton(
+        addActionButton(
+                "Appoint Royal Guard",
+                "royalscepter royalguard " + targetId,
                 left,
-                top + 96,
-                buttonWidth,
-                buttonHeight,
-                "Appoint to the Royal Guard",
-                "royalscepter royalguard " + targetId
+                top + rowStep * 2,
+                columnWidth
         );
 
-        addButton(
-                left,
-                top + 120,
-                buttonWidth,
-                buttonHeight,
-                "Appoint Ambassador",
-                "royalscepteroffice ambassador " + targetId
-        );
-
-        addButton(
-                left,
-                top + 144,
-                buttonWidth,
-                buttonHeight,
-                "Appoint Master of Laws",
-                "royalscepteroffice masteroflaws " + targetId
-        );
-
-        addButton(
-                left,
-                top + 168,
-                buttonWidth,
-                buttonHeight,
+        addActionButton(
                 "Bestow Dukedom",
-                "royalscepter duke " + targetId
+                "royalscepter duke " + targetId,
+                right,
+                top + rowStep * 2,
+                columnWidth
+        );
+
+        addActionButton(
+                "Appoint Master of Laws",
+                "royalscepter masteroflaws " + targetId,
+                left,
+                top + rowStep * 3,
+                columnWidth
+        );
+
+        addActionButton(
+                "Appoint Ambassador",
+                "royalscepter ambassador " + targetId,
+                right,
+                top + rowStep * 3,
+                columnWidth
         );
 
         addRenderableWidget(
@@ -117,21 +130,20 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
                         )
                         .bounds(
                                 left,
-                                top + 200,
-                                buttonWidth,
-                                buttonHeight
+                                top + rowStep * 4 + 4,
+                                totalWidth,
+                                BUTTON_HEIGHT
                         )
                         .build()
         );
     }
 
-    private void addButton(
-            int left,
-            int top,
-            int width,
-            int height,
+    private void addActionButton(
             String label,
-            String command
+            String command,
+            int x,
+            int y,
+            int width
     ) {
         addRenderableWidget(
                 Button.builder(
@@ -139,10 +151,10 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
                                 button -> runCommand(command)
                         )
                         .bounds(
-                                left,
-                                top,
+                                x,
+                                y,
                                 width,
-                                height
+                                BUTTON_HEIGHT
                         )
                         .build()
         );
@@ -164,7 +176,10 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
     private String getTrimmedTargetName() {
         return this.font.plainSubstrByWidth(
                 this.targetName,
-                220
+                Math.min(
+                        360,
+                        this.width - 32
+                )
         );
     }
 
@@ -175,11 +190,17 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
             int mouseY,
             float partialTick
     ) {
-        int centerX = this.width / 2;
-        int titleY = Math.max(
-                8,
-                this.height / 2 - 142
-        );
+        int top =
+                Math.max(
+                        54,
+                        this.height / 2 - 50
+                );
+
+        int centerX =
+                this.width / 2;
+
+        int titleY =
+                top - 42;
 
         guiGraphics.drawCenteredString(
                 this.font,

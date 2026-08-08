@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.capital.CapitalAmbassadorService;
+import com.majesttyx.mcacapitals.capital.CapitalBuildingService;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCommanderService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
@@ -8,6 +9,7 @@ import com.majesttyx.mcacapitals.capital.CapitalHandService;
 import com.majesttyx.mcacapitals.capital.CapitalHeraldService;
 import com.majesttyx.mcacapitals.capital.CapitalMaesterService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
+import com.majesttyx.mcacapitals.capital.CapitalMasterOfLawsService;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalRankConflictService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
@@ -69,6 +71,18 @@ public final class RoyalScepterCommands {
                         .then(Commands.literal("duke")
                                 .then(Commands.argument("villagerId", StringArgumentType.string())
                                         .executes(context -> appointDuke(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "villagerId")
+                                        ))))
+                        .then(Commands.literal("masteroflaws")
+                                .then(Commands.argument("villagerId", StringArgumentType.string())
+                                        .executes(context -> appointMasterOfLaws(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "villagerId")
+                                        ))))
+                        .then(Commands.literal("ambassador")
+                                .then(Commands.argument("villagerId", StringArgumentType.string())
+                                        .executes(context -> appointAmbassador(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "villagerId")
                                         ))))
@@ -328,16 +342,19 @@ public final class RoyalScepterCommands {
         capital.setHeirMode(CapitalRecord.HeirMode.MANUAL);
 
         CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
+
         CapitalHeraldService.refreshHeraldAfterStatusChange(
                 level,
                 capital,
                 residents
         );
+
         CapitalNameService.refreshCapitalNames(
                 level,
                 capital,
                 residents
         );
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
@@ -472,15 +489,18 @@ public final class RoyalScepterCommands {
                 capital,
                 residents
         );
+
         CapitalNameService.refreshCapitalNames(
                 level,
                 capital,
                 residents
         );
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
         String name = resolveName(level, villagerId);
+
         String officeName = capital.isSovereignFemale()
                 ? "Hand of the Queen"
                 : "Hand of the King";
@@ -612,11 +632,13 @@ public final class RoyalScepterCommands {
                 capital,
                 residents
         );
+
         CapitalNameService.refreshCapitalNames(
                 level,
                 capital,
                 residents
         );
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
@@ -706,6 +728,7 @@ public final class RoyalScepterCommands {
         }
 
         UUID previousVillagerCommander = capital.getCommander();
+
         UUID previousPlayerCommander =
                 PlayerCapitalTitleService.getCommanderHolder(
                         level,
@@ -775,11 +798,13 @@ public final class RoyalScepterCommands {
                 capital,
                 residents
         );
+
         CapitalNameService.refreshCapitalNames(
                 level,
                 capital,
                 residents
         );
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
@@ -861,6 +886,7 @@ public final class RoyalScepterCommands {
         }
 
         CapitalDataAccess.markDirty(level);
+
         return 1;
     }
 
@@ -923,7 +949,11 @@ public final class RoyalScepterCommands {
             return 0;
         }
 
-        if (!CapitalRankConflictService.canReceiveDirectNobleRank(level, capital, villagerId)) {
+        if (!CapitalRankConflictService.canReceiveDirectNobleRank(
+                level,
+                capital,
+                villagerId
+        )) {
             source.sendFailure(Component.literal(
                     "That villager already holds a rank that cannot be replaced by a ducal appointment."
             ));
@@ -940,11 +970,13 @@ public final class RoyalScepterCommands {
                 capital,
                 residents
         );
+
         CapitalNameService.refreshCapitalNames(
                 level,
                 capital,
                 residents
         );
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
@@ -960,6 +992,222 @@ public final class RoyalScepterCommands {
                         capital.getVillageId()
                 )
                         + "."
+        );
+
+        return 1;
+    }
+
+    private static int appointMasterOfLaws(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
+        ServerPlayer player = getPlayer(source);
+
+        if (player == null) {
+            source.sendFailure(Component.literal(
+                    "Only a player can use this."
+            ));
+            return 0;
+        }
+
+        ServerLevel level = player.serverLevel();
+        UUID villagerId = parseUuid(source, rawVillagerId);
+
+        if (villagerId == null) {
+            return 0;
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
+            source.sendFailure(Component.literal(
+                    "Target is not an MCA villager."
+            ));
+            return 0;
+        }
+
+        CapitalRecord capital = resolveCapital(level, villagerId);
+
+        if (capital == null) {
+            source.sendFailure(Component.literal(
+                    "That villager is not part of a capital."
+            ));
+            return 0;
+        }
+
+        if (!canManageCapital(player, capital)) {
+            source.sendFailure(Component.literal(
+                    "Only the sovereign, authorized Hand, or an operator may use the Royal Scepter here."
+            ));
+            return 0;
+        }
+
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
+        if (!residents.contains(villagerId)) {
+            source.sendFailure(Component.literal(
+                    "That villager is not a resident of the capital."
+            ));
+            return 0;
+        }
+
+        if (!CapitalBuildingService.hasPrison(level, capital)) {
+            source.sendFailure(Component.literal(
+                    "A recognized Prison is required before appointing a Master of Laws."
+            ));
+            return 0;
+        }
+
+        if (villagerId.equals(capital.getMasterOfLaws())) {
+            source.sendFailure(Component.literal(
+                    resolveName(level, villagerId)
+                            + " already holds the office of Master of Laws."
+            ));
+            return 0;
+        }
+
+        if (!CapitalMasterOfLawsService.isEligibleCandidate(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.literal(
+                    "That villager is not eligible to serve as Master of Laws."
+            ));
+            return 0;
+        }
+
+        if (!CapitalMasterOfLawsService.appointMasterOfLaws(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.literal(
+                    "The Master of Laws appointment could not be completed."
+            ));
+            return 0;
+        }
+
+        String name = resolveName(level, villagerId);
+
+        source.sendSuccess(
+                () -> Component.literal(
+                        name + " was appointed Master of Laws."
+                ),
+                false
+        );
+
+        return 1;
+    }
+
+    private static int appointAmbassador(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
+        ServerPlayer player = getPlayer(source);
+
+        if (player == null) {
+            source.sendFailure(Component.literal(
+                    "Only a player can use this."
+            ));
+            return 0;
+        }
+
+        ServerLevel level = player.serverLevel();
+        UUID villagerId = parseUuid(source, rawVillagerId);
+
+        if (villagerId == null) {
+            return 0;
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
+            source.sendFailure(Component.literal(
+                    "Target is not an MCA villager."
+            ));
+            return 0;
+        }
+
+        CapitalRecord capital = resolveCapital(level, villagerId);
+
+        if (capital == null) {
+            source.sendFailure(Component.literal(
+                    "That villager is not part of a capital."
+            ));
+            return 0;
+        }
+
+        if (!canManageCapital(player, capital)) {
+            source.sendFailure(Component.literal(
+                    "Only the sovereign, authorized Hand, or an operator may use the Royal Scepter here."
+            ));
+            return 0;
+        }
+
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
+        if (!residents.contains(villagerId)) {
+            source.sendFailure(Component.literal(
+                    "That villager is not a resident of the capital."
+            ));
+            return 0;
+        }
+
+        if (!CapitalBuildingService.hasAmbassadorBuildings(level, capital)) {
+            source.sendFailure(Component.literal(
+                    "A recognized Inn and Storage are required before appointing an Ambassador."
+            ));
+            return 0;
+        }
+
+        if (CapitalAmbassadorService.isAmbassador(
+                level,
+                capital,
+                villagerId
+        )) {
+            source.sendFailure(Component.literal(
+                    resolveName(level, villagerId)
+                            + " already holds the office of Ambassador."
+            ));
+            return 0;
+        }
+
+        if (!CapitalAmbassadorService.isEligibleCandidate(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.literal(
+                    "That villager is not eligible to serve as Ambassador."
+            ));
+            return 0;
+        }
+
+        if (!CapitalAmbassadorService.appointAmbassador(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.literal(
+                    "The Ambassador appointment could not be completed."
+            ));
+            return 0;
+        }
+
+        String name = resolveName(level, villagerId);
+
+        source.sendSuccess(
+                () -> Component.literal(
+                        name + " was appointed Ambassador."
+                ),
+                false
         );
 
         return 1;
