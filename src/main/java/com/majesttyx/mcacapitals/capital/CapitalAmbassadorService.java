@@ -1,8 +1,10 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
+import com.majesttyx.mcacapitals.identity.VillagerIdentitySyncService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -67,6 +69,81 @@ public final class CapitalAmbassadorService {
         return changed;
     }
 
+    public static boolean isEligibleCandidate(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID candidateId,
+            Set<UUID> residents
+    ) {
+        return CapitalAmbassadorSelection.isEligible(
+                level,
+                capital,
+                candidateId,
+                residents
+        );
+    }
+
+    public static boolean appointAmbassador(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID candidateId,
+            Set<UUID> residents
+    ) {
+        if (level == null
+                || capital == null
+                || capital.getCapitalId() == null
+                || candidateId == null
+                || residents == null
+                || !CapitalBuildingService.hasAmbassadorBuildings(level, capital)
+                || !isEligibleCandidate(level, capital, candidateId, residents)
+                || candidateId.equals(getAmbassador(level, capital))) {
+            return false;
+        }
+
+        UUID previous = getAmbassador(level, capital);
+        String capitalName = MCAIntegrationBridge.getVillageName(
+                level,
+                capital.getVillageId()
+        );
+
+        if (previous != null && !previous.equals(candidateId)) {
+            CapitalChronicleService.addEntry(
+                    level,
+                    capital,
+                    CapitalNameService.resolveDisplayName(level, capital, previous)
+                            + " was relieved of the office of Ambassador of "
+                            + capitalName
+                            + "."
+            );
+        }
+
+        CapitalDiplomacyDataAccess.setAmbassador(
+                level,
+                capital.getCapitalId(),
+                candidateId
+        );
+        AMBASSADOR_CACHE.put(capital.getCapitalId(), candidateId);
+
+        if (previous != null && !previous.equals(candidateId)) {
+            sync(level, previous);
+        }
+        sync(level, candidateId);
+
+        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+
+        CapitalChronicleService.addEntry(
+                level,
+                capital,
+                CapitalNameService.resolveDisplayName(level, capital, candidateId)
+                        + " was appointed Ambassador of "
+                        + capitalName
+                        + "."
+        );
+
+        return true;
+    }
+
     public static UUID getAmbassador(ServerLevel level, CapitalRecord capital) {
         if (level == null || capital == null || capital.getCapitalId() == null) {
             return null;
@@ -129,6 +206,17 @@ public final class CapitalAmbassadorService {
 
         if (level != null) {
             CapitalDiplomacyDataAccess.clearAmbassador(level, capitalId);
+        }
+    }
+
+    private static void sync(ServerLevel level, UUID entityId) {
+        if (level == null || entityId == null) {
+            return;
+        }
+
+        Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
+        if (entity != null) {
+            VillagerIdentitySyncService.syncToNearbyPlayers(level, entity);
         }
     }
 }

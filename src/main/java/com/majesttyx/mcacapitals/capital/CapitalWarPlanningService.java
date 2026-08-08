@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class CapitalWarPlanningService {
+
     private static final int ENTRENCHED_HOSTILITY_THRESHOLD = -200;
 
     private CapitalWarPlanningService() {
@@ -69,9 +70,24 @@ public final class CapitalWarPlanningService {
                 target
         );
 
-        return cause.isJustified()
+        String description = cause.isJustified()
                 ? "Cause: " + cause.getDisplayName() + "."
                 : "No recognized cause exists. This will be an unjust war and will damage relations with every known capital.";
+
+        if (level != null
+                && source != null
+                && target != null
+                && source.getCapitalId() != null
+                && target.getCapitalId() != null
+                && CapitalDiplomacyDataAccess.getDiplomaticState(
+                level,
+                source.getCapitalId(),
+                target.getCapitalId()
+        ) == CapitalDiplomaticState.TRUCE) {
+            description += " Breaking the active Truce may cause other capitals to condemn the breach.";
+        }
+
+        return description;
     }
 
     public static String validateRecovery(

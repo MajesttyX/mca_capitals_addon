@@ -34,6 +34,7 @@ final class CapitalDiplomaticWarService {
                         "War must be begun through a planned Punitive War or War of Deposition. War starts when the campaign deploys inside the target capital."
                 )
         );
+
         return 0;
     }
 
@@ -55,6 +56,12 @@ final class CapitalDiplomaticWarService {
             return false;
         }
 
+        CapitalDiplomaticTruceService.refreshExpiredTruce(
+                level,
+                source,
+                target
+        );
+
         CapitalDiplomaticState currentState =
                 CapitalDiplomacyDataAccess
                         .getDiplomaticState(
@@ -74,6 +81,7 @@ final class CapitalDiplomaticWarService {
                 target,
                 true
         );
+
         if (!established) {
             return false;
         }
@@ -89,6 +97,14 @@ final class CapitalDiplomaticWarService {
                         : CapitalWarCause.PREVIOUS_AGGRESSION,
                 10L
         );
+
+        if (currentState == CapitalDiplomaticState.TRUCE) {
+            CapitalWarPenaltyService.applyTruceBreakingPenalty(
+                    level,
+                    source,
+                    target
+            );
+        }
 
         if (campaign.getWarCause() == CapitalWarCause.UNJUST) {
             CapitalWarPenaltyService.applyUnjustWarPenalty(
