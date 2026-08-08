@@ -18,54 +18,104 @@ final class CapitalDiplomaticProposalResolutionService {
     private CapitalDiplomaticProposalResolutionService() {
     }
 
-    static int accept(ServerPlayer player, UUID proposalId) {
+    static int accept(
+            ServerPlayer player,
+            UUID proposalId
+    ) {
         CapitalDiplomaticAgreementValidation.PlayerProposalValidation validation =
-                CapitalDiplomaticAgreementValidation.validatePlayerProposal(player, proposalId);
+                CapitalDiplomaticAgreementValidation.validatePlayerProposal(
+                        player,
+                        proposalId
+                );
+
         if (!validation.valid()) {
             if (player != null) {
-                player.sendSystemMessage(Component.literal(validation.failureMessage()));
+                player.sendSystemMessage(
+                        Component.literal(
+                                validation.failureMessage()
+                        )
+                );
             }
+
             return 0;
         }
+
         queuePlayerResponse(
                 player.serverLevel(),
                 validation.proposal(),
                 DiplomaticProposalStatus.ACCEPTED_RESPONSE_IN_TRANSIT
         );
-        player.sendSystemMessage(Component.literal(
-                "Your acceptance has been dispatched. The other court may receive it within one to five minutes."
-        ));
+
+        player.sendSystemMessage(
+                Component.literal(
+                        "Your acceptance has been dispatched. The other court may receive it within one to five minutes."
+                )
+        );
+
         return 1;
     }
 
-    static int reject(ServerPlayer player, UUID proposalId) {
+    static int reject(
+            ServerPlayer player,
+            UUID proposalId
+    ) {
         CapitalDiplomaticAgreementValidation.PlayerProposalValidation validation =
-                CapitalDiplomaticAgreementValidation.validatePlayerProposal(player, proposalId);
+                CapitalDiplomaticAgreementValidation.validatePlayerProposal(
+                        player,
+                        proposalId
+                );
+
         if (!validation.valid()) {
             if (player != null) {
-                player.sendSystemMessage(Component.literal(validation.failureMessage()));
+                player.sendSystemMessage(
+                        Component.literal(
+                                validation.failureMessage()
+                        )
+                );
             }
+
             return 0;
         }
+
         queuePlayerResponse(
                 player.serverLevel(),
                 validation.proposal(),
                 DiplomaticProposalStatus.REJECTED_RESPONSE_IN_TRANSIT
         );
-        player.sendSystemMessage(Component.literal(
-                "Your rejection has been dispatched. The other court may receive it within one to five minutes."
-        ));
+
+        player.sendSystemMessage(
+                Component.literal(
+                        "Your rejection has been dispatched. The other court may receive it within one to five minutes."
+                )
+        );
+
         return 1;
     }
 
-    static void resolveQueuedPlayerResponse(ServerLevel level, DiplomaticProposal proposal) {
+    static void resolveQueuedPlayerResponse(
+            ServerLevel level,
+            DiplomaticProposal proposal
+    ) {
         if (level == null || proposal == null) {
             return;
         }
-        CapitalRecord source = CapitalManager.getCapital(proposal.getSourceCapitalId());
-        CapitalRecord target = CapitalManager.getCapital(proposal.getTargetCapitalId());
+
+        CapitalRecord source =
+                CapitalManager.getCapital(
+                        proposal.getSourceCapitalId()
+                );
+
+        CapitalRecord target =
+                CapitalManager.getCapital(
+                        proposal.getTargetCapitalId()
+                );
+
         if (source == null || target == null) {
-            CapitalAgreementDataAccess.removeProposal(level, proposal.getProposalId());
+            CapitalAgreementDataAccess.removeProposal(
+                    level,
+                    proposal.getProposalId()
+            );
+
             if (source != null) {
                 notifySource(
                         level,
@@ -75,35 +125,56 @@ final class CapitalDiplomaticProposalResolutionService {
                         "The diplomatic response could not be delivered because the receiving capital no longer exists."
                 );
             }
-            return;
-        }
-        if (proposal.getStatus() == DiplomaticProposalStatus.REJECTED_RESPONSE_IN_TRANSIT) {
-            rejectProposal(level, proposal, source, target);
-            return;
-        }
-        if (proposal.getStatus() != DiplomaticProposalStatus.ACCEPTED_RESPONSE_IN_TRANSIT) {
+
             return;
         }
 
-        CapitalDiplomaticTruceService.refreshExpiredTruce(level, source, target);
-        String failure = CapitalDiplomaticAgreementValidation.validateProposal(
+        if (proposal.getStatus()
+                == DiplomaticProposalStatus.REJECTED_RESPONSE_IN_TRANSIT) {
+            rejectProposal(
+                    level,
+                    proposal,
+                    source,
+                    target
+            );
+            return;
+        }
+
+        if (proposal.getStatus()
+                != DiplomaticProposalStatus.ACCEPTED_RESPONSE_IN_TRANSIT) {
+            return;
+        }
+
+        CapitalDiplomaticTruceService.refreshExpiredTruce(
                 level,
                 source,
-                target,
-                proposal.getType(),
-                CapitalDiplomacyDataAccess.getDiplomaticState(
-                        level,
-                        source.getCapitalId(),
-                        target.getCapitalId()
-                ),
-                CapitalDiplomacyDataAccess.getRelationshipScore(
-                        level,
-                        source.getCapitalId(),
-                        target.getCapitalId()
-                )
+                target
         );
+
+        String failure =
+                CapitalDiplomaticAgreementValidation.validateProposal(
+                        level,
+                        source,
+                        target,
+                        proposal.getType(),
+                        CapitalDiplomacyDataAccess.getDiplomaticState(
+                                level,
+                                source.getCapitalId(),
+                                target.getCapitalId()
+                        ),
+                        CapitalDiplomacyDataAccess.getRelationshipScore(
+                                level,
+                                source.getCapitalId(),
+                                target.getCapitalId()
+                        )
+                );
+
         if (failure != null) {
-            CapitalAgreementDataAccess.removeProposal(level, proposal.getProposalId());
+            CapitalAgreementDataAccess.removeProposal(
+                    level,
+                    proposal.getProposalId()
+            );
+
             notifySource(
                     level,
                     proposal,
@@ -111,9 +182,16 @@ final class CapitalDiplomaticProposalResolutionService {
                     proposal.getType().getDisplayName() + " Failed",
                     "The acceptance arrived after the diplomatic situation changed, so the agreement could not be established."
             );
+
             return;
         }
-        acceptProposal(level, proposal, source, target);
+
+        acceptProposal(
+                level,
+                proposal,
+                source,
+                target
+        );
     }
 
     private static void queuePlayerResponse(
@@ -122,61 +200,118 @@ final class CapitalDiplomaticProposalResolutionService {
             DiplomaticProposalStatus status
     ) {
         proposal.setStatus(status);
-        proposal.setAvailableAt(CapitalDiplomaticDelayService.schedule(level));
+        proposal.setAvailableAt(
+                CapitalDiplomaticDelayService.schedule(level)
+        );
         CapitalAgreementDataAccess.get(level).setDirty();
     }
 
-    static void resolveNpcProposal(ServerLevel level, DiplomaticProposal proposal) {
-        CapitalRecord source = CapitalManager.getCapital(proposal.getSourceCapitalId());
-        CapitalRecord target = CapitalManager.getCapital(proposal.getTargetCapitalId());
+    static void resolveNpcProposal(
+            ServerLevel level,
+            DiplomaticProposal proposal
+    ) {
+        CapitalRecord source =
+                CapitalManager.getCapital(
+                        proposal.getSourceCapitalId()
+                );
+
+        CapitalRecord target =
+                CapitalManager.getCapital(
+                        proposal.getTargetCapitalId()
+                );
+
         if (source == null || target == null) {
-            CapitalAgreementDataAccess.removeProposal(level, proposal.getProposalId());
+            CapitalAgreementDataAccess.removeProposal(
+                    level,
+                    proposal.getProposalId()
+            );
             return;
         }
 
-        CapitalDiplomaticTruceService.refreshExpiredTruce(level, source, target);
-        int score = CapitalDiplomacyDataAccess.getRelationshipScore(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId()
-        );
-        CapitalDiplomaticState state = CapitalDiplomacyDataAccess.getDiplomaticState(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId()
-        );
-        String validationFailure = CapitalDiplomaticAgreementValidation.validateProposal(
+        CapitalDiplomaticTruceService.refreshExpiredTruce(
                 level,
                 source,
-                target,
-                proposal.getType(),
-                state,
-                score
+                target
         );
-        int requiredScore = switch (proposal.getType()) {
-            case NON_AGGRESSION_PACT, TRADE_AGREEMENT -> 10;
-            case ROYAL_BETROTHAL -> 20;
-            case ALLIANCE -> 40;
-            case TRUCE -> -74;
-        };
-        int acceptanceChance = Math.min(
-                90,
-                50 + Math.max(0, score - requiredScore)
-        );
-        acceptanceChance = Math.min(
-                100,
-                acceptanceChance + personalCourtAcceptanceBonus(level, proposal, target)
-        );
-        if (CapitalWarDataAccess.hasActiveUnjustPenalty(level, source.getCapitalId())) {
-            acceptanceChance = Math.max(5, acceptanceChance - 25);
+
+        int score =
+                CapitalDiplomacyDataAccess.getRelationshipScore(
+                        level,
+                        source.getCapitalId(),
+                        target.getCapitalId()
+                );
+
+        CapitalDiplomaticState state =
+                CapitalDiplomacyDataAccess.getDiplomaticState(
+                        level,
+                        source.getCapitalId(),
+                        target.getCapitalId()
+                );
+
+        String validationFailure =
+                CapitalDiplomaticAgreementValidation.validateProposal(
+                        level,
+                        source,
+                        target,
+                        proposal.getType(),
+                        state,
+                        score
+                );
+
+        int requiredScore =
+                proposal.getType().getMinimumRelationship();
+
+        int acceptanceChance =
+                Math.min(
+                        90,
+                        50 + Math.max(
+                                0,
+                                score - requiredScore
+                        )
+                );
+
+        acceptanceChance =
+                Math.min(
+                        100,
+                        acceptanceChance
+                                + personalCourtAcceptanceBonus(
+                                level,
+                                proposal,
+                                target
+                        )
+                );
+
+        if (CapitalWarDataAccess.hasActiveUnjustPenalty(
+                level,
+                source.getCapitalId()
+        )) {
+            acceptanceChance =
+                    Math.max(
+                            5,
+                            acceptanceChance - 25
+                    );
         }
-        boolean accepted = validationFailure == null
-                && score >= requiredScore
-                && level.random.nextInt(100) < acceptanceChance;
+
+        boolean accepted =
+                validationFailure == null
+                        && score >= requiredScore
+                        && level.random.nextInt(100)
+                        < acceptanceChance;
+
         if (accepted) {
-            acceptProposal(level, proposal, source, target);
+            acceptProposal(
+                    level,
+                    proposal,
+                    source,
+                    target
+            );
         } else {
-            rejectProposal(level, proposal, source, target);
+            rejectProposal(
+                    level,
+                    proposal,
+                    source,
+                    target
+            );
         }
     }
 
@@ -191,32 +326,42 @@ final class CapitalDiplomaticProposalResolutionService {
                 || proposal.getSourceSovereignId() == null) {
             return 0;
         }
-        UUID playerId = proposal.getSourceSovereignId();
+
+        UUID playerId =
+                proposal.getSourceSovereignId();
+
         int bonus = 0;
+
         if (target.getSovereign() != null) {
-            int hearts = MCAIntegrationBridge.getHeartsWithPlayer(
-                    level,
-                    target.getSovereign(),
-                    playerId
-            );
+            int hearts =
+                    MCAIntegrationBridge.getHeartsWithPlayer(
+                            level,
+                            target.getSovereign(),
+                            playerId
+                    );
+
             if (hearts >= 200) {
                 bonus += 20;
             } else if (hearts >= 100) {
                 bonus += 10;
             }
         }
+
         if (target.getHand() != null) {
-            int hearts = MCAIntegrationBridge.getHeartsWithPlayer(
-                    level,
-                    target.getHand(),
-                    playerId
-            );
+            int hearts =
+                    MCAIntegrationBridge.getHeartsWithPlayer(
+                            level,
+                            target.getHand(),
+                            playerId
+                    );
+
             if (hearts >= 200) {
                 bonus += 10;
             } else if (hearts >= 100) {
                 bonus += 5;
             }
         }
+
         return bonus;
     }
 
@@ -227,9 +372,11 @@ final class CapitalDiplomaticProposalResolutionService {
             String title,
             String message
     ) {
-        UUID recipient = source.getPlayerSovereignId() != null
-                ? source.getPlayerSovereignId()
-                : proposal.getSourceSovereignId();
+        UUID recipient =
+                source.getPlayerSovereignId() != null
+                        ? source.getPlayerSovereignId()
+                        : proposal.getSourceSovereignId();
+
         if (recipient != null) {
             CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
                     level,
@@ -246,9 +393,20 @@ final class CapitalDiplomaticProposalResolutionService {
             CapitalRecord source,
             CapitalRecord target
     ) {
-        if (proposal.getType() == DiplomaticProposalType.ROYAL_BETROTHAL) {
-            if (!CapitalRoyalBetrothalService.establish(level, proposal, source, target)) {
-                CapitalAgreementDataAccess.removeProposal(level, proposal.getProposalId());
+        if (proposal.getType()
+                == DiplomaticProposalType.ROYAL_BETROTHAL) {
+
+            if (!CapitalRoyalBetrothalService.establish(
+                    level,
+                    proposal,
+                    source,
+                    target
+            )) {
+                CapitalAgreementDataAccess.removeProposal(
+                        level,
+                        proposal.getProposalId()
+                );
+
                 notifySource(
                         level,
                         proposal,
@@ -256,8 +414,10 @@ final class CapitalDiplomaticProposalResolutionService {
                         "Royal Betrothal Failed",
                         "The proposed Royal Betrothal could not be established because the match was no longer eligible."
                 );
+
                 return false;
             }
+
             CapitalDiplomacyDataAccess.adjustRelationship(
                     level,
                     source.getCapitalId(),
@@ -266,13 +426,21 @@ final class CapitalDiplomaticProposalResolutionService {
                     "Royal Betrothal accepted",
                     target.getCapitalId()
             );
-            CapitalAgreementDataAccess.removeProposal(level, proposal.getProposalId());
+
+            CapitalAgreementDataAccess.removeProposal(
+                    level,
+                    proposal.getProposalId()
+            );
+
             notifySource(
                     level,
                     proposal,
                     source,
                     "Royal Betrothal Accepted",
-                    CapitalDiplomaticAgreementText.capitalName(level, target)
+                    CapitalDiplomaticAgreementText.capitalName(
+                            level,
+                            target
+                    )
                             + " accepted "
                             + CapitalRoyalBetrothalService.proposalDescription(
                             level,
@@ -282,12 +450,30 @@ final class CapitalDiplomaticProposalResolutionService {
                     )
                             + "."
             );
+
             return true;
         }
 
-        if (proposal.getType() == DiplomaticProposalType.TRADE_AGREEMENT) {
-            if (!CapitalDiplomaticTradeAgreementService.establish(level, source, target)) {
-                CapitalAgreementDataAccess.removeProposal(level, proposal.getProposalId());
+        if (proposal.getType()
+                == DiplomaticProposalType.TRADE_AGREEMENT) {
+
+            boolean renewal =
+                    CapitalDiplomaticTradeAgreementService.isRenewal(
+                            level,
+                            source,
+                            target
+                    );
+
+            if (!CapitalDiplomaticTradeAgreementService.establish(
+                    level,
+                    source,
+                    target
+            )) {
+                CapitalAgreementDataAccess.removeProposal(
+                        level,
+                        proposal.getProposalId()
+                );
+
                 notifySource(
                         level,
                         proposal,
@@ -295,31 +481,54 @@ final class CapitalDiplomaticProposalResolutionService {
                         "Trade Agreement Failed",
                         "The proposed Trade Agreement could not be established because its requirements were no longer met."
                 );
+
                 return false;
             }
+
             CapitalDiplomacyDataAccess.adjustRelationship(
                     level,
                     source.getCapitalId(),
                     target.getCapitalId(),
                     proposal.getType().getAcceptanceBonus(),
-                    "Trade Agreement accepted",
+                    renewal
+                            ? "Trade Agreement renewed"
+                            : "Trade Agreement accepted",
                     target.getCapitalId()
             );
-            CapitalAgreementDataAccess.removeProposal(level, proposal.getProposalId());
+
+            CapitalAgreementDataAccess.removeProposal(
+                    level,
+                    proposal.getProposalId()
+            );
+
             notifySource(
                     level,
                     proposal,
                     source,
-                    "Trade Agreement Accepted",
-                    CapitalDiplomaticAgreementText.capitalName(level, target)
-                            + " accepted the proposed Trade Agreement."
+                    renewal
+                            ? "Trade Agreement Renewed"
+                            : "Trade Agreement Accepted",
+                    CapitalDiplomaticAgreementText.capitalName(
+                            level,
+                            target
+                    )
+                            + (
+                            renewal
+                                    ? " accepted the renewal of the Trade Agreement for another thirteen Minecraft days."
+                                    : " accepted the proposed Trade Agreement for thirteen Minecraft days."
+                    )
             );
+
             return true;
         }
 
-        long truceUntil = proposal.getType() == DiplomaticProposalType.TRUCE
-                ? level.getGameTime() + CapitalDiplomaticTruceService.TRUCE_DURATION_TICKS
-                : 0L;
+        long truceUntil =
+                proposal.getType()
+                        == DiplomaticProposalType.TRUCE
+                        ? level.getGameTime()
+                        + CapitalDiplomaticTruceService.TRUCE_DURATION_TICKS
+                        : 0L;
+
         CapitalDiplomacyDataAccess.setDiplomaticState(
                 level,
                 source.getCapitalId(),
@@ -327,37 +536,68 @@ final class CapitalDiplomaticProposalResolutionService {
                 proposal.getType().getResultingState(),
                 truceUntil
         );
+
         CapitalDiplomacyDataAccess.adjustRelationship(
                 level,
                 source.getCapitalId(),
                 target.getCapitalId(),
                 proposal.getType().getAcceptanceBonus(),
-                proposal.getType().getDisplayName() + " accepted",
+                proposal.getType().getDisplayName()
+                        + " accepted",
                 target.getCapitalId()
         );
-        CapitalAgreementDataAccess.removeProposal(level, proposal.getProposalId());
-        String sourceName = CapitalDiplomaticAgreementText.capitalName(level, source);
-        String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
-        String entry = sourceName
-                + " and "
-                + targetName
-                + " entered into "
-                + CapitalDiplomaticAgreementText.withIndefiniteArticle(
-                proposal.getType().getDisplayName()
-        )
-                + ".";
-        CapitalChronicleService.addEntry(level, source, entry);
-        CapitalChronicleService.addEntry(level, target, entry);
+
+        CapitalAgreementDataAccess.removeProposal(
+                level,
+                proposal.getProposalId()
+        );
+
+        String sourceName =
+                CapitalDiplomaticAgreementText.capitalName(
+                        level,
+                        source
+                );
+
+        String targetName =
+                CapitalDiplomaticAgreementText.capitalName(
+                        level,
+                        target
+                );
+
+        String entry =
+                sourceName
+                        + " and "
+                        + targetName
+                        + " entered into "
+                        + CapitalDiplomaticAgreementText.withIndefiniteArticle(
+                        proposal.getType().getDisplayName()
+                )
+                        + ".";
+
+        CapitalChronicleService.addEntry(
+                level,
+                source,
+                entry
+        );
+
+        CapitalChronicleService.addEntry(
+                level,
+                target,
+                entry
+        );
+
         notifySource(
                 level,
                 proposal,
                 source,
-                proposal.getType().getDisplayName() + " Accepted",
+                proposal.getType().getDisplayName()
+                        + " Accepted",
                 targetName
                         + " accepted the proposed "
                         + proposal.getType().getDisplayName()
                         + "."
         );
+
         return true;
     }
 
@@ -367,24 +607,51 @@ final class CapitalDiplomaticProposalResolutionService {
             CapitalRecord source,
             CapitalRecord target
     ) {
-        CapitalAgreementDataAccess.removeProposal(level, proposal.getProposalId());
-        String sourceName = CapitalDiplomaticAgreementText.capitalName(level, source);
-        String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
-        String entry = targetName
-                + " rejected "
-                + CapitalDiplomaticAgreementText.withIndefiniteArticle(
-                proposal.getType().getDisplayName()
-        )
-                + " proposed by "
-                + sourceName
-                + ".";
-        CapitalChronicleService.addEntry(level, source, entry);
-        CapitalChronicleService.addEntry(level, target, entry);
+        CapitalAgreementDataAccess.removeProposal(
+                level,
+                proposal.getProposalId()
+        );
+
+        String sourceName =
+                CapitalDiplomaticAgreementText.capitalName(
+                        level,
+                        source
+                );
+
+        String targetName =
+                CapitalDiplomaticAgreementText.capitalName(
+                        level,
+                        target
+                );
+
+        String entry =
+                targetName
+                        + " rejected "
+                        + CapitalDiplomaticAgreementText.withIndefiniteArticle(
+                        proposal.getType().getDisplayName()
+                )
+                        + " proposed by "
+                        + sourceName
+                        + ".";
+
+        CapitalChronicleService.addEntry(
+                level,
+                source,
+                entry
+        );
+
+        CapitalChronicleService.addEntry(
+                level,
+                target,
+                entry
+        );
+
         notifySource(
                 level,
                 proposal,
                 source,
-                proposal.getType().getDisplayName() + " Rejected",
+                proposal.getType().getDisplayName()
+                        + " Rejected",
                 targetName
                         + " rejected the proposed "
                         + proposal.getType().getDisplayName()

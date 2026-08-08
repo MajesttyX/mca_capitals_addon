@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.capital.CapitalAmbassadorUrgentMatterService;
 import com.majesttyx.mcacapitals.capital.CapitalAsylumScreenService;
 import com.majesttyx.mcacapitals.capital.CapitalAsylumService;
 import com.mojang.brigadier.CommandDispatcher;
@@ -28,13 +29,16 @@ public final class CapitalAsylumCommands {
                                                                 "ambassadorId",
                                                                 StringArgumentType.word()
                                                         )
-                                                        .executes(context -> review(
-                                                                context.getSource(),
-                                                                StringArgumentType.getString(
-                                                                        context,
-                                                                        "ambassadorId"
-                                                                )
-                                                        ))
+                                                        .executes(
+                                                                context ->
+                                                                        review(
+                                                                                context.getSource(),
+                                                                                StringArgumentType.getString(
+                                                                                        context,
+                                                                                        "ambassadorId"
+                                                                                )
+                                                                        )
+                                                        )
                                         )
                         )
                         .then(
@@ -49,17 +53,20 @@ public final class CapitalAsylumCommands {
                                                                                 "refugeeId",
                                                                                 StringArgumentType.word()
                                                                         )
-                                                                        .executes(context -> grant(
-                                                                                context.getSource(),
-                                                                                StringArgumentType.getString(
-                                                                                        context,
-                                                                                        "ambassadorId"
-                                                                                ),
-                                                                                StringArgumentType.getString(
-                                                                                        context,
-                                                                                        "refugeeId"
-                                                                                )
-                                                                        ))
+                                                                        .executes(
+                                                                                context ->
+                                                                                        grant(
+                                                                                                context.getSource(),
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "ambassadorId"
+                                                                                                ),
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "refugeeId"
+                                                                                                )
+                                                                                        )
+                                                                        )
                                                         )
                                         )
                         )
@@ -70,16 +77,27 @@ public final class CapitalAsylumCommands {
             CommandSourceStack source,
             String rawAmbassadorId
     ) {
-        ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(
-                source,
-                rawAmbassadorId,
-                "The Ambassador ID is invalid."
-        );
-        if (player == null || ambassadorId == null) {
+        ServerPlayer player =
+                getPlayer(
+                        source
+                );
+
+        UUID ambassadorId =
+                parseUuid(
+                        source,
+                        rawAmbassadorId,
+                        "The Ambassador ID is invalid."
+                );
+
+        if (player == null
+                || ambassadorId == null) {
             return 0;
         }
-        return CapitalAsylumScreenService.openRequests(player, ambassadorId);
+
+        return CapitalAsylumScreenService.openRequests(
+                player,
+                ambassadorId
+        );
     }
 
     private static int grant(
@@ -87,25 +105,44 @@ public final class CapitalAsylumCommands {
             String rawAmbassadorId,
             String rawRefugeeId
     ) {
-        ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(
-                source,
-                rawAmbassadorId,
-                "The Ambassador ID is invalid."
-        );
-        UUID refugeeId = parseUuid(
-                source,
-                rawRefugeeId,
-                "The refugee ID is invalid."
-        );
-        if (player == null || ambassadorId == null || refugeeId == null) {
+        ServerPlayer player =
+                getPlayer(
+                        source
+                );
+
+        UUID ambassadorId =
+                parseUuid(
+                        source,
+                        rawAmbassadorId,
+                        "The Ambassador ID is invalid."
+                );
+
+        UUID refugeeId =
+                parseUuid(
+                        source,
+                        rawRefugeeId,
+                        "The refugee ID is invalid."
+                );
+
+        if (player == null
+                || ambassadorId == null
+                || refugeeId == null) {
             return 0;
         }
-        return CapitalAsylumService.grantAsylum(
+
+        int result =
+                CapitalAsylumService.grantAsylum(
+                        player,
+                        ambassadorId,
+                        refugeeId
+                );
+
+        CapitalAmbassadorUrgentMatterService.continueConversation(
                 player,
-                ambassadorId,
-                refugeeId
+                ambassadorId
         );
+
+        return result;
     }
 
     private static UUID parseUuid(
@@ -114,20 +151,32 @@ public final class CapitalAsylumCommands {
             String failureMessage
     ) {
         try {
-            return UUID.fromString(rawValue);
+            return UUID.fromString(
+                    rawValue
+            );
         } catch (IllegalArgumentException ignored) {
-            source.sendFailure(Component.literal(failureMessage));
+            source.sendFailure(
+                    Component.literal(
+                            failureMessage
+                    )
+            );
+
             return null;
         }
     }
 
-    private static ServerPlayer getPlayer(CommandSourceStack source) {
+    private static ServerPlayer getPlayer(
+            CommandSourceStack source
+    ) {
         try {
             return source.getPlayerOrException();
         } catch (Exception ignored) {
-            source.sendFailure(Component.literal(
-                    "Only a player may review asylum requests."
-            ));
+            source.sendFailure(
+                    Component.literal(
+                            "Only a player may review asylum requests."
+                    )
+            );
+
             return null;
         }
     }

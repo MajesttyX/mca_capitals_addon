@@ -5,7 +5,6 @@ import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticGiftService;
 import com.majesttyx.mcacapitals.capital.CapitalForeignAffairsService;
-import com.majesttyx.mcacapitals.capital.CapitalForeignRelationsMenuService;
 import com.majesttyx.mcacapitals.capital.CapitalPlayerWarrantDialogueService;
 import com.majesttyx.mcacapitals.capital.CapitalSovereignDeclarationPromptService;
 import com.majesttyx.mcacapitals.dialogue.CapitalPetitionService;
@@ -21,7 +20,8 @@ import java.lang.reflect.Field;
 
 @Pseudo
 @Mixin(
-        targets = "net.conczin.mca.entity.interaction.EntityCommandHandler",
+        targets =
+                "net.conczin.mca.entity.interaction.EntityCommandHandler",
         remap = false
 )
 public class VillagerCommandHandlerMixin {
@@ -37,39 +37,124 @@ public class VillagerCommandHandlerMixin {
             String command,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        if (command == null || !command.startsWith("mcacapitals_")) {
+        if (command == null
+                || !command.startsWith(
+                "mcacapitals_"
+        )) {
             return;
         }
 
-        Entity entity = resolveEntity();
+        Entity entity =
+                resolveEntity();
+
         MCACapitals.LOGGER.info(
                 "[MCACapitals] EntityCommandHandler.handle intercepted. command='{}', entity='{}', player='{}'",
                 command,
-                entity != null ? entity.getName().getString() : "null",
-                player != null ? player.getName().getString() : "null"
+                entity != null
+                        ? entity.getName()
+                        .getString()
+                        : "null",
+                player != null
+                        ? player.getName()
+                        .getString()
+                        : "null"
         );
-        if (entity == null || player == null) {
+
+        if (entity == null
+                || player == null) {
             return;
         }
 
         boolean handled;
-        if (CapitalSovereignDeclarationPromptService.handleCommand(player, entity, command)) {
+
+        if (CapitalSovereignDeclarationPromptService
+                .handleCommand(
+                        player,
+                        entity,
+                        command
+                )) {
+
             handled = true;
-        } else if (CapitalPlayerWarrantDialogueService.handleCommand(player, entity, command)) {
+
+        } else if (
+                CapitalPlayerWarrantDialogueService
+                        .handleCommand(
+                                player,
+                                entity,
+                                command
+                        )
+        ) {
+
             handled = true;
-        } else if (CapitalCrownJusticeService.DIALOGUE_COMMAND.equals(command)) {
-            handled = CapitalCrownJusticeService.openReview(player, entity.getUUID()) > 0;
-        } else if (CapitalForeignAffairsService.DIALOGUE_COMMAND.equals(command)) {
-            handled = CapitalForeignAffairsService.showReport(player, entity);
-        } else if (CapitalDiplomaticGiftService.DIALOGUE_COMMAND.equals(command)) {
-            handled = CapitalDiplomaticGiftService.openDestinationList(player, entity);
-        } else if (CapitalDiplomaticAgreementService.DIALOGUE_COMMAND.equals(command)) {
-            handled = CapitalForeignRelationsMenuService.openTargets(player, entity);
+
+        } else if (
+                CapitalCrownJusticeService
+                        .DIALOGUE_COMMAND
+                        .equals(command)
+        ) {
+
+            handled =
+                    CapitalCrownJusticeService
+                            .openReview(
+                                    player,
+                                    entity.getUUID()
+                            ) > 0;
+
+        } else if (
+                CapitalForeignAffairsService
+                        .DIALOGUE_COMMAND
+                        .equals(command)
+        ) {
+
+            handled =
+                    CapitalForeignAffairsService
+                            .showReport(
+                                    player,
+                                    entity
+                            );
+
+        } else if (
+                CapitalDiplomaticGiftService
+                        .DIALOGUE_COMMAND
+                        .equals(command)
+        ) {
+
+            handled =
+                    CapitalDiplomaticGiftService
+                            .openDestinationList(
+                                    player,
+                                    entity
+                            );
+
+        } else if (
+                CapitalDiplomaticAgreementService
+                        .DIALOGUE_COMMAND
+                        .equals(command)
+        ) {
+
+            handled =
+                    CapitalDiplomaticAgreementService
+                            .openCapitalList(
+                                    player,
+                                    entity
+                            );
+
         } else {
-            handled = CapitalPetitionService.handleCustomCommand(player, entity, command);
+
+            handled =
+                    CapitalPetitionService
+                            .handleCustomCommand(
+                                    player,
+                                    entity,
+                                    command
+                            );
         }
 
-        MCACapitals.LOGGER.info("[MCACapitals] Custom villager command handled={}", handled);
+        MCACapitals.LOGGER.info(
+                "[MCACapitals] Custom villager command handled={}",
+                handled
+        );
+
         if (handled) {
             cir.setReturnValue(true);
             cir.cancel();
@@ -77,23 +162,43 @@ public class VillagerCommandHandlerMixin {
     }
 
     private Entity resolveEntity() {
-        Class<?> type = this.getClass();
+        Class<?> type =
+                this.getClass();
+
         while (type != null) {
             try {
-                Field field = type.getDeclaredField("entity");
-                field.setAccessible(true);
-                Object value = field.get(this);
+                Field field =
+                        type.getDeclaredField(
+                                "entity"
+                        );
+
+                field.setAccessible(
+                        true
+                );
+
+                Object value =
+                        field.get(this);
+
                 if (value instanceof Entity entity) {
                     return entity;
                 }
+
             } catch (NoSuchFieldException ignored) {
-                type = type.getSuperclass();
+
+                type =
+                        type.getSuperclass();
+
                 continue;
+
             } catch (Throwable ignored) {
+
                 return null;
             }
-            type = type.getSuperclass();
+
+            type =
+                    type.getSuperclass();
         }
+
         return null;
     }
 }

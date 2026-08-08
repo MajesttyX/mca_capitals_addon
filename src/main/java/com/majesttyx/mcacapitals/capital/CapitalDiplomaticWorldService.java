@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.UUID;
 
 final class CapitalDiplomaticWorldService {
-
     private static final int NPC_INITIATIVE_CHANCE = 15;
     private static final long NPC_INITIATIVE_COOLDOWN_DAYS = 3L;
 
@@ -25,34 +24,54 @@ final class CapitalDiplomaticWorldService {
         }
 
         long gameDay = currentDay(level);
-
-        if (CapitalDiplomacyDataAccess.getLastRelationshipDriftDay(level) < gameDay) {
+        if (CapitalDiplomacyDataAccess
+                .getLastRelationshipDriftDay(level) < gameDay) {
             processRelationshipDrift(level);
-            CapitalDiplomacyDataAccess.setLastRelationshipDriftDay(level, gameDay);
+            CapitalDiplomacyDataAccess
+                    .setLastRelationshipDriftDay(
+                            level,
+                            gameDay
+                    );
         }
 
-        if (CapitalDiplomacyDataAccess.getLastNpcInitiativeDay(level) < gameDay) {
+        if (CapitalDiplomacyDataAccess
+                .getLastNpcInitiativeDay(level) < gameDay) {
             processNpcInitiatives(level, gameDay);
-            CapitalDiplomacyDataAccess.setLastNpcInitiativeDay(level, gameDay);
+            CapitalDiplomacyDataAccess
+                    .setLastNpcInitiativeDay(
+                            level,
+                            gameDay
+                    );
         }
     }
 
-    private static void processRelationshipDrift(ServerLevel level) {
+    private static void processRelationshipDrift(
+            ServerLevel level
+    ) {
         List<CapitalRecord> capitals = activeCapitals();
 
-        for (int firstIndex = 0; firstIndex < capitals.size(); firstIndex++) {
+        for (int firstIndex = 0;
+             firstIndex < capitals.size();
+             firstIndex++) {
             CapitalRecord first = capitals.get(firstIndex);
 
-            for (int secondIndex = firstIndex + 1; secondIndex < capitals.size(); secondIndex++) {
+            for (int secondIndex = firstIndex + 1;
+                 secondIndex < capitals.size();
+                 secondIndex++) {
                 CapitalRecord second = capitals.get(secondIndex);
 
-                CapitalDiplomacyDataAccess.getOrCreateRelationship(
-                        level,
-                        first.getCapitalId(),
-                        second.getCapitalId()
-                );
+                CapitalDiplomacyDataAccess
+                        .getOrCreateRelationship(
+                                level,
+                                first.getCapitalId(),
+                                second.getCapitalId()
+                        );
 
-                applyDrift(level, first, second);
+                applyDrift(
+                        level,
+                        first,
+                        second
+                );
             }
         }
     }
@@ -62,19 +81,26 @@ final class CapitalDiplomaticWorldService {
             CapitalRecord first,
             CapitalRecord second
     ) {
-        CapitalDiplomaticTruceService.refreshExpiredTruce(level, first, second);
-
-        int score = CapitalDiplomacyDataAccess.getRelationshipScore(
+        CapitalDiplomaticTruceService.refreshExpiredTruce(
                 level,
-                first.getCapitalId(),
-                second.getCapitalId()
+                first,
+                second
         );
 
-        CapitalDiplomaticState state = CapitalDiplomacyDataAccess.getDiplomaticState(
-                level,
-                first.getCapitalId(),
-                second.getCapitalId()
-        );
+        int score = CapitalDiplomacyDataAccess
+                .getRelationshipScore(
+                        level,
+                        first.getCapitalId(),
+                        second.getCapitalId()
+                );
+
+        CapitalDiplomaticState state =
+                CapitalDiplomacyDataAccess
+                        .getDiplomaticState(
+                                level,
+                                first.getCapitalId(),
+                                second.getCapitalId()
+                        );
 
         if (state == CapitalDiplomaticState.WAR) {
             return;
@@ -97,7 +123,8 @@ final class CapitalDiplomaticWorldService {
                 adjustment = -1;
                 reason = "Minor tension within the alliance";
             }
-        } else if (state == CapitalDiplomaticState.NON_AGGRESSION_PACT) {
+        } else if (state
+                == CapitalDiplomaticState.NON_AGGRESSION_PACT) {
             if (roll < 15) {
                 adjustment = 1;
                 reason = "Non-Aggression Pact strengthened relations";
@@ -106,7 +133,8 @@ final class CapitalDiplomaticWorldService {
                 reason = "Minor diplomatic friction";
             }
         } else {
-            CapitalRelationshipBand band = CapitalRelationshipBand.fromScore(score);
+            CapitalRelationshipBand band =
+                    CapitalRelationshipBand.fromScore(score);
 
             switch (band) {
                 case EXCELLENT, FRIENDLY, CORDIAL -> {
@@ -139,13 +167,27 @@ final class CapitalDiplomaticWorldService {
             }
         }
 
-        if (adjustment != 0) {
-            CapitalDiplomacyDataAccess.adjustRelationshipOrganic(
+        if (adjustment == 0) {
+            return;
+        }
+
+        if (state == CapitalDiplomaticState.PEACE) {
+            CapitalDiplomacyDataAccess
+                    .adjustRelationshipOrganic(
+                            level,
+                            first.getCapitalId(),
+                            second.getCapitalId(),
+                            adjustment,
+                            reason
+                    );
+        } else {
+            CapitalDiplomacyDataAccess.adjustRelationship(
                     level,
                     first.getCapitalId(),
                     second.getCapitalId(),
                     adjustment,
-                    reason
+                    reason,
+                    null
             );
         }
     }
@@ -158,22 +200,32 @@ final class CapitalDiplomaticWorldService {
 
         for (CapitalRecord source : capitals) {
             if (!isFullyNpcGoverned(level, source)
-                    || !CapitalBuildingService.hasAmbassadorBuildings(level, source)
-                    || CapitalAmbassadorService.getAmbassador(level, source) == null
-                    || CapitalDiplomacyDataAccess.getNpcInitiativeAvailableDay(
-                    level,
-                    source.getCapitalId()
-            ) > gameDay
-                    || level.random.nextInt(100) >= NPC_INITIATIVE_CHANCE) {
+                    || !CapitalBuildingService
+                    .hasAmbassadorBuildings(level, source)
+                    || CapitalAmbassadorService
+                    .getAmbassador(level, source) == null
+                    || CapitalDiplomacyDataAccess
+                    .getNpcInitiativeAvailableDay(
+                            level,
+                            source.getCapitalId()
+                    ) > gameDay
+                    || level.random.nextInt(100)
+                    >= NPC_INITIATIVE_CHANCE) {
                 continue;
             }
 
-            if (tryNpcInitiative(level, source, capitals)) {
-                CapitalDiplomacyDataAccess.setNpcInitiativeAvailableDay(
-                        level,
-                        source.getCapitalId(),
-                        gameDay + NPC_INITIATIVE_COOLDOWN_DAYS
-                );
+            if (tryNpcInitiative(
+                    level,
+                    source,
+                    capitals
+            )) {
+                CapitalDiplomacyDataAccess
+                        .setNpcInitiativeAvailableDay(
+                                level,
+                                source.getCapitalId(),
+                                gameDay
+                                        + NPC_INITIATIVE_COOLDOWN_DAYS
+                        );
             }
         }
     }
@@ -183,15 +235,18 @@ final class CapitalDiplomaticWorldService {
             CapitalRecord source,
             List<CapitalRecord> capitals
     ) {
-        List<ProposalCandidate> candidates = collectProposalCandidates(
-                level,
-                source,
-                capitals
-        );
+        List<ProposalCandidate> candidates =
+                collectProposalCandidates(
+                        level,
+                        source,
+                        capitals
+                );
 
         if (!candidates.isEmpty()) {
             ProposalCandidate candidate = candidates.get(
-                    level.random.nextInt(candidates.size())
+                    level.random.nextInt(
+                            candidates.size()
+                    )
             );
 
             return createNpcProposal(
@@ -202,25 +257,30 @@ final class CapitalDiplomaticWorldService {
             );
         }
 
-        List<CapitalRecord> warningTargets = new ArrayList<>();
+        List<CapitalRecord> warningTargets =
+                new ArrayList<>();
 
         for (CapitalRecord target : capitals) {
             if (target == null
-                    || target.getCapitalId().equals(source.getCapitalId())) {
+                    || target.getCapitalId().equals(
+                    source.getCapitalId()
+            )) {
                 continue;
             }
 
-            int score = CapitalDiplomacyDataAccess.getRelationshipScore(
-                    level,
-                    source.getCapitalId(),
-                    target.getCapitalId()
-            );
+            int score = CapitalDiplomacyDataAccess
+                    .getRelationshipScore(
+                            level,
+                            source.getCapitalId(),
+                            target.getCapitalId()
+                    );
 
             if (score <= -120
-                    && CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
-                    level,
-                    target
-            ) != null) {
+                    && CapitalDiplomaticAuthorityService
+                    .getPlayerDecisionMaker(
+                            level,
+                            target
+                    ) != null) {
                 warningTargets.add(target);
             }
         }
@@ -230,91 +290,117 @@ final class CapitalDiplomaticWorldService {
         }
 
         CapitalRecord target = warningTargets.get(
-                level.random.nextInt(warningTargets.size())
+                level.random.nextInt(
+                        warningTargets.size()
+                )
         );
 
-        UUID recipient = CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
-                level,
-                target
-        );
+        UUID recipient = CapitalDiplomaticAuthorityService
+                .getPlayerDecisionMaker(
+                        level,
+                        target
+                );
 
         if (recipient == null) {
             return false;
         }
 
-        CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
-                level,
-                recipient,
-                "Relations Deteriorating",
-                CapitalDiplomaticAgreementText.capitalName(level, source)
-                        + " warns that relations with "
-                        + CapitalDiplomaticAgreementText.capitalName(level, target)
-                        + " have become hostile."
-        );
+        CapitalDiplomaticAgreementCorrespondenceService
+                .sendNotice(
+                        level,
+                        recipient,
+                        "Relations Deteriorating",
+                        CapitalDiplomaticAgreementText
+                                .capitalName(level, source)
+                                + " warns that relations with "
+                                + CapitalDiplomaticAgreementText
+                                .capitalName(level, target)
+                                + " have become hostile."
+                );
 
         CapitalChronicleService.addEntry(
                 level,
                 source,
                 "A warning about deteriorating relations was sent to "
-                        + CapitalDiplomaticAgreementText.capitalName(level, target)
+                        + CapitalDiplomaticAgreementText
+                        .capitalName(level, target)
                         + "."
         );
 
         return true;
     }
 
-    private static List<ProposalCandidate> collectProposalCandidates(
+    private static List<ProposalCandidate>
+    collectProposalCandidates(
             ServerLevel level,
             CapitalRecord source,
             List<CapitalRecord> capitals
     ) {
-        List<ProposalCandidate> candidates = new ArrayList<>();
+        List<ProposalCandidate> candidates =
+                new ArrayList<>();
 
         for (CapitalRecord target : capitals) {
             if (target == null
-                    || target.getCapitalId().equals(source.getCapitalId())
-                    || CapitalDiplomaticAgreementValidation.getCurrentSovereignId(target) == null
-                    || CapitalAgreementDataAccess.findPendingBetween(
-                    level,
-                    source.getCapitalId(),
-                    target.getCapitalId()
-            ) != null) {
+                    || target.getCapitalId().equals(
+                    source.getCapitalId()
+            )
+                    || CapitalDiplomaticAgreementValidation
+                    .getCurrentSovereignId(target) == null
+                    || CapitalAgreementDataAccess
+                    .findPendingBetween(
+                            level,
+                            source.getCapitalId(),
+                            target.getCapitalId()
+                    ) != null) {
                 continue;
             }
 
-            CapitalDiplomaticTruceService.refreshExpiredTruce(level, source, target);
+            CapitalDiplomaticTruceService
+                    .refreshExpiredTruce(
+                            level,
+                            source,
+                            target
+                    );
 
-            int score = CapitalDiplomacyDataAccess.getRelationshipScore(
-                    level,
-                    source.getCapitalId(),
-                    target.getCapitalId()
-            );
+            int score = CapitalDiplomacyDataAccess
+                    .getRelationshipScore(
+                            level,
+                            source.getCapitalId(),
+                            target.getCapitalId()
+                    );
 
-            CapitalDiplomaticState state = CapitalDiplomacyDataAccess.getDiplomaticState(
-                    level,
-                    source.getCapitalId(),
-                    target.getCapitalId()
-            );
+            CapitalDiplomaticState state =
+                    CapitalDiplomacyDataAccess
+                            .getDiplomaticState(
+                                    level,
+                                    source.getCapitalId(),
+                                    target.getCapitalId()
+                            );
 
-            for (DiplomaticProposalType type : DiplomaticProposalType.values()) {
-                if (type != DiplomaticProposalType.TRUCE && score < 30) {
+            for (DiplomaticProposalType type :
+                    DiplomaticProposalType.values()) {
+                if (score < type.getMinimumRelationship()) {
                     continue;
                 }
-                if (type == DiplomaticProposalType.TRUCE && score < -74) {
-                    continue;
-                }
 
-                String failure = CapitalDiplomaticAgreementValidation.validateProposal(
-                        level,
-                        source,
-                        target,
-                        type,
-                        state,
-                        score
-                );
+                String failure =
+                        CapitalDiplomaticAgreementValidation
+                                .validateProposal(
+                                        level,
+                                        source,
+                                        target,
+                                        type,
+                                        state,
+                                        score
+                                );
 
                 if (failure == null) {
-                    candidates.add(new ProposalCandidate(target, type));
+                    candidates.add(
+                            new ProposalCandidate(
+                                    target,
+                                    type
+                            )
+                    );
                 }
             }
         }
@@ -328,21 +414,29 @@ final class CapitalDiplomaticWorldService {
             CapitalRecord target,
             DiplomaticProposalType type
     ) {
-        UUID sourceSovereignId = CapitalDiplomaticAgreementValidation.getCurrentSovereignId(source);
-        UUID targetSovereignId = CapitalDiplomaticAgreementValidation.getCurrentSovereignId(target);
+        UUID sourceSovereignId =
+                CapitalDiplomaticAgreementValidation
+                        .getCurrentSovereignId(source);
 
-        if (sourceSovereignId == null || targetSovereignId == null) {
+        UUID targetSovereignId =
+                CapitalDiplomaticAgreementValidation
+                        .getCurrentSovereignId(target);
+
+        if (sourceSovereignId == null
+                || targetSovereignId == null) {
             return false;
         }
 
         DiplomaticProposal proposal;
 
         if (type == DiplomaticProposalType.ROYAL_BETROTHAL) {
-            CapitalRoyalBetrothalService.Match match = CapitalRoyalBetrothalService.findMatch(
-                    level,
-                    source,
-                    target
-            );
+            CapitalRoyalBetrothalService.Match match =
+                    CapitalRoyalBetrothalService
+                            .findMatch(
+                                    level,
+                                    source,
+                                    target
+                            );
 
             if (match == null) {
                 return false;
@@ -374,34 +468,46 @@ final class CapitalDiplomaticWorldService {
             );
         }
 
-        CapitalAgreementDataAccess.addProposal(level, proposal);
+        CapitalAgreementDataAccess.addProposal(
+                level,
+                proposal
+        );
 
         CapitalChronicleService.addEntry(
                 level,
                 source,
-                CapitalDiplomaticAgreementText.capitalizedWithIndefiniteArticle(
-                        type.getDisplayName()
-                )
+                CapitalDiplomaticAgreementText
+                        .capitalizedWithIndefiniteArticle(
+                                type.getDisplayName()
+                        )
                         + " was proposed to "
-                        + CapitalDiplomaticAgreementText.capitalName(level, target)
+                        + CapitalDiplomaticAgreementText
+                        .capitalName(level, target)
                         + "."
         );
 
-        UUID targetPlayerId = CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
-                level,
-                target
-        );
+        UUID targetPlayerId =
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                target
+                        );
 
         if (targetPlayerId != null) {
-            CapitalDiplomaticProposalService.sendProposalToPlayer(
-                    level,
-                    proposal,
-                    source,
-                    target,
-                    targetPlayerId
-            );
+            CapitalDiplomaticProposalService
+                    .sendProposalToPlayer(
+                            level,
+                            proposal,
+                            source,
+                            target,
+                            targetPlayerId
+                    );
         } else {
-            CapitalDiplomaticProposalResolutionService.resolveNpcProposal(level, proposal);
+            CapitalDiplomaticProposalResolutionService
+                    .resolveNpcProposal(
+                            level,
+                            proposal
+                    );
         }
 
         return true;
@@ -414,33 +520,44 @@ final class CapitalDiplomaticWorldService {
         return capital != null
                 && capital.getPlayerSovereignId() == null
                 && capital.getSovereign() != null
-                && CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
-                level,
-                capital
-        ) == null;
+                && CapitalDiplomaticAuthorityService
+                .getPlayerDecisionMaker(
+                        level,
+                        capital
+                ) == null;
     }
 
     private static List<CapitalRecord> activeCapitals() {
-        List<CapitalRecord> result = new ArrayList<>();
+        List<CapitalRecord> result =
+                new ArrayList<>();
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+        for (CapitalRecord capital :
+                CapitalManager.getAllCapitalRecords()) {
             if (capital != null
                     && capital.getCapitalId() != null
-                    && capital.getState() == CapitalState.ACTIVE) {
+                    && capital.getState()
+                    == CapitalState.ACTIVE) {
                 result.add(capital);
             }
         }
 
         Collections.sort(
                 result,
-                (first, second) -> first.getCapitalId().compareTo(second.getCapitalId())
+                (first, second) ->
+                        first.getCapitalId()
+                                .compareTo(
+                                        second.getCapitalId()
+                                )
         );
 
         return result;
     }
 
     private static long currentDay(ServerLevel level) {
-        return Math.max(1L, level.getDayTime() / 24000L + 1L);
+        return Math.max(
+                1L,
+                level.getDayTime() / 24000L + 1L
+        );
     }
 
     private record ProposalCandidate(

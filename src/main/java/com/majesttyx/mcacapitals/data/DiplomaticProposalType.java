@@ -8,31 +8,31 @@ public enum DiplomaticProposalType {
     NON_AGGRESSION_PACT(
             "Non-Aggression Pact",
             CapitalDiplomaticState.NON_AGGRESSION_PACT,
-            10,
+            30,
             10
     ),
     ALLIANCE(
             "Alliance",
             CapitalDiplomaticState.ALLIANCE,
-            40,
-            10
+            100,
+            25
     ),
     TRUCE(
             "Truce",
             CapitalDiplomaticState.TRUCE,
-            -74,
-            5
+            -249,
+            10
     ),
     TRADE_AGREEMENT(
             "Trade Agreement",
             null,
-            10,
+            30,
             10
     ),
     ROYAL_BETROTHAL(
             "Royal Betrothal",
             null,
-            20,
+            60,
             10
     );
 

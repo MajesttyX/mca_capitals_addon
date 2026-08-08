@@ -25,7 +25,7 @@ import java.util.UUID;
 public final class CapitalRoyalBetrothalService {
 
     private static final int MINIMUM_RELATIONSHIP = 20;
-    private static final int MARRIAGE_RELATIONSHIP_BONUS = 20;
+    private static final int MARRIAGE_RELATIONSHIP_BONUS = 25;
     private static final double MAX_AMBASSADOR_DISTANCE_SQR = 144.0D;
 
     private CapitalRoyalBetrothalService() {

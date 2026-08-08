@@ -2,7 +2,7 @@
   "answers": [
     {
       "name": "mcacapitals_manage_diplomacy",
-      "priority": 1005,
+      "priority": 1002,
       "results": [
         {
           "actions": {
@@ -13,7 +13,7 @@
     },
     {
       "name": "mcacapitals_review_crown_justice",
-      "priority": 1004,
+      "priority": 1000,
       "results": [
         {
           "actions": {
@@ -23,19 +23,8 @@
       ]
     },
     {
-      "name": "mcacapitals_ask_foreign_affairs",
-      "priority": 1003,
-      "results": [
-        {
-          "actions": {
-            "command": "mcacapitals_ask_foreign_affairs"
-          }
-        }
-      ]
-    },
-    {
       "name": "mcacapitals_accuse_enemy",
-      "priority": 1002,
+      "priority": 999,
       "results": [
         {
           "actions": {
@@ -45,19 +34,8 @@
       ]
     },
     {
-      "name": "mcacapitals_send_gift",
-      "priority": 1001,
-      "results": [
-        {
-          "actions": {
-            "command": "mcacapitals_send_gift"
-          }
-        }
-      ]
-    },
-    {
       "name": "mcacapitals_request_royal_pardon",
-      "priority": 1000,
+      "priority": 998,
       "results": [
         {
           "actions": {

@@ -11,7 +11,9 @@ import java.util.UUID;
 
 public final class CapitalDiplomaticAgreementService {
 
-    public static final String DIALOGUE_COMMAND = "mcacapitals_manage_diplomacy";
+    public static final String DIALOGUE_COMMAND =
+            "mcacapitals_manage_diplomacy";
+
     public static final long TRUCE_DURATION_TICKS =
             CapitalDiplomaticTruceService.TRUCE_DURATION_TICKS;
 
@@ -22,13 +24,59 @@ public final class CapitalDiplomaticAgreementService {
             ServerPlayer player,
             Entity ambassadorEntity
     ) {
-        if (player == null || ambassadorEntity == null) {
+        if (player == null
+                || ambassadorEntity == null) {
             return false;
         }
-        return CapitalDiplomaticAgreementValidation.validateAudience(
+
+        return CapitalDiplomaticAgreementValidation
+                .validateMenuAudience(
+                        player,
+                        ambassadorEntity.getUUID()
+                )
+                .valid();
+    }
+
+    public static boolean openCapitalList(
+            ServerPlayer player,
+            Entity ambassadorEntity
+    ) {
+        if (CapitalAmbassadorUrgentMatterService
+                .openIfNeeded(
+                        player,
+                        ambassadorEntity
+                )) {
+            return true;
+        }
+
+        return openCapitalListDirect(
                 player,
-                ambassadorEntity.getUUID()
-        ).valid();
+                ambassadorEntity
+        );
+    }
+
+    public static boolean openCapitalListDirect(
+            ServerPlayer player,
+            Entity ambassadorEntity
+    ) {
+        return CapitalDiplomaticAgreementMenuService
+                .openCapitalList(
+                        player,
+                        ambassadorEntity
+                );
+    }
+
+    public static int openActionList(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID targetCapitalId
+    ) {
+        return CapitalDiplomaticAgreementMenuService
+                .openActionList(
+                        player,
+                        ambassadorId,
+                        targetCapitalId
+                );
     }
 
     public static int propose(
@@ -37,12 +85,13 @@ public final class CapitalDiplomaticAgreementService {
             UUID targetCapitalId,
             DiplomaticProposalType type
     ) {
-        return CapitalDiplomaticProposalService.propose(
-                player,
-                ambassadorId,
-                targetCapitalId,
-                type
-        );
+        return CapitalDiplomaticProposalService
+                .propose(
+                        player,
+                        ambassadorId,
+                        targetCapitalId,
+                        type
+                );
     }
 
     public static int openBetrothalSourceSelection(
@@ -50,11 +99,12 @@ public final class CapitalDiplomaticAgreementService {
             UUID ambassadorId,
             UUID targetCapitalId
     ) {
-        return CapitalRoyalBetrothalService.openSourceRoyalSelection(
-                player,
-                ambassadorId,
-                targetCapitalId
-        );
+        return CapitalRoyalBetrothalService
+                .openSourceRoyalSelection(
+                        player,
+                        ambassadorId,
+                        targetCapitalId
+                );
     }
 
     public static int openBetrothalTargetSelection(
@@ -63,12 +113,13 @@ public final class CapitalDiplomaticAgreementService {
             UUID targetCapitalId,
             UUID sourceRoyalId
     ) {
-        return CapitalRoyalBetrothalService.openTargetRoyalSelection(
-                player,
-                ambassadorId,
-                targetCapitalId,
-                sourceRoyalId
-        );
+        return CapitalRoyalBetrothalService
+                .openTargetRoyalSelection(
+                        player,
+                        ambassadorId,
+                        targetCapitalId,
+                        sourceRoyalId
+                );
     }
 
     public static int openBetrothalSettlementSelection(
@@ -78,13 +129,14 @@ public final class CapitalDiplomaticAgreementService {
             UUID sourceRoyalId,
             UUID targetRoyalId
     ) {
-        return CapitalRoyalBetrothalService.openSettlementSelection(
-                player,
-                ambassadorId,
-                targetCapitalId,
-                sourceRoyalId,
-                targetRoyalId
-        );
+        return CapitalRoyalBetrothalService
+                .openSettlementSelection(
+                        player,
+                        ambassadorId,
+                        targetCapitalId,
+                        sourceRoyalId,
+                        targetRoyalId
+                );
     }
 
     public static int proposeSelectedBetrothal(
@@ -95,14 +147,15 @@ public final class CapitalDiplomaticAgreementService {
             UUID targetRoyalId,
             UUID destinationCapitalId
     ) {
-        return CapitalRoyalBetrothalService.proposeSelected(
-                player,
-                ambassadorId,
-                targetCapitalId,
-                sourceRoyalId,
-                targetRoyalId,
-                destinationCapitalId
-        );
+        return CapitalRoyalBetrothalService
+                .proposeSelected(
+                        player,
+                        ambassadorId,
+                        targetCapitalId,
+                        sourceRoyalId,
+                        targetRoyalId,
+                        destinationCapitalId
+                );
     }
 
     public static int endTradeAgreement(
@@ -110,36 +163,78 @@ public final class CapitalDiplomaticAgreementService {
             UUID ambassadorId,
             UUID targetCapitalId
     ) {
-        return CapitalDiplomaticTradeAgreementService.endByPlayer(
-                player,
-                ambassadorId,
-                targetCapitalId
-        );
+        return CapitalDiplomaticTradeAgreementService
+                .endByPlayer(
+                        player,
+                        ambassadorId,
+                        targetCapitalId
+                );
     }
 
-    public static int accept(ServerPlayer player, UUID proposalId) {
-        return CapitalDiplomaticProposalResolutionService.accept(player, proposalId);
+    public static int declareWar(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID targetCapitalId
+    ) {
+        return CapitalDiplomaticWarService
+                .declareWar(
+                        player,
+                        ambassadorId,
+                        targetCapitalId
+                );
     }
 
-    public static int reject(ServerPlayer player, UUID proposalId) {
-        return CapitalDiplomaticProposalResolutionService.reject(player, proposalId);
+    public static int accept(
+            ServerPlayer player,
+            UUID proposalId
+    ) {
+        return CapitalDiplomaticProposalResolutionService
+                .accept(
+                        player,
+                        proposalId
+                );
     }
 
-    public static List<DiplomaticProposal> getPendingForPlayer(
+    public static int reject(
+            ServerPlayer player,
+            UUID proposalId
+    ) {
+        return CapitalDiplomaticProposalResolutionService
+                .reject(
+                        player,
+                        proposalId
+                );
+    }
+
+    public static List<DiplomaticProposal>
+    getPendingForPlayer(
             ServerLevel level,
             UUID playerId
     ) {
-        return CapitalDiplomaticProposalService.getPendingForPlayer(level, playerId);
+        return CapitalDiplomaticProposalService
+                .getPendingForPlayer(
+                        level,
+                        playerId
+                );
     }
 
     public static void processPendingProposal(
             ServerLevel level,
             DiplomaticProposal proposal
     ) {
-        CapitalDiplomaticProposalService.processPendingProposal(level, proposal);
+        CapitalDiplomaticProposalService
+                .processPendingProposal(
+                        level,
+                        proposal
+                );
     }
 
-    public static void expireTruces(ServerLevel level) {
-        CapitalDiplomaticTruceService.expireTruces(level);
+    public static void expireTruces(
+            ServerLevel level
+    ) {
+        CapitalDiplomaticTruceService
+                .expireTruces(
+                        level
+                );
     }
 }

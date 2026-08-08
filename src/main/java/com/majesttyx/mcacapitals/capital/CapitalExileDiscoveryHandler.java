@@ -18,90 +18,185 @@ import java.util.UUID;
 
 public final class CapitalExileDiscoveryHandler {
 
-    private static final int TICK_INTERVAL = 20 * 30;
-    private static final int NATURAL_DISCOVERY_CHANCE_PERCENT = 10;
-    private static final long NATURAL_DISCOVERY_COOLDOWN_DAYS = 4L;
-    private static final double CAPITAL_RADIUS_SQR = 96.0D * 96.0D;
+    private static final int
+            TICK_INTERVAL =
+            20 * 30;
 
-    public void onLevelTick(ServerLevel level) {
-        if (level == null || level.getGameTime() % TICK_INTERVAL != 0L) {
+    private static final int
+            NATURAL_DISCOVERY_CHANCE_PERCENT =
+            10;
+
+    private static final long
+            NATURAL_DISCOVERY_COOLDOWN_DAYS =
+            4L;
+
+    private static final double
+            CAPITAL_RADIUS_SQR =
+            96.0D * 96.0D;
+
+    public void onLevelTick(
+            ServerLevel level
+    ) {
+        if (level == null
+                || level.getGameTime()
+                % TICK_INTERVAL != 0L) {
             return;
         }
 
         boolean changed = false;
-        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
-            if (tickCapital(level, capital)) {
+
+        for (CapitalRecord capital :
+                CapitalManager
+                        .getAllCapitalRecords()) {
+
+            if (tickCapital(
+                    level,
+                    capital
+            )) {
                 changed = true;
             }
         }
 
         if (changed) {
-            CapitalDataAccess.markDirty(level);
+            CapitalDataAccess.markDirty(
+                    level
+            );
         }
     }
 
-    private boolean tickCapital(ServerLevel level, CapitalRecord capital) {
+    private boolean tickCapital(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
         if (level == null
                 || capital == null
                 || capital.getCapitalId() == null
-                || capital.getState() != CapitalState.ACTIVE) {
-            return false;
-        }
-        if (capital.getVillageId() == null || capital.getMasterOfLaws() == null) {
-            return false;
-        }
-        if (!CapitalMasterOfLawsService.hasUnlockedJustice(level, capital)) {
+                || capital.getState()
+                != CapitalState.ACTIVE) {
             return false;
         }
 
-        long currentDay = currentDay(level);
-        long lastScanDay = CapitalJusticeDataAccess.getLastExileScanDay(
-                level,
-                capital.getCapitalId()
-        );
+        if (capital.getVillageId() == null
+                || capital.getMasterOfLaws()
+                == null) {
+            return false;
+        }
+
+        if (!CapitalMasterOfLawsService
+                .hasUnlockedJustice(
+                        level,
+                        capital
+                )) {
+            return false;
+        }
+
+        long currentDay =
+                currentDay(
+                        level
+                );
+
+        long lastScanDay =
+                CapitalJusticeDataAccess
+                        .getLastExileScanDay(
+                                level,
+                                capital.getCapitalId()
+                        );
+
         if (lastScanDay == currentDay) {
             return false;
         }
 
-        CapitalJusticeDataAccess.setLastExileScanDay(
-                level,
-                capital.getCapitalId(),
-                currentDay
-        );
+        CapitalJusticeDataAccess
+                .setLastExileScanDay(
+                        level,
+                        capital.getCapitalId(),
+                        currentDay
+                );
 
-        CapitalNaturalEnemyDiscoverySavedData discoveryData =
-                CapitalNaturalEnemyDiscoverySavedData.get(level);
-        long lastDiscoveryDay = discoveryData.getLastDiscoveryDay(capital.getCapitalId());
-        if (lastDiscoveryDay != Long.MIN_VALUE
-                && currentDay - lastDiscoveryDay < NATURAL_DISCOVERY_COOLDOWN_DAYS) {
+        CapitalNaturalEnemyDiscoverySavedData
+                discoveryData =
+                CapitalNaturalEnemyDiscoverySavedData
+                        .get(level);
+
+        long lastDiscoveryDay =
+                discoveryData
+                        .getLastDiscoveryDay(
+                                capital.getCapitalId()
+                        );
+
+        if (lastDiscoveryDay
+                != Long.MIN_VALUE
+                && currentDay
+                - lastDiscoveryDay
+                < NATURAL_DISCOVERY_COOLDOWN_DAYS) {
             return false;
         }
 
-        List<UUID> candidates = getEligibleCandidates(level, capital);
+        List<UUID> candidates =
+                getEligibleCandidates(
+                        level,
+                        capital
+                );
+
         if (candidates.isEmpty()) {
             return false;
         }
-        if (level.random.nextInt(100) >= NATURAL_DISCOVERY_CHANCE_PERCENT) {
+
+        if (level.random.nextInt(100)
+                >= NATURAL_DISCOVERY_CHANCE_PERCENT) {
             return false;
         }
 
-        UUID targetId = candidates.get(level.random.nextInt(candidates.size()));
-        if (!discoverEnemy(level, capital, targetId)) {
+        UUID targetId =
+                candidates.get(
+                        level.random.nextInt(
+                                candidates.size()
+                        )
+                );
+
+        if (!discoverEnemy(
+                level,
+                capital,
+                targetId
+        )) {
             return false;
         }
 
-        discoveryData.setLastDiscoveryDay(capital.getCapitalId(), currentDay);
+        discoveryData
+                .setLastDiscoveryDay(
+                        capital.getCapitalId(),
+                        currentDay
+                );
+
         return true;
     }
 
-    private List<UUID> getEligibleCandidates(ServerLevel level, CapitalRecord capital) {
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        List<UUID> candidates = new ArrayList<>();
+    private List<UUID> getEligibleCandidates(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
+        Set<UUID> residents =
+                CapitalResidentScanner
+                        .scanResidents(
+                                level,
+                                capital.getCapitalId()
+                        );
+
+        List<UUID> candidates =
+                new ArrayList<>();
+
         for (UUID residentId : residents) {
-            if (isEligibleForNaturalDiscovery(level, capital, residentId)) {
-                candidates.add(residentId);
+            if (isEligibleForNaturalDiscovery(
+                    level,
+                    capital,
+                    residentId
+            )) {
+                candidates.add(
+                        residentId
+                );
             }
         }
+
         return candidates;
     }
 
@@ -110,74 +205,212 @@ public final class CapitalExileDiscoveryHandler {
             CapitalRecord capital,
             UUID targetId
     ) {
-        if (level == null || capital == null || targetId == null) {
+        if (level == null
+                || capital == null
+                || targetId == null) {
             return false;
         }
-        if (targetId.equals(capital.getSovereign())
-                || targetId.equals(capital.getPlayerSovereignId())
-                || targetId.equals(capital.getMasterOfLaws())) {
+
+        if (targetId.equals(
+                capital.getSovereign()
+        )
+                || targetId.equals(
+                capital.getPlayerSovereignId()
+        )
+                || targetId.equals(
+                capital.getMasterOfLaws()
+        )) {
             return false;
         }
-        if (CapitalCrownStandingService.getStanding(level, capital, targetId)
+
+        if (CapitalCrownStandingService
+                .getStanding(
+                        level,
+                        capital,
+                        targetId
+                )
                 != CrownStanding.ENEMY_OF_CROWN) {
             return false;
         }
-        if (!MCAIntegrationBridge.isLoadedAndAlive(level, targetId)
-                || !MCAIntegrationBridge.isTeenOrAdultVillager(level, targetId)
-                || !MCAIntegrationBridge.isMCAVillager(level, targetId)) {
-            return false;
-        }
-        if (CapitalJusticeDataAccess.hasArrestWarrant(level, capital.getCapitalId(), targetId)
-                || CapitalJusticeDataAccess.isDetainedPrisoner(level, capital.getCapitalId(), targetId)
-                || MCAExecutionBridge.isMarkedForExecution(level, targetId)) {
+
+        if (!MCAIntegrationBridge
+                .isLoadedAndAlive(
+                        level,
+                        targetId
+                )
+                || !MCAIntegrationBridge
+                .isTeenOrAdultVillager(
+                        level,
+                        targetId
+                )
+                || !MCAIntegrationBridge
+                .isMCAVillager(
+                        level,
+                        targetId
+                )) {
             return false;
         }
 
-        Entity target = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, targetId);
-        return target != null && isInsideCapital(level, capital, target);
+        if (CapitalJusticeDataAccess
+                .hasArrestWarrant(
+                        level,
+                        capital.getCapitalId(),
+                        targetId
+                )
+                || CapitalJusticeDataAccess
+                .isDetainedPrisoner(
+                        level,
+                        capital.getCapitalId(),
+                        targetId
+                )
+                || MCAExecutionBridge
+                .isMarkedForExecution(
+                        level,
+                        targetId
+                )) {
+            return false;
+        }
+
+        Entity target =
+                MCAIntegrationBridge
+                        .findLoadedMCAVillagerByUuid(
+                                level,
+                                targetId
+                        );
+
+        return target != null
+                && isInsideCapital(
+                level,
+                capital,
+                target
+        );
     }
 
-    private boolean discoverEnemy(ServerLevel level, CapitalRecord capital, UUID targetId) {
-        if (!isEligibleForNaturalDiscovery(level, capital, targetId)) {
+    private boolean discoverEnemy(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID targetId
+    ) {
+        if (!isEligibleForNaturalDiscovery(
+                level,
+                capital,
+                targetId
+        )) {
             return false;
         }
 
-        boolean warrantIssued = CapitalJusticeDataAccess.issueArrestWarrant(
-                level,
-                capital.getCapitalId(),
-                targetId
-        );
+        boolean warrantIssued =
+                CapitalJusticeDataAccess
+                        .issueArrestWarrant(
+                                level,
+                                capital.getCapitalId(),
+                                targetId
+                        );
+
         if (!warrantIssued) {
             return false;
         }
-        if (!CapitalCrownJusticeService.onCorrectAccusation(level, capital, targetId)) {
-            CapitalJusticeDataAccess.clearArrestWarrant(level, capital.getCapitalId(), targetId);
+
+        String targetName =
+                CapitalNameService
+                        .resolveDisplayName(
+                                level,
+                                capital,
+                                targetId
+                        );
+
+        if (!CapitalCrownJusticeService
+                .onCorrectAccusation(
+                        level,
+                        capital,
+                        targetId
+                )) {
+
+            CapitalJusticeDataAccess
+                    .clearArrestWarrant(
+                            level,
+                            capital.getCapitalId(),
+                            targetId
+                    );
+
             return false;
         }
 
-        String targetName = CapitalNameService.resolveDisplayName(level, capital, targetId);
-        String discoveryLine = targetName + " was discovered to be an Enemy of the Crown.";
-        String warrantLine = CapitalJusticeText.arrestWarrantIssued(targetName);
+        CapitalResidentScanner.clearCache(
+                level
+        );
 
-        CapitalChronicleService.addEntry(level, capital, discoveryLine);
-        CapitalChronicleService.addEntry(level, capital, warrantLine);
-        CapitalPlayerNotificationService.notifyPlayersInCapital(
-                level,
-                capital,
-                Component.literal(
-                        "Reports reach the Master of Laws: " + targetName
-                                + " has been discovered as an Enemy of the Crown."
-                )
-        );
-        CapitalPlayerNotificationService.notifyPlayersInCapital(
-                level,
-                capital,
-                Component.literal(warrantLine)
-        );
+        Set<UUID> residents =
+                CapitalResidentScanner
+                        .scanResidents(
+                                level,
+                                capital.getCapitalId()
+                        );
+
+        CapitalNameService
+                .refreshCapitalNames(
+                        level,
+                        capital,
+                        residents
+                );
+
+        CapitalCourtWatcher
+                .clearFingerprint(
+                        capital.getCapitalId()
+                );
+
+        String discoveryLine =
+                targetName
+                        + " was discovered to be an Enemy of the Crown.";
+
+        String warrantLine =
+                CapitalJusticeText
+                        .arrestWarrantIssued(
+                                targetName
+                        );
+
+        CapitalChronicleService
+                .addEntry(
+                        level,
+                        capital,
+                        discoveryLine
+                );
+
+        CapitalChronicleService
+                .addEntry(
+                        level,
+                        capital,
+                        warrantLine
+                );
+
+        CapitalPlayerNotificationService
+                .notifyPlayersInCapital(
+                        level,
+                        capital,
+                        Component.literal(
+                                "Reports reach the Master of Laws: "
+                                        + targetName
+                                        + " has been discovered as an Enemy of the Crown."
+                        )
+                );
+
+        CapitalPlayerNotificationService
+                .notifyPlayersInCapital(
+                        level,
+                        capital,
+                        Component.literal(
+                                warrantLine
+                        )
+                );
+
         return true;
     }
 
-    private boolean isInsideCapital(ServerLevel level, CapitalRecord capital, Entity target) {
+    private boolean isInsideCapital(
+            ServerLevel level,
+            CapitalRecord capital,
+            Entity target
+    ) {
         if (level == null
                 || capital == null
                 || capital.getVillageId() == null
@@ -185,20 +418,36 @@ public final class CapitalExileDiscoveryHandler {
             return false;
         }
 
-        BlockPos center = MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId());
+        BlockPos center =
+                MCAIntegrationBridge
+                        .getVillageCenter(
+                                level,
+                                capital.getVillageId()
+                        );
+
         if (center == null) {
             return false;
         }
 
-        double distance = target.distanceToSqr(
-                center.getX() + 0.5D,
-                center.getY() + 0.5D,
-                center.getZ() + 0.5D
-        );
-        return distance <= CAPITAL_RADIUS_SQR;
+        double distance =
+                target.distanceToSqr(
+                        center.getX() + 0.5D,
+                        center.getY() + 0.5D,
+                        center.getZ() + 0.5D
+                );
+
+        return distance
+                <= CAPITAL_RADIUS_SQR;
     }
 
-    private long currentDay(ServerLevel level) {
-        return Math.max(1L, level.getDayTime() / 24000L + 1L);
+    private long currentDay(
+            ServerLevel level
+    ) {
+        return Math.max(
+                1L,
+                level.getDayTime()
+                        / 24000L
+                        + 1L
+        );
     }
 }
