@@ -6,11 +6,11 @@
       "item": "minecraft:honeycomb"
     },
     {
-      "item": "minecraft:cyan_dye"
+      "item": "minecraft:blue_dye"
     }
   ],
   "result": {
-    "item": "mcacapitals:cyan_royal_seal",
+    "id": "mcacapitals:blue_royal_seal",
     "count": 1
   }
 }

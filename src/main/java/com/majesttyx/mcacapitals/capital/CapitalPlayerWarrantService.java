@@ -1,7 +1,6 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalPlayerWarrantDataAccess;
-import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -14,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 public final class CapitalPlayerWarrantService {
-    public static final int WARRANT_FINE_EMERALDS = 16;
+    public static final int WARRANT_FINE_EMERALDS = 32;
     public static final long LEAVE_ORDER_TICKS = 20L * 120L;
     public static final long SENTENCE_TICKS = 20L * 300L;
 
@@ -69,7 +68,7 @@ public final class CapitalPlayerWarrantService {
 
         if (countEmeralds(player) < WARRANT_FINE_EMERALDS) {
             player.sendSystemMessage(Component.literal(
-                    "You need exactly 16 emerald items to pay this warrant fine. Emerald blocks are not accepted."
+                    "You need exactly 32 emerald items to pay this warrant fine. Emerald blocks are not accepted."
             ));
             return 0;
         }
@@ -81,7 +80,7 @@ public final class CapitalPlayerWarrantService {
         );
         player.getInventory().setChanged();
         player.sendSystemMessage(Component.literal(
-                "You paid 16 emeralds. The warrant issued by "
+                "You paid 32 emeralds. The warrant issued by "
                         + CapitalDiplomaticAgreementText.capitalName(
                         player.serverLevel(),
                         issuingCapital
@@ -100,20 +99,17 @@ public final class CapitalPlayerWarrantService {
                 level,
                 issuingCapital
         );
-        boolean recognizedPrison = !prisonCenters.isEmpty();
-        BlockPos holdingCenter = recognizedPrison
-                ? prisonCenters.get(0)
-                : MCAIntegrationBridge.getVillageCenter(level, issuingCapital.getVillageId());
-        if (holdingCenter == null) {
+        if (prisonCenters.isEmpty()) {
             player.sendSystemMessage(Component.literal(
-                    "This Capital has no available legal holding location."
+                    "This Capital has no recognized Prison in which the sentence can be served."
             ));
             return 0;
         }
+        BlockPos prisonCenter = prisonCenters.get(0);
         player.teleportTo(
-                holdingCenter.getX() + 0.5D,
-                holdingCenter.getY() + 1.0D,
-                holdingCenter.getZ() + 0.5D
+                prisonCenter.getX() + 0.5D,
+                prisonCenter.getY() + 1.0D,
+                prisonCenter.getZ() + 0.5D
         );
         CapitalPlayerWarrantDataAccess.setSentence(
                 level,
@@ -124,9 +120,7 @@ public final class CapitalPlayerWarrantService {
         player.sendSystemMessage(Component.literal(
                 "You surrendered to "
                         + CapitalDiplomaticAgreementText.capitalName(level, issuingCapital)
-                        + (recognizedPrison
-                        ? ". Remain within its recognized Prison for five real-time minutes to complete the sentence."
-                        : ". Remain within the court holding location for five real-time minutes to complete the sentence.")
+                        + ". Remain within its recognized Prison for five real-time minutes to complete the sentence."
         ));
         return 1;
     }
@@ -138,25 +132,15 @@ public final class CapitalPlayerWarrantService {
         if (player == null || capital == null) {
             return false;
         }
-        List<AABB> prisonBounds = CapitalBuildingService.getPrisonBounds(
+        for (AABB bounds : CapitalBuildingService.getPrisonBounds(
                 player.serverLevel(),
                 capital
-        );
-        for (AABB bounds : prisonBounds) {
+        )) {
             if (bounds.contains(player.position())) {
                 return true;
             }
         }
-        if (!prisonBounds.isEmpty()) {
-            return false;
-        }
-
-        BlockPos fallbackCenter = MCAIntegrationBridge.getVillageCenter(
-                player.serverLevel(),
-                capital.getVillageId()
-        );
-        return fallbackCenter != null
-                && new AABB(fallbackCenter).inflate(6.0D, 4.0D, 6.0D).contains(player.position());
+        return false;
     }
 
     private static boolean validateWarrant(ServerPlayer player, CapitalRecord issuingCapital) {

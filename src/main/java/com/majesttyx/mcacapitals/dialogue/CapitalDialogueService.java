@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
@@ -19,7 +20,6 @@ public class CapitalDialogueService {
 
     private static final long NEWS_BRANCH_COOLDOWN_TICKS = 20L * 60L;
     private static final long SAME_EVENT_COOLDOWN_TICKS = 20L * 60L * 4L;
-
     private static final int MCA_PHRASE_CAPITAL_LINE_CHANCE = 55;
 
     private static final Set<String> MCA_GREET_RANK_KEYS = Set.of(
@@ -46,7 +46,9 @@ public class CapitalDialogueService {
         UUID villagerId = villagerEntity.getUUID();
 
         CapitalRecord capital = resolveCapital(level, villagerId);
-        if (capital == null || capital.getChronicleEntries().isEmpty()) {
+        if (capital == null
+                || capital.getState() != CapitalState.ACTIVE
+                || capital.getChronicleEntries().isEmpty()) {
             return null;
         }
 
@@ -90,7 +92,7 @@ public class CapitalDialogueService {
 
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = resolveCapital(level, villagerEntity.getUUID());
-        if (capital == null) {
+        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
             return null;
         }
 
@@ -113,7 +115,7 @@ public class CapitalDialogueService {
 
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = resolveCapital(level, villagerEntity.getUUID());
-        if (capital == null) {
+        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
             return null;
         }
 
@@ -131,7 +133,7 @@ public class CapitalDialogueService {
 
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = resolveCapital(level, villagerEntity.getUUID());
-        if (capital == null) {
+        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
             return null;
         }
 
@@ -155,7 +157,10 @@ public class CapitalDialogueService {
     }
 
     public static String formatCapitalIdleEveningChatter(ServerPlayer player, Entity villagerEntity, CapitalRecord capital) {
-        if (player == null || villagerEntity == null || capital == null) {
+        if (player == null
+                || villagerEntity == null
+                || capital == null
+                || capital.getState() != CapitalState.ACTIVE) {
             return null;
         }
 

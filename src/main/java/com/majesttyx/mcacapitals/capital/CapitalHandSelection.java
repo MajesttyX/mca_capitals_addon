@@ -18,33 +18,47 @@ final class CapitalHandSelection {
             return false;
         }
 
-        return MCAIntegrationBridge.getVillagePopulation(level, capital.getVillageId()) >= CapitalHandService.REQUIRED_POPULATION;
+        return MCAIntegrationBridge.getVillagePopulation(
+                level,
+                capital.getVillageId()
+        ) >= CapitalHandService.REQUIRED_POPULATION;
     }
 
-    static UUID findBestHandCandidate(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+    static UUID findBestHandCandidate(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents
+    ) {
         UUID duke = capital.getDukes().stream()
                 .filter(id -> isEligibleHandCandidate(level, capital, id, residents))
-                .max(candidateComparator())
+                .max(candidateComparator(level, capital))
                 .orElse(null);
+
         if (duke != null) {
             return duke;
         }
 
         UUID lord = capital.getLords().stream()
                 .filter(id -> isEligibleHandCandidate(level, capital, id, residents))
-                .max(candidateComparator())
+                .max(candidateComparator(level, capital))
                 .orElse(null);
+
         if (lord != null) {
             return lord;
         }
 
         return capital.getKnights().stream()
                 .filter(id -> isEligibleHandCandidate(level, capital, id, residents))
-                .max(candidateComparator())
+                .max(candidateComparator(level, capital))
                 .orElse(null);
     }
 
-    static boolean isValidHand(ServerLevel level, CapitalRecord capital, UUID handId, Set<UUID> residents) {
+    static boolean isValidHand(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID handId,
+            Set<UUID> residents
+    ) {
         if (level == null || capital == null || handId == null) {
             return false;
         }
@@ -53,9 +67,18 @@ final class CapitalHandSelection {
             return true;
         }
 
-        if (!CapitalRoleValidation.isExistingRoleStillResolvable(level, handId, residents)) {
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(
+                level,
+                handId,
+                residents
+        )) {
             return false;
         }
+
+        if (CapitalAmbassadorService.isAmbassador(level, handId)) {
+            return false;
+        }
+
         if (handId.equals(capital.getSovereign())
                 || handId.equals(capital.getConsort())
                 || handId.equals(capital.getDowager())
@@ -63,6 +86,7 @@ final class CapitalHandSelection {
                 || handId.equals(capital.getCommander())) {
             return false;
         }
+
         if (capital.isRoyalChild(handId)
                 || capital.isLegitimizedRoyalChild(handId)
                 || capital.isPrinceConsort(handId)
@@ -80,19 +104,37 @@ final class CapitalHandSelection {
             return true;
         }
 
-        return capital.isDuke(handId) || capital.isLord(handId) || capital.isKnight(handId);
+        return capital.isDuke(handId)
+                || capital.isLord(handId)
+                || capital.isKnight(handId);
     }
 
-    static boolean isEligibleHandCandidate(ServerLevel level, CapitalRecord capital, UUID candidateId, Set<UUID> residents) {
+    static boolean isEligibleHandCandidate(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID candidateId,
+            Set<UUID> residents
+    ) {
         if (level == null || capital == null || candidateId == null) {
             return false;
         }
+
         if (residents == null || !residents.contains(candidateId)) {
             return false;
         }
+
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, candidateId)) {
+            return false;
+        }
+
         if (!MCAIntegrationBridge.isMCAVillager(level, candidateId)) {
             return false;
         }
+
+        if (CapitalAmbassadorService.isAmbassador(level, candidateId)) {
+            return false;
+        }
+
         if (candidateId.equals(capital.getSovereign())
                 || candidateId.equals(capital.getConsort())
                 || candidateId.equals(capital.getDowager())
@@ -100,6 +142,7 @@ final class CapitalHandSelection {
                 || candidateId.equals(capital.getCommander())) {
             return false;
         }
+
         if (capital.isRoyalChild(candidateId)
                 || capital.isLegitimizedRoyalChild(candidateId)
                 || capital.isPrinceConsort(candidateId)
@@ -108,10 +151,15 @@ final class CapitalHandSelection {
                 || capital.isMarriageDuke(candidateId)) {
             return false;
         }
-        return capital.isDuke(candidateId) || capital.isLord(candidateId) || capital.isKnight(candidateId);
+
+        return capital.isDuke(candidateId)
+                || capital.isLord(candidateId)
+                || capital.isKnight(candidateId);
     }
 
-    private static Comparator<UUID> candidateComparator() {
-        return Comparator.comparing(UUID::toString);
+    private static Comparator<UUID> candidateComparator(ServerLevel level, CapitalRecord capital) {
+        return Comparator
+                .comparing((UUID id) -> CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparing(UUID::toString);
     }
 }

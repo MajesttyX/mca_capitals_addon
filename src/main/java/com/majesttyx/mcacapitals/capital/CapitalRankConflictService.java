@@ -1,6 +1,5 @@
 package com.majesttyx.mcacapitals.capital;
 
-import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 
@@ -14,48 +13,133 @@ public final class CapitalRankConflictService {
     private CapitalRankConflictService() {
     }
 
-    public static boolean normalize(ServerLevel level, CapitalRecord capital) {
-        if (level == null || capital == null) {
+    public static boolean normalize(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
+        if (level == null
+                || capital == null) {
             return false;
         }
 
         boolean changed = false;
-        Set<UUID> exclusiveRanks = new LinkedHashSet<>();
-        addIfPresent(exclusiveRanks, capital.getSovereign());
-        addIfPresent(exclusiveRanks, capital.getPlayerSovereignId());
-        addIfPresent(exclusiveRanks, capital.getConsort());
-        addIfPresent(exclusiveRanks, capital.getPlayerConsortId());
-        addIfPresent(exclusiveRanks, capital.getDowager());
-        addIfPresent(exclusiveRanks, capital.getHeir());
-        addIfPresent(exclusiveRanks, capital.getGrandMaester());
-        addIfPresent(exclusiveRanks, capital.getHerald());
-        addIfPresent(exclusiveRanks, getAmbassador(level, capital));
-        exclusiveRanks.addAll(capital.getRoyalChildren());
-        exclusiveRanks.addAll(capital.getLegitimizedRoyalChildren());
-        exclusiveRanks.addAll(capital.getPrinceConsortSources().keySet());
-        exclusiveRanks.addAll(capital.getDowagerPrinceSources().keySet());
-        exclusiveRanks.addAll(capital.getMarriageDukeSources().keySet());
-        exclusiveRanks.addAll(capital.getDowagerDukeSources().keySet());
+
+        Set<UUID> exclusiveRanks =
+                new LinkedHashSet<>();
+
+        addIfPresent(
+                exclusiveRanks,
+                capital.getSovereign()
+        );
+
+        addIfPresent(
+                exclusiveRanks,
+                capital.getPlayerSovereignId()
+        );
+
+        addIfPresent(
+                exclusiveRanks,
+                capital.getConsort()
+        );
+
+        addIfPresent(
+                exclusiveRanks,
+                capital.getPlayerConsortId()
+        );
+
+        addIfPresent(
+                exclusiveRanks,
+                capital.getDowager()
+        );
+
+        addIfPresent(
+                exclusiveRanks,
+                capital.getHeir()
+        );
+
+        addIfPresent(
+                exclusiveRanks,
+                capital.getGrandMaester()
+        );
+
+        addIfPresent(
+                exclusiveRanks,
+                capital.getHerald()
+        );
+
+        addIfPresent(
+                exclusiveRanks,
+                CapitalAmbassadorService.getAmbassador(
+                        level,
+                        capital
+                )
+        );
+
+        exclusiveRanks.addAll(
+                capital.getRoyalChildren()
+        );
+
+        exclusiveRanks.addAll(
+                capital.getLegitimizedRoyalChildren()
+        );
+
+        exclusiveRanks.addAll(
+                capital.getPrinceConsortSources()
+                        .keySet()
+        );
+
+        exclusiveRanks.addAll(
+                capital.getDowagerPrinceSources()
+                        .keySet()
+        );
+
+        exclusiveRanks.addAll(
+                capital.getMarriageDukeSources()
+                        .keySet()
+        );
+
+        exclusiveRanks.addAll(
+                capital.getDowagerDukeSources()
+                        .keySet()
+        );
 
         for (UUID entityId : exclusiveRanks) {
-            changed |= removeDirectRanks(capital, entityId);
+            changed |= removeDirectRanks(
+                    capital,
+                    entityId
+            );
         }
 
-        for (UUID lord : new ArrayList<>(capital.getLords())) {
-            if (MCAIntegrationBridge.isMasterClericVillager(level, lord)) {
+        for (UUID lord :
+                new ArrayList<>(
+                        capital.getLords()
+                )) {
+            if (MCAIntegrationBridge.isMasterClericVillager(
+                    level,
+                    lord
+            )) {
                 capital.removeLord(lord);
                 changed = true;
             }
         }
 
-        for (UUID knight : new ArrayList<>(capital.getKnights())) {
-            if (MCAIntegrationBridge.isMasterClericVillager(level, knight)) {
+        for (UUID knight :
+                new ArrayList<>(
+                        capital.getKnights()
+                )) {
+            if (MCAIntegrationBridge.isMasterClericVillager(
+                    level,
+                    knight
+            )) {
                 capital.removeKnight(knight);
                 changed = true;
             }
         }
 
-        for (UUID royalGuard : new ArrayList<>(capital.getRoyalGuards())) {
+        for (UUID royalGuard :
+                new ArrayList<>(
+                        capital.getRoyalGuards()
+                )) {
             if (capital.isDuke(royalGuard)) {
                 capital.removeDuke(royalGuard);
                 changed = true;
@@ -67,7 +151,10 @@ public final class CapitalRankConflictService {
             }
         }
 
-        for (UUID duke : new ArrayList<>(capital.getDukes())) {
+        for (UUID duke :
+                new ArrayList<>(
+                        capital.getDukes()
+                )) {
             if (capital.isLord(duke)) {
                 capital.removeLord(duke);
                 changed = true;
@@ -79,7 +166,10 @@ public final class CapitalRankConflictService {
             }
         }
 
-        for (UUID lord : new ArrayList<>(capital.getLords())) {
+        for (UUID lord :
+                new ArrayList<>(
+                        capital.getLords()
+                )) {
             if (capital.isKnight(lord)) {
                 capital.removeKnight(lord);
                 changed = true;
@@ -94,7 +184,9 @@ public final class CapitalRankConflictService {
             CapitalRecord capital,
             UUID entityId
     ) {
-        if (level == null || capital == null || entityId == null) {
+        if (level == null
+                || capital == null
+                || entityId == null) {
             return false;
         }
 
@@ -113,14 +205,21 @@ public final class CapitalRankConflictService {
                 || capital.isMarriageDuke(entityId)
                 || capital.isDowagerDuke(entityId)
                 || capital.isRoyalGuard(entityId)
-                || isAmbassador(level, capital, entityId)) {
+                || CapitalAmbassadorService.isAmbassador(
+                level,
+                capital,
+                entityId
+        )) {
             return false;
         }
 
         return true;
     }
 
-    private static boolean removeDirectRanks(CapitalRecord capital, UUID entityId) {
+    private static boolean removeDirectRanks(
+            CapitalRecord capital,
+            UUID entityId
+    ) {
         if (entityId == null) {
             return false;
         }
@@ -145,19 +244,10 @@ public final class CapitalRankConflictService {
         return changed;
     }
 
-    private static UUID getAmbassador(ServerLevel level, CapitalRecord capital) {
-        if (level == null || capital == null || capital.getCapitalId() == null) {
-            return null;
-        }
-
-        return CapitalDiplomacyDataAccess.getAmbassador(level, capital.getCapitalId());
-    }
-
-    private static boolean isAmbassador(ServerLevel level, CapitalRecord capital, UUID entityId) {
-        return entityId != null && entityId.equals(getAmbassador(level, capital));
-    }
-
-    private static void addIfPresent(Set<UUID> values, UUID value) {
+    private static void addIfPresent(
+            Set<UUID> values,
+            UUID value
+    ) {
         if (value != null) {
             values.add(value);
         }

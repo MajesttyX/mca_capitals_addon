@@ -4,7 +4,9 @@ import com.majesttyx.mcacapitals.data.CapitalCampaignDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalCampaignEndReason;
 import com.majesttyx.mcacapitals.data.CapitalCampaignPhase;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
+import com.majesttyx.mcacapitals.data.CapitalWarCause;
 import com.majesttyx.mcacapitals.data.CapitalWarGoal;
+import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,7 +16,8 @@ import java.util.UUID;
 
 public final class CapitalCampaignService {
 
-    public static final long RETURN_FAILSAFE_TICKS = 20L * 30L;
+    public static final long RETURN_FAILSAFE_TICKS =
+            20L * 30L;
 
     private CapitalCampaignService() {
     }
@@ -44,70 +47,68 @@ public final class CapitalCampaignService {
             return 0;
         }
 
-        CapitalDiplomaticAgreementValidation.AudienceValidation audience =
-                CapitalDiplomaticAgreementValidation.validateAudience(
-                        player,
-                        ambassadorId
-                );
+        CapitalDiplomaticAgreementValidation
+                .AudienceValidation audience =
+                CapitalDiplomaticAgreementValidation
+                        .validateAudience(
+                                player,
+                                ambassadorId
+                        );
 
         if (!audience.valid()) {
-            player.sendSystemMessage(Component.literal(
-                    audience.failureMessage()
-            ));
+            player.sendSystemMessage(
+                    Component.literal(
+                            audience.failureMessage()
+                    )
+            );
+
             return 0;
         }
 
-        ServerLevel level = player.serverLevel();
-        CapitalRecord attackingCapital = audience.sourceCapital();
+        ServerLevel level =
+                player.serverLevel();
+
+        CapitalRecord attackingCapital =
+                audience.sourceCapital();
+
         CapitalRecord defendingCapital =
-                CapitalManager.getCapital(defendingCapitalId);
+                CapitalManager.getCapital(
+                        defendingCapitalId
+                );
 
         String targetFailure =
-                CapitalDiplomaticAgreementValidation.validateTarget(
-                        attackingCapital,
-                        defendingCapital
-                );
+                CapitalDiplomaticAgreementValidation
+                        .validateTarget(
+                                attackingCapital,
+                                defendingCapital
+                        );
 
         if (targetFailure != null) {
-            player.sendSystemMessage(Component.literal(targetFailure));
+            player.sendSystemMessage(
+                    Component.literal(targetFailure)
+            );
+
             return 0;
         }
 
-        CampaignCreationResult result = createCampaign(
-                level,
-                attackingCapital,
-                defendingCapital,
-                player.getUUID(),
-                warGoal
-        );
-
-        if (!result.successful()) {
-            player.sendSystemMessage(Component.literal(
-                    result.failureMessage()
-            ));
-            return 0;
-        }
-
-        String targetName =
-                CapitalDiplomaticAgreementText.capitalName(
+        CampaignCreationResult result =
+                createCampaign(
                         level,
-                        defendingCapital
+                        attackingCapital,
+                        defendingCapital,
+                        player.getUUID(),
+                        warGoal
                 );
 
-        player.sendSystemMessage(Component.literal(
-                "The "
-                        + result.campaign().getWarGoal().getDisplayName()
-                        + " against "
-                        + targetName
-                        + " has been planned for "
-                        + result.campaign().getWarCause().getDisplayName()
-                        + ". Enter that capital yourself to begin a 20-second assembly. "
-                        + "The campaign will attempt to gather "
-                        + result.campaign().getTargetAttackerCount()
-                        + " Guards and Archers, up to the maximum of "
-                        + CapitalCampaignRecord.MAX_ATTACKERS
-                        + ", before the force deploys."
-        ));
+        if (!result.successful()) {
+            player.sendSystemMessage(
+                    Component.literal(
+                            result.failureMessage()
+                    )
+            );
+
+            return 0;
+        }
 
         return 1;
     }
@@ -118,10 +119,11 @@ public final class CapitalCampaignService {
             CapitalRecord defendingCapital
     ) {
         UUID initiatingPlayerId =
-                CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
-                        level,
-                        attackingCapital
-                );
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                attackingCapital
+                        );
 
         return createCampaign(
                 level,
@@ -154,23 +156,21 @@ public final class CapitalCampaignService {
             UUID initiatingPlayerId,
             CapitalWarGoal warGoal
     ) {
-        String recoveryFailure =
-                CapitalWarPlanningService.validateRecovery(
-                        level,
-                        attackingCapital
-                );
-
+        String recoveryFailure = CapitalWarPlanningService
+                .validateRecovery(level, attackingCapital);
         if (recoveryFailure != null) {
             return CampaignCreationResult.failure(recoveryFailure);
         }
 
-        CapitalCampaignEligibilityService.Validation validation =
-                CapitalCampaignEligibilityService.validateCampaign(
-                        level,
-                        attackingCapital,
-                        defendingCapital,
-                        initiatingPlayerId
-                );
+        CapitalCampaignEligibilityService
+                .Validation validation =
+                CapitalCampaignEligibilityService
+                        .validateCampaign(
+                                level,
+                                attackingCapital,
+                                defendingCapital,
+                                initiatingPlayerId
+                        );
 
         if (!validation.valid()) {
             return CampaignCreationResult.failure(
@@ -191,27 +191,42 @@ public final class CapitalCampaignService {
                                 attackingCapital,
                                 defendingCapital
                         ),
-                        warGoal == null
-                                ? CapitalWarGoal.PUNITIVE
-                                : warGoal
+                        warGoal
                 );
 
-        if (!CapitalCampaignDataAccess.addCampaign(level, campaign)) {
+        if (!CapitalCampaignDataAccess.addCampaign(
+                level,
+                campaign
+        )) {
             return CampaignCreationResult.failure(
-                    "The campaign could not be recorded."
+                    "The attack could not be reserved because one of its capitals or guards is already committed elsewhere."
             );
         }
 
         String attackingName =
-                CapitalDiplomaticAgreementText.capitalName(
+                MCAIntegrationBridge.getVillageName(
                         level,
-                        attackingCapital
+                        attackingCapital.getVillageId()
                 );
+
         String defendingName =
-                CapitalDiplomaticAgreementText.capitalName(
+                MCAIntegrationBridge.getVillageName(
                         level,
-                        defendingCapital
+                        defendingCapital.getVillageId()
                 );
+
+        if (attackingName == null
+                || attackingName.isBlank()) {
+            attackingName =
+                    "The attacking capital";
+        }
+
+        if (defendingName == null
+                || defendingName.isBlank()) {
+            defendingName =
+                    "the defending capital";
+        }
+
         String entry =
                 attackingName
                         + " planned a "
@@ -220,53 +235,65 @@ public final class CapitalCampaignService {
                         + defendingName
                         + " for "
                         + campaign.getWarCause().getDisplayName()
+                        + " and ordered the campaign to assemble a preferred force of "
+                        + campaign.getTargetAttackerCount()
+                        + " Guards and Archers, with a maximum of "
+                        + CapitalCampaignRecord.MAX_ATTACKERS
                         + ".";
 
-        CapitalChronicleService.addEntry(level, attackingCapital, entry);
-        CapitalChronicleService.addEntry(level, defendingCapital, entry);
+        CapitalChronicleService.addEntry(
+                level,
+                attackingCapital,
+                entry
+        );
 
-        return CampaignCreationResult.success(campaign);
+        return CampaignCreationResult.success(
+                campaign
+        );
     }
 
-    public static CapitalCampaignRecord getCampaign(
-            ServerLevel level,
-            UUID campaignId
-    ) {
-        return CapitalCampaignDataAccess.getCampaign(level, campaignId);
-    }
-
-    public static CapitalCampaignRecord getCampaignForCapital(
+    public static CapitalCampaignRecord
+    getCampaignForCapital(
             ServerLevel level,
             UUID capitalId
     ) {
-        return CapitalCampaignDataAccess.getCampaignForCapital(
-                level,
-                capitalId
-        );
+        return CapitalCampaignDataAccess
+                .getCampaignForCapital(
+                        level,
+                        capitalId
+                );
     }
 
-    public static CapitalCampaignRecord getCampaignForAttacker(
+    public static CapitalCampaignRecord
+    getCampaignForAttacker(
             ServerLevel level,
             UUID villagerId
     ) {
-        return CapitalCampaignDataAccess.getCampaignForAttacker(
-                level,
-                villagerId
-        );
+        return CapitalCampaignDataAccess
+                .getCampaignForAttacker(
+                        level,
+                        villagerId
+                );
     }
 
     public static boolean isCampaignAttacker(
             ServerLevel level,
             UUID villagerId
     ) {
-        return getCampaignForAttacker(level, villagerId) != null;
+        return getCampaignForAttacker(
+                level,
+                villagerId
+        ) != null;
     }
 
     public static boolean isCapitalInCampaign(
             ServerLevel level,
             UUID capitalId
     ) {
-        return getCampaignForCapital(level, capitalId) != null;
+        return getCampaignForCapital(
+                level,
+                capitalId
+        ) != null;
     }
 
     public static boolean areOpposingCampaignCombatants(
@@ -282,22 +309,33 @@ public final class CapitalCampaignService {
         }
 
         for (CapitalCampaignRecord campaign :
-                CapitalCampaignDataAccess.getActiveCampaigns(level)) {
+                CapitalCampaignDataAccess
+                        .getActiveCampaigns(level)) {
             if (campaign == null
                     || campaign.getPhase()
                     != CapitalCampaignPhase.ACTIVE) {
                 continue;
             }
 
-            boolean firstAttacker = campaign.containsAttacker(firstId);
-            boolean secondAttacker = campaign.containsAttacker(secondId);
+            boolean firstAttacker =
+                    campaign.containsAttacker(firstId);
+
+            boolean secondAttacker =
+                    campaign.containsAttacker(secondId);
 
             if (firstAttacker == secondAttacker) {
                 continue;
             }
 
-            UUID defenderId = firstAttacker ? secondId : firstId;
-            if (isCampaignDefender(campaign, defenderId)) {
+            UUID defenderId =
+                    firstAttacker
+                            ? secondId
+                            : firstId;
+
+            if (isCampaignDefender(
+                    campaign,
+                    defenderId
+            )) {
                 return true;
             }
         }
@@ -323,11 +361,15 @@ public final class CapitalCampaignService {
         }
 
         if (defendingCapital.isRoyalGuard(villagerId)) {
-            return campaign.didDefendingSovereignRefusePeace();
+            return campaign
+                    .didDefendingSovereignRefusePeace();
         }
 
-        return campaign.didDefendingSovereignRefusePeace()
-                && villagerId.equals(defendingCapital.getSovereign());
+        return campaign
+                .didDefendingSovereignRefusePeace()
+                && villagerId.equals(
+                defendingCapital.getSovereign()
+        );
     }
 
     public static boolean activateCampaign(
@@ -335,14 +377,24 @@ public final class CapitalCampaignService {
             UUID campaignId
     ) {
         CapitalCampaignRecord campaign =
-                CapitalCampaignDataAccess.getCampaign(level, campaignId);
+                CapitalCampaignDataAccess
+                        .getCampaign(
+                                level,
+                                campaignId
+                        );
 
         if (campaign == null) {
             return false;
         }
 
-        campaign.activate(level.getGameTime());
-        CapitalCampaignDataAccess.get(level).setDirty();
+        campaign.activate(
+                level.getGameTime()
+        );
+
+        CapitalCampaignDataAccess
+                .get(level)
+                .setDirty();
+
         return true;
     }
 
@@ -352,19 +404,29 @@ public final class CapitalCampaignService {
             CapitalCampaignEndReason reason
     ) {
         CapitalCampaignRecord campaign =
-                CapitalCampaignDataAccess.getCampaign(level, campaignId);
+                CapitalCampaignDataAccess
+                        .getCampaign(
+                                level,
+                                campaignId
+                        );
 
         if (campaign == null) {
             return false;
         }
 
-        long now = level.getGameTime();
+        long now =
+                level.getGameTime();
+
         campaign.beginRetreat(
                 now,
                 now + RETURN_FAILSAFE_TICKS,
                 reason
         );
-        CapitalCampaignDataAccess.get(level).setDirty();
+
+        CapitalCampaignDataAccess
+                .get(level)
+                .setDirty();
+
         return true;
     }
 
@@ -373,7 +435,11 @@ public final class CapitalCampaignService {
             UUID campaignId
     ) {
         CapitalCampaignRecord campaign =
-                CapitalCampaignDataAccess.getCampaign(level, campaignId);
+                CapitalCampaignDataAccess
+                        .getCampaign(
+                                level,
+                                campaignId
+                        );
 
         if (campaign != null) {
             CapitalWarSettlementService.resolve(level, campaign);
@@ -383,38 +449,30 @@ public final class CapitalCampaignService {
                             campaign.getAttackingCapitalId()
                     );
 
-            CapitalRecord defendingCapital =
-                    CapitalManager.getCapital(
-                            campaign.getDefendingCapitalId()
+            CapitalCampaignAssemblyService
+                    .releaseSourceTicket(
+                            level,
+                            campaign,
+                            attackingCapital
                     );
-
-            CapitalCampaignReturnService.returnDefendersHome(
-                    level,
-                    campaign,
-                    defendingCapital
-            );
-
-            CapitalCampaignAssemblyService.releaseSourceTicket(
-                    level,
-                    campaign,
-                    attackingCapital
-            );
         }
 
-        return CapitalCampaignDataAccess.removeCampaign(
-                level,
-                campaignId
-        );
+        return CapitalCampaignDataAccess
+                .removeCampaign(
+                        level,
+                        campaignId
+                );
     }
 
     public static List<UUID> getEligibleAttackers(
             ServerLevel level,
             CapitalRecord capital
     ) {
-        return CapitalCampaignEligibilityService.findEligibleAttackers(
-                level,
-                capital
-        );
+        return CapitalCampaignEligibilityService
+                .findEligibleAttackers(
+                        level,
+                        capital
+                );
     }
 
     public record CampaignCreationResult(
@@ -422,6 +480,7 @@ public final class CapitalCampaignService {
             CapitalCampaignRecord campaign,
             String failureMessage
     ) {
+
         static CampaignCreationResult success(
                 CapitalCampaignRecord campaign
         ) {
@@ -432,7 +491,9 @@ public final class CapitalCampaignService {
             );
         }
 
-        static CampaignCreationResult failure(String message) {
+        static CampaignCreationResult failure(
+                String message
+        ) {
             return new CampaignCreationResult(
                     false,
                     null,

@@ -14,41 +14,107 @@ public final class CapitalMasterOfLawsService {
     private CapitalMasterOfLawsService() {
     }
 
-    public static boolean tickMasterOfLaws(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
-        if (level == null || capital == null || residents == null || capital.getState() != CapitalState.ACTIVE) {
+    public static boolean tickMasterOfLaws(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents
+    ) {
+        if (level == null
+                || capital == null
+                || residents == null
+                || capital.getState() != CapitalState.ACTIVE) {
             return false;
         }
 
-        boolean changed = false;
+        if (!CapitalBuildingService.hasPrison(
+                level,
+                capital
+        )) {
+            return clearMasterOfLaws(
+                    level,
+                    capital
+            );
+        }
+
         UUID current = capital.getMasterOfLaws();
 
-        if (current != null) {
-            if (CapitalMasterOfLawsSelection.isValidCurrentHolder(level, capital, residents, current)) {
-                boolean female = MCAIntegrationBridge.isFemale(level, current);
-                if (capital.isMasterOfLawsFemale() != female) {
-                    capital.setMasterOfLawsFemale(female);
-                    CapitalDataAccess.markDirty(level);
-                    sync(level, current);
-                    return true;
-                }
-                return false;
+        if (current != null
+                && CapitalMasterOfLawsSelection.isEligible(
+                level,
+                capital,
+                residents,
+                current
+        )) {
+            boolean female =
+                    MCAIntegrationBridge.isFemale(
+                            level,
+                            current
+                    );
+
+            if (capital.isMasterOfLawsFemale()
+                    != female) {
+                capital.setMasterOfLawsFemale(
+                        female
+                );
+
+                CapitalDataAccess.markDirty(
+                        level
+                );
+
+                return true;
             }
 
-            changed = clearMasterOfLaws(level, capital);
+            return false;
         }
 
-        // A Prison is required to create or refill this office, but a temporary
-        // building-scan failure must not remove a valid current holder.
-        if (!CapitalBuildingService.hasPrison(level, capital)) {
-            return changed;
-        }
+        UUID selected =
+                CapitalMasterOfLawsSelection.select(
+                        level,
+                        capital,
+                        residents
+                );
 
-        UUID selected = CapitalMasterOfLawsSelection.select(level, capital, residents);
         if (selected == null) {
-            return changed;
+            return clearMasterOfLaws(
+                    level,
+                    capital
+            );
         }
 
-        setMasterOfLaws(level, capital, selected, residents, false);
+        capital.setMasterOfLaws(
+                selected
+        );
+
+        capital.setMasterOfLawsFemale(
+                MCAIntegrationBridge.isFemale(
+                        level,
+                        selected
+                )
+        );
+
+        String name =
+                CapitalNameService.resolveDisplayName(
+                        level,
+                        capital,
+                        selected
+                );
+
+        CapitalChronicleService.addEntry(
+                level,
+                capital,
+                name
+                        + " was appointed Master of Laws."
+        );
+
+        sync(
+                level,
+                selected
+        );
+
+        CapitalDataAccess.markDirty(
+                level
+        );
+
         return true;
     }
 
@@ -58,7 +124,12 @@ public final class CapitalMasterOfLawsService {
             UUID candidateId,
             Set<UUID> residents
     ) {
-        return CapitalMasterOfLawsSelection.isEligible(level, capital, residents, candidateId);
+        return CapitalMasterOfLawsSelection.isEligible(
+                level,
+                capital,
+                residents,
+                candidateId
+        );
     }
 
     public static boolean appointMasterOfLaws(
@@ -71,83 +142,164 @@ public final class CapitalMasterOfLawsService {
                 || capital == null
                 || candidateId == null
                 || residents == null
-                || !CapitalBuildingService.hasPrison(level, capital)
-                || !isEligibleCandidate(level, capital, candidateId, residents)
-                || candidateId.equals(capital.getMasterOfLaws())) {
+                || !CapitalBuildingService.hasPrison(
+                level,
+                capital
+        )
+                || !isEligibleCandidate(
+                level,
+                capital,
+                candidateId,
+                residents
+        )
+                || candidateId.equals(
+                capital.getMasterOfLaws()
+        )) {
             return false;
         }
 
-        setMasterOfLaws(level, capital, candidateId, residents, true);
-        return true;
-    }
+        UUID previous =
+                capital.getMasterOfLaws();
 
-    public static boolean hasUnlockedJustice(ServerLevel level, CapitalRecord capital) {
-        return capital != null
-                && capital.getMasterOfLaws() != null
-                && CapitalBuildingService.hasPrison(level, capital);
-    }
+        String capitalName =
+                MCAIntegrationBridge.getVillageName(
+                        level,
+                        capital.getVillageId()
+                );
 
-    private static void setMasterOfLaws(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID candidateId,
-            Set<UUID> residents,
-            boolean recordReplacement
-    ) {
-        UUID previous = capital.getMasterOfLaws();
-        String capitalName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-
-        if (recordReplacement && previous != null && !previous.equals(candidateId)) {
+        if (previous != null
+                && !previous.equals(candidateId)) {
             CapitalChronicleService.addEntry(
                     level,
                     capital,
-                    CapitalNameService.resolveDisplayName(level, capital, previous)
+                    CapitalNameService.resolveDisplayName(
+                            level,
+                            capital,
+                            previous
+                    )
                             + " was relieved of the office of Master of Laws of "
                             + capitalName
                             + "."
             );
         }
 
-        capital.setMasterOfLaws(candidateId);
-        capital.setMasterOfLawsFemale(MCAIntegrationBridge.isFemale(level, candidateId));
+        capital.setMasterOfLaws(
+                candidateId
+        );
 
-        CapitalNameService.refreshCapitalNames(level, capital, residents);
-        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
-        CapitalDataAccess.markDirty(level);
+        capital.setMasterOfLawsFemale(
+                MCAIntegrationBridge.isFemale(
+                        level,
+                        candidateId
+                )
+        );
 
-        if (previous != null && !previous.equals(candidateId)) {
-            sync(level, previous);
+        CapitalNameService.refreshCapitalNames(
+                level,
+                capital,
+                residents
+        );
+
+        CapitalCourtWatcher.clearFingerprint(
+                capital.getCapitalId()
+        );
+
+        if (previous != null
+                && !previous.equals(candidateId)) {
+            sync(
+                    level,
+                    previous
+            );
         }
-        sync(level, candidateId);
+
+        sync(
+                level,
+                candidateId
+        );
 
         CapitalChronicleService.addEntry(
                 level,
                 capital,
-                CapitalNameService.resolveDisplayName(level, capital, candidateId)
+                CapitalNameService.resolveDisplayName(
+                        level,
+                        capital,
+                        candidateId
+                )
                         + " was appointed Master of Laws of "
                         + capitalName
                         + "."
         );
+
+        CapitalDataAccess.markDirty(
+                level
+        );
+
+        return true;
     }
 
-    private static boolean clearMasterOfLaws(ServerLevel level, CapitalRecord capital) {
-        UUID previous = capital.getMasterOfLaws();
+    public static boolean hasUnlockedJustice(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
+        return capital != null
+                && capital.getMasterOfLaws() != null
+                && CapitalBuildingService.hasPrison(
+                level,
+                capital
+        );
+    }
+
+    private static boolean clearMasterOfLaws(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
+        UUID previous =
+                capital.getMasterOfLaws();
+
         if (previous == null) {
             return false;
         }
 
-        capital.setMasterOfLaws(null);
-        capital.setMasterOfLawsFemale(false);
-        sync(level, previous);
-        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
-        CapitalDataAccess.markDirty(level);
+        capital.setMasterOfLaws(
+                null
+        );
+
+        capital.setMasterOfLawsFemale(
+                false
+        );
+
+        sync(
+                level,
+                previous
+        );
+
+        CapitalDataAccess.markDirty(
+                level
+        );
+
         return true;
     }
 
-    private static void sync(ServerLevel level, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
+    private static void sync(
+            ServerLevel level,
+            UUID entityId
+    ) {
+        if (level == null
+                || entityId == null) {
+            return;
+        }
+
+        Entity entity =
+                MCAIntegrationBridge.findLoadedEntityByUuid(
+                        level,
+                        entityId
+                );
+
         if (entity != null) {
-            VillagerIdentitySyncService.syncToNearbyPlayers(level, entity);
+            VillagerIdentitySyncService.syncToNearbyPlayers(
+                    level,
+                    entity
+            );
         }
     }
 }

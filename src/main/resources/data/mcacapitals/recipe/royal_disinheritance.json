@@ -27,11 +27,11 @@
       "item": "minecraft:paper"
     },
     {
-      "item": "mcacapitals:purple_royal_seal"
+      "item": "mcacapitals:red_royal_seal"
     }
   ],
   "result": {
-    "item": "mcacapitals:blank_succession_decree",
+    "id": "mcacapitals:royal_disinheritance",
     "count": 1
   }
 }

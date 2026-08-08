@@ -22,12 +22,27 @@ public final class CapitalCampaignCourtDecisionService {
     private static final int PEACE_REQUEST_CHANCE_PERCENT = 60;
     private static final long CROWN_RALLY_TICKS = 20L * 5L;
 
-    private static final Set<String> HIGH_RANKING_TITLES = Set.of(
-            "HIGH QUEEN", "HIGH KING", "QUEEN CONSORT", "KING CONSORT",
-            "CROWN PRINCESS", "CROWN PRINCE", "PRINCESS", "PRINCE",
-            "DOWAGER QUEEN", "DOWAGER KING", "DOWAGER PRINCESS", "DOWAGER PRINCE",
-            "DUCHESS", "DUKE", "DOWAGER DUCHESS", "DOWAGER DUKE", "LADY", "LORD"
-    );
+    private static final Set<String> HIGH_RANKING_TITLES =
+            Set.of(
+                    "HIGH QUEEN",
+                    "HIGH KING",
+                    "QUEEN CONSORT",
+                    "KING CONSORT",
+                    "CROWN PRINCESS",
+                    "CROWN PRINCE",
+                    "PRINCESS",
+                    "PRINCE",
+                    "DOWAGER QUEEN",
+                    "DOWAGER KING",
+                    "DOWAGER PRINCESS",
+                    "DOWAGER PRINCE",
+                    "DUCHESS",
+                    "DUKE",
+                    "DOWAGER DUCHESS",
+                    "DOWAGER DUKE",
+                    "LADY",
+                    "LORD"
+            );
 
     private CapitalCampaignCourtDecisionService() {
     }
@@ -38,17 +53,36 @@ public final class CapitalCampaignCourtDecisionService {
             CapitalRecord attackingCapital,
             CapitalRecord defendingCapital
     ) {
-        if (!isBabyOrToddlerSovereign(level, defendingCapital)) {
+        if (!isBabyOrToddlerSovereign(
+                level,
+                defendingCapital
+        )) {
             return false;
         }
 
-        boolean suingForPeace = level.random.nextInt(100) < PEACE_REQUEST_CHANCE_PERCENT;
-        DecisionMessage decision = buildDecisionMessage(level, defendingCapital, suingForPeace);
-        recordDecision(attackingCapital, defendingCapital, decision.chronicleEntry());
+        boolean suingForPeace =
+                level.random.nextInt(100)
+                        < PEACE_REQUEST_CHANCE_PERCENT;
+
+        DecisionMessage decision =
+                buildDecisionMessage(
+                        level,
+                        defendingCapital,
+                        suingForPeace
+                );
+
+        recordDecision(
+                attackingCapital,
+                defendingCapital,
+                decision.chronicleEntry()
+        );
+
         CapitalPlayerNotificationService.notifyPlayersInCapital(
                 level,
                 defendingCapital,
-                Component.literal(decision.chatMessage())
+                Component.literal(
+                        decision.chatMessage()
+                )
         );
 
         if (suingForPeace) {
@@ -63,19 +97,37 @@ public final class CapitalCampaignCourtDecisionService {
                 );
             }
 
-            establishPeace(level, attackingCapital, defendingCapital);
+            establishPeace(
+                    level,
+                    attackingCapital,
+                    defendingCapital
+            );
+
             if (CapitalCampaignService.beginRetreat(
                     level,
                     campaign.getCampaignId(),
-                    CapitalCampaignEndReason.DEFENDERS_SURRENDERED)) {
-                CapitalCampaignTargetingService.clearCampaignTargets(level, campaign);
+                    CapitalCampaignEndReason.DEFENDERS_SURRENDERED
+            )) {
+                CapitalCampaignTargetingService.clearCampaignTargets(
+                        level,
+                        campaign
+                );
             }
+
             return true;
         }
 
         campaign.markDefendingSovereignRefusedPeace();
-        campaign.beginCrownRally(level.getGameTime(), level.getGameTime() + CROWN_RALLY_TICKS);
-        CapitalCampaignDataAccess.get(level).setDirty();
+
+        campaign.beginCrownRally(
+                level.getGameTime(),
+                level.getGameTime()
+                        + CROWN_RALLY_TICKS
+        );
+
+        CapitalCampaignDataAccess.get(level)
+                .setDirty();
+
         return true;
     }
 
@@ -84,20 +136,39 @@ public final class CapitalCampaignCourtDecisionService {
             CapitalRecord defendingCapital,
             boolean suingForPeace
     ) {
-        String defendingName = CapitalDiplomaticAgreementText.capitalName(level, defendingCapital);
-        String sovereignName = resolveTitledName(
-                level,
-                defendingCapital,
-                defendingCapital.getSovereign()
-        );
-        DecisionSpeaker speaker = findProxySpeaker(level, defendingCapital);
-        String decisionText = suingForPeace
-                ? defendingName + " sues for peace. The occupying force will withdraw."
-                : defendingName + " refuses peace. The Crown will continue the fight after a 5-second rally.";
+        String defendingName =
+                CapitalDiplomaticAgreementText.capitalName(
+                        level,
+                        defendingCapital
+                );
+
+        String sovereignName =
+                resolveTitledName(
+                        level,
+                        defendingCapital,
+                        defendingCapital.getSovereign()
+                );
+
+        DecisionSpeaker speaker =
+                findProxySpeaker(
+                        level,
+                        defendingCapital
+                );
+
+        String decisionText =
+                suingForPeace
+                        ? defendingName
+                        + " sues for peace. The occupying force will withdraw."
+                        : defendingName
+                        + " refuses peace. The Crown will continue the fight.";
 
         if (speaker != null) {
             return new DecisionMessage(
-                    speaker.displayName() + " speaks for " + sovereignName + ": " + decisionText,
+                    speaker.displayName()
+                            + " speaks for "
+                            + sovereignName
+                            + ": "
+                            + decisionText,
                     speaker.displayName()
                             + " spoke for "
                             + sovereignName
@@ -108,7 +179,12 @@ public final class CapitalCampaignCourtDecisionService {
         }
 
         return new DecisionMessage(
-                "The court of " + defendingName + " speaks for " + sovereignName + ": " + decisionText,
+                "The court of "
+                        + defendingName
+                        + " speaks for "
+                        + sovereignName
+                        + ": "
+                        + decisionText,
                 "The court of "
                         + defendingName
                         + " spoke for "
@@ -129,6 +205,7 @@ public final class CapitalCampaignCourtDecisionService {
                 attackingCapital.getCapitalId(),
                 defendingCapital.getCapitalId()
         );
+
         CapitalDiplomacyDataAccess.setDiplomaticState(
                 level,
                 attackingCapital.getCapitalId(),
@@ -143,59 +220,138 @@ public final class CapitalCampaignCourtDecisionService {
             CapitalRecord defendingCapital,
             String entry
     ) {
-        CapitalChronicleService.addEntryWithoutHerald(attackingCapital, entry);
-        CapitalChronicleService.addEntryWithoutHerald(defendingCapital, entry);
+        CapitalChronicleService.addEntryWithoutHerald(
+                attackingCapital,
+                entry
+        );
+
+        CapitalChronicleService.addEntryWithoutHerald(
+                defendingCapital,
+                entry
+        );
     }
 
     private static boolean isBabyOrToddlerSovereign(
             ServerLevel level,
             CapitalRecord capital
     ) {
-        if (capital == null || capital.getSovereign() == null) {
+        if (capital == null
+                || capital.getSovereign() == null) {
             return false;
         }
-        String ageState = MCAIntegrationBridge.getAgeState(level, capital.getSovereign());
-        return "BABY".equalsIgnoreCase(ageState) || "TODDLER".equalsIgnoreCase(ageState);
+
+        String ageState =
+                MCAIntegrationBridge.getAgeState(
+                        level,
+                        capital.getSovereign()
+                );
+
+        return "BABY".equalsIgnoreCase(ageState)
+                || "TODDLER".equalsIgnoreCase(ageState);
     }
 
     private static DecisionSpeaker findProxySpeaker(
             ServerLevel level,
             CapitalRecord capital
     ) {
-        LinkedHashSet<UUID> orderedCandidates = new LinkedHashSet<>();
-        addIfPresent(orderedCandidates, capital.getHand());
-        addIfPresent(orderedCandidates, capital.getCommander());
-        addIfPresent(orderedCandidates, capital.getMasterOfLaws());
-        addIfPresent(orderedCandidates, capital.getGrandMaester());
-        addIfPresent(orderedCandidates, capital.getHerald());
-        orderedCandidates.addAll(capital.getRoyalGuards());
+        LinkedHashSet<UUID> orderedCandidates =
+                new LinkedHashSet<>();
+
+        addIfPresent(
+                orderedCandidates,
+                capital.getHand()
+        );
+
+        addIfPresent(
+                orderedCandidates,
+                capital.getCommander()
+        );
+
+        addIfPresent(
+                orderedCandidates,
+                capital.getMasterOfLaws()
+        );
+
+        addIfPresent(
+                orderedCandidates,
+                capital.getGrandMaester()
+        );
+
+        addIfPresent(
+                orderedCandidates,
+                capital.getHerald()
+        );
+
+        orderedCandidates.addAll(
+                capital.getRoyalGuards()
+        );
 
         for (UUID candidateId : orderedCandidates) {
-            DecisionSpeaker speaker = resolveEligibleSpeaker(level, capital, candidateId);
+            DecisionSpeaker speaker =
+                    resolveEligibleSpeaker(
+                            level,
+                            capital,
+                            candidateId
+                    );
+
             if (speaker != null) {
                 return speaker;
             }
         }
 
-        List<UUID> residents = new ArrayList<>(
-                CapitalResidentScanner.scanResidents(level, capital.getCapitalId())
+        List<UUID> residents =
+                new ArrayList<>(
+                        CapitalResidentScanner.scanResidents(
+                                level,
+                                capital.getCapitalId()
+                        )
+                );
+
+        residents.sort(
+                (first, second) ->
+                        first.toString()
+                                .compareTo(
+                                        second.toString()
+                                )
         );
-        residents.sort((first, second) -> first.toString().compareTo(second.toString()));
 
         for (UUID residentId : residents) {
-            if (residentId == null || residentId.equals(capital.getSovereign())) {
+            if (residentId == null
+                    || residentId.equals(
+                    capital.getSovereign()
+            )) {
                 continue;
             }
-            String title = CapitalTitleResolver.getDisplayTitle(level, capital, residentId);
+
+            String title =
+                    CapitalTitleResolver.getDisplayTitle(
+                            level,
+                            capital,
+                            residentId
+                    );
+
             if (title == null
-                    || !HIGH_RANKING_TITLES.contains(title.trim().toUpperCase(Locale.ROOT))) {
+                    || !HIGH_RANKING_TITLES.contains(
+                    title.trim()
+                            .toUpperCase(
+                                    Locale.ROOT
+                            )
+            )) {
                 continue;
             }
-            DecisionSpeaker speaker = resolveEligibleSpeaker(level, capital, residentId);
+
+            DecisionSpeaker speaker =
+                    resolveEligibleSpeaker(
+                            level,
+                            capital,
+                            residentId
+                    );
+
             if (speaker != null) {
                 return speaker;
             }
         }
+
         return null;
     }
 
@@ -205,15 +361,33 @@ public final class CapitalCampaignCourtDecisionService {
             UUID candidateId
     ) {
         if (candidateId == null
-                || candidateId.equals(capital.getSovereign())
-                || !MCAIntegrationBridge.isTeenOrAdultVillager(level, candidateId)) {
+                || candidateId.equals(
+                capital.getSovereign()
+        )
+                || !MCAIntegrationBridge.isTeenOrAdultVillager(
+                level,
+                candidateId
+        )) {
             return null;
         }
-        Entity entity = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, candidateId);
-        if (entity == null || !entity.isAlive() || entity.isRemoved()) {
+
+        Entity entity =
+                MCAIntegrationBridge.findLoadedMCAVillagerByUuid(
+                        level,
+                        candidateId
+                );
+
+        if (entity == null
+                || !entity.isAlive()
+                || entity.isRemoved()) {
             return null;
         }
-        return new DecisionSpeaker(candidateId, entity.getName().getString());
+
+        return new DecisionSpeaker(
+                candidateId,
+                entity.getName()
+                        .getString()
+        );
     }
 
     private static String resolveTitledName(
@@ -224,32 +398,65 @@ public final class CapitalCampaignCourtDecisionService {
         if (villagerId == null) {
             return "the Crown";
         }
-        Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, villagerId);
+
+        Entity entity =
+                MCAIntegrationBridge.findLoadedEntityByUuid(
+                        level,
+                        villagerId
+                );
+
         if (entity != null) {
-            return entity.getName().getString();
+            return entity.getName()
+                    .getString();
         }
 
-        String baseName = CapitalNameService.resolveDisplayName(level, capital, villagerId);
-        String title = CapitalTitleResolver.getDisplayTitle(level, capital, villagerId);
+        String baseName =
+                CapitalNameService.resolveDisplayName(
+                        level,
+                        capital,
+                        villagerId
+                );
+
+        String title =
+                CapitalTitleResolver.getDisplayTitle(
+                        level,
+                        capital,
+                        villagerId
+                );
+
         if (title == null
                 || title.isBlank()
                 || "NONE".equalsIgnoreCase(title)
                 || "COMMONER".equalsIgnoreCase(title)
-                || baseName.startsWith(title + " ")) {
+                || baseName.startsWith(
+                title + " "
+        )) {
             return baseName;
         }
-        return title + " " + baseName;
+
+        return title
+                + " "
+                + baseName;
     }
 
-    private static void addIfPresent(Set<UUID> ids, UUID id) {
+    private static void addIfPresent(
+            Set<UUID> ids,
+            UUID id
+    ) {
         if (id != null) {
             ids.add(id);
         }
     }
 
-    private record DecisionSpeaker(UUID villagerId, String displayName) {
+    private record DecisionSpeaker(
+            UUID villagerId,
+            String displayName
+    ) {
     }
 
-    private record DecisionMessage(String chatMessage, String chronicleEntry) {
+    private record DecisionMessage(
+            String chatMessage,
+            String chronicleEntry
+    ) {
     }
 }

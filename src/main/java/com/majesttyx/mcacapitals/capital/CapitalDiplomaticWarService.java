@@ -13,7 +13,8 @@ import java.util.UUID;
 
 final class CapitalDiplomaticWarService {
 
-    private static final int WAR_DECLARATION_RELATIONSHIP_CHANGE = -200;
+    private static final int
+            WAR_DECLARATION_RELATIONSHIP_CHANGE = -200;
 
     private CapitalDiplomaticWarService() {
     }
@@ -26,10 +27,14 @@ final class CapitalDiplomaticWarService {
         if (player == null) {
             return 0;
         }
-        player.sendSystemMessage(Component.literal(
-                "War must be begun through a planned Punitive War or War of Deposition. "
-                        + "War starts when the campaign deploys inside the target capital."
-        ));
+
+        player.sendSystemMessage(
+                Component.literal(
+                        "War must be begun through a planned Punitive War or War of Deposition. "
+                                + "War starts when the campaign deploys inside the target capital."
+                )
+        );
+
         return 0;
     }
 
@@ -45,20 +50,38 @@ final class CapitalDiplomaticWarService {
                 || target == null
                 || source.getCapitalId() == null
                 || target.getCapitalId() == null
-                || source.getCapitalId().equals(target.getCapitalId())) {
+                || source.getCapitalId()
+                .equals(
+                        target.getCapitalId()
+                )) {
             return false;
         }
 
-        CapitalDiplomaticState currentState = CapitalDiplomacyDataAccess.getDiplomaticState(
+        CapitalDiplomaticTruceService.refreshExpiredTruce(
                 level,
-                source.getCapitalId(),
-                target.getCapitalId()
+                source,
+                target
         );
-        if (currentState == CapitalDiplomaticState.WAR) {
+
+        CapitalDiplomaticState currentState =
+                CapitalDiplomacyDataAccess
+                        .getDiplomaticState(
+                                level,
+                                source.getCapitalId(),
+                                target.getCapitalId()
+                        );
+
+        if (currentState
+                == CapitalDiplomaticState.WAR) {
             return true;
         }
 
-        if (!applyWarState(level, source, target, true)) {
+        if (!applyWarState(
+                level,
+                source,
+                target,
+                true
+        )) {
             return false;
         }
 
@@ -74,9 +97,26 @@ final class CapitalDiplomaticWarService {
                 10L
         );
 
-        if (campaign.getWarCause() == CapitalWarCause.UNJUST) {
-            CapitalWarPenaltyService.applyUnjustWarPenalty(level, source, target);
+        if (currentState
+                == CapitalDiplomaticState.TRUCE) {
+            CapitalWarPenaltyService
+                    .applyTruceBreakingPenalty(
+                            level,
+                            source,
+                            target
+                    );
         }
+
+        if (campaign.getWarCause()
+                == CapitalWarCause.UNJUST) {
+            CapitalWarPenaltyService
+                    .applyUnjustWarPenalty(
+                            level,
+                            source,
+                            target
+                    );
+        }
+
         return true;
     }
 
@@ -86,17 +126,21 @@ final class CapitalDiplomaticWarService {
             CapitalRecord target,
             boolean beganWithAttack
     ) {
-        CapitalDiplomaticState previousState = CapitalDiplomacyDataAccess.getDiplomaticState(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId()
-        );
+        CapitalDiplomaticState previousState =
+                CapitalDiplomacyDataAccess
+                        .getDiplomaticState(
+                                level,
+                                source.getCapitalId(),
+                                target.getCapitalId()
+                        );
 
-        CapitalAgreementDataAccess.removeProposalsBetween(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId()
-        );
+        CapitalAgreementDataAccess
+                .removeProposalsBetween(
+                        level,
+                        source.getCapitalId(),
+                        target.getCapitalId()
+                );
+
         CapitalDiplomaticTradeAgreementService.end(
                 level,
                 source,
@@ -105,52 +149,93 @@ final class CapitalDiplomaticWarService {
                         ? "because a military attack began."
                         : "because war was declared."
         );
-        CapitalDiplomacyDataAccess.setDiplomaticState(
+
+        CapitalDiplomacyDataAccess
+                .setDiplomaticState(
+                        level,
+                        source.getCapitalId(),
+                        target.getCapitalId(),
+                        CapitalDiplomaticState.WAR,
+                        0L
+                );
+
+        CapitalDiplomacyDataAccess
+                .adjustRelationship(
+                        level,
+                        source.getCapitalId(),
+                        target.getCapitalId(),
+                        WAR_DECLARATION_RELATIONSHIP_CHANGE,
+                        beganWithAttack
+                                ? "Military attack begun"
+                                : "War declared",
+                        source.getCapitalId()
+                );
+
+        String sourceName =
+                CapitalDiplomaticAgreementText.capitalName(
+                        level,
+                        source
+                );
+
+        String targetName =
+                CapitalDiplomaticAgreementText.capitalName(
+                        level,
+                        target
+                );
+
+        String previousAgreement =
+                previousState == CapitalDiplomaticState.PEACE
+                        ? ""
+                        : " The attack broke the existing "
+                        + CapitalDiplomaticAgreementText
+                        .stateDisplay(
+                                previousState
+                        )
+                        + ".";
+
+        String entry =
+                beganWithAttack
+                        ? sourceName
+                        + " began a military attack on "
+                        + targetName
+                        + ", bringing the capitals to war."
+                        + previousAgreement
+                        : sourceName
+                        + " declared war on "
+                        + targetName
+                        + ".";
+
+        CapitalChronicleService.addEntry(
                 level,
-                source.getCapitalId(),
-                target.getCapitalId(),
-                CapitalDiplomaticState.WAR,
-                0L
-        );
-        CapitalDiplomacyDataAccess.adjustRelationship(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId(),
-                WAR_DECLARATION_RELATIONSHIP_CHANGE,
-                beganWithAttack ? "Military attack begun" : "War declared",
-                source.getCapitalId()
+                source,
+                entry
         );
 
-        String sourceName = CapitalDiplomaticAgreementText.capitalName(level, source);
-        String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
-        String previousAgreement = previousState == CapitalDiplomaticState.PEACE
-                ? ""
-                : " The attack broke the existing "
-                + CapitalDiplomaticAgreementText.stateDisplay(previousState)
-                + ".";
-        String entry = beganWithAttack
-                ? sourceName
-                + " began a military attack on "
-                + targetName
-                + ", bringing the capitals to war."
-                + previousAgreement
-                : sourceName + " declared war on " + targetName + ".";
-
-        CapitalChronicleService.addEntry(level, source, entry);
-        CapitalChronicleService.addEntry(level, target, entry);
-
-        UUID targetDecisionMaker = CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
+        CapitalChronicleService.addEntry(
                 level,
-                target
+                target,
+                entry
         );
+
+        UUID targetDecisionMaker =
+                CapitalDiplomaticAuthorityService
+                        .getPlayerDecisionMaker(
+                                level,
+                                target
+                        );
+
         if (targetDecisionMaker != null) {
-            CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
-                    level,
-                    targetDecisionMaker,
-                    beganWithAttack ? "Military Attack" : "Declaration of War",
-                    entry
-            );
+            CapitalDiplomaticAgreementCorrespondenceService
+                    .sendNotice(
+                            level,
+                            targetDecisionMaker,
+                            beganWithAttack
+                                    ? "Military Attack"
+                                    : "Declaration of War",
+                            entry
+                    );
         }
+
         return true;
     }
 }

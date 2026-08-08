@@ -5,56 +5,76 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 public final class CapitalPlayerWarrantDialogueService {
+
     public static final String PAY_FINE_COMMAND = "mcacapitals_pay_warrant_fine";
     public static final String SURRENDER_COMMAND = "mcacapitals_surrender_warrant";
-    private static final double MAX_AUDIENCE_DISTANCE_SQR = 12.0D * 12.0D;
 
     private CapitalPlayerWarrantDialogueService() {
     }
 
-    public static boolean canShowPayFine(ServerPlayer player, VillagerEntityMCA villager) {
-        CapitalRecord capital = resolveLegalCapital(player, villager);
+    public static boolean canShowPayFine(
+            ServerPlayer player,
+            VillagerEntityMCA villager
+    ) {
+        CapitalRecord capital = resolveIssuingCapital(player, villager);
         return capital != null
-                && player.distanceToSqr(villager) <= MAX_AUDIENCE_DISTANCE_SQR
-                && CapitalPlayerWarrantService.hasWarrant(player.serverLevel(), player.getUUID(), capital);
+                && CapitalPlayerWarrantService.hasWarrant(
+                player.serverLevel(),
+                player.getUUID(),
+                capital
+        );
     }
 
-    public static boolean canShowSurrender(ServerPlayer player, VillagerEntityMCA villager) {
-        return canShowPayFine(player, villager);
+    public static boolean canShowSurrender(
+            ServerPlayer player,
+            VillagerEntityMCA villager
+    ) {
+        CapitalRecord capital = resolveIssuingCapital(player, villager);
+        return capital != null
+                && CapitalBuildingService.hasPrison(player.serverLevel(), capital)
+                && CapitalPlayerWarrantService.hasWarrant(
+                player.serverLevel(),
+                player.getUUID(),
+                capital
+        );
     }
 
-    public static boolean handleCommand(ServerPlayer player, Entity entity, String command) {
-        if (player == null || !(entity instanceof VillagerEntityMCA villager) || command == null) {
+    public static boolean handleCommand(
+            ServerPlayer player,
+            Entity entity,
+            String command
+    ) {
+        if (!(entity instanceof VillagerEntityMCA villager)) {
             return false;
         }
-        if (!PAY_FINE_COMMAND.equals(command) && !SURRENDER_COMMAND.equals(command)) {
+        CapitalRecord capital = resolveIssuingCapital(player, villager);
+        if (capital == null) {
             return false;
         }
-        CapitalRecord capital = resolveLegalCapital(player, villager);
-        if (capital == null || player.distanceToSqr(villager) > MAX_AUDIENCE_DISTANCE_SQR) {
-            return false;
+        if (PAY_FINE_COMMAND.equals(command)) {
+            CapitalPlayerWarrantService.payFine(player, capital);
+            return true;
         }
-        int result = PAY_FINE_COMMAND.equals(command)
-                ? CapitalPlayerWarrantService.payFine(player, capital)
-                : CapitalPlayerWarrantService.surrender(player, capital);
-        if (result > 0) {
-            com.majesttyx.mcacapitals.util.MCAIntegrationBridge.stopInteracting(villager);
+        if (SURRENDER_COMMAND.equals(command)) {
+            CapitalPlayerWarrantService.surrender(player, capital);
+            return true;
         }
-        return true;
+        return false;
     }
 
-    private static CapitalRecord resolveLegalCapital(ServerPlayer player, Entity villager) {
+    private static CapitalRecord resolveIssuingCapital(
+            ServerPlayer player,
+            VillagerEntityMCA villager
+    ) {
         if (player == null || villager == null) {
             return null;
         }
-        CapitalRecord capital = CapitalSovereignDeclarationPromptService.resolveCapital(player.serverLevel(), villager);
-        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
-            return null;
-        }
-        java.util.UUID id = villager.getUUID();
-        return id.equals(capital.getSovereign())
-                || id.equals(capital.getHand())
-                || id.equals(capital.getMasterOfLaws())
+        CapitalRecord capital = CapitalSovereignDeclarationPromptService.resolveCapital(
+                player.serverLevel(),
+                villager
+        );
+        return capital != null
+                && villager.getUUID().equals(capital.getMasterOfLaws())
                 ? capital
                 : null;
     }

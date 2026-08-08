@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class CapitalPlayerLegalHandler {
-
     private final Set<String> notifiedWantedEntries = new HashSet<>();
 
     public void onPlayerTick(ServerPlayer player) {
@@ -54,7 +53,6 @@ public final class CapitalPlayerLegalHandler {
                 );
                 continue;
             }
-
             long remaining = entry.getValue().remainingTicks() - 1L;
             if (remaining > 0L) {
                 CapitalPlayerWarrantDataAccess.updateLeaveOrder(
@@ -65,7 +63,6 @@ public final class CapitalPlayerLegalHandler {
                 );
                 continue;
             }
-
             CapitalPlayerWarrantDataAccess.clearLeaveOrder(
                     player.serverLevel(),
                     player.getUUID(),
@@ -92,10 +89,10 @@ public final class CapitalPlayerLegalHandler {
         for (Map.Entry<UUID, Long> entry : sentences.entrySet()) {
             CapitalRecord capital = CapitalManager.getCapital(entry.getKey());
             if (capital == null
+                    || !CapitalBuildingService.hasPrison(player.serverLevel(), capital)
                     || !CapitalPlayerWarrantService.isInsidePrison(player, capital)) {
                 continue;
             }
-
             long remaining = entry.getValue() - 1L;
             if (remaining > 0L) {
                 CapitalPlayerWarrantDataAccess.updateSentence(
@@ -106,7 +103,6 @@ public final class CapitalPlayerLegalHandler {
                 );
                 continue;
             }
-
             CapitalPlayerWarrantDataAccess.clearWarrant(
                     player.serverLevel(),
                     player.getUUID(),
@@ -131,7 +127,6 @@ public final class CapitalPlayerLegalHandler {
             if (capital == null || capital.getState() != CapitalState.ACTIVE) {
                 continue;
             }
-
             String key = player.getUUID() + "|" + capitalId;
             if (CapitalPlayerNotificationService.isPlayerWithinCapital(
                     player.serverLevel(),
@@ -148,7 +143,6 @@ public final class CapitalPlayerLegalHandler {
                 }
             }
         }
-
         String playerPrefix = player.getUUID() + "|";
         notifiedWantedEntries.removeIf(key -> key.startsWith(playerPrefix) && !activeKeys.contains(key));
     }

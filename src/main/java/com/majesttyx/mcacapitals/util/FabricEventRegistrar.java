@@ -43,121 +43,253 @@ public final class FabricEventRegistrar {
     }
 
     public static void register() {
-        CapitalLifecycleHandler lifecycleHandler = new CapitalLifecycleHandler();
-        CapitalPopulationScanner populationScanner = new CapitalPopulationScanner();
-        CapitalExileDiscoveryHandler exileDiscoveryHandler = new CapitalExileDiscoveryHandler();
-        CapitalPrisonerHandler prisonerHandler = new CapitalPrisonerHandler();
-        CapitalPlayerLegalHandler playerLegalHandler = new CapitalPlayerLegalHandler();
-        CapitalAmbientDialogueHandler ambientDialogueHandler = new CapitalAmbientDialogueHandler();
-        BetrothalDecreeHandler betrothalDecreeHandler = new BetrothalDecreeHandler();
-        SovereignMarriageCaptureHandler sovereignMarriageCaptureHandler = new SovereignMarriageCaptureHandler();
+        CapitalLifecycleHandler lifecycleHandler =
+                new CapitalLifecycleHandler();
 
-        ServerLifecycleEvents.SERVER_STARTED.register(lifecycleHandler::onServerStarted);
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
-            lifecycleHandler.onServerStopped(server);
-            sovereignMarriageCaptureHandler.clear();
-        });
+        CapitalPopulationScanner populationScanner =
+                new CapitalPopulationScanner();
 
-        ServerTickEvents.END_WORLD_TICK.register(serverLevel -> {
-            populationScanner.onLevelTick(serverLevel);
-            CapitalCampaignProcessor.onLevelTick(serverLevel);
-            CapitalCampaignCombatTickHandler.onLevelTick(serverLevel);
-            CapitalCampaignCasualtyService.onLevelTick(serverLevel);
-            CapitalWartimeSuccessionProcessor.onLevelTick(serverLevel);
-            CapitalDiplomaticShipmentProcessor.onLevelTick(serverLevel);
-            CapitalDiplomaticAgreementProcessor.onLevelTick(serverLevel);
-            CapitalTradeExchangeProcessor.onLevelTick(serverLevel);
-            exileDiscoveryHandler.onLevelTick(serverLevel);
-            prisonerHandler.onLevelTick(serverLevel);
-            ambientDialogueHandler.onLevelTick(serverLevel);
-            betrothalDecreeHandler.onLevelTick(serverLevel);
+        CapitalExileDiscoveryHandler exileDiscoveryHandler =
+                new CapitalExileDiscoveryHandler();
 
-            for (ServerPlayer player : serverLevel.players()) {
-                VillagerIdentityTrackingSyncHandler.onPlayerTick(player);
-                sovereignMarriageCaptureHandler.onPlayerTick(player);
-                playerLegalHandler.onPlayerTick(player);
-                CapitalForeignStorageRaidService.refreshIncident(player);
-            }
-        });
+        CapitalPrisonerHandler prisonerHandler =
+                new CapitalPrisonerHandler();
 
-        ServerEntityEvents.ENTITY_LOAD.register((entity, serverLevel) ->
-                VillagerIdentityTrackingSyncHandler.onEntityJoinLevel(entity, serverLevel)
+        CapitalPlayerLegalHandler playerLegalHandler =
+                new CapitalPlayerLegalHandler();
+
+        CapitalAmbientDialogueHandler ambientDialogueHandler =
+                new CapitalAmbientDialogueHandler();
+
+        BetrothalDecreeHandler betrothalDecreeHandler =
+                new BetrothalDecreeHandler();
+
+        SovereignMarriageCaptureHandler sovereignMarriageCaptureHandler =
+                new SovereignMarriageCaptureHandler();
+
+        ServerLifecycleEvents.SERVER_STARTED.register(
+                lifecycleHandler::onServerStarted
         );
 
-        EntityTrackingEvents.START_TRACKING.register(VillagerIdentityTrackingSyncHandler::onStartTracking);
+        ServerLifecycleEvents.SERVER_STOPPED.register(
+                server -> {
+                    lifecycleHandler.onServerStopped(
+                            server
+                    );
+
+                    sovereignMarriageCaptureHandler.clear();
+                }
+        );
+
+        ServerTickEvents.END_WORLD_TICK.register(
+                serverLevel -> {
+                    populationScanner.onLevelTick(
+                            serverLevel
+                    );
+
+                    CapitalCampaignProcessor.onLevelTick(
+                            serverLevel
+                    );
+
+                    CapitalCampaignCombatTickHandler.onLevelTick(
+                            serverLevel
+                    );
+
+                    CapitalCampaignCasualtyService.onLevelTick(
+                            serverLevel
+                    );
+
+                    CapitalWartimeSuccessionProcessor.onLevelTick(
+                            serverLevel
+                    );
+
+                    CapitalDiplomaticShipmentProcessor.onLevelTick(
+                            serverLevel
+                    );
+
+                    CapitalDiplomaticAgreementProcessor.onLevelTick(
+                            serverLevel
+                    );
+
+                    CapitalTradeExchangeProcessor.onLevelTick(
+                            serverLevel
+                    );
+
+                    exileDiscoveryHandler.onLevelTick(
+                            serverLevel
+                    );
+
+                    prisonerHandler.onLevelTick(
+                            serverLevel
+                    );
+
+                    ambientDialogueHandler.onLevelTick(
+                            serverLevel
+                    );
+
+                    betrothalDecreeHandler.onLevelTick(
+                            serverLevel
+                    );
+
+                    for (ServerPlayer player :
+                            serverLevel.players()) {
+                        VillagerIdentityTrackingSyncHandler.onPlayerTick(
+                                player
+                        );
+
+                        sovereignMarriageCaptureHandler.onPlayerTick(
+                                player
+                        );
+
+                        playerLegalHandler.onPlayerTick(
+                                player
+                        );
+
+                        CapitalForeignStorageRaidService.refreshIncident(
+                                player
+                        );
+                    }
+                }
+        );
+
+        ServerEntityEvents.ENTITY_LOAD.register(
+                (entity, serverLevel) ->
+                        VillagerIdentityTrackingSyncHandler.onEntityJoinLevel(
+                                entity,
+                                serverLevel
+                        )
+        );
+
+        EntityTrackingEvents.START_TRACKING.register(
+                VillagerIdentityTrackingSyncHandler::onStartTracking
+        );
 
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(
                 CapitalCampaignCombatDamageHandler::allowDamage
         );
 
-        ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
-            CapitalCampaignCasualtyService.onLivingDeath(entity);
-            CapitalDeathEvents.onLivingDeath(entity);
-        });
+        ServerLivingEntityEvents.AFTER_DEATH.register(
+                (entity, damageSource) -> {
+                    CapitalCampaignCasualtyService.onLivingDeath(
+                            entity
+                    );
 
-        UseItemCallback.EVENT.register((player, level, hand) -> {
-            if (player instanceof ServerPlayer serverPlayer) {
-                CapitalCampaignHornRetreatHandler.onUseItem(
-                        serverPlayer,
-                        hand
-                );
-            }
-            return InteractionResultHolder.pass(
-                    player.getItemInHand(hand)
-            );
-        });
+                    CapitalDeathEvents.onLivingDeath(
+                            entity,
+                            damageSource
+                    );
+                }
+        );
 
-        UseEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
-            InteractionResult result = CapitalAmbassadorUrgentMatterHandler.handleEntityInteract(
-                    player,
-                    entity,
-                    hand
-            );
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
+        UseItemCallback.EVENT.register(
+                (player, level, hand) -> {
+                    if (player instanceof ServerPlayer serverPlayer) {
+                        CapitalCampaignHornRetreatHandler.onUseItem(
+                                serverPlayer,
+                                hand
+                        );
+                    }
 
-            result = DecreeOfTheHouseHandler.handleEntityInteract(player, entity, hand);
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
+                    return InteractionResultHolder.pass(
+                            player.getItemInHand(
+                                    hand
+                            )
+                    );
+                }
+        );
 
-            result = RoyalScepterHandler.handleEntityInteract(player, entity, hand);
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
+        UseEntityCallback.EVENT.register(
+                (player, level, hand, entity, hitResult) -> {
+                    InteractionResult result =
+                            CapitalAmbassadorUrgentMatterHandler.handleEntityInteract(
+                                    player,
+                                    entity,
+                                    hand
+                            );
 
-            result = SuccessionDecreeHandler.handleEntityInteract(player, entity, hand);
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
+                    if (result != InteractionResult.PASS) {
+                        return result;
+                    }
 
-            result = DeclarationOfAbdicationHandler.handleEntityInteract(player, entity, hand);
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
+                    result =
+                            DecreeOfTheHouseHandler.handleEntityInteract(
+                                    player,
+                                    entity,
+                                    hand
+                            );
 
-            result = LegitimizationDecreeHandler.handleEntityInteract(player, entity, hand);
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
+                    if (result != InteractionResult.PASS) {
+                        return result;
+                    }
 
-            result = RoyalDisinheritanceHandler.handleEntityInteract(player, entity, hand);
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
+                    result =
+                            RoyalScepterHandler.handleEntityInteract(
+                                    player,
+                                    entity,
+                                    hand
+                            );
 
-            result = RoyalPardonHandler.handleEntityInteract(player, entity, hand);
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
+                    if (result != InteractionResult.PASS) {
+                        return result;
+                    }
 
-            result = RoyalGuardInteractionHandler.handleEntityInteract(player, entity, hand);
-            if (result != InteractionResult.PASS) {
-                return result;
-            }
+                    result =
+                            SuccessionDecreeHandler.handleEntityInteract(
+                                    player,
+                                    entity,
+                                    hand
+                            );
 
-            return InteractionResult.PASS;
-        });
+                    if (result != InteractionResult.PASS) {
+                        return result;
+                    }
+
+                    result =
+                            DeclarationOfAbdicationHandler.handleEntityInteract(
+                                    player,
+                                    entity,
+                                    hand
+                            );
+
+                    if (result != InteractionResult.PASS) {
+                        return result;
+                    }
+
+                    result =
+                            LegitimizationDecreeHandler.handleEntityInteract(
+                                    player,
+                                    entity,
+                                    hand
+                            );
+
+                    if (result != InteractionResult.PASS) {
+                        return result;
+                    }
+
+                    result =
+                            RoyalDisinheritanceHandler.handleEntityInteract(
+                                    player,
+                                    entity,
+                                    hand
+                            );
+
+                    if (result != InteractionResult.PASS) {
+                        return result;
+                    }
+
+                    result =
+                            RoyalPardonHandler.handleEntityInteract(
+                                    player,
+                                    entity,
+                                    hand
+                            );
+
+                    if (result != InteractionResult.PASS) {
+                        return result;
+                    }
+
+                    return InteractionResult.PASS;
+                }
+        );
     }
 }

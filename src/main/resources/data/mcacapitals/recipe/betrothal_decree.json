@@ -27,11 +27,11 @@
       "item": "minecraft:paper"
     },
     {
-      "item": "mcacapitals:black_royal_seal"
+      "item": "mcacapitals:cyan_royal_seal"
     }
   ],
   "result": {
-    "item": "mcacapitals:declaration_of_abdication",
+    "id": "mcacapitals:betrothal_decree",
     "count": 1
   }
 }

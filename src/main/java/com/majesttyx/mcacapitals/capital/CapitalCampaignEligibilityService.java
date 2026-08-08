@@ -57,16 +57,6 @@ final class CapitalCampaignEligibilityService {
                 attackingCapital,
                 defendingCapital
         );
-        if (com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess
-                .getDiplomaticState(
-                        level,
-                        attackingCapital.getCapitalId(),
-                        defendingCapital.getCapitalId()
-                ) == CapitalDiplomaticState.TRUCE) {
-            return Validation.failure(
-                    "An active Truce forbids either capital from planning an attack."
-            );
-        }
 
         if (attackingCapital.getState()
                 != CapitalState.ACTIVE
@@ -208,8 +198,7 @@ final class CapitalCampaignEligibilityService {
                         )
                 )
                 .limit(
-                        CapitalCampaignRecord
-                                .MAX_ATTACKERS
+                        CapitalCampaignRecord.MAX_ATTACKERS
                 )
                 .toList();
     }

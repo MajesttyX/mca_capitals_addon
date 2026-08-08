@@ -35,7 +35,6 @@ final class MCAClothingBridge {
                 new Class<?>[] {String.class},
                 clothesId
         );
-
         return result != null || clothingExists(clothesId);
     }
 
@@ -102,6 +101,7 @@ final class MCAClothingBridge {
 
     private static boolean existsInCustomClothingManager(String clothesId) {
         String[] classNames = new String[] {
+                "net.conczin.mca.server.world.data.CustomClothingManager",
                 "net.mca.server.world.data.CustomClothingManager",
                 "forge.net.mca.server.world.data.CustomClothingManager",
                 "fabric.net.mca.server.world.data.CustomClothingManager",
