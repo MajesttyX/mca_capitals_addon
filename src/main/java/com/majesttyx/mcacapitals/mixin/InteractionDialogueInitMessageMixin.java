@@ -13,6 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.UUID;
 
+/**
+ * Replaces the normal Talk question with the allegiance prompt after MCA has
+ * completed its own dialogue initialization.
+ *
+ * Fabric MCA 7.7.32 requires the original initialization path to run so the
+ * active InteractScreen is ready to receive dialogue answers. Cancelling the
+ * method at HEAD left the player with an empty dialogue panel.
+ */
 @Pseudo
 @Mixin(
         targets = "net.conczin.mca.network.c2s.InteractionDialogueInitMessage",
@@ -25,27 +33,23 @@ public abstract class InteractionDialogueInitMessageMixin {
 
     @Inject(
             method = "handleServer(Lnet/minecraft/server/level/ServerPlayer;)V",
-            at = @At("HEAD"),
-            cancellable = true,
+            at = @At("RETURN"),
             remap = false
     )
-    private void mcacapitals$promptUndeclaredPlayer(
+    private void mcacapitals$promptUndeclaredPlayerAfterDialogueInitialization(
             ServerPlayer player,
             CallbackInfo ci
     ) {
-        Entity entity = player.serverLevel().getEntity(villagerUUID());
-        if (!(entity instanceof VillagerEntityMCA villager)
-                || !CapitalSovereignDeclarationPromptService.shouldPrompt(
-                player,
-                villager
-        )) {
+        if (player == null) {
             return;
         }
 
-        CapitalSovereignDeclarationPromptService.openPrompt(
-                player,
-                villager
-        );
-        ci.cancel();
+        Entity entity = player.serverLevel().getEntity(villagerUUID());
+        if (!(entity instanceof VillagerEntityMCA villager)
+                || !CapitalSovereignDeclarationPromptService.shouldPrompt(player, villager)) {
+            return;
+        }
+
+        CapitalSovereignDeclarationPromptService.openPrompt(player, villager);
     }
 }
