@@ -32,11 +32,16 @@ final class CapitalPetitionRequirements {
 
     static int countMasterProfessionVillagers(ServerLevel level, Set<UUID> residents) {
         int count = 0;
+        if (level == null || residents == null || residents.isEmpty()) {
+            return count;
+        }
+
         for (UUID residentId : residents) {
             if (MCAIntegrationBridge.isMasterProfessionVillager(level, residentId)) {
                 count++;
             }
         }
+
         return count;
     }
 
@@ -49,10 +54,6 @@ final class CapitalPetitionRequirements {
         if (capital == null) {
             Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerEntity.getUUID());
             capital = CapitalManager.getCapitalByVillageId(villageId);
-        }
-
-        if (capital == null) {
-            return null;
         }
 
         return capital;
@@ -73,6 +74,10 @@ final class CapitalPetitionRequirements {
     }
 
     static boolean hasAdvancement(ServerPlayer player, ResourceLocation advancementId) {
+        if (player == null || advancementId == null || player.server == null) {
+            return false;
+        }
+
         Advancement advancement = player.server.getAdvancements().getAdvancement(advancementId);
         if (advancement == null) {
             return false;
@@ -84,12 +89,17 @@ final class CapitalPetitionRequirements {
 
     static List<OpenBetrothalSelectionPacket.Candidate> collectPlayerBetrothalCandidates(ServerLevel level, CapitalRecord capital) {
         List<OpenBetrothalSelectionPacket.Candidate> result = new ArrayList<>();
+        if (level == null || capital == null) {
+            return result;
+        }
+
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
 
         for (UUID residentId : residents) {
             if (!isPlayerBetrothalCandidate(level, capital, residentId)) {
                 continue;
             }
+
             result.add(new OpenBetrothalSelectionPacket.Candidate(
                     residentId,
                     buildBetrothalCandidateName(level, capital, residentId)
@@ -102,12 +112,17 @@ final class CapitalPetitionRequirements {
 
     static List<OpenBetrothalSelectionPacket.Candidate> collectRecommendedBetrothalCandidates(ServerLevel level, CapitalRecord capital) {
         List<OpenBetrothalSelectionPacket.Candidate> result = new ArrayList<>();
+        if (level == null || capital == null) {
+            return result;
+        }
+
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
 
         for (UUID residentId : residents) {
             if (!isRecommendedBetrothalCandidate(level, capital, residentId)) {
                 continue;
             }
+
             result.add(new OpenBetrothalSelectionPacket.Candidate(
                     residentId,
                     buildBetrothalCandidateName(level, capital, residentId)

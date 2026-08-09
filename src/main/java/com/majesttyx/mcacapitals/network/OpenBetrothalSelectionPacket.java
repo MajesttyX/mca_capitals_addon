@@ -21,9 +21,9 @@ public class OpenBetrothalSelectionPacket {
             List<Candidate> recommendationCandidates
     ) {
         this.capitalId = capitalId;
-        this.villageName = villageName;
-        this.playerCandidates = new ArrayList<>(playerCandidates);
-        this.recommendationCandidates = new ArrayList<>(recommendationCandidates);
+        this.villageName = villageName == null ? "" : villageName;
+        this.playerCandidates = new ArrayList<>(playerCandidates == null ? List.of() : playerCandidates);
+        this.recommendationCandidates = new ArrayList<>(recommendationCandidates == null ? List.of() : recommendationCandidates);
     }
 
     public UUID capitalId() {
@@ -90,7 +90,7 @@ public class OpenBetrothalSelectionPacket {
 
         public Candidate(UUID id, String name) {
             this.id = id;
-            this.name = name;
+            this.name = name == null ? "" : name;
         }
 
         public UUID id() {

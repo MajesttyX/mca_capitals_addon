@@ -37,6 +37,15 @@ public class ModItems {
     public static final Supplier<Item> DECREE_OF_THE_HOUSE =
             register("decree_of_the_house", DecreeOfTheHouseItem::new);
 
+    public static final Supplier<Item> SEALED_PURSE =
+            register("sealed_purse", SealedPurseItem::new);
+
+    public static final Supplier<Item> ROYAL_PARDON =
+            register("royal_pardon", RoyalPardonItem::new);
+
+    public static final Supplier<Item> DIPLOMATIC_PACKAGE =
+            register("diplomatic_package", DiplomaticPackageItem::new);
+
     public static final Supplier<Item> RED_ROYAL_SEAL =
             register("red_royal_seal", RoyalSealItem::new);
 
@@ -61,7 +70,10 @@ public class ModItems {
     public static void register() {
     }
 
-    private static <T extends Item> Supplier<T> register(String name, Supplier<T> factory) {
+    private static <T extends Item> Supplier<T> register(
+            String name,
+            Supplier<T> factory
+    ) {
         T item = Registry.register(
                 BuiltInRegistries.ITEM,
                 new ResourceLocation(MCACapitals.MODID, name),

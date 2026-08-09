@@ -22,6 +22,26 @@ public class SubmitDecreeOfTheHousePacket {
         this.houseWords = houseWords == null ? "" : houseWords;
     }
 
+    public UUID targetId() {
+        return targetId;
+    }
+
+    public boolean playerTarget() {
+        return playerTarget;
+    }
+
+    public String firstName() {
+        return firstName;
+    }
+
+    public String currentSurname() {
+        return currentSurname;
+    }
+
+    public String houseWords() {
+        return houseWords;
+    }
+
     public static void encode(SubmitDecreeOfTheHousePacket packet, FriendlyByteBuf buffer) {
         buffer.writeUUID(packet.targetId);
         buffer.writeBoolean(packet.playerTarget);
@@ -41,7 +61,7 @@ public class SubmitDecreeOfTheHousePacket {
     }
 
     public static void handle(SubmitDecreeOfTheHousePacket packet, ServerPlayer player) {
-        if (player == null) {
+        if (packet == null || player == null) {
             return;
         }
 

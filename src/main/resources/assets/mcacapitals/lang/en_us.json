@@ -11,8 +11,14 @@
   "item.mcacapitals.blue_royal_seal": "Blue Royal Seal",
   "item.mcacapitals.green_royal_seal": "Green Royal Seal",
   "item.mcacapitals.cyan_royal_seal": "Cyan Royal Seal",
+  "item.mcacapitals.purple_royal_seal": "Purple Royal Seal",
+  "item.mcacapitals.sealed_purse": "Sealed Purse",
+  "item.mcacapitals.royal_pardon": "Royal Pardon",
   "item.mcacapitals.decree_of_the_house": "Decree of the House",
   "creativetab.mcacapitals.main": "MCA Capitals",
+  "dialogue.main.mcacapitals_manage_diplomacy": "Manage Foreign Relations",
+  "dialogue.main.mcacapitals_send_gift": "Send Gift to Capital",
+  "dialogue.main.mcacapitals_ask_foreign_affairs": "Ask About Foreign Affairs",
   "dialogue.main.mcacapitals_petition": "Petition",
   "dialogue.main.mcacapitals_seize_throne": "Seize the Throne",
   "dialogue.mcacapitals_petition_menu": "What do you petition the sovereign for?",
@@ -29,7 +35,6 @@
   "dialogue.mcacapitals_request_menu": "What do you request?",
   "dialogue.mcacapitals_request_menu.mcacapitals_request_decree_of_the_house": "Request Decree of the House",
   "dialogue.mcacapitals_request_menu.mcacapitals_request_back": "Return",
-
   "dialogue.mcacapitals_chat_news_heir_apparent_named_01": "Did you hear that {heir_name} was named Heir Apparent of {capital_name}? I wonder what they will be like when they take the throne.",
   "dialogue.mcacapitals_chat_news_heir_apparent_named_02": "Do you think naming {heir_name} as Heir Apparent will settle the succession?",
   "dialogue.mcacapitals_chat_news_heir_apparent_named_03": "Have you noticed how carefully people speak about {heir_name} since the Heir Apparent announcement?",
@@ -49,7 +54,6 @@
   "dialogue.mcacapitals_chat_news_heir_apparent_named_17": "Naming an heir settles some questions and opens others. Watch the court over the next few weeks.",
   "dialogue.mcacapitals_chat_news_heir_apparent_named_18": "I wonder what {heir_name} thinks when they look at {sovereign_name} now.",
   "dialogue.mcacapitals_chat_news_heir_apparent_named_19": "I do not envy {heir_name}. The title is a gift that never stops costing something.",
-
   "dialogue.mcacapitals_chat_news_crown_child_born_01": "Did you hear a {heir_title} was born in {capital_name}?",
   "dialogue.mcacapitals_chat_news_crown_child_born_02": "Did you hear?! A {heir_title} gives {capital_name} something hopeful to gossip about.",
   "dialogue.mcacapitals_chat_news_crown_child_born_03": "Have you noticed how quickly people started talking about succession after the royal birth?",
@@ -68,7 +72,6 @@
   "dialogue.mcacapitals_chat_news_crown_child_born_16": "People keep debating what the child will be like. The babe is only a week old.",
   "dialogue.mcacapitals_chat_news_crown_child_born_17": "I went to see the baby. It looked like a baby. The whole court acted like it had invented something.",
   "dialogue.mcacapitals_chat_news_crown_child_born_18": "It is strange how a newborn can change the order of everything without doing a single thing.",
-
   "dialogue.mcacapitals_chat_news_capital_founded_01": "They say {capital_name} has a proper sovereign now. Strange to think we were just a village not so long ago.",
   "dialogue.mcacapitals_chat_news_capital_founded_02": "People keep asking me how I feel about it. Honestly? Safer. A capital needs someone at the top.",
   "dialogue.mcacapitals_chat_news_capital_founded_03": "{sovereign_name} was chosen from among us. Not some faraway lord. One of our own.",
@@ -92,7 +95,6 @@
   "dialogue.mcacapitals_chat_news_capital_founded_21": "The first morning as a capital, and the well is still where everyone gets the news.",
   "dialogue.mcacapitals_chat_news_capital_founded_22": "{capital_name} has been loud all morning. I blame the court until proven otherwise.",
   "dialogue.mcacapitals_chat_news_capital_founded_23": "The village felt smaller before all these titles arrived.",
-
   "dialogue.mcacapitals_chat_news_royal_marriage_01": "The court gossip before the wedding was almost as good as the wedding itself.",
   "dialogue.mcacapitals_chat_news_royal_marriage_02": "I saw the consort at the ceremony. A proper royal household now — {sovereign_name} won't be ruling alone.",
   "dialogue.mcacapitals_chat_news_royal_marriage_03": "{capital_name} has been talking since the wedding.",
@@ -115,7 +117,6 @@
   "dialogue.mcacapitals_chat_news_royal_marriage_20": "The gossip about the wedding has already outlasted the wedding itself.",
   "dialogue.mcacapitals_chat_news_royal_marriage_21": "The wedding’s done, but the market is still talking like it just started.",
   "dialogue.mcacapitals_chat_news_royal_marriage_22": "I heard the vows were short. Good. Some of us have work to do.",
-
   "dialogue.mcacapitals_chat_news_sovereign_death_01": "The court feels hollow right now. That's the only word for it.",
   "dialogue.mcacapitals_chat_news_sovereign_death_02": "I've never seen so many villagers in black at the same time. The whole capital changed overnight.",
   "dialogue.mcacapitals_chat_news_sovereign_death_03": "Grief in a capital is never private. Somehow we all grieve together whether we want to or not.",
@@ -138,7 +139,6 @@
   "dialogue.mcacapitals_chat_news_sovereign_death_20": "The dowager doesn't speak at court much. But when they do, {sovereign_name} listens.",
   "dialogue.mcacapitals_chat_news_sovereign_death_21": "The capital is quieter than I've ever heard it. Even the market sounds muffled somehow.",
   "dialogue.mcacapitals_chat_news_sovereign_death_22": "I saw black cloth being carried out before the announcement.",
-
   "dialogue.mcacapitals_chat_news_throne_seized_01": "Seizing the throne is one thing. Holding it is another. We'll see.",
   "dialogue.mcacapitals_chat_news_throne_seized_02": "The whole thing was over in moments, but the court is still shaking.",
   "dialogue.mcacapitals_chat_news_throne_seized_03": "The old royal family is gone now. Just like that. Years of court life, erased.",
@@ -163,7 +163,6 @@
   "dialogue.mcacapitals_chat_news_throne_seized_22": "History remembers coups differently depending on who survives to write them. I wonder who will write about this.",
   "dialogue.mcacapitals_chat_news_throne_seized_23": "Nobody who was there will stop talking about it. Nobody who wasn't there will stop asking.",
   "dialogue.mcacapitals_chat_news_throne_seized_24": "There are no innocent bystanders in a coup. Everyone was already taking a side; they just didn't know it.",
-
   "dialogue.mcacapitals_chat_news_disinherited_01": "I wonder what finally pushed the Crown to remove them from the line.",
   "dialogue.mcacapitals_chat_news_disinherited_02": "One moment, you are a member of the Royal Family. The next, you are simply a name the court no longer dares to say aloud.",
   "dialogue.mcacapitals_chat_news_disinherited_03": "People keep asking what happened. Nobody seems to know for certain. Or nobody's willing to say.",
@@ -178,7 +177,6 @@
   "dialogue.mcacapitals_chat_news_disinherited_12": "I would not want to be seated near that household at supper.",
   "dialogue.mcacapitals_chat_news_disinherited_13": "The disinheritance has the nobles whispering more than usual.",
   "dialogue.mcacapitals_chat_news_disinherited_14": "Everyone will pretend this ends the matter, which usually means it does not.",
-
   "dialogue.mcacapitals_chat_news_legitimized_01": "Did you hear of the recent legitimization? Some of the older courtiers were not pleased. They weren't going to say that out loud, of course.",
   "dialogue.mcacapitals_chat_news_legitimized_02": "Legitimization reshapes the succession. I hope I'm not affected.",
   "dialogue.mcacapitals_chat_news_legitimized_03": "It's a kind thing, if you think about it. Giving someone a place they didn't have before.",
@@ -190,7 +188,6 @@
   "dialogue.mcacapitals_chat_news_legitimized_09": "The royal family tree gained another branch. The Maester will need more ink.",
   "dialogue.mcacapitals_chat_news_legitimized_10": "The legitimization has the court counting heirs again.",
   "dialogue.mcacapitals_chat_news_legitimized_11": "The decree made it official, but people have been gossiping about it happening for longer.",
-
   "dialogue.mcacapitals_chat_news_abdication_01": "Did you hear about the abdication? I didn't think they would actually do it. But the declaration was signed, and here we are.",
   "dialogue.mcacapitals_chat_news_abdication_02": "I always thought abdication was rare. Most people hold onto power until something takes it from them.",
   "dialogue.mcacapitals_chat_news_abdication_03": "Did you hear the sovereign abdicated? That is a heavy choice.",
@@ -215,7 +212,6 @@
   "dialogue.mcacapitals_chat_news_abdication_22": "The former sovereign still lives here. I’m not quite sure how to address them. Do I bow? I think I should bow.",
   "dialogue.mcacapitals_chat_news_abdication_23": "I think the former sovereign is relieved. The court is the only one having trouble letting go.",
   "dialogue.mcacapitals_chat_news_abdication_24": "A sovereign who chooses to step down before they are forced to — that takes a particular kind of person.",
-
   "dialogue.mcacapitals_chat_news_new_duke_or_duchess_01": "Dukedom isn't given lightly. {sovereign_name} must have seen something worth rewarding.",
   "dialogue.mcacapitals_chat_news_new_duke_or_duchess_02": "I knew them before the title. They were good people then. The title has not changed that yet.",
   "dialogue.mcacapitals_chat_news_new_duke_or_duchess_03": "The herald announced the new dukedom loud enough for the farmers the hear it in the fields.",
@@ -234,7 +230,6 @@
   "dialogue.mcacapitals_chat_news_new_duke_or_duchess_16": "The lords have been gathered near the hall. Either news or vanity.",
   "dialogue.mcacapitals_chat_news_new_duke_or_duchess_17": "Titles, make people visible, and visibility is not always kind.",
   "dialogue.mcacapitals_chat_news_new_duke_or_duchess_18": "I hope {capital_name} gained a leader, not just another rivalry.",
-
   "dialogue.mcacapitals_chat_news_lord_commander_appointed_01": "{commander_name} is Lord Commander now! I feel safer already just knowing that.",
   "dialogue.mcacapitals_chat_news_lord_commander_appointed_02": "The military office isn't just ceremonial. At least not now with {commander_name} in it.",
   "dialogue.mcacapitals_chat_news_lord_commander_appointed_03": "A capital without a commander is nervous. {capital_name} can relax a little now.",
@@ -253,8 +248,7 @@
   "dialogue.mcacapitals_chat_news_lord_commander_appointed_16": "The capital feels more organized now. There's a chain of command, and everyone knows their place in it.",
   "dialogue.mcacapitals_chat_news_lord_commander_appointed_17": "Did you hear {commander_name} was made Lord Commander?",
   "dialogue.mcacapitals_chat_news_lord_commander_appointed_18": "I heard {commander_name} is strict, though strict may be what {capital_name} needs.",
-  "dialogue.mcacapitals_chat_news_lord_commander_appointed_19":"{capital_name} may sleep easier if {commander_name} proves steady.",
-
+  "dialogue.mcacapitals_chat_news_lord_commander_appointed_19": "{capital_name} may sleep easier if {commander_name} proves steady.",
   "dialogue.mcacapitals_chat_news_hand_of_the_sovereign_appointed_01": "{hand_name} is Hand now. That's real power, more than most titles in the Capital.",
   "dialogue.mcacapitals_chat_news_hand_of_the_sovereign_appointed_02": "The new Hand speaks with {sovereign_name}'s voice when they're not here to address the Capital.",
   "dialogue.mcacapitals_chat_news_hand_of_the_sovereign_appointed_03": "Does that mean that {hand_name} is as powerful as a King, now?",
@@ -282,7 +276,6 @@
   "dialogue.mcacapitals_chat_news_hand_of_the_sovereign_appointed_25": "Someone brought {hand_name} a petition with soup spilled on it. I wish I were joking.",
   "dialogue.mcacapitals_chat_news_hand_of_the_sovereign_appointed_26": "{hand_title} sounds grand until you see all the paperwork that comes with it.",
   "dialogue.mcacapitals_chat_news_hand_of_the_sovereign_appointed_27": "The Hand’s office is full again. I'm glad, people were starting to bring their problems to the rest of us.",
-
   "dialogue.mcacapitals_chat_news_grand_maester_appointed_01": "They've been a cleric here for years. Now look at them. {grand_maester_name} is the crown’s most learned voice.",
   "dialogue.mcacapitals_chat_news_grand_maester_appointed_02": "I heard that {grand_maester_name} declined a celebration. Said there was too much reading to catch up on.",
   "dialogue.mcacapitals_chat_news_grand_maester_appointed_03": "{grand_maester_name} doesn't say much in public. The advice goes to {sovereign_name} privately.",
@@ -299,7 +292,6 @@
   "dialogue.mcacapitals_chat_news_grand_maester_appointed_14": "A Grand Maester hears sickness, secrets, and excuses in equal measure. I certainly do not have the patience for the position.",
   "dialogue.mcacapitals_chat_news_grand_maester_appointed_15": "The court has a learned voice now, but it still has to listen.",
   "dialogue.mcacapitals_chat_news_grand_maester_appointed_16": "{grand_maester_name} may learn more about {capital_name} than any noble.",
-
   "dialogue.mcacapitals_chat_news_royal_guard_appointed_01": "I saw the royal guard follow {sovereign_name} through the Capital earlier today.",
   "dialogue.mcacapitals_chat_news_royal_guard_appointed_02": "I heard the Royal Guards arguing over who gets to stand closest to the sovereign.",
   "dialogue.mcacapitals_chat_news_royal_guard_appointed_03": "I heard the members of the Royal Guard have to follow {sovereign_name} wherever they go. When do they get to sleep?",
@@ -317,7 +309,6 @@
   "dialogue.mcacapitals_chat_news_royal_guard_appointed_15": "The royal guard carries no rank above what the sovereign gives them. But everyone gets out of their way regardless.",
   "dialogue.mcacapitals_chat_news_royal_guard_appointed_16": "The selection was not announced in advance. The chosen ones found out in the hall.",
   "dialogue.mcacapitals_chat_news_royal_guard_appointed_17": "I heard about the Royal Guards. Whatever they are paid, it is not enough.",
-
   "dialogue.mcacapitals_chat_news_peaceful_transfer_01": "The petition route is harder than it looks. You don't build that kind of standing in a week.",
   "dialogue.mcacapitals_chat_news_peaceful_transfer_02": "The old sovereign stepped back graciously. I wasn't sure they would, but I was wrong about them.",
   "dialogue.mcacapitals_chat_news_peaceful_transfer_03": "The standing required to challenge a throne through petition is extraordinary. Most people never get close.",
@@ -335,7 +326,6 @@
   "dialogue.mcacapitals_chat_news_peaceful_transfer_15": "It takes an unusual kind of character to give up a throne willingly. The former sovereign has my respect.",
   "dialogue.mcacapitals_chat_news_peaceful_transfer_16": "Building that kind of standing takes years. Most people give up before they get close.",
   "dialogue.mcacapitals_chat_news_peaceful_transfer_17": "I think the former sovereign was relieved. There's a kind of weight that comes off a person when the burden passes to someone else.",
-
   "dialogue.mcacapitals_chat_news_royal_birth_01": "Did you hear there was a royal birth? I hope the new little Prince or Princess is doing well.",
   "dialogue.mcacapitals_chat_news_royal_birth_02": "The herald said the name of the newest addition to the Royal Family twice. Still didn’t catch it.",
   "dialogue.mcacapitals_chat_news_royal_birth_03": "A new royal child gives {capital_name} something hopeful to talk about.",
@@ -361,7 +351,6 @@
   "dialogue.mcacapitals_chat_news_royal_birth_23": "I saw a guard carrying blankets to the royal rooms. They looked more nervous than during a raid.",
   "dialogue.mcacapitals_chat_news_royal_birth_24": "I heard someone ask about succession before the child was even named. Honestly, some people have no shame.",
   "dialogue.mcacapitals_chat_news_royal_birth_25": "The royal household has {royal_household_count} people now. The hall will not be quiet again.",
-
   "dialogue.mcacapitals_chat_news_court_herald_appointed_01": "The new herald’s got lungs, I’ll give them that.",
   "dialogue.mcacapitals_chat_news_court_herald_appointed_02": "The new herald’s got a voice on them. I heard the appointment from inside my house.",
   "dialogue.mcacapitals_chat_news_court_herald_appointed_03": "I watched {herald_name} practice the full title list before breakfast. Honestly, I thought it was impressive.",
@@ -380,7 +369,6 @@
   "dialogue.mcacapitals_chat_news_court_herald_appointed_16": "The court has a herald again. The well-gossipers looked offended.",
   "dialogue.mcacapitals_chat_news_court_herald_appointed_17": "I hope the new herald likes repeating things. People never listen the first time.",
   "dialogue.mcacapitals_chat_news_court_herald_appointed_18": "The appointment was announced loudly enough to scare the chickens.",
-
   "dialogue.mcacapitals_chat_news_mourning_ended_01": "The market is louder already after mourning. Two days of quiet was its own kind of loud.",
   "dialogue.mcacapitals_chat_news_mourning_ended_02": "The herald announced the end of mourning at first light. Kept it short, for once.",
   "dialogue.mcacapitals_chat_news_mourning_ended_03": "Two days in black felt longer than two days. I’m glad to see colour again.",
@@ -393,7 +381,6 @@
   "dialogue.mcacapitals_chat_news_mourning_ended_10": "It feels strange seeing the guards in regular dress again.",
   "dialogue.mcacapitals_chat_news_mourning_ended_11": "I suppose life moves whether hearts are ready or not. I wonder how the {sovereign_title} is feeling after everything.",
   "dialogue.mcacapitals_chat_news_mourning_ended_12": "The herald announced the end of mourning without making a meal of it.",
-
   "dialogue.mcacapitals_chat_capital_topic_01": "People are still talking about {latest_event}. I imagine they will be for a while yet.",
   "dialogue.mcacapitals_chat_capital_topic_02": "A capital this size generates politics whether you want it to or not. Best not to be in the middle of it.",
   "dialogue.mcacapitals_chat_capital_topic_03": "{capital_population} people in {capital_name} now. Every day there's someone new I don't recognize.",
@@ -458,7 +445,6 @@
   "dialogue.mcacapitals_chat_capital_topic_62": "…I only said it once, and now half the square has an opinion.",
   "dialogue.mcacapitals_chat_capital_topic_63": "Someone keeps feeding the cats near the square. Now the cats hold court there.",
   "dialogue.mcacapitals_chat_capital_topic_64": "…that is not what I said. That is what they heard. There is a difference.",
-
   "dialogue.mcacapitals_chat_rank_commoner_01": "People used to gossip about trades. Now it’s titles.",
   "dialogue.mcacapitals_chat_rank_commoner_02": "Every villager in {capital_name} has an opinion now.",
   "dialogue.mcacapitals_chat_rank_commoner_03": "The herald’s been busy since {latest_event}.",
@@ -491,7 +477,6 @@
   "dialogue.mcacapitals_chat_rank_commoner_30": "People keep asking if I want to petition for something. I want to live quietly and not be noticed, that's my only petition.",
   "dialogue.mcacapitals_chat_rank_commoner_31": "If work earned rank, half the square would be royal by now, but sure, give the gentleman with a title a grant.",
   "dialogue.mcacapitals_chat_rank_commoner_32": "I think the sovereign is doing well. I base that on almost no information and a general feeling. I think that's how most people do it.",
-
   "dialogue.mcacapitals_chat_rank_knight_01": "Sir is a title. The sword work behind it is what actually matters.",
   "dialogue.mcacapitals_chat_rank_knight_02": "I heard someone call guard duty exciting. They have clearly never stood watch in bad weather.",
   "dialogue.mcacapitals_chat_rank_knight_03": "A knight without discipline is just a soldier with a fancier name.",
@@ -517,7 +502,6 @@
   "dialogue.mcacapitals_chat_rank_knight_24": "A good guard learns which warnings are real and which fools are loud.",
   "dialogue.mcacapitals_chat_rank_knight_25": "I would rather earn respect than be given it. The title is given. The respect I work for daily.",
   "dialogue.mcacapitals_chat_rank_knight_26": "If {capital_name} sleeps peacefully, that is enough praise for me.",
-
   "dialogue.mcacapitals_chat_rank_lord_commander_01": "The royal household has {royal_household_count} members now. As Lord Commander, I try to know all of them by name.",
   "dialogue.mcacapitals_chat_rank_lord_commander_02": "I have seen {capital_name} change more than once. I'm sure soon enough I will see it change again.",
   "dialogue.mcacapitals_chat_rank_lord_commander_03": "The military of {capital_name} is my responsibility. I have found that people complain about discipline until disorder reaches their doorstep.",
@@ -541,7 +525,6 @@
   "dialogue.mcacapitals_chat_rank_lord_commander_21": "Do not crowd the gate. It makes everyone slower.",
   "dialogue.mcacapitals_chat_rank_lord_commander_22": "I want the archers where they can see, not where they look impressive.",
   "dialogue.mcacapitals_chat_rank_lord_commander_23": "No one stands alone when a Pillager approaches. Make sure they know that.",
-
   "dialogue.mcacapitals_chat_rank_lord_or_lady_01": "The master professionals of {capital_name} are the foundation of this court. I came from among them.",
   "dialogue.mcacapitals_chat_rank_lord_or_lady_02": "People bring me concerns that they won't bring to the higher nobility. I consider it privilege.",
   "dialogue.mcacapitals_chat_rank_lord_or_lady_03": "Lords and ladies sit between the court and the commons. It is a useful place, but is also a complicated one. Do let me know if there is anything I can assist with in those manners.",
@@ -560,7 +543,6 @@
   "dialogue.mcacapitals_chat_rank_lord_or_lady_16": "A title gets you into the room, but does not make the room pleasant. If you intend to join the noble ranks of {capital_name} you should understand that.",
   "dialogue.mcacapitals_chat_rank_lord_or_lady_17": "I serve {sovereign_name} and I serve {capital_name}. When those two things conflict, I try to find the version that does not.",
   "dialogue.mcacapitals_chat_rank_lord_or_lady_18": "Being amongst the lords of {capital_name} is mostly being the person willing to answer questions that nobody else claimed.",
-
   "dialogue.mcacapitals_chat_rank_duke_or_duchess_01": "{sovereign_name} bestowed this rank upon me. I serve it by making their court stronger.",
   "dialogue.mcacapitals_chat_rank_duke_or_duchess_02": "Ducal rank comes with expectation. The petition was only the beginning of my service to {sovereign_name}.",
   "dialogue.mcacapitals_chat_rank_duke_or_duchess_03": "A duchy sounds grand until everyone expects you to solve disputes older than their grandparents.",
@@ -592,7 +574,6 @@
   "dialogue.mcacapitals_chat_rank_duke_or_duchess_29": "{capital_name} has enough pride already; it needs nobles who can be useful.",
   "dialogue.mcacapitals_chat_rank_duke_or_duchess_30": "A Duke or Duchess must learn which quarrels deserve attention and which only want an audience.",
   "dialogue.mcacapitals_chat_rank_duke_or_duchess_31": "Influence feels grand until it becomes someone else’s burden placed in your hands, understand that if you ever want to be amongst us.",
-
   "dialogue.mcacapitals_chat_rank_heir_01": "{sovereign_name} carries more than people realize. It is my duty as heir that I try to make sure some of that weight is shared.",
   "dialogue.mcacapitals_chat_rank_heir_02": "The court sees me as an extension of {sovereign_name}. I try to be worthy of that association.",
   "dialogue.mcacapitals_chat_rank_heir_03": "I have no sceptre, no petition rights, no formal power of decree. And yet {capital_name} is different because I am here.",
@@ -626,7 +607,6 @@
   "dialogue.mcacapitals_chat_rank_heir_31": "{hand_title} {hand_name} sees the troubles before most of us do, and for that I'm grateful.",
   "dialogue.mcacapitals_chat_rank_heir_32": "I wonder what {capital_name} will remember about these years when I am older.",
   "dialogue.mcacapitals_chat_rank_heir_33": "When people speak of {sovereign_title} {sovereign_name}, I listen for what they are afraid to say plainly.",
-
   "dialogue.mcacapitals_chat_rank_royal_child_01": "People sometimes forget the consort has ears. That is their mistake.",
   "dialogue.mcacapitals_chat_rank_royal_child_02": "I am a child of {sovereign_name}. That is a fact that shapes every room I walk into.",
   "dialogue.mcacapitals_chat_rank_royal_child_03": "The heir is {heir_name}. I have made peace with that. Mostly.",
@@ -645,7 +625,6 @@
   "dialogue.mcacapitals_chat_rank_royal_child_16": "There are more of us than people remember. The court has a lot of names to keep straight.",
   "dialogue.mcacapitals_chat_rank_royal_child_17": "I was born into a title, but I'd like to think I'm building something beyond it.",
   "dialogue.mcacapitals_chat_rank_royal_child_18": "If I've learned anything it is that the smallest person in a royal family can still make the whole room careful.",
-
   "dialogue.mcacapitals_chat_rank_sovereign_01": "Every decision I make in {capital_name} will be written into the chronicle eventually.",
   "dialogue.mcacapitals_chat_rank_sovereign_02": "{heir_name} is my named heir. Spread the word, I want no confusion when the time comes.",
   "dialogue.mcacapitals_chat_rank_sovereign_03": "{commander_name} keeps the court safe. I trust that completely, and I say it publicly because trust should not be assumed.",
@@ -666,7 +645,6 @@
   "dialogue.mcacapitals_chat_rank_sovereign_18": "If the heir is missing, check the Maester first. Then the stables.",
   "dialogue.mcacapitals_chat_rank_sovereign_19": "The chronicle can wait until after the decision is made.",
   "dialogue.mcacapitals_chat_rank_sovereign_20": "I will hear the matter in the hall. Not in the doorway.",
-
   "dialogue.mcacapitals_chat_rank_hand_01": "If it begins with ‘small matter,’ it is never a small matter.",
   "dialogue.mcacapitals_chat_rank_hand_02": "Someone brought me a petition with soup on it so today, I am choosing patience.",
   "dialogue.mcacapitals_chat_rank_hand_03": "{sovereign_name} wants this settled before nightfall. Naturally, everyone waited until the afternoon to inform me.",
@@ -692,7 +670,6 @@
   "dialogue.mcacapitals_chat_rank_hand_23": "Walk with me if you need something. I am late to three places today already.",
   "dialogue.mcacapitals_chat_rank_hand_24": "{capital_name} has {capital_population} people now, and somehow every complaint still fits on my desk.",
   "dialogue.mcacapitals_chat_rank_hand_25": "The royal household has {royal_household_count} people in it. That is not a household; that is a second court.",
-
   "dialogue.mcacapitals_chat_rank_grand_maester_01": "The chronicle is not a coaster. I have said this more than once today already.",
   "dialogue.mcacapitals_chat_rank_grand_maester_02": "I asked for quiet, not a procession.",
   "dialogue.mcacapitals_chat_rank_grand_maester_03": "That book is older than your title. Hold it properly.",
@@ -706,7 +683,6 @@
   "dialogue.mcacapitals_chat_rank_grand_maester_11": "The chronicle is there to tell the story of what happened. Not what people wish had happened.",
   "dialogue.mcacapitals_chat_rank_grand_maester_12": "The chronicle is not missing. It is exactly where careless people do not look.",
   "dialogue.mcacapitals_chat_rank_grand_maester_13": "If the child swallowed something, start with what.",
-
   "dialogue.mcacapitals_chat_rank_royal_consort_01": "I married {sovereign_name}. I did not marry every argument in {capital_name}, though some days it feels close.",
   "dialogue.mcacapitals_chat_rank_royal_consort_02": "When {sovereign_name} says they are fine, I usually start asking better questions.",
   "dialogue.mcacapitals_chat_rank_royal_consort_03": "Some days I miss being addressed by my name before my title.",
@@ -737,7 +713,6 @@
   "dialogue.mcacapitals_chat_rank_royal_consort_28": "If you need {sovereign_name}, try the hall first. Then try wherever the noise is.",
   "dialogue.mcacapitals_chat_rank_royal_consort_29": "{hand_name} has been looking for the sovereign. That usually means I should be looking too.",
   "dialogue.mcacapitals_chat_rank_royal_consort_30": "If this is about {latest_event}, start with the part that affects the household.",
-
   "dialogue.mcacapitals_chat_rank_royal_dowager_01": "Have you seen the children? They were meant to stay near the hall.",
   "dialogue.mcacapitals_chat_rank_royal_dowager_02": "If this is about the old sovereign, ask plainly.",
   "dialogue.mcacapitals_chat_rank_royal_dowager_03": "The herald nearly used my old title today. Nearly.",
@@ -754,7 +729,6 @@
   "dialogue.mcacapitals_chat_rank_royal_dowager_14": "Tell the heir I kept the book they asked for.",
   "dialogue.mcacapitals_chat_rank_royal_dowager_15": "The guards still nod at the old door. I appreciate that.",
   "dialogue.mcacapitals_chat_rank_royal_dowager_16": "If they are moving records again, tell them not to stack them by year. It never works.",
-
   "dialogue.mcacapitals_chat_general_player_sovereign_01": "Your Majesty. I didn't hear you coming.",
   "dialogue.mcacapitals_chat_general_player_sovereign_02": "I heard what you did during the last raid. The guard, the commander, the whole court held. That's your doing.",
   "dialogue.mcacapitals_chat_general_player_sovereign_03": "You built this. Not just the title — the court. The household. The whole thing.",
@@ -768,7 +742,6 @@
   "dialogue.mcacapitals_chat_general_player_sovereign_11": "The court follows your lead more than you might realize. Even the ones who pretend not to.",
   "dialogue.mcacapitals_chat_general_player_sovereign_12": "You ask more questions than most who hold that title. I mean that as a compliment.",
   "dialogue.mcacapitals_chat_general_player_sovereign_13": "I have heard stranger complaints from other capitals. What you are building here is real.",
-
   "dialogue.mcacapitals_chat_general_success_01": "You know, I wasn't sure about you when you first arrived. I'm coming around.",
   "dialogue.mcacapitals_chat_general_success_02": "That's actually a fair point. I hadn't thought of it that way.",
   "dialogue.mcacapitals_chat_general_success_03": "If you are heading to the square, the market already knows.",
@@ -816,7 +789,6 @@
   "dialogue.mcacapitals_chat_general_success_45": "There are {royal_child_count} royal children now. The tutors deserve better pay.",
   "dialogue.mcacapitals_chat_general_success_46": "If you see a wooden sword near the hall, do not step on it. Royal trouble.",
   "dialogue.mcacapitals_chat_general_success_47": "The children were meant to stay near the royal rooms. They rarely agree with ‘meant to.’",
-
   "dialogue.mcacapitals_chat_capital_fail_01": "I'm going to pretend that didn't happen for both our sakes.",
   "dialogue.mcacapitals_chat_capital_fail_02": "Was that meant to be charming? I'm asking seriously.",
   "dialogue.mcacapitals_chat_capital_fail_03": "If you touch the chronicle with muddy hands, the Maester will find you.",
@@ -842,7 +814,6 @@
   "dialogue.mcacapitals_chat_capital_fail_23": "That's going to cost you in this capital. People talk.",
   "dialogue.mcacapitals_chat_capital_fail_24": "Good day. And I mean that as a dismissal, not a farewell.",
   "dialogue.mcacapitals_chat_capital_fail_25": "If this is about court business, ask someone wearing cleaner boots.",
-
   "dialogue.mcacapitals_villager_warning_01": "By order of {sovereign_title} {sovereign_name}, stand down.",
   "dialogue.mcacapitals_villager_warning_02": "You threaten a resident of {capital_name}. Think carefully.",
   "dialogue.mcacapitals_villager_warning_03": "{commander_name} will hear of this if you continue.",
@@ -859,7 +830,6 @@
   "dialogue.mcacapitals_villager_warning_14": "I will not ask twice.",
   "dialogue.mcacapitals_villager_warning_15": "Keep your weapon lowered.",
   "dialogue.mcacapitals_villager_warning_16": "Not another step.",
-
   "dialogue.mcacapitals_villager_cant_find_bed_01": "{capital_name} has {capital_population} people, yet I cannot find my own bed.",
   "dialogue.mcacapitals_villager_cant_find_bed_02": "I need a proper bed if I am to remain in {capital_name}.",
   "dialogue.mcacapitals_villager_cant_find_bed_03": "The Crown may rule {capital_name}, but it cannot make me sleep standing up.",
@@ -867,7 +837,6 @@
   "dialogue.mcacapitals_villager_cant_find_bed_05": "This is no way for a resident of the capital to sleep.",
   "dialogue.mcacapitals_villager_cant_find_bed_06": "I cannot find a safe place to rest.",
   "dialogue.mcacapitals_villager_cant_find_bed_07": "Someone has blocked my bed! I will have to report this to the Crown.",
-
   "dialogue.mcacapitals_villager_hurt_01": "That nearly sent me to {grand_maester_name}.",
   "dialogue.mcacapitals_villager_hurt_02": "The Crown should tax bruises if they are this common.",
   "dialogue.mcacapitals_villager_hurt_03": "Careful! I am not made of iron.",
@@ -875,7 +844,6 @@
   "dialogue.mcacapitals_villager_hurt_05": "That was not gentle.",
   "dialogue.mcacapitals_villager_hurt_06": "I will remember that bruise.",
   "dialogue.mcacapitals_villager_hurt_07": "Not my finest moment.",
-
   "dialogue.mcacapitals_villager_sickness_01": "If {grand_maester_name} is nearby, send them to me.",
   "dialogue.mcacapitals_villager_sickness_02": "I should rest before {herald_name} announces my funeral.",
   "dialogue.mcacapitals_villager_sickness_03": "Even the bell of {capital_name} sounds too loud today.",
@@ -884,7 +852,6 @@
   "dialogue.mcacapitals_villager_sickness_06": "My head feels full of wool.",
   "dialogue.mcacapitals_villager_sickness_07": "The Maester will know what to do.",
   "dialogue.mcacapitals_villager_sickness_08": "I should not be working like this.",
-
   "dialogue.mcacapitals_villager_scream_01": "{commander_name}! We need help!",
   "dialogue.mcacapitals_villager_scream_02": "{sovereign_title} {sovereign_name}, protect us!",
   "dialogue.mcacapitals_villager_scream_03": "Someone call {grand_maester_name}!",
@@ -894,7 +861,6 @@
   "dialogue.mcacapitals_villager_scream_07": "By the Crown, help!",
   "dialogue.mcacapitals_villager_scream_08": "Guards! Guards!",
   "dialogue.mcacapitals_villager_scream_09": "Lord Commander, over here!",
-
   "dialogue.mcacapitals_villager_attack_01": "For {sovereign_title} {sovereign_name}!",
   "dialogue.mcacapitals_villager_attack_02": "Defend {capital_name}!",
   "dialogue.mcacapitals_villager_attack_03": "Hold the line for the love of {capital_name}!",
@@ -908,7 +874,6 @@
   "dialogue.mcacapitals_villager_attack_11": "The Crown’s peace will hold!",
   "dialogue.mcacapitals_villager_attack_12": "Form up!",
   "dialogue.mcacapitals_villager_attack_13": "Drive them from our streets!",
-
   "dialogue.mcacapitals_villager_support_01": "{capital_name} does not fall while we stand together.",
   "dialogue.mcacapitals_villager_support_02": "Do not let them reach the homes!",
   "dialogue.mcacapitals_villager_support_03": "The Crown still has blades in the field!",
@@ -922,7 +887,6 @@
   "dialogue.mcacapitals_villager_support_11": "I have your flank!",
   "dialogue.mcacapitals_villager_support_12": "Keep your feet under you!",
   "dialogue.mcacapitals_villager_support_13": "Fall back to me if you must!",
-
   "dialogue.mcacapitals_villager_support_retreat_01": "{commander_name}, I need support!",
   "dialogue.mcacapitals_villager_support_retreat_02": "They are breaking through the line!",
   "dialogue.mcacapitals_villager_support_retreat_03": "I cannot hold this street alone!",
@@ -934,7 +898,6 @@
   "dialogue.mcacapitals_villager_support_retreat_09": "I cannot hold this alone!",
   "dialogue.mcacapitals_villager_support_retreat_10": "Get them off me!",
   "dialogue.mcacapitals_villager_support_retreat_11": "I am being surrounded!",
-
   "dialogue.mcacapitals_villager_retreat_01": "I need {grand_maester_name}!",
   "dialogue.mcacapitals_villager_retreat_02": "A villager is wounded and falling back!",
   "dialogue.mcacapitals_villager_retreat_03": "The line is broken. Warn {commander_name}!",
@@ -948,7 +911,6 @@
   "dialogue.mcacapitals_villager_retreat_11": "I need healing!",
   "dialogue.mcacapitals_villager_retreat_12": "Get the wounded out!",
   "dialogue.mcacapitals_villager_retreat_13": "This fight has turned against us!",
-
   "dialogue.mcacapitals_villager_kill_01": "One less monster threatening {capital_name}.",
   "dialogue.mcacapitals_villager_kill_02": "For {sovereign_title} {sovereign_name}!",
   "dialogue.mcacapitals_villager_kill_03": "{commander_name} will want to hear of this.",
@@ -965,7 +927,6 @@
   "dialogue.mcacapitals_villager_kill_14": "Not in our capital.",
   "dialogue.mcacapitals_villager_kill_15": "The Crown’s peace holds.",
   "dialogue.mcacapitals_villager_kill_16": "That should make the others think twice.",
-
   "dialogue.mcacapitals_interaction_sethome_success_01": "Then {capital_name} is truly my home now.",
   "dialogue.mcacapitals_interaction_sethome_success_02": "I will sleep here under {sovereign_title} {sovereign_name}’s protection.",
   "dialogue.mcacapitals_interaction_sethome_success_03": "Thank you. I have a place in {capital_name}.",
@@ -977,7 +938,6 @@
   "dialogue.mcacapitals_interaction_sethome_success_09": "I will return here at night.",
   "dialogue.mcacapitals_interaction_sethome_success_10": "I will keep this place well.",
   "dialogue.mcacapitals_interaction_sethome_success_11": "I suppose this is home now.",
-
   "dialogue.mcacapitals_interaction_sethome_bedfail_blocked_01": "I cannot settle where {sovereign_title} {sovereign_name} has forbidden it.",
   "dialogue.mcacapitals_interaction_sethome_bedfail_blocked_02": "This building in {capital_name} is blocked by royal order.",
   "dialogue.mcacapitals_interaction_sethome_bedfail_blocked_03": "{hand_title} {hand_name} should explain why this place is restricted.",
@@ -990,7 +950,6 @@
   "dialogue.mcacapitals_interaction_sethome_bedfail_blocked_10": "A bed behind forbidden walls is no bed at all.",
   "dialogue.mcacapitals_interaction_sethome_bedfail_blocked_11": "The Crown’s rules prevent me from staying here.",
   "dialogue.mcacapitals_interaction_sethome_bedfail_blocked_12": "I need a home I can lawfully reach.",
-
   "dialogue.mcacapitals_interaction_gohome_success_01": "Of course. I know the way.",
   "dialogue.mcacapitals_interaction_gohome_success_02": "I will go before {herald_name} has to announce me missing.",
   "dialogue.mcacapitals_interaction_gohome_success_03": "Home under {sovereign_title} {sovereign_name}’s peace sounds good.",
@@ -1004,7 +963,6 @@
   "dialogue.mcacapitals_interaction_gohome_success_11": "Back to my own roof, then.",
   "dialogue.mcacapitals_interaction_gohome_success_12": "I suppose that is enough for today.",
   "dialogue.mcacapitals_interaction_gohome_success_13": "Good night, if I do not see you again.",
-
   "dialogue.mcacapitals_welcome_01": "Welcome home. {capital_name} has missed you.",
   "dialogue.mcacapitals_welcome_02": "{herald_name} will have gossip about your return.",
   "dialogue.mcacapitals_welcome_03": "We wondered when you would walk these roads again.",
@@ -1019,7 +977,6 @@
   "dialogue.mcacapitals_welcome_12": "The Crown’s roads brought you back at last.",
   "dialogue.mcacapitals_welcome_13": "It is good to see you standing here again.",
   "dialogue.mcacapitals_welcome_14": "Home has a way of calling people back.",
-
   "dialogue.mcacapitals_welcomeFoe_01": "So, you return to {capital_name}.",
   "dialogue.mcacapitals_welcomeFoe_02": "I had hoped {capital_name} was done with you.",
   "dialogue.mcacapitals_welcomeFoe_03": "{sovereign_title} {sovereign_name} may tolerate you. I do not.",
@@ -1029,7 +986,6 @@
   "dialogue.mcacapitals_welcomeFoe_07": "I hoped the road had kept you.",
   "dialogue.mcacapitals_welcomeFoe_08": "Try not to cause trouble this time.",
   "dialogue.mcacapitals_welcomeFoe_09": "I see misfortune found its way home.",
-
   "dialogue.mcacapitals_spouse_dialogue_chat_success_01": "I missed you. Even {capital_name} felt quieter without you.",
   "dialogue.mcacapitals_spouse_dialogue_chat_success_02": "My favorite part of {capital_name} is still you.",
   "dialogue.mcacapitals_spouse_dialogue_chat_success_03": "You always know how to make me smile.",
@@ -1037,7 +993,6 @@
   "dialogue.mcacapitals_spouse_dialogue_chat_success_05": "That is exactly why I love speaking with you.",
   "dialogue.mcacapitals_spouse_dialogue_chat_success_06": "You make even court gossip sound sweet.",
   "dialogue.mcacapitals_spouse_dialogue_chat_success_07": "Come sit with me a while.",
-
   "dialogue.mcacapitals_spouse_dialogue_chat_fail_01": "Even {herald_name} would not repeat that.",
   "dialogue.mcacapitals_spouse_dialogue_chat_fail_02": "Please do not say that in front of {sovereign_title} {sovereign_name}.",
   "dialogue.mcacapitals_spouse_dialogue_chat_fail_03": "You are lucky I married you before hearing that.",
@@ -1051,7 +1006,6 @@
   "dialogue.mcacapitals_spouse_dialogue_chat_fail_11": "You know me better than that.",
   "dialogue.mcacapitals_spouse_dialogue_chat_fail_12": "Let us try that conversation again later.",
   "dialogue.mcacapitals_spouse_dialogue_chat_fail_13": "I am not in the mood for that.",
-
   "dialogue.mcacapitals_dialogue_main_morning_01": "{sovereign_title} {sovereign_name} rules another sunrise.",
   "dialogue.mcacapitals_dialogue_main_morning_02": "I hope today is quieter than yesterday.",
   "dialogue.mcacapitals_dialogue_main_morning_03": "Another day under the Crown.",
@@ -1062,7 +1016,6 @@
   "dialogue.mcacapitals_dialogue_main_morning_08": "The sun makes even the old walls look noble.",
   "dialogue.mcacapitals_dialogue_main_morning_09": "Nothing like morning gossip to start the day.",
   "dialogue.mcacapitals_dialogue_main_morning_10": "May the Crown have fewer problems before noon.",
-
   "dialogue.mcacapitals_dialogue_main_evening_01": "{herald_name} always finds fresh gossip by dusk.",
   "dialogue.mcacapitals_dialogue_main_evening_02": "The guards of {capital_name} look tired tonight.",
   "dialogue.mcacapitals_dialogue_main_evening_03": "I wonder if {sovereign_title} {sovereign_name} ever gets a quiet evening.",
@@ -1077,7 +1030,6 @@
   "dialogue.mcacapitals_dialogue_main_evening_12": "The children should be inside soon.",
   "dialogue.mcacapitals_dialogue_main_evening_13": "Evening prayers, evening meals, evening complaints.",
   "dialogue.mcacapitals_dialogue_main_evening_14": "Another day survived under the Crown.",
-
   "dialogue.mcacapitals_dialogue_main_night_01": "Keep your voice down. The capital sleeps.",
   "dialogue.mcacapitals_dialogue_main_night_02": "I hope {commander_name} doubled the watch tonight.",
   "dialogue.mcacapitals_dialogue_main_night_03": "Even {herald_name} is quiet at this hour.",
@@ -1089,7 +1041,6 @@
   "dialogue.mcacapitals_dialogue_main_night_09": "Monsters grow bold when {capital_name} grows tired.",
   "dialogue.mcacapitals_dialogue_main_night_10": "May {sovereign_title} {sovereign_name} sleep safely tonight.",
   "dialogue.mcacapitals_dialogue_main_night_11": "Tomorrow will come sooner if we sleep.",
-
   "dialogue.mcacapitals_dialogue_goaway_01": "I have duties in {capital_name}.",
   "dialogue.mcacapitals_dialogue_goaway_02": "{hand_title} {hand_name} will not wait forever.",
   "dialogue.mcacapitals_dialogue_goaway_03": "Enough talk. The Crown keeps us busy.",
@@ -1101,7 +1052,6 @@
   "dialogue.mcacapitals_dialogue_goaway_09": "That is enough talk for now.",
   "dialogue.mcacapitals_dialogue_goaway_10": "Go on, then. I am busy.",
   "dialogue.mcacapitals_dialogue_goaway_11": "The Crown does not pay me to stand here all day.",
-
   "dialogue.mcacapitals_dialogue_greet_01": "The roads of {capital_name} are busy. Speak plainly.",
   "dialogue.mcacapitals_dialogue_greet_02": "If this is court business, make it quick.",
   "dialogue.mcacapitals_dialogue_greet_03": "Well met in {capital_name}.",
@@ -1118,7 +1068,6 @@
   "dialogue.mcacapitals_dialogue_greet_14": "Another familiar face in the crowd.",
   "dialogue.mcacapitals_dialogue_greet_15": "The day grows strange. What do you need?",
   "dialogue.mcacapitals_dialogue_greet_16": "Speak plainly. I am listening.",
-
   "dialogue.mcacapitals_dialogue_stay_success_01": "If {sovereign_title} {sovereign_name} allows it, I will make my home here.",
   "dialogue.mcacapitals_dialogue_stay_success_02": "I have wandered enough. {capital_name} will be my home.",
   "dialogue.mcacapitals_dialogue_stay_success_03": "I will settle here and serve the Crown as best I can.",
@@ -1129,7 +1078,6 @@
   "dialogue.mcacapitals_dialogue_stay_success_08": "The capital has room for me after all.",
   "dialogue.mcacapitals_dialogue_stay_success_09": "Very well. I will stay.",
   "dialogue.mcacapitals_dialogue_stay_success_10": "A proper home sounds better than the road.",
-
   "dialogue.mcacapitals_dialogue_stay_no_space_01": "I would stay in {capital_name}, but there is no bed for me.",
   "dialogue.mcacapitals_dialogue_stay_no_space_02": "The Crown cannot house me without a roof.",
   "dialogue.mcacapitals_dialogue_stay_no_space_03": "Tell {hand_title} {hand_name} that {capital_name} needs more homes.",
@@ -1142,7 +1090,6 @@
   "dialogue.mcacapitals_dialogue_stay_no_space_10": "I will keep traveling for now.",
   "dialogue.mcacapitals_dialogue_stay_no_space_11": "I hoped to stay, but there is no space.",
   "dialogue.mcacapitals_dialogue_stay_no_space_12": "A full capital is still full.",
-
   "dialogue.mcacapitals_villager_grieving_01": "{hand_title} {hand_name} may count losses, but we feel them.",
   "dialogue.mcacapitals_villager_grieving_02": "May they rest beneath the peace of {capital_name}.",
   "dialogue.mcacapitals_villager_grieving_03": "Even {sovereign_title} {sovereign_name} cannot command grief away.",
@@ -1151,7 +1098,6 @@
   "dialogue.mcacapitals_villager_grieving_06": "I will mourn today and work tomorrow.",
   "dialogue.mcacapitals_villager_grieving_07": "Death makes even the Crown seem quiet.",
   "dialogue.mcacapitals_villager_grieving_08": "I hope they are at peace.",
-
   "dialogue.mcacapitals_capital_idle_evening_chatter_01": "I heard {herald_name} has a proclamation ready, but no one knows what for.",
   "dialogue.mcacapitals_capital_idle_evening_chatter_02": "If {hand_title} {hand_name} asks, I was working all day.",
   "dialogue.mcacapitals_capital_idle_evening_chatter_03": "The guards looked tense near the road today.",
@@ -1241,5 +1187,14 @@
   "dialogue.mcacapitals_capital_idle_evening_chatter_87": "One of them stared at me like I owed taxes.",
   "dialogue.mcacapitals_capital_idle_evening_chatter_88": "…maybe I do.",
   "dialogue.mcacapitals_capital_idle_evening_chatter_89": "…I heard someone wants another well.",
-  "dialogue.mcacapitals_capital_idle_evening_chatter_90": "…good. I want another well too."
+  "dialogue.mcacapitals_capital_idle_evening_chatter_90": "…good. I want another well too.",
+  "dialogue.main.mcacapitals_accuse_enemy": "Make an Accusation",
+  "dialogue.main.mcacapitals_request_royal_pardon": "Request a Royal Pardon",
+  "dialogue.main.mcacapitals_review_crown_justice": "Review Crown Standings",
+  "dialogue.main.mcacapitals_declare_for_capital": "Declare for this Capital",
+  "dialogue.main.mcacapitals_pay_warrant_fine": "Pay the Fine",
+  "dialogue.main.mcacapitals_surrender_warrant": "Surrender to the Capital",
+  "dialogue.mcacapitals_declaration_prompt": "Declare Your Home Capital",
+  "dialogue.mcacapitals_declaration_prompt.mcacapitals_declare_capital_accept": "Declare for this Capital",
+  "dialogue.mcacapitals_declaration_prompt.mcacapitals_declare_capital_decline": "Remain Undeclared"
 }

@@ -9,7 +9,11 @@ public class OpenCapitalChroniclePacket {
     private final ItemStack bookStack;
 
     public OpenCapitalChroniclePacket(ItemStack bookStack) {
-        this.bookStack = bookStack.copy();
+        this.bookStack = bookStack == null ? ItemStack.EMPTY : bookStack.copy();
+    }
+
+    public ItemStack bookStack() {
+        return bookStack;
     }
 
     public static void encode(OpenCapitalChroniclePacket packet, FriendlyByteBuf buffer) {
@@ -21,6 +25,8 @@ public class OpenCapitalChroniclePacket {
     }
 
     public static void handle(OpenCapitalChroniclePacket packet) {
-        ChronicleBookClient.openBook(packet.bookStack);
+        if (packet != null) {
+            ChronicleBookClient.openBook(packet.bookStack);
+        }
     }
 }

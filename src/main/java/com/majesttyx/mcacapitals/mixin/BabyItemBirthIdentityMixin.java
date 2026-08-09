@@ -1,10 +1,10 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.identity.PlayerHouseIdentityService;
+import fabric.net.mca.entity.VillagerEntityMCA;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "net.mca.item.BabyItem", remap = false)
+@Mixin(targets = "fabric.net.mca.item.BabyItem", remap = false)
 public abstract class BabyItemBirthIdentityMixin {
 
     @Inject(
@@ -28,9 +28,10 @@ public abstract class BabyItemBirthIdentityMixin {
             ItemStack stack,
             ServerLevel level,
             ServerPlayer player,
-            CallbackInfoReturnable<Object> cir
+            CallbackInfoReturnable<VillagerEntityMCA> cir
     ) {
-        if (!(cir.getReturnValue() instanceof Entity child) || stack == null || stack.isEmpty()) {
+        VillagerEntityMCA child = cir.getReturnValue();
+        if (child == null || stack == null || stack.isEmpty()) {
             return;
         }
 

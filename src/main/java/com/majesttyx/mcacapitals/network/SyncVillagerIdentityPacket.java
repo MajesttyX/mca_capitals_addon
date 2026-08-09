@@ -13,6 +13,7 @@ public class SyncVillagerIdentityPacket {
     private final String currentSurname;
     private final String displayTitle;
     private final String royalGuardOrderLine;
+    private final String courtOfficeLine;
     private final boolean houseFounded;
     private final String houseName;
     private final String houseWords;
@@ -25,6 +26,7 @@ public class SyncVillagerIdentityPacket {
             String currentSurname,
             String displayTitle,
             String royalGuardOrderLine,
+            String courtOfficeLine,
             boolean houseFounded,
             String houseName,
             String houseWords,
@@ -36,6 +38,7 @@ public class SyncVillagerIdentityPacket {
         this.currentSurname = currentSurname == null ? "" : currentSurname;
         this.displayTitle = displayTitle == null ? "" : displayTitle;
         this.royalGuardOrderLine = royalGuardOrderLine == null ? "" : royalGuardOrderLine;
+        this.courtOfficeLine = courtOfficeLine == null ? "" : courtOfficeLine;
         this.houseFounded = houseFounded;
         this.houseName = houseName == null ? "" : houseName;
         this.houseWords = houseWords == null ? "" : houseWords;
@@ -66,6 +69,10 @@ public class SyncVillagerIdentityPacket {
         return royalGuardOrderLine;
     }
 
+    public String courtOfficeLine() {
+        return courtOfficeLine;
+    }
+
     public boolean houseFounded() {
         return houseFounded;
     }
@@ -89,6 +96,7 @@ public class SyncVillagerIdentityPacket {
         buffer.writeUtf(packet.currentSurname);
         buffer.writeUtf(packet.displayTitle);
         buffer.writeUtf(packet.royalGuardOrderLine);
+        buffer.writeUtf(packet.courtOfficeLine);
         buffer.writeBoolean(packet.houseFounded);
         buffer.writeUtf(packet.houseName);
         buffer.writeUtf(packet.houseWords);
@@ -102,6 +110,7 @@ public class SyncVillagerIdentityPacket {
         String currentSurname = buffer.readUtf();
         String displayTitle = buffer.readUtf();
         String royalGuardOrderLine = buffer.readUtf();
+        String courtOfficeLine = buffer.readUtf();
         boolean houseFounded = buffer.readBoolean();
         String houseName = buffer.readUtf();
         String houseWords = buffer.readUtf();
@@ -114,6 +123,7 @@ public class SyncVillagerIdentityPacket {
                 currentSurname,
                 displayTitle,
                 royalGuardOrderLine,
+                courtOfficeLine,
                 houseFounded,
                 houseName,
                 houseWords,
@@ -124,4 +134,5 @@ public class SyncVillagerIdentityPacket {
     public static void handle(SyncVillagerIdentityPacket packet) {
         VillagerIdentityClientCache.put(packet);
     }
+
 }

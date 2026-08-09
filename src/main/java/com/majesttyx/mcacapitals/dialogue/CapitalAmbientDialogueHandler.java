@@ -59,7 +59,7 @@ public class CapitalAmbientDialogueHandler {
         }
 
         long lastCapitalTick = lastCapitalChatterTick.getOrDefault(capital.getCapitalId(), Long.MIN_VALUE);
-        if (gameTime - lastCapitalTick < CAPITAL_COOLDOWN_TICKS) {
+        if (lastCapitalTick != Long.MIN_VALUE && gameTime - lastCapitalTick < CAPITAL_COOLDOWN_TICKS) {
             return;
         }
 
@@ -131,7 +131,7 @@ public class CapitalAmbientDialogueHandler {
         }
 
         long lastVillagerTick = lastVillagerChatterTick.getOrDefault(villager.getUUID(), Long.MIN_VALUE);
-        return gameTime - lastVillagerTick >= VILLAGER_COOLDOWN_TICKS;
+        return lastVillagerTick == Long.MIN_VALUE || gameTime - lastVillagerTick >= VILLAGER_COOLDOWN_TICKS;
     }
 
     private void sendToNearbyPlayers(ServerLevel level, Entity speaker, String line) {

@@ -149,19 +149,14 @@ public class CapitalFoundingCommands {
                                                             }
 
                                                             capital.setMonarchyRejected(true);
-                                                            capital.setState(CapitalState.PENDING);
-                                                            CapitalChronicleService.addEntry(
-                                                                    player.serverLevel(),
-                                                                    capital,
-                                                                    MCAIntegrationBridge.getVillageName(player.serverLevel(), capital.getVillageId())
-                                                                            + " rejected monarchy and remained ungoverned."
-                                                            );
+                                                            capital.setState(CapitalState.ACTIVE);
                                                             CapitalDataAccess.markDirty(player.serverLevel());
                                                             consumeCharter(player, capitalId);
 
                                                             player.sendSystemMessage(Component.literal(
-                                                                    MCAIntegrationBridge.getVillageName(player.serverLevel(), capital.getVillageId())
-                                                                            + " rejects monarchy and remains ungoverned."
+                                                                    "The monarchy petition for "
+                                                                            + MCAIntegrationBridge.getVillageName(player.serverLevel(), capital.getVillageId())
+                                                                            + " has been declined."
                                                             ));
                                                             return 1;
                                                         })
@@ -171,6 +166,10 @@ public class CapitalFoundingCommands {
     }
 
     private static void consumeCharter(ServerPlayer player, UUID capitalId) {
+        if (player == null || capitalId == null) {
+            return;
+        }
+
         for (int i = 0; i < player.getInventory().items.size(); i++) {
             ItemStack stack = player.getInventory().items.get(i);
             if (isCharterForCapital(stack, capitalId)) {
@@ -191,7 +190,8 @@ public class CapitalFoundingCommands {
     private static boolean isCharterForCapital(ItemStack stack, UUID capitalId) {
         return stack != null
                 && stack.is(ModItems.ROYAL_CHARTER.get())
-                && stack.hasTag()
-                && capitalId.toString().equals(stack.getTag().getString(ModDataKeys.CAPITAL_ID));
+                && ModItemStackData.hasCustomData(stack)
+                && capitalId != null
+                && capitalId.toString().equals(ModItemStackData.getCustomData(stack).getString(ModDataKeys.CAPITAL_ID));
     }
 }

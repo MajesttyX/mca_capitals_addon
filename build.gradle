@@ -1,11 +1,13 @@
 buildscript {
     repositories {
+        maven { name = 'Architectury'; url = 'https://maven.architectury.dev/' }
         maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
+        maven { name = 'MinecraftForge'; url = 'https://maven.minecraftforge.net/' }
         mavenCentral()
     }
 
     dependencies {
-        classpath 'net.fabricmc:fabric-loom:1.7.4'
+        classpath 'dev.architectury:architectury-loom:1.17.477'
         classpath 'com.google.code.gson:gson:2.10.1'
     }
 
@@ -18,7 +20,7 @@ plugins {
     id 'maven-publish'
 }
 
-apply plugin: 'fabric-loom'
+apply plugin: 'dev.architectury.loom'
 
 version = mod_version
 group = mod_group_id
@@ -44,6 +46,7 @@ repositories {
     mavenCentral()
     maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
     maven { name = 'Architectury'; url = 'https://maven.architectury.dev/' }
+    maven { name = 'MinecraftForge'; url = 'https://maven.minecraftforge.net/' }
     maven { name = 'Conczin'; url = 'https://maven.conczin.net/Artifacts' }
 }
 

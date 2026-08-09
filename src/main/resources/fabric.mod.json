@@ -24,6 +24,6 @@
     "minecraft": "1.20.1",
     "fabric-api": "*",
     "architectury": "*",
-    "mca": "*"
+    "mca": "7.6.28-beta.10+1.20.1"
   }
 }

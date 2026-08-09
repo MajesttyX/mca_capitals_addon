@@ -20,7 +20,9 @@ public final class CapitalPetitionCommandRouter {
             PetitionAction nobleDukeAction,
             PetitionAction betrothalAction,
             PetitionAction betrothalRecommendAction,
-            PetitionAction decreeOfTheHouseAction
+            PetitionAction decreeOfTheHouseAction,
+            PetitionAction accusationAction,
+            PetitionAction royalPardonAction
     ) {
         if (command == null) {
             return false;
@@ -68,6 +70,16 @@ public final class CapitalPetitionCommandRouter {
 
         if (CapitalPetitionService.REQUEST_DECREE_OF_THE_HOUSE.equals(command)) {
             decreeOfTheHouseAction.run();
+            return true;
+        }
+
+        if (CapitalPetitionService.REQUEST_ACCUSATION.equals(command)) {
+            accusationAction.run();
+            return true;
+        }
+
+        if (CapitalPetitionService.REQUEST_ROYAL_PARDON.equals(command)) {
+            royalPardonAction.run();
             return true;
         }
 

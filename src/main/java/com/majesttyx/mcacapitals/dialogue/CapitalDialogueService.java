@@ -53,7 +53,8 @@ public class CapitalDialogueService {
         VillagerNewsState state = VILLAGER_NEWS_STATE.computeIfAbsent(villagerId, ignored -> new VillagerNewsState());
         long now = level.getGameTime();
 
-        if (now - state.lastNewsSpokenTick < NEWS_BRANCH_COOLDOWN_TICKS) {
+        if (state.lastNewsSpokenTick != Long.MIN_VALUE
+                && now - state.lastNewsSpokenTick < NEWS_BRANCH_COOLDOWN_TICKS) {
             return null;
         }
 
@@ -243,6 +244,7 @@ public class CapitalDialogueService {
 
         boolean sameEventStillCooling =
                 state.lastEventType != null
+                        && state.lastNewsSpokenTick != Long.MIN_VALUE
                         && now - state.lastNewsSpokenTick < SAME_EVENT_COOLDOWN_TICKS;
 
         if (sameEventStillCooling) {

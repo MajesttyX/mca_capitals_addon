@@ -4,23 +4,19 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Optional;
 import java.util.UUID;
 
 final class MCAPlayerBridge {
 
     private static final String[] MCA_PLAYER_SAVE_DATA_CLASSES = new String[] {
-            "net.mca.server.world.data.PlayerSaveData",
-            "forge.net.mca.server.world.data.PlayerSaveData",
-            "fabric.net.mca.server.world.data.PlayerSaveData",
-            "quilt.net.mca.server.world.data.PlayerSaveData"
+            "fabric.net.mca.server.world.data.PlayerSaveData"
     };
 
     private static final String[] MCA_GENDER_CLASSES = new String[] {
-            "net.mca.entity.ai.relationship.Gender",
-            "forge.net.mca.entity.ai.relationship.Gender",
-            "fabric.net.mca.entity.ai.relationship.Gender",
-            "quilt.net.mca.entity.ai.relationship.Gender"
+            "fabric.net.mca.entity.ai.relationship.Gender"
     };
 
     private MCAPlayerBridge() {
@@ -56,6 +52,76 @@ final class MCAPlayerBridge {
         }
 
         return Optional.empty();
+    }
+
+    static String getDialogueName(ServerPlayer player) {
+        if (player == null) {
+            return "";
+        }
+
+        String messengerName = resolveMessengerName(player);
+        if (messengerName != null && !messengerName.isBlank()) {
+            return messengerName.trim();
+        }
+
+        for (String className : MCA_PLAYER_SAVE_DATA_CLASSES) {
+            try {
+                Object saveData = getPlayerSaveData(player.serverLevel(), player, className);
+                if (saveData == null) {
+                    continue;
+                }
+                Object familyEntry = MCAReflectionHelper.invoke(saveData, "getFamilyEntry");
+                Object resolvedName = familyEntry == null ? null : MCAReflectionHelper.invoke(familyEntry, "getName");
+                if (resolvedName instanceof String name && !name.isBlank()) {
+                    return name.trim();
+                }
+            } catch (Throwable t) {
+                MCAReflectionHelper.warnOnce(
+                        "MCAPlayerBridge#getDialogueName:familyTree:" + className,
+                        "Failed to resolve MCA dialogue player name from the family tree using {} ({})",
+                        className,
+                        t.toString()
+                );
+            }
+        }
+
+        return player.getName().getString();
+    }
+
+
+    private static String resolveMessengerName(ServerPlayer player) {
+        String[] classNames = new String[] {
+                "fabric.net.mca.entity.ai.Messenger"
+        };
+
+        for (String className : classNames) {
+            try {
+                Class<?> messengerClass = Class.forName(className);
+                for (Method method : messengerClass.getMethods()) {
+                    if (!"getName".equals(method.getName())
+                            || !Modifier.isStatic(method.getModifiers())
+                            || method.getParameterCount() != 1
+                            || !method.getParameterTypes()[0].isAssignableFrom(player.getClass())) {
+                        continue;
+                    }
+
+                    Object resolved = method.invoke(null, player);
+                    if (resolved instanceof String name && !name.isBlank()) {
+                        return name.trim();
+                    }
+                }
+            } catch (ClassNotFoundException ignored) {
+            } catch (Throwable t) {
+                MCAReflectionHelper.warnOnce(
+                        "MCAPlayerBridge#getDialogueName:messenger:" + className,
+                        "Failed to resolve MCA dialogue player name through {} ({})",
+                        className,
+                        t.toString()
+                );
+            }
+        }
+
+        return null;
     }
 
     static boolean isPlayerInVillage(ServerLevel level, ServerPlayer player, Integer villageId) {

@@ -11,11 +11,7 @@ public final class MCANameRegionBridge {
     public static final String DEFAULT_REGION = "common";
 
     private static final String[] NAMES_CLASSES = new String[] {
-            "net.mca.resources.Names",
-            "forge.net.mca.resources.Names",
-            "fabric.net.mca.resources.Names",
-            "quilt.net.mca.resources.Names",
-            "net.conczin.mca.resources.Names"
+            "fabric.net.mca.resources.Names"
     };
 
     private MCANameRegionBridge() {

@@ -10,9 +10,13 @@ public class ChronicleBookClient {
     private ChronicleBookClient() {
     }
 
+    public static void open(ItemStack bookToOpen) {
+        openBook(bookToOpen);
+    }
+
     public static void openBook(ItemStack stack) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null) {
+        if (minecraft == null || minecraft.player == null || stack == null || stack.isEmpty()) {
             return;
         }
 

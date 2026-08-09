@@ -1,62 +1,41 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.identity.BirthIdentityService;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
+import fabric.net.mca.entity.VillagerEntityMCA;
+import fabric.net.mca.entity.ai.relationship.Gender;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
-@Mixin(targets = "net.mca.entity.ai.Pregnancy", remap = false)
-public class PregnancyBirthIdentityMixin {
+@Mixin(targets = "fabric.net.mca.entity.ai.Pregnancy", remap = false)
+public abstract class PregnancyBirthIdentityMixin {
+
+    @Shadow
+    @Final
+    private VillagerEntityMCA mother;
 
     @Inject(
-            method = "createChild(Lnet/mca/entity/ai/relationship/Gender;Lnet/mca/entity/VillagerEntityMCA;)Lnet/mca/entity/VillagerEntityMCA;",
+            method = "createChild(Lfabric/net/mca/entity/ai/relationship/Gender;Lfabric/net/mca/entity/VillagerEntityMCA;)Lfabric/net/mca/entity/VillagerEntityMCA;",
             at = @At("RETURN"),
             remap = false
     )
-    private void mcacapitals$applyBirthIdentity(
-            @Coerce Object gender,
-            @Coerce Object otherParent,
-            CallbackInfoReturnable<Object> cir
+    private void mcacapitals$assignBirthIdentity(
+            Gender gender,
+            VillagerEntityMCA partner,
+            CallbackInfoReturnable<VillagerEntityMCA> cir
     ) {
-        if (!(cir.getReturnValue() instanceof Entity child)) {
+        VillagerEntityMCA child = cir.getReturnValue();
+        if (child == null || mother == null || partner == null) {
             return;
         }
 
-        if (!(child.level() instanceof ServerLevel level)) {
-            return;
+        if (mother.level() instanceof net.minecraft.server.level.ServerLevel level) {
+            BirthIdentityService.applyBirthIdentity(level, child, mother, partner);
         }
-
-        Entity firstParent = resolveSelfParent();
-        Entity secondParent = otherParent instanceof Entity entity ? entity : null;
-
-        BirthIdentityService.applyBirthIdentity(level, child, firstParent, secondParent);
-    }
-
-    private Entity resolveSelfParent() {
-        try {
-            Object target = this;
-            Object mother = target.getClass().getDeclaredField("mother").get(target);
-            if (mother instanceof Entity entity) {
-                return entity;
-            }
-        } catch (Throwable ignored) {
-        }
-
-        try {
-            Object target = this;
-            Object entity = target.getClass().getDeclaredField("entity").get(target);
-            if (entity instanceof Entity villager) {
-                return villager;
-            }
-        } catch (Throwable ignored) {
-        }
-
-        return null;
     }
 }

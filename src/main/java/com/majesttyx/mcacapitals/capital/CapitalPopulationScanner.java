@@ -7,6 +7,7 @@ import com.majesttyx.mcacapitals.item.ModItems;
 import com.majesttyx.mcacapitals.item.RoyalCharterItem;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -25,7 +26,7 @@ public class CapitalPopulationScanner {
 
     private static final int REQUIRED_POPULATION = 15;
     private static final int FOUNDING_RADIUS = 96;
-    private static final int SCAN_INTERVAL_TICKS = 20 * 5;
+    private static final int SCAN_INTERVAL_TICKS = 20;
 
     public void onLevelTick(ServerLevel level) {
         if (!shouldProcessTick(level)) {
@@ -92,6 +93,10 @@ public class CapitalPopulationScanner {
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         VillagerIdentityService.ensureResidents(level, capital, residents);
 
+        if (capital.getState() != CapitalState.ACTIVE) {
+            return;
+        }
+
         refreshCourtState(level, capital, residents);
         tickRecommendedBetrothals(level, capital);
         tickRoyalGuards(level, capital, residents);
@@ -100,6 +105,10 @@ public class CapitalPopulationScanner {
         tickHerald(level, capital, residents);
         tickGrandMaester(level, capital, residents);
         tickHouseFoundations(level, capital, residents);
+        tickNaturalDukedoms(level, capital, residents);
+        tickMasterOfLaws(level, capital, residents);
+        tickAmbassador(level, capital, residents);
+        tickCrownStandings(level, capital, residents);
         tickMourning(level, capital);
     }
 
@@ -108,6 +117,15 @@ public class CapitalPopulationScanner {
     }
 
     private void issuePendingCharters(ServerLevel level, CapitalRecord capital) {
+        if (capital == null
+                || capital.getCapitalId() == null
+                || CapitalWartimeSuccessionService.isInInterregnum(
+                level,
+                capital.getCapitalId()
+        )) {
+            return;
+        }
+
         if (capital.getSovereign() == null && !capital.isMonarchyRejected()) {
             if (issueRoyalCharterIfNeeded(level, capital)) {
                 CapitalDataAccess.markDirty(level);
@@ -116,6 +134,11 @@ public class CapitalPopulationScanner {
     }
 
     private boolean processSuccession(ServerLevel level, CapitalRecord capital) {
+        if (CapitalWartimeSuccessionService.handleIfNeeded(level, capital)) {
+            CapitalDataAccess.markDirty(level);
+            return true;
+        }
+
         if (capital.getSovereign() == null) {
             return false;
         }
@@ -176,6 +199,30 @@ public class CapitalPopulationScanner {
         }
     }
 
+    private void tickNaturalDukedoms(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (CapitalNaturalDukedomService.tick(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickMasterOfLaws(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (CapitalMasterOfLawsService.tickMasterOfLaws(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickAmbassador(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (CapitalAmbassadorService.tickAmbassador(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
+    private void tickCrownStandings(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (CapitalCrownStandingService.tick(level, capital, residents)) {
+            CapitalDataAccess.markDirty(level);
+        }
+    }
+
     private void tickMourning(ServerLevel level, CapitalRecord capital) {
         CapitalMourningService.tickMourning(level, capital);
     }
@@ -188,7 +235,11 @@ public class CapitalPopulationScanner {
 
     private boolean issueRoyalCharterIfNeeded(ServerLevel level, CapitalRecord capital) {
         if (capital.getVillageId() == null) return false;
-        if (hasOutstandingRoyalCharter(level, capital)) return false;
+        if (capital.isRoyalCharterIssued()) return false;
+        if (hasOutstandingRoyalCharter(level, capital)) {
+            capital.setRoyalCharterIssued(true);
+            return true;
+        }
 
         BlockPos center = MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId());
         ServerPlayer nearest = level.players().stream()
@@ -208,6 +259,7 @@ public class CapitalPopulationScanner {
         boolean inserted = nearest.addItem(charter);
         if (!inserted) nearest.drop(charter, false);
 
+        capital.setRoyalCharterIssued(true);
         nearest.sendSystemMessage(Component.literal(
                 "The people of " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
                         + " seek a sovereign. A Royal Charter has been placed in your hands."
@@ -256,9 +308,12 @@ public class CapitalPopulationScanner {
     }
 
     private boolean isRoyalCharterForCapital(ItemStack stack, UUID capitalId) {
-        if (stack == null || !stack.is(ModItems.ROYAL_CHARTER.get()) || !stack.hasTag()) return false;
-        String raw = stack.getTag().getString(ModDataKeys.CAPITAL_ID);
-        return capitalId.toString().equals(raw);
+        if (stack == null || !stack.is(ModItems.ROYAL_CHARTER.get()) || !ModItemStackData.hasCustomData(stack)) {
+            return false;
+        }
+
+        String raw = ModItemStackData.getCustomData(stack).getString(ModDataKeys.CAPITAL_ID);
+        return capitalId != null && capitalId.toString().equals(raw);
     }
 
     private boolean normalizeCapitals(ServerLevel level) {

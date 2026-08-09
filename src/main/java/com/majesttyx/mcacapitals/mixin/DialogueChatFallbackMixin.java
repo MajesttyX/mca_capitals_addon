@@ -7,6 +7,7 @@ import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueRuntime;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueService;
+import com.majesttyx.mcacapitals.dialogue.CapitalPoliticalDialogueService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -83,6 +84,11 @@ public abstract class DialogueChatFallbackMixin {
                 return newsDialogueId;
             }
 
+            String politicalDialogueId = CapitalPoliticalDialogueService.maybeResolvePoliticalDialogueId(player, villager);
+            if (politicalDialogueId != null && !politicalDialogueId.isBlank()) {
+                return politicalDialogueId;
+            }
+
             String playerSovereignDialogueId = CapitalDialogueService.maybeResolvePlayerSovereignDialogueId(player, villager);
             if (playerSovereignDialogueId != null
                     && !playerSovereignDialogueId.isBlank()
@@ -108,7 +114,8 @@ public abstract class DialogueChatFallbackMixin {
             return nextKey;
         }
 
-        if (level.random.nextInt(100) < GENERAL_FAIL_CHANCE) {
+        if (isUntitledCommoner(level, villager.getUUID())
+                && level.random.nextInt(100) < GENERAL_FAIL_CHANCE) {
             return CapitalDialogueRuntime.GENERAL_FAIL;
         }
 
@@ -167,6 +174,14 @@ public abstract class DialogueChatFallbackMixin {
 
         String ageState = MCAIntegrationBridge.getAgeState(level, villager.getUUID());
         return "BABY".equalsIgnoreCase(ageState) || "TODDLER".equalsIgnoreCase(ageState);
+    }
+
+    private static boolean isUntitledCommoner(ServerLevel level, UUID villagerId) {
+        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, villagerId);
+        return title == null
+                || title.isBlank()
+                || "None".equals(title)
+                || "Commoner".equals(title);
     }
 
     private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {

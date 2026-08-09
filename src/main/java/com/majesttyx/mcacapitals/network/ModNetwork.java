@@ -19,6 +19,10 @@ public class ModNetwork {
     public static final ResourceLocation OPEN_DECREE_OF_THE_HOUSE = new ResourceLocation(MCACapitals.MODID, "open_decree_of_the_house");
     public static final ResourceLocation SUBMIT_DECREE_OF_THE_HOUSE = new ResourceLocation(MCACapitals.MODID, "submit_decree_of_the_house");
     public static final ResourceLocation SYNC_VILLAGER_IDENTITY = new ResourceLocation(MCACapitals.MODID, "sync_villager_identity");
+    public static final ResourceLocation SYNC_BLUEPRINT_AUTHORITY = new ResourceLocation(MCACapitals.MODID, "sync_blueprint_authority");
+    public static final ResourceLocation OPEN_AMBASSADOR_COMMUNICATION = new ResourceLocation(MCACapitals.MODID, "open_ambassador_communication");
+    public static final ResourceLocation OPEN_SEALED_PURSE_CASE_SELECTION = new ResourceLocation(MCACapitals.MODID, "open_sealed_purse_case_selection");
+    public static final ResourceLocation SELECT_SEALED_PURSE_CASE = new ResourceLocation(MCACapitals.MODID, "select_sealed_purse_case");
 
     public static final ClientChannel CHANNEL = new ClientChannel();
 
@@ -29,6 +33,11 @@ public class ModNetwork {
         ServerPlayNetworking.registerGlobalReceiver(SUBMIT_DECREE_OF_THE_HOUSE, (server, player, handler, buffer, responseSender) -> {
             SubmitDecreeOfTheHousePacket packet = SubmitDecreeOfTheHousePacket.decode(buffer);
             server.execute(() -> SubmitDecreeOfTheHousePacket.handle(packet, player));
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(SELECT_SEALED_PURSE_CASE, (server, player, handler, buffer, responseSender) -> {
+            SelectSealedPurseCasePacket packet = SelectSealedPurseCasePacket.decode(buffer);
+            server.execute(() -> SelectSealedPurseCasePacket.handle(packet, player));
         });
     }
 
@@ -63,6 +72,21 @@ public class ModNetwork {
             SyncVillagerIdentityPacket packet = SyncVillagerIdentityPacket.decode(buffer);
             client.execute(() -> SyncVillagerIdentityPacket.handle(packet));
         });
+
+        ClientPlayNetworking.registerGlobalReceiver(SYNC_BLUEPRINT_AUTHORITY, (client, handler, buffer, responseSender) -> {
+            SyncBlueprintAuthorityPacket packet = SyncBlueprintAuthorityPacket.decode(buffer);
+            client.execute(() -> SyncBlueprintAuthorityPacket.handle(packet));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(OPEN_AMBASSADOR_COMMUNICATION, (client, handler, buffer, responseSender) -> {
+            OpenAmbassadorCommunicationPacket packet = OpenAmbassadorCommunicationPacket.decode(buffer);
+            client.execute(() -> OpenAmbassadorCommunicationPacket.handle(packet));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(OPEN_SEALED_PURSE_CASE_SELECTION, (client, handler, buffer, responseSender) -> {
+            OpenSealedPurseCaseSelectionPacket packet = OpenSealedPurseCaseSelectionPacket.decode(buffer);
+            client.execute(() -> OpenSealedPurseCaseSelectionPacket.handle(packet));
+        });
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenCapitalChroniclePacket packet) {
@@ -89,6 +113,18 @@ public class ModNetwork {
         sendToPlayer(player, SYNC_VILLAGER_IDENTITY, buffer -> SyncVillagerIdentityPacket.encode(packet, buffer));
     }
 
+    public static void sendToPlayer(ServerPlayer player, SyncBlueprintAuthorityPacket packet) {
+        sendToPlayer(player, SYNC_BLUEPRINT_AUTHORITY, buffer -> SyncBlueprintAuthorityPacket.encode(packet, buffer));
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenAmbassadorCommunicationPacket packet) {
+        sendToPlayer(player, OPEN_AMBASSADOR_COMMUNICATION, buffer -> OpenAmbassadorCommunicationPacket.encode(packet, buffer));
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenSealedPurseCaseSelectionPacket packet) {
+        sendToPlayer(player, OPEN_SEALED_PURSE_CASE_SELECTION, buffer -> OpenSealedPurseCaseSelectionPacket.encode(packet, buffer));
+    }
+
     private static void sendToPlayer(ServerPlayer player, ResourceLocation id, PacketWriter writer) {
         FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
         writer.write(buffer);
@@ -102,6 +138,13 @@ public class ModNetwork {
         ClientPlayNetworking.send(SUBMIT_DECREE_OF_THE_HOUSE, buffer);
     }
 
+    @Environment(EnvType.CLIENT)
+    public static void sendToServer(SelectSealedPurseCasePacket packet) {
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        SelectSealedPurseCasePacket.encode(packet, buffer);
+        ClientPlayNetworking.send(SELECT_SEALED_PURSE_CASE, buffer);
+    }
+
     private interface PacketWriter {
         void write(FriendlyByteBuf buffer);
     }
@@ -112,6 +155,11 @@ public class ModNetwork {
 
         @Environment(EnvType.CLIENT)
         public void sendToServer(SubmitDecreeOfTheHousePacket packet) {
+            ModNetwork.sendToServer(packet);
+        }
+
+        @Environment(EnvType.CLIENT)
+        public void sendToServer(SelectSealedPurseCasePacket packet) {
             ModNetwork.sendToServer(packet);
         }
     }

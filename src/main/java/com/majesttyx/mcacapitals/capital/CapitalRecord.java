@@ -464,6 +464,14 @@ public class CapitalRecord {
         CapitalRecordCourtOps.setMonarchyRejected(this, monarchyRejected);
     }
 
+    public boolean isRoyalCharterIssued() {
+        return CapitalRecordCourtOps.isRoyalCharterIssued(this);
+    }
+
+    public void setRoyalCharterIssued(boolean royalCharterIssued) {
+        CapitalRecordCourtOps.setRoyalCharterIssued(this, royalCharterIssued);
+    }
+
     public boolean isMourningActive() {
         return CapitalRecordCourtOps.isMourningActive(this);
     }
@@ -562,6 +570,54 @@ public class CapitalRecord {
 
     public void setGrandMaesterFemale(boolean grandMaesterFemale) {
         CapitalRecordCourtOps.setGrandMaesterFemale(this, grandMaesterFemale);
+    }
+
+    public UUID getMasterOfLaws() {
+        return CapitalRecordCourtOps.getMasterOfLaws(this);
+    }
+
+    public void setMasterOfLaws(UUID masterOfLaws) {
+        CapitalRecordCourtOps.setMasterOfLaws(this, masterOfLaws);
+    }
+
+    public boolean isMasterOfLawsFemale() {
+        return CapitalRecordCourtOps.isMasterOfLawsFemale(this);
+    }
+
+    public void setMasterOfLawsFemale(boolean masterOfLawsFemale) {
+        CapitalRecordCourtOps.setMasterOfLawsFemale(this, masterOfLawsFemale);
+    }
+
+    public UUID getLastCrownStandingSovereign() {
+        return CapitalRecordCourtOps.getLastCrownStandingSovereign(this);
+    }
+
+    public void setLastCrownStandingSovereign(UUID sovereign) {
+        CapitalRecordCourtOps.setLastCrownStandingSovereign(this, sovereign);
+    }
+
+    public long getLastNaturalDukedomDay() {
+        return CapitalRecordCourtOps.getLastNaturalDukedomDay(this);
+    }
+
+    public void setLastNaturalDukedomDay(long day) {
+        CapitalRecordCourtOps.setLastNaturalDukedomDay(this, day);
+    }
+
+    public Map<UUID, CrownStanding> getCrownStandings() {
+        return CapitalRecordCourtOps.getCrownStandings(this);
+    }
+
+    public CrownStanding getCrownStanding(UUID entityId) {
+        return CapitalRecordCourtOps.getCrownStanding(this, entityId);
+    }
+
+    public void setCrownStanding(UUID entityId, CrownStanding standing) {
+        CapitalRecordCourtOps.setCrownStanding(this, entityId, standing);
+    }
+
+    public void clearCrownStandings() {
+        CapitalRecordCourtOps.clearCrownStandings(this);
     }
 
     public long getLastCommanderRaidBlessingGameTime() {

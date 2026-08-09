@@ -35,8 +35,8 @@ public class NobleSavedData extends SavedData {
     public static NobleSavedData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
                 NobleSavedData::load,
-                NobleSavedData::new,
-                DATA_NAME
+                        NobleSavedData::new,
+                        DATA_NAME
         );
     }
 

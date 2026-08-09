@@ -11,11 +11,7 @@ import java.util.Set;
 public final class MCANameCultureFilter {
 
     private static final String[] NAMES_CLASSES = new String[] {
-            "forge.net.mca.resources.Names",
-            "net.mca.resources.Names",
-            "fabric.net.mca.resources.Names",
-            "quilt.net.mca.resources.Names",
-            "net.conczin.mca.resources.Names"
+            "fabric.net.mca.resources.Names"
     };
 
     private MCANameCultureFilter() {

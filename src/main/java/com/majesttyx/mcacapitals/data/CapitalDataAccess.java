@@ -13,7 +13,11 @@ public class CapitalDataAccess {
         return level.getServer()
                 .overworld()
                 .getDataStorage()
-                .computeIfAbsent(CapitalSavedData::load, CapitalSavedData::new, CapitalSavedData.DATA_NAME);
+                .computeIfAbsent(
+                        CapitalSavedData::load,
+                        CapitalSavedData::new,
+                        CapitalSavedData.DATA_NAME
+                );
     }
 
     public static void markDirty(ServerLevel level) {
