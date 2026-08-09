@@ -8,7 +8,9 @@ import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalRoyalGuardService;
 import com.majesttyx.mcacapitals.capital.CapitalRoyalHouseholdService;
 import com.majesttyx.mcacapitals.capital.CapitalState;
+import com.majesttyx.mcacapitals.capital.CapitalWartimeSuccessionService;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalInterregnumRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,136 +24,410 @@ final class CapitalPetitionOutcomes {
     private CapitalPetitionOutcomes() {
     }
 
-    static void performCoup(ServerLevel level, CapitalRecord capital, ServerPlayer player) {
-        UUID formerSovereignId = capital.getSovereign();
-        String formerSovereignName = resolveLoadedName(level, formerSovereignId);
-        String playerName = player.getName().getString();
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        boolean female = MCAIntegrationBridge.isPlayerFemale(level, player);
+    static void performCoup(
+            ServerLevel level,
+            CapitalRecord capital,
+            ServerPlayer player
+    ) {
+        CapitalInterregnumRecord interregnum =
+                CapitalWartimeSuccessionService.getRecord(
+                        level,
+                        capital.getCapitalId()
+                );
 
-        Set<UUID> formerRoyalFamily = collectRoyalFamily(capital);
-        formerRoyalFamily.remove(player.getUUID());
+        UUID formerSovereignId =
+                capital.getSovereign();
 
-        CapitalFoundationService.appointPlayerSovereign(level, capital, player.getUUID(), female);
-        CapitalRoyalGuardService.clearRoyalGuardsForTransfer(level, capital);
+        if (formerSovereignId == null
+                && interregnum != null) {
+            formerSovereignId =
+                    interregnum.getDeceasedSovereignId();
+        }
 
-        stripFormerRoyalFamily(capital);
+        String formerSovereignName =
+                formerSovereignId == null
+                        ? "the vacant throne"
+                        : resolveLoadedName(
+                        level,
+                        formerSovereignId
+                );
 
-        capital.setPlayerSovereign(true);
-        capital.setPlayerSovereignId(player.getUUID());
-        capital.setPlayerSovereignName(playerName);
-        capital.setPlayerConsort(false);
-        capital.setPlayerConsortId(null);
-        capital.setPlayerConsortName(null);
-        capital.setState(CapitalState.ACTIVE);
-        CapitalRoyalHouseholdService.beginNewRegime(capital);
+        String playerName =
+                player.getName()
+                        .getString();
 
-        applyHeartsPenaltyToFamily(level, formerRoyalFamily, player.getUUID(), -200);
+        String villageName =
+                MCAIntegrationBridge.getVillageName(
+                        level,
+                        capital.getVillageId()
+                );
+
+        boolean female =
+                MCAIntegrationBridge.isPlayerFemale(
+                        level,
+                        player
+                );
+
+        Set<UUID> formerRoyalFamily =
+                collectRoyalFamily(
+                        capital
+                );
+
+        if (formerSovereignId != null) {
+            formerRoyalFamily.add(
+                    formerSovereignId
+            );
+        }
+
+        formerRoyalFamily.remove(
+                player.getUUID()
+        );
+
+        CapitalFoundationService.appointPlayerSovereign(
+                level,
+                capital,
+                player.getUUID(),
+                female
+        );
+
+        CapitalRoyalGuardService.clearRoyalGuardsForTransfer(
+                level,
+                capital
+        );
+
+        stripFormerRoyalFamily(
+                capital
+        );
+
+        capital.setPlayerSovereign(
+                true
+        );
+
+        capital.setPlayerSovereignId(
+                player.getUUID()
+        );
+
+        capital.setPlayerSovereignName(
+                playerName
+        );
+
+        capital.setPlayerConsort(
+                false
+        );
+
+        capital.setPlayerConsortId(
+                null
+        );
+
+        capital.setPlayerConsortName(
+                null
+        );
+
+        capital.setState(
+                CapitalState.ACTIVE
+        );
+
+        CapitalRoyalHouseholdService.beginNewRegime(
+                capital
+        );
+
+        applyHeartsPenaltyToFamily(
+                level,
+                formerRoyalFamily,
+                player.getUUID(),
+                -200
+        );
 
         CapitalChronicleService.addEntry(
                 level,
                 capital,
-                playerName + " seized the throne of " + villageName
-                        + " from " + formerSovereignName + " by force."
+                interregnum != null
+                        && interregnum.mayVictoriousPlayerSeize(
+                        player.getUUID()
+                )
+                        ? playerName
+                        + " seized the vacant throne of "
+                        + villageName
+                        + " after winning the War of Deposition."
+                        : playerName
+                        + " seized the throne of "
+                        + villageName
+                        + " from "
+                        + formerSovereignName
+                        + " by force."
         );
 
-        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
-        CapitalDataAccess.markDirty(level);
+        CapitalWartimeSuccessionService.clear(
+                level,
+                capital.getCapitalId()
+        );
+
+        CapitalCourtWatcher.clearFingerprint(
+                capital.getCapitalId()
+        );
+
+        CapitalDataAccess.markDirty(
+                level
+        );
     }
 
-    static void applyCapitalPenalty(ServerLevel level, Set<UUID> residents, UUID playerId, int delta) {
-        if (level == null || residents == null || playerId == null) {
+    static void applyCapitalPenalty(
+            ServerLevel level,
+            Set<UUID> residents,
+            UUID playerId,
+            int delta
+    ) {
+        if (level == null
+                || residents == null
+                || playerId == null) {
             return;
         }
 
         for (UUID residentId : residents) {
-            adjustHearts(level, residentId, playerId, delta);
+            adjustHearts(
+                    level,
+                    residentId,
+                    playerId,
+                    delta
+            );
         }
     }
 
-    static void peacefulTransferByPetition(ServerLevel level, CapitalRecord capital, ServerPlayer player, UUID formerSovereignId) {
-        String formerSovereignName = resolveLoadedName(level, formerSovereignId);
-        String playerName = player.getName().getString();
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        boolean female = MCAIntegrationBridge.isPlayerFemale(level, player);
+    static void peacefulTransferByPetition(
+            ServerLevel level,
+            CapitalRecord capital,
+            ServerPlayer player,
+            UUID formerSovereignId
+    ) {
+        String formerSovereignName =
+                resolveLoadedName(
+                        level,
+                        formerSovereignId
+                );
 
-        CapitalFoundationService.appointPlayerSovereign(level, capital, player.getUUID(), female);
-        CapitalRoyalGuardService.clearRoyalGuardsForTransfer(level, capital);
+        String playerName =
+                player.getName()
+                        .getString();
 
-        stripFormerRoyalFamily(capital);
+        String villageName =
+                MCAIntegrationBridge.getVillageName(
+                        level,
+                        capital.getVillageId()
+                );
 
-        capital.setPlayerSovereign(true);
-        capital.setPlayerSovereignId(player.getUUID());
-        capital.setPlayerSovereignName(playerName);
-        capital.setPlayerConsort(false);
-        capital.setPlayerConsortId(null);
-        capital.setPlayerConsortName(null);
-        capital.setState(CapitalState.ACTIVE);
-        CapitalRoyalHouseholdService.beginNewRegime(capital);
+        boolean female =
+                MCAIntegrationBridge.isPlayerFemale(
+                        level,
+                        player
+                );
+
+        CapitalFoundationService.appointPlayerSovereign(
+                level,
+                capital,
+                player.getUUID(),
+                female
+        );
+
+        CapitalRoyalGuardService.clearRoyalGuardsForTransfer(
+                level,
+                capital
+        );
+
+        stripFormerRoyalFamily(
+                capital
+        );
+
+        capital.setPlayerSovereign(
+                true
+        );
+
+        capital.setPlayerSovereignId(
+                player.getUUID()
+        );
+
+        capital.setPlayerSovereignName(
+                playerName
+        );
+
+        capital.setPlayerConsort(
+                false
+        );
+
+        capital.setPlayerConsortId(
+                null
+        );
+
+        capital.setPlayerConsortName(
+                null
+        );
+
+        capital.setState(
+                CapitalState.ACTIVE
+        );
+
+        CapitalRoyalHouseholdService.beginNewRegime(
+                capital
+        );
 
         CapitalChronicleService.addEntry(
                 level,
                 capital,
-                formerSovereignName + " accepted the petition of " + playerName
-                        + ", and the throne of " + villageName + " passed peacefully into new hands."
+                formerSovereignName
+                        + " accepted the petition of "
+                        + playerName
+                        + ", and the throne of "
+                        + villageName
+                        + " passed peacefully into new hands."
         );
 
-        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
-        CapitalDataAccess.markDirty(level);
+        CapitalCourtWatcher.clearFingerprint(
+                capital.getCapitalId()
+        );
+
+        CapitalDataAccess.markDirty(
+                level
+        );
     }
 
-    private static Set<UUID> collectRoyalFamily(CapitalRecord capital) {
-        Set<UUID> ids = new LinkedHashSet<>();
+    private static Set<UUID> collectRoyalFamily(
+            CapitalRecord capital
+    ) {
+        Set<UUID> ids =
+                new LinkedHashSet<>();
+
         if (capital == null) {
             return ids;
         }
 
-        if (capital.getSovereign() != null) ids.add(capital.getSovereign());
-        if (capital.getConsort() != null) ids.add(capital.getConsort());
-        if (capital.getDowager() != null) ids.add(capital.getDowager());
-        if (capital.getHeir() != null) ids.add(capital.getHeir());
+        if (capital.getSovereign() != null) {
+            ids.add(
+                    capital.getSovereign()
+            );
+        }
 
-        ids.addAll(capital.getRoyalChildren());
-        ids.addAll(capital.getDisinheritedRoyalChildren());
-        ids.addAll(capital.getLegitimizedRoyalChildren());
+        if (capital.getConsort() != null) {
+            ids.add(
+                    capital.getConsort()
+            );
+        }
+
+        if (capital.getDowager() != null) {
+            ids.add(
+                    capital.getDowager()
+            );
+        }
+
+        if (capital.getHeir() != null) {
+            ids.add(
+                    capital.getHeir()
+            );
+        }
+
+        ids.addAll(
+                capital.getRoyalChildren()
+        );
+
+        ids.addAll(
+                capital.getDisinheritedRoyalChildren()
+        );
+
+        ids.addAll(
+                capital.getLegitimizedRoyalChildren()
+        );
 
         return ids;
     }
 
-    private static void stripFormerRoyalFamily(CapitalRecord capital) {
+    private static void stripFormerRoyalFamily(
+            CapitalRecord capital
+    ) {
         if (capital == null) {
             return;
         }
 
-        capital.setConsort(null);
-        capital.setConsortFemale(false);
-        capital.setDowager(null);
-        capital.setDowagerFemale(false);
-        capital.setHeir(null);
-        capital.setHeirFemale(false);
-        capital.setHeirMode(CapitalRecord.HeirMode.NONE);
+        capital.setConsort(
+                null
+        );
 
-        capital.getRoyalChildren().clear();
-        capital.getRoyalChildFemale().clear();
-        capital.getDisinheritedRoyalChildren().clear();
-        capital.getLegitimizedRoyalChildren().clear();
-        capital.getLegitimizedRoyalChildFemale().clear();
-        capital.getRoyalSuccessionOrder().clear();
+        capital.setConsortFemale(
+                false
+        );
+
+        capital.setDowager(
+                null
+        );
+
+        capital.setDowagerFemale(
+                false
+        );
+
+        capital.setHeir(
+                null
+        );
+
+        capital.setHeirFemale(
+                false
+        );
+
+        capital.setHeirMode(
+                CapitalRecord.HeirMode.NONE
+        );
+
+        capital.getRoyalChildren()
+                .clear();
+
+        capital.getRoyalChildFemale()
+                .clear();
+
+        capital.getDisinheritedRoyalChildren()
+                .clear();
+
+        capital.getLegitimizedRoyalChildren()
+                .clear();
+
+        capital.getLegitimizedRoyalChildFemale()
+                .clear();
+
+        capital.getRoyalSuccessionOrder()
+                .clear();
+
         capital.clearRoyalHousehold();
     }
 
-    private static void applyHeartsPenaltyToFamily(ServerLevel level, Set<UUID> familyIds, UUID playerId, int delta) {
-        if (level == null || familyIds == null || playerId == null) {
+    private static void applyHeartsPenaltyToFamily(
+            ServerLevel level,
+            Set<UUID> familyIds,
+            UUID playerId,
+            int delta
+    ) {
+        if (level == null
+                || familyIds == null
+                || playerId == null) {
             return;
         }
 
         for (UUID familyId : familyIds) {
-            adjustHearts(level, familyId, playerId, delta);
+            adjustHearts(
+                    level,
+                    familyId,
+                    playerId,
+                    delta
+            );
         }
     }
 
-    private static void adjustHearts(ServerLevel level, UUID villagerId, UUID playerId, int delta) {
-        if (!MCAIntegrationBridge.adjustHearts(level, villagerId, playerId, delta)) {
+    private static void adjustHearts(
+            ServerLevel level,
+            UUID villagerId,
+            UUID playerId,
+            int delta
+    ) {
+        if (!MCAIntegrationBridge.adjustHearts(
+                level,
+                villagerId,
+                playerId,
+                delta
+        )) {
             MCACapitals.LOGGER.warn(
                     "[MCACapitals] Failed to adjust hearts for villager='{}' player='{}'",
                     villagerId,
@@ -160,8 +436,23 @@ final class CapitalPetitionOutcomes {
         }
     }
 
-    private static String resolveLoadedName(ServerLevel level, UUID entityId) {
-        var entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        return entity != null ? entity.getName().getString() : entityId.toString();
+    private static String resolveLoadedName(
+            ServerLevel level,
+            UUID entityId
+    ) {
+        if (entityId == null) {
+            return "Unknown";
+        }
+
+        var entity =
+                MCAIntegrationBridge.getEntityByUuid(
+                        level,
+                        entityId
+                );
+
+        return entity != null
+                ? entity.getName()
+                .getString()
+                : entityId.toString();
     }
 }

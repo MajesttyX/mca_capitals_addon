@@ -2,6 +2,8 @@ package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalWartimeSuccessionService;
+import com.majesttyx.mcacapitals.data.CapitalInterregnumRecord;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.MCAReputationBridge;
@@ -25,71 +27,150 @@ final class CapitalPetitionSovereignActions {
             int minHearts,
             double maxAudienceDistanceSqr
     ) {
-        ServerLevel level = player.serverLevel();
-        CapitalRecord capital = CapitalPetitionRequirements.resolveSovereignCapital(level, villagerEntity);
+        ServerLevel level =
+                player.serverLevel();
+
+        CapitalRecord capital =
+                CapitalPetitionRequirements.resolveSovereignCapital(
+                        level,
+                        villagerEntity
+                );
 
         if (capital == null) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_SOVEREIGN_ONLY);
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.PETITION_SOVEREIGN_ONLY
+            );
+
             return;
         }
 
         if (capital.getVillageId() == null) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_MISSING_VILLAGE);
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.PETITION_MISSING_VILLAGE
+            );
+
             return;
         }
 
         if (capital.getSovereign() == null) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.THRONE_NO_SOVEREIGN);
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.THRONE_NO_SOVEREIGN
+            );
+
             return;
         }
 
         if (capital.isPlayerSovereign()) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.THRONE_PLAYER_HELD);
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.THRONE_PLAYER_HELD
+            );
+
             return;
         }
 
-        if (!CapitalPetitionRequirements.isAudienceValid(player, villagerEntity, maxAudienceDistanceSqr)) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED);
+        if (!CapitalPetitionRequirements.isAudienceValid(
+                player,
+                villagerEntity,
+                maxAudienceDistanceSqr
+        )) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.PETITION_AUDIENCE_REQUIRED
+            );
+
             return;
         }
 
-        int population = MCAIntegrationBridge.getVillagePopulation(level, capital.getVillageId());
+        int population =
+                MCAIntegrationBridge.getVillagePopulation(
+                        level,
+                        capital.getVillageId()
+                );
+
         if (population < minPopulation) {
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
                     CapitalDialogueKey.THRONE_POPULATION_TOO_LOW,
-                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    MCAIntegrationBridge.getVillageName(
+                            level,
+                            capital.getVillageId()
+                    ),
                     minPopulation
             );
+
             return;
         }
 
-        Set<UUID> residents = MCAIntegrationBridge.getVillageResidents(level, capital.getVillageId());
-        int hearts = MCAReputationBridge.getCapitalHeartsScore(level, residents, player.getUUID());
+        Set<UUID> residents =
+                MCAIntegrationBridge.getVillageResidents(
+                        level,
+                        capital.getVillageId()
+                );
+
+        int hearts =
+                MCAReputationBridge.getCapitalHeartsScore(
+                        level,
+                        residents,
+                        player.getUUID()
+                );
+
         if (hearts < minHearts) {
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                     player,
                     villagerEntity,
                     CapitalDialogueKey.THRONE_LOW_STANDING,
-                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                    MCAIntegrationBridge.getVillageName(
+                            level,
+                            capital.getVillageId()
+                    )
             );
+
             return;
         }
 
-        CapitalRecord existingPlayerCapital = CapitalManager.getCapitalBySovereign(player.getUUID());
-        if (existingPlayerCapital != null && !capital.getCapitalId().equals(existingPlayerCapital.getCapitalId())) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.THRONE_ALREADY_RULES_OTHER);
+        CapitalRecord existingPlayerCapital =
+                CapitalManager.getCapitalBySovereign(
+                        player.getUUID()
+                );
+
+        if (existingPlayerCapital != null
+                && !capital.getCapitalId().equals(
+                existingPlayerCapital.getCapitalId()
+        )) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.THRONE_ALREADY_RULES_OTHER
+            );
+
             return;
         }
 
-        CapitalPetitionOutcomes.peacefulTransferByPetition(level, capital, player, capital.getSovereign());
+        CapitalPetitionOutcomes.peacefulTransferByPetition(
+                level,
+                capital,
+                player,
+                capital.getSovereign()
+        );
 
         CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                 player,
                 villagerEntity,
                 CapitalDialogueKey.THRONE_SUCCESS,
-                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                MCAIntegrationBridge.getVillageName(
+                        level,
+                        capital.getVillageId()
+                )
         );
     }
 
@@ -101,59 +182,160 @@ final class CapitalPetitionSovereignActions {
             double maxAudienceDistanceSqr,
             ResourceLocation requiredAdvancementId
     ) {
-        ServerLevel level = player.serverLevel();
-        CapitalRecord capital = CapitalPetitionRequirements.resolveSovereignCapital(level, villagerEntity);
+        ServerLevel level =
+                player.serverLevel();
+
+        CapitalRecord capital =
+                CapitalPetitionRequirements.resolveSovereignCapital(
+                        level,
+                        villagerEntity
+                );
 
         if (capital == null) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_SOVEREIGN);
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.SEIZE_THRONE_NO_SOVEREIGN
+            );
+
             return;
         }
 
         if (capital.getVillageId() == null) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_MISSING_VILLAGE);
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.SEIZE_THRONE_MISSING_VILLAGE
+            );
+
             return;
         }
 
-        if (!CapitalPetitionRequirements.isAudienceValid(player, villagerEntity, maxAudienceDistanceSqr)) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NOT_IN_AUDIENCE);
+        if (!CapitalPetitionRequirements.isAudienceValid(
+                player,
+                villagerEntity,
+                maxAudienceDistanceSqr
+        )) {
+            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                    player,
+                    villagerEntity,
+                    CapitalDialogueKey.SEIZE_THRONE_NOT_IN_AUDIENCE
+            );
+
             return;
         }
 
-        Set<UUID> residents = MCAIntegrationBridge.getVillageResidents(level, capital.getVillageId());
-        int reputation = MCAReputationBridge.getCapitalHeartsScore(level, residents, player.getUUID());
-        if (reputation < minReputation) {
-            CapitalPetitionOutcomes.applyCapitalPenalty(level, residents, player.getUUID(), -50);
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_LOW_REPUTATION);
-            return;
+        Set<UUID> residents =
+                MCAIntegrationBridge.getVillageResidents(
+                        level,
+                        capital.getVillageId()
+                );
+
+        CapitalInterregnumRecord interregnum =
+                CapitalWartimeSuccessionService.getRecord(
+                        level,
+                        capital.getCapitalId()
+                );
+
+        boolean victoriousDepositionClaim =
+                interregnum != null
+                        && interregnum.mayVictoriousPlayerSeize(
+                        player.getUUID()
+                );
+
+        if (!victoriousDepositionClaim) {
+            int reputation =
+                    MCAReputationBridge.getCapitalHeartsScore(
+                            level,
+                            residents,
+                            player.getUUID()
+                    );
+
+            if (reputation < minReputation) {
+                CapitalPetitionOutcomes.applyCapitalPenalty(
+                        level,
+                        residents,
+                        player.getUUID(),
+                        -50
+                );
+
+                CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                        player,
+                        villagerEntity,
+                        CapitalDialogueKey.SEIZE_THRONE_LOW_REPUTATION
+                );
+
+                return;
+            }
+
+            if (!CapitalPetitionRequirements.hasAdvancement(
+                    player,
+                    requiredAdvancementId
+            )) {
+                CapitalPetitionOutcomes.applyCapitalPenalty(
+                        level,
+                        residents,
+                        player.getUUID(),
+                        -50
+                );
+
+                CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                        player,
+                        villagerEntity,
+                        CapitalDialogueKey.SEIZE_THRONE_NO_ADVANCEMENT
+                );
+
+                return;
+            }
+
+            boolean playerIsCommander =
+                    PlayerCapitalTitleService.isCommander(
+                            level,
+                            capital,
+                            player.getUUID()
+                    );
+
+            boolean commanderAligned =
+                    CapitalPetitionRequirements.hasCommanderAllegiance(
+                            level,
+                            capital,
+                            player.getUUID(),
+                            commanderHearts
+                    );
+
+            if (!playerIsCommander
+                    && !commanderAligned) {
+                CapitalPetitionOutcomes.applyCapitalPenalty(
+                        level,
+                        residents,
+                        player.getUUID(),
+                        -50
+                );
+
+                CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
+                        player,
+                        villagerEntity,
+                        CapitalDialogueKey.SEIZE_THRONE_NO_COMMANDER_SUPPORT
+                );
+
+                return;
+            }
         }
 
-        if (!CapitalPetitionRequirements.hasAdvancement(player, requiredAdvancementId)) {
-            CapitalPetitionOutcomes.applyCapitalPenalty(level, residents, player.getUUID(), -50);
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_ADVANCEMENT);
-            return;
-        }
-
-        boolean playerIsCommander = PlayerCapitalTitleService.isCommander(level, capital, player.getUUID());
-        boolean commanderAligned = CapitalPetitionRequirements.hasCommanderAllegiance(
+        CapitalPetitionOutcomes.performCoup(
                 level,
                 capital,
-                player.getUUID(),
-                commanderHearts
+                player
         );
-
-        if (!playerIsCommander && !commanderAligned) {
-            CapitalPetitionOutcomes.applyCapitalPenalty(level, residents, player.getUUID(), -50);
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(player, villagerEntity, CapitalDialogueKey.SEIZE_THRONE_NO_COMMANDER_SUPPORT);
-            return;
-        }
-
-        CapitalPetitionOutcomes.performCoup(level, capital, player);
 
         CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                 player,
                 villagerEntity,
                 CapitalDialogueKey.SEIZE_THRONE_SUCCESS,
-                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                MCAIntegrationBridge.getVillageName(
+                        level,
+                        capital.getVillageId()
+                )
         );
     }
 }
