@@ -3,6 +3,7 @@ package com.majesttyx.mcacapitals.mixin;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueService;
 import net.conczin.mca.entity.VillagerEntityMCA;
 import net.conczin.mca.entity.ai.Messenger;
+import net.conczin.mca.entity.ai.relationship.Personality;
 import net.conczin.mca.server.world.data.PlayerSaveData;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -22,7 +23,6 @@ public abstract class MessengerCapitalDialogueMixin {
     public MutableComponent getTranslatable(Player target, String phraseId, Object... params) {
         Messenger messenger = (Messenger) (Object) this;
         Entity speaker = messenger.asEntity();
-
         if (target instanceof ServerPlayer serverPlayer && speaker != null) {
             String line = CapitalDialogueService.maybeFormatMcaPhraseLine(serverPlayer, speaker, phraseId);
             if (line != null && !line.isBlank()) {
@@ -32,7 +32,6 @@ public abstract class MessengerCapitalDialogueMixin {
 
         String genderString = "";
         String targetName;
-
         if (target instanceof ServerPlayer serverPlayer) {
             targetName = Messenger.getName(serverPlayer);
             genderString = "#G" + PlayerSaveData.get(serverPlayer).getGender().name().toLowerCase(Locale.ROOT) + ".";
@@ -51,7 +50,9 @@ public abstract class MessengerCapitalDialogueMixin {
 
         String personalityString = "";
         if (speaker instanceof VillagerEntityMCA villager) {
-            personalityString = "#E" + villager.getVillagerBrain().getPersonality().name() + ".";
+            personalityString = "#E" + Personality.encodeDialogueId(
+                    villager.getVillagerBrain().getPersonalityId()
+            ) + ".";
         }
 
         return Component.translatable(

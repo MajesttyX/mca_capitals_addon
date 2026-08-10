@@ -22,7 +22,6 @@ apply plugin: 'fabric-loom'
 
 version = mod_version
 group = mod_group_id
-
 base {
     archivesName = mod_id
 }
@@ -51,13 +50,12 @@ repositories {
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.officialMojangMappings()
-
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
 
     /*
-     * MCA Reborn 7.7.32 for 1.21.1 is a Fabric jar.
-     * Put mca-fabric-7.7.32+1.21.1.jar in /libs.
+     * MCA Reborn 7.7.35-beta.3 for 1.21.1 is a Fabric jar.
+     * Put mca-fabric-7.7.35-beta.3+1.21.1.jar in /libs.
      */
     modImplementation files("libs/mca-fabric-${mca_version}.jar")
 }
@@ -100,6 +98,7 @@ publishing {
             from components.java
         }
     }
+
     repositories {
         maven {
             url = "file://${project.projectDir}/mcmodsrepo"

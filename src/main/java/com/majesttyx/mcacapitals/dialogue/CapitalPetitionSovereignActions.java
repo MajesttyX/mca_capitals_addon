@@ -1,6 +1,4 @@
 package com.majesttyx.mcacapitals.dialogue;
-
-import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalWartimeSuccessionService;
 import com.majesttyx.mcacapitals.data.CapitalInterregnumRecord;
@@ -11,7 +9,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-
 import java.util.Set;
 import java.util.UUID;
 
@@ -29,7 +26,6 @@ final class CapitalPetitionSovereignActions {
     ) {
         ServerLevel level =
                 player.serverLevel();
-
         CapitalRecord capital =
                 CapitalPetitionRequirements.resolveSovereignCapital(
                         level,
@@ -45,7 +41,6 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
         if (capital.getVillageId() == null) {
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                     player,
@@ -55,7 +50,6 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
         if (capital.getSovereign() == null) {
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                     player,
@@ -65,7 +59,6 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
         if (capital.isPlayerSovereign()) {
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                     player,
@@ -75,7 +68,6 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
         if (!CapitalPetitionRequirements.isAudienceValid(
                 player,
                 villagerEntity,
@@ -89,13 +81,11 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
         int population =
                 MCAIntegrationBridge.getVillagePopulation(
                         level,
                         capital.getVillageId()
                 );
-
         if (population < minPopulation) {
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                     player,
@@ -110,7 +100,6 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
         Set<UUID> residents =
                 MCAIntegrationBridge.getVillageResidents(
                         level,
@@ -123,7 +112,6 @@ final class CapitalPetitionSovereignActions {
                         residents,
                         player.getUUID()
                 );
-
         if (hearts < minHearts) {
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                     player,
@@ -137,32 +125,12 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
-        CapitalRecord existingPlayerCapital =
-                CapitalManager.getCapitalBySovereign(
-                        player.getUUID()
-                );
-
-        if (existingPlayerCapital != null
-                && !capital.getCapitalId().equals(
-                existingPlayerCapital.getCapitalId()
-        )) {
-            CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
-                    player,
-                    villagerEntity,
-                    CapitalDialogueKey.THRONE_ALREADY_RULES_OTHER
-            );
-
-            return;
-        }
-
         CapitalPetitionOutcomes.peacefulTransferByPetition(
                 level,
                 capital,
                 player,
                 capital.getSovereign()
         );
-
         CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                 player,
                 villagerEntity,
@@ -173,7 +141,6 @@ final class CapitalPetitionSovereignActions {
                 )
         );
     }
-
     static void handleSeizeThrone(
             ServerPlayer player,
             Entity villagerEntity,
@@ -184,7 +151,6 @@ final class CapitalPetitionSovereignActions {
     ) {
         ServerLevel level =
                 player.serverLevel();
-
         CapitalRecord capital =
                 CapitalPetitionRequirements.resolveSovereignCapital(
                         level,
@@ -200,7 +166,6 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
         if (capital.getVillageId() == null) {
             CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                     player,
@@ -210,7 +175,6 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
         if (!CapitalPetitionRequirements.isAudienceValid(
                 player,
                 villagerEntity,
@@ -224,7 +188,6 @@ final class CapitalPetitionSovereignActions {
 
             return;
         }
-
         Set<UUID> residents =
                 MCAIntegrationBridge.getVillageResidents(
                         level,
@@ -236,7 +199,6 @@ final class CapitalPetitionSovereignActions {
                         level,
                         capital.getCapitalId()
                 );
-
         boolean victoriousDepositionClaim =
                 interregnum != null
                         && interregnum.mayVictoriousPlayerSeize(
@@ -250,7 +212,6 @@ final class CapitalPetitionSovereignActions {
                             residents,
                             player.getUUID()
                     );
-
             if (reputation < minReputation) {
                 CapitalPetitionOutcomes.applyCapitalPenalty(
                         level,
@@ -264,7 +225,6 @@ final class CapitalPetitionSovereignActions {
                         villagerEntity,
                         CapitalDialogueKey.SEIZE_THRONE_LOW_REPUTATION
                 );
-
                 return;
             }
 
@@ -278,7 +238,6 @@ final class CapitalPetitionSovereignActions {
                         player.getUUID(),
                         -50
                 );
-
                 CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                         player,
                         villagerEntity,
@@ -287,14 +246,12 @@ final class CapitalPetitionSovereignActions {
 
                 return;
             }
-
             boolean playerIsCommander =
                     PlayerCapitalTitleService.isCommander(
                             level,
                             capital,
                             player.getUUID()
                     );
-
             boolean commanderAligned =
                     CapitalPetitionRequirements.hasCommanderAllegiance(
                             level,
@@ -302,7 +259,6 @@ final class CapitalPetitionSovereignActions {
                             player.getUUID(),
                             commanderHearts
                     );
-
             if (!playerIsCommander
                     && !commanderAligned) {
                 CapitalPetitionOutcomes.applyCapitalPenalty(
@@ -311,7 +267,6 @@ final class CapitalPetitionSovereignActions {
                         player.getUUID(),
                         -50
                 );
-
                 CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                         player,
                         villagerEntity,
@@ -327,7 +282,6 @@ final class CapitalPetitionSovereignActions {
                 capital,
                 player
         );
-
         CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                 player,
                 villagerEntity,
