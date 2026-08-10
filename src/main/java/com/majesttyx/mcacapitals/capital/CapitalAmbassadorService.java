@@ -8,11 +8,11 @@ import net.minecraft.world.entity.Entity;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 public final class CapitalAmbassadorService {
-
     private static final Map<UUID, UUID> AMBASSADOR_CACHE =
             new LinkedHashMap<>();
 
@@ -32,13 +32,17 @@ public final class CapitalAmbassadorService {
         }
 
         UUID capitalId = capital.getCapitalId();
+        boolean changed = reconcileCapitalAssignments(
+                level,
+                capital,
+                residents
+        );
+
         UUID currentAmbassador =
                 getAmbassador(
                         level,
                         capital
                 );
-
-        boolean changed = false;
 
         if (!CapitalAmbassadorSelection.isValid(
                 level,
@@ -51,8 +55,11 @@ public final class CapitalAmbassadorService {
                         level,
                         capitalId
                 );
-
                 AMBASSADOR_CACHE.remove(capitalId);
+                sync(
+                        level,
+                        currentAmbassador
+                );
                 changed = true;
             }
         }
@@ -80,6 +87,11 @@ public final class CapitalAmbassadorService {
 
                 AMBASSADOR_CACHE.put(
                         capitalId,
+                        candidate
+                );
+
+                sync(
+                        level,
                         candidate
                 );
 
@@ -130,6 +142,18 @@ public final class CapitalAmbassadorService {
             UUID candidateId,
             Set<UUID> residents
     ) {
+        if (level == null
+                || capital == null
+                || residents == null) {
+            return false;
+        }
+
+        reconcileCapitalAssignments(
+                level,
+                capital,
+                residents
+        );
+
         return CapitalAmbassadorSelection.isEligible(
                 level,
                 capital,
@@ -152,8 +176,17 @@ public final class CapitalAmbassadorService {
                 || !CapitalBuildingService.hasAmbassadorBuildings(
                 level,
                 capital
-        )
-                || !isEligibleCandidate(
+        )) {
+            return false;
+        }
+
+        reconcileCapitalAssignments(
+                level,
+                capital,
+                residents
+        );
+
+        if (!isEligibleCandidate(
                 level,
                 capital,
                 candidateId,
@@ -298,11 +331,20 @@ public final class CapitalAmbassadorService {
         }
 
         if (level != null) {
-            for (UUID ambassadorId :
+            for (Map.Entry<UUID, UUID> entry :
                     CapitalDiplomacyDataAccess
                             .getAmbassadorsSnapshot(level)
-                            .values()) {
-                if (entityId.equals(ambassadorId)) {
+                            .entrySet()) {
+                if (!entityId.equals(entry.getValue())) {
+                    continue;
+                }
+
+                CapitalRecord capital =
+                        CapitalManager.getCapital(
+                                entry.getKey()
+                        );
+
+                if (capital != null) {
                     return true;
                 }
             }
@@ -343,6 +385,14 @@ public final class CapitalAmbassadorService {
             return;
         }
 
+        UUID previous =
+                level == null
+                        ? AMBASSADOR_CACHE.get(capitalId)
+                        : CapitalDiplomacyDataAccess.getAmbassador(
+                        level,
+                        capitalId
+                );
+
         AMBASSADOR_CACHE.remove(capitalId);
 
         if (level != null) {
@@ -350,7 +400,85 @@ public final class CapitalAmbassadorService {
                     level,
                     capitalId
             );
+
+            sync(
+                    level,
+                    previous
+            );
         }
+    }
+
+    private static boolean reconcileCapitalAssignments(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents
+    ) {
+        if (level == null
+                || capital == null
+                || capital.getCapitalId() == null
+                || residents == null) {
+            return false;
+        }
+
+        UUID capitalId = capital.getCapitalId();
+        Integer villageId = capital.getVillageId();
+        boolean changed = false;
+
+        Map<UUID, UUID> ambassadors =
+                CapitalDiplomacyDataAccess
+                        .getAmbassadorsSnapshot(level);
+
+        for (Map.Entry<UUID, UUID> entry :
+                ambassadors.entrySet()) {
+            UUID assignedCapitalId = entry.getKey();
+            UUID ambassadorId = entry.getValue();
+
+            if (assignedCapitalId == null
+                    || ambassadorId == null
+                    || capitalId.equals(assignedCapitalId)) {
+                continue;
+            }
+
+            CapitalRecord assignedCapital =
+                    CapitalManager.getCapital(
+                            assignedCapitalId
+                    );
+
+            boolean sameCapitalVillage =
+                    assignedCapital != null
+                            && Objects.equals(
+                            villageId,
+                            assignedCapital.getVillageId()
+                    );
+
+            boolean holderIsCurrentResident =
+                    residents.contains(
+                            ambassadorId
+                    );
+
+            if (!sameCapitalVillage
+                    && !holderIsCurrentResident) {
+                continue;
+            }
+
+            if (CapitalDiplomacyDataAccess.clearAmbassador(
+                    level,
+                    assignedCapitalId
+            )) {
+                changed = true;
+            }
+
+            AMBASSADOR_CACHE.remove(
+                    assignedCapitalId
+            );
+
+            sync(
+                    level,
+                    ambassadorId
+            );
+        }
+
+        return changed;
     }
 
     private static void sync(
