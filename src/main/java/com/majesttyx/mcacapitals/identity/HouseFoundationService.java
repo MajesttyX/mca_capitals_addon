@@ -11,7 +11,6 @@ import net.minecraft.world.entity.Entity;
 import java.util.UUID;
 
 public final class HouseFoundationService {
-
     private HouseFoundationService() {
     }
 
@@ -23,19 +22,16 @@ public final class HouseFoundationService {
         CapitalRecord capital = CapitalTitleResolverAccess.findCapital(level, founder.getUUID());
         return foundHouse(level, founder, capital);
     }
-
     public static HouseFoundationResult foundHouse(ServerLevel level, Entity founder, CapitalRecord capital) {
         if (level == null || founder == null || !MCAIntegrationBridge.isMCAVillagerEntity(founder)) {
             return HouseFoundationResult.fail("No valid MCA villager founder.");
         }
 
         VillagerIdentityService.ensureAssigned(level, founder);
-
         VillagerIdentityData existing = VillagerIdentityService.getIdentity(founder);
         if (existing.hasFoundedHouse()) {
             return HouseFoundationResult.fail("This villager already founded or belongs to House " + existing.houseName() + ".");
         }
-
         String houseName = existing.currentSurname();
         if (houseName == null || houseName.isBlank()) {
             houseName = existing.birthSurname();
@@ -43,12 +39,10 @@ public final class HouseFoundationService {
         if (houseName == null || houseName.isBlank()) {
             return HouseFoundationResult.fail("Founder has no surname to elevate into a House.");
         }
-
         CapitalRecord resolvedCapital = capital;
         if (resolvedCapital == null && existing.originCapitalId() != null) {
             resolvedCapital = CapitalManager.getCapital(existing.originCapitalId());
         }
-
         UUID capitalId = resolvedCapital == null ? existing.originCapitalId() : resolvedCapital.getCapitalId();
         String capitalName = resolvedCapital == null
                 ? existing.originCapitalName()
@@ -56,7 +50,6 @@ public final class HouseFoundationService {
 
         String founderPersonality = resolveFounderPersonality(founder);
         HouseWordsPool.Selection selection = HouseWordsPool.select(level, founderPersonality, capitalId);
-
         String founderName = founder.getName() == null ? "" : founder.getName().getString();
 
         boolean founded = VillagerIdentityService.foundHouse(
@@ -70,11 +63,9 @@ public final class HouseFoundationService {
                 capitalId,
                 capitalName
         );
-
         if (!founded) {
             return HouseFoundationResult.fail("Could not found House.");
         }
-
         if (selection.hasWords()) {
             UsedHouseWordsSavedData.get(level).markUsed(
                     selection.phrase(),
@@ -87,7 +78,6 @@ public final class HouseFoundationService {
                     level.getGameTime()
             );
         }
-
         applyFoundedHouseToImmediateFamily(
                 level,
                 founder,
@@ -99,7 +89,6 @@ public final class HouseFoundationService {
                 capitalId,
                 capitalName
         );
-
         return new HouseFoundationResult(
                 true,
                 "Founded House " + houseName + (selection.hasWords() ? " — " + selection.phrase() : "."),
@@ -112,7 +101,6 @@ public final class HouseFoundationService {
     public static void clearHouse(Entity entity) {
         VillagerIdentityService.clearHouse(entity);
     }
-
     private static void applyFoundedHouseToImmediateFamily(
             ServerLevel level,
             Entity founder,
@@ -127,7 +115,6 @@ public final class HouseFoundationService {
         if (level == null || founder == null || founderId == null || houseName == null || houseName.isBlank()) {
             return;
         }
-
         UUID spouseId = MCAIntegrationBridge.getSpouse(level, founderId);
         applyFoundedHouseToRelative(
                 level,
@@ -140,7 +127,6 @@ public final class HouseFoundationService {
                 capitalId,
                 capitalName
         );
-
         for (UUID childId : MCAIntegrationBridge.getChildren(level, founderId)) {
             applyFoundedHouseToRelative(
                     level,
@@ -155,7 +141,6 @@ public final class HouseFoundationService {
             );
         }
     }
-
     private static void applyFoundedHouseToRelative(
             ServerLevel level,
             UUID relativeId,
@@ -170,7 +155,6 @@ public final class HouseFoundationService {
         if (level == null || relativeId == null || houseName == null || houseName.isBlank()) {
             return;
         }
-
         Entity relative = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, relativeId);
         if (relative == null) {
             return;
@@ -182,7 +166,6 @@ public final class HouseFoundationService {
         if (identity.hasFoundedHouse()) {
             return;
         }
-
         VillagerIdentityService.assignCurrentSurname(level, relative, houseName, SurnameSource.ROYAL_HOUSE);
         VillagerIdentityService.foundHouse(
                 level,
@@ -196,11 +179,10 @@ public final class HouseFoundationService {
                 capitalName
         );
     }
-
     private static String resolveFounderPersonality(Entity founder) {
         if (founder instanceof VillagerEntityMCA villager) {
             try {
-                return HouseWordsPool.normalizeBucket(villager.getVillagerBrain().getPersonality().name());
+                return HouseWordsPool.normalizeBucket(villager.getVillagerBrain().getPersonality().getId().getPath());
             } catch (Throwable ignored) {
                 return HouseWordsPool.UNASSIGNED;
             }
@@ -208,7 +190,6 @@ public final class HouseFoundationService {
 
         return HouseWordsPool.UNASSIGNED;
     }
-
     public record HouseFoundationResult(
             boolean success,
             String message,
@@ -220,7 +201,6 @@ public final class HouseFoundationService {
             return new HouseFoundationResult(false, message, "", "", "");
         }
     }
-
     private static final class CapitalTitleResolverAccess {
         private static CapitalRecord findCapital(ServerLevel level, UUID entityId) {
             try {
