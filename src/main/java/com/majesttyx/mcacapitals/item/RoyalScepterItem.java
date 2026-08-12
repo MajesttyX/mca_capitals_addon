@@ -22,6 +22,6 @@ public class RoyalScepterItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.literal("A tool of royal authority used to appoint heirs and court roles.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Right-click within a capital to use.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.literal("Shift and right-click on a villager within a capital to use.").withStyle(ChatFormatting.GRAY));
     }
 }
