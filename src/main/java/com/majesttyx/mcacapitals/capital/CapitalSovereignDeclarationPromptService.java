@@ -1,9 +1,11 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.MCACapitals;
+import com.majesttyx.mcacapitals.data.PlayerCapitalAllegianceDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.conczin.mca.entity.VillagerEntityMCA;
 import net.conczin.mca.network.Network;
+import net.conczin.mca.network.s2c.InteractionDialogueQuestionResponse;
 import net.conczin.mca.network.s2c.InteractionDialogueResponse;
 import net.conczin.mca.resources.Dialogues;
 import net.conczin.mca.resources.data.dialogue.Question;
@@ -15,6 +17,7 @@ import net.minecraft.world.entity.Entity;
 import java.util.List;
 
 public final class CapitalSovereignDeclarationPromptService {
+
     public static final String ACCEPT_COMMAND = "mcacapitals_declare_capital_accept";
     public static final String DECLINE_COMMAND = "mcacapitals_declare_capital_decline";
     public static final String DECLARE_COMMAND = "mcacapitals_declare_for_capital";
@@ -23,7 +26,10 @@ public final class CapitalSovereignDeclarationPromptService {
     private CapitalSovereignDeclarationPromptService() {
     }
 
-    public static boolean shouldPrompt(ServerPlayer player, VillagerEntityMCA villager) {
+    public static boolean shouldPrompt(
+            ServerPlayer player,
+            VillagerEntityMCA villager
+    ) {
         if (player == null || villager == null) {
             return false;
         }
@@ -38,12 +44,21 @@ public final class CapitalSovereignDeclarationPromptService {
                 && PlayerCapitalAllegianceService.getDeclaredCapitalId(
                 level,
                 player.getUUID()
-        ) == null;
+        ) == null
+                && !PlayerCapitalAllegianceDataAccess.hasDeclinedPrompt(
+                level,
+                player.getUUID(),
+                capital.getCapitalId()
+        );
     }
 
-    public static void openPrompt(ServerPlayer player, VillagerEntityMCA villager) {
+    public static void openPrompt(
+            ServerPlayer player,
+            VillagerEntityMCA villager
+    ) {
         CapitalRecord capital = resolveCapital(player.serverLevel(), villager);
         if (capital == null) {
+            continueNormalConversation(player, villager);
             return;
         }
 
@@ -55,22 +70,19 @@ public final class CapitalSovereignDeclarationPromptService {
                     "[MCACapitals] Declaration dialogue '{}' is missing or incomplete; normal MCA dialogue remains available.",
                     QUESTION_ID
             );
+            continueNormalConversation(player, villager);
             return;
         }
 
-        player.sendSystemMessage(Component.literal(
-                villager.getName().getString()
-                        + ": Before we continue, will you declare for "
+        Component prompt = Component.literal(
+                "Before we continue, will you declare for "
                         + CapitalDiplomaticAgreementText.capitalName(
                         player.serverLevel(),
                         capital
                 )
                         + "?"
-        ));
+        );
 
-        // Supply the two valid answers explicitly. This prevents another
-        // dialogue-answer filter or MCA constraint refresh from producing an
-        // empty declaration panel after the normal Talk screen is initialized.
         Network.sendToPlayer(
                 new InteractionDialogueResponse(
                         question.getName(),
@@ -78,10 +90,24 @@ public final class CapitalSovereignDeclarationPromptService {
                 ),
                 player
         );
+
+        Network.sendToPlayer(
+                new InteractionDialogueQuestionResponse(
+                        prompt,
+                        question.isSilent()
+                ),
+                player
+        );
     }
 
-    public static boolean handleCommand(ServerPlayer player, Entity entity, String command) {
-        if (player == null || !(entity instanceof VillagerEntityMCA villager) || command == null) {
+    public static boolean handleCommand(
+            ServerPlayer player,
+            Entity entity,
+            String command
+    ) {
+        if (player == null
+                || !(entity instanceof VillagerEntityMCA villager)
+                || command == null) {
             return false;
         }
 
@@ -107,6 +133,12 @@ public final class CapitalSovereignDeclarationPromptService {
                 return false;
             }
 
+            PlayerCapitalAllegianceDataAccess.markPromptDeclined(
+                    player.serverLevel(),
+                    player.getUUID(),
+                    capital.getCapitalId()
+            );
+
             continueNormalConversation(player, villager);
             return true;
         }
@@ -127,7 +159,10 @@ public final class CapitalSovereignDeclarationPromptService {
         return false;
     }
 
-    public static boolean canShowDeclarationAnswer(ServerPlayer player, VillagerEntityMCA villager) {
+    public static boolean canShowDeclarationAnswer(
+            ServerPlayer player,
+            VillagerEntityMCA villager
+    ) {
         CapitalRecord capital = resolveCapital(
                 player == null ? null : player.serverLevel(),
                 villager
@@ -138,10 +173,16 @@ public final class CapitalSovereignDeclarationPromptService {
                 && capital != null
                 && (villager.getUUID().equals(capital.getSovereign())
                 || villager.getUUID().equals(capital.getHand()))
-                && PlayerCapitalAllegianceService.canOfferDeclaration(player, capital);
+                && PlayerCapitalAllegianceService.canOfferDeclaration(
+                player,
+                capital
+        );
     }
 
-    public static CapitalRecord resolveCapital(ServerLevel level, Entity villager) {
+    public static CapitalRecord resolveCapital(
+            ServerLevel level,
+            Entity villager
+    ) {
         if (level == null || villager == null) {
             return null;
         }
@@ -161,13 +202,18 @@ public final class CapitalSovereignDeclarationPromptService {
                 villager.getUUID()
         );
         CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId);
+
         return capital != null && capital.getState() == CapitalState.ACTIVE
                 ? capital
                 : null;
     }
 
-    public static void continueNormalConversation(ServerPlayer player, VillagerEntityMCA villager) {
+    public static void continueNormalConversation(
+            ServerPlayer player,
+            VillagerEntityMCA villager
+    ) {
         Question root = Dialogues.getInstance().getQuestion("root");
+
         if (root == null) {
             MCACapitals.LOGGER.error(
                     "[MCACapitals] MCA root dialogue is unavailable while continuing after declaration prompt."

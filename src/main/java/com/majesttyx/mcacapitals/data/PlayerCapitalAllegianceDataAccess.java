@@ -13,6 +13,7 @@ public final class PlayerCapitalAllegianceDataAccess {
                     PlayerCapitalAllegianceSavedData::load,
                     null
             );
+
     private PlayerCapitalAllegianceDataAccess() {
     }
 
@@ -25,28 +26,69 @@ public final class PlayerCapitalAllegianceDataAccess {
                         PlayerCapitalAllegianceSavedData.DATA_NAME
                 );
     }
-    public static UUID getDeclaredCapitalId(ServerLevel level, UUID playerId) {
+
+    public static UUID getDeclaredCapitalId(
+            ServerLevel level,
+            UUID playerId
+    ) {
         return level == null || playerId == null
                 ? null
                 : get(level).getDeclaredCapitalId(playerId);
     }
 
-    public static long getLastChangeDay(ServerLevel level, UUID playerId) {
+    public static long getLastChangeDay(
+            ServerLevel level,
+            UUID playerId
+    ) {
         return level == null || playerId == null
                 ? 0L
                 : get(level).getLastChangeDay(playerId);
     }
+
+    public static boolean hasDeclinedPrompt(
+            ServerLevel level,
+            UUID playerId,
+            UUID capitalId
+    ) {
+        return level != null
+                && playerId != null
+                && capitalId != null
+                && get(level).hasDeclinedPrompt(playerId, capitalId);
+    }
+
+    public static void markPromptDeclined(
+            ServerLevel level,
+            UUID playerId,
+            UUID capitalId
+    ) {
+        if (level != null
+                && playerId != null
+                && capitalId != null) {
+            get(level).markPromptDeclined(playerId, capitalId);
+        }
+    }
+
     public static void setDeclaration(
             ServerLevel level,
             UUID playerId,
             UUID capitalId,
             long changeDay
     ) {
-        if (level != null && playerId != null && capitalId != null) {
-            get(level).setDeclaration(playerId, capitalId, changeDay);
+        if (level != null
+                && playerId != null
+                && capitalId != null) {
+            get(level).setDeclaration(
+                    playerId,
+                    capitalId,
+                    changeDay
+            );
         }
     }
-    public static boolean clearDeclaration(ServerLevel level, UUID playerId) {
+
+    public static boolean clearDeclaration(
+            ServerLevel level,
+            UUID playerId
+    ) {
         return level != null
                 && playerId != null
                 && get(level).clearDeclaration(playerId);
