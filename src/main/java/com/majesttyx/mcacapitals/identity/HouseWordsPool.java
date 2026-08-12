@@ -34,25 +34,23 @@ final class HouseWordsPool {
             "house_words/house_words.json"
     );
 
-    /*
-     * Forge 1.20.1 / MCA Reborn 7.6.x personality buckets.
-     *
-     * These are personality values, not MCA traits.
-     */
     private static final List<String> PERSONALITY_BUCKET_ORDER = List.of(
             UNASSIGNED,
-            "ATHLETIC",
-            "CONFIDENT",
             "FRIENDLY",
             "FLIRTY",
-            "WITTY",
-            "SHY",
+            "PLAYFUL",
             "GLOOMY",
             "SENSITIVE",
             "GREEDY",
             "ODD",
-            "LAZY",
-            "GRUMPY",
+            "CRABBY",
+            "EXTROVERTED",
+            "INTROVERTED",
+            "RELAXED",
+            "ANXIOUS",
+            "PEACEFUL",
+            "UPBEAT",
+            "CONFIDENT",
             "PEPPY"
     );
 
@@ -231,7 +229,13 @@ final class HouseWordsPool {
             return UNASSIGNED;
         }
 
-        String normalized = value.trim().toUpperCase(Locale.ROOT);
+        String normalized = value.trim();
+        int namespaceSeparator = normalized.indexOf(':');
+        if (namespaceSeparator >= 0 && namespaceSeparator < normalized.length() - 1) {
+            normalized = normalized.substring(namespaceSeparator + 1);
+        }
+
+        normalized = normalized.toUpperCase(Locale.ROOT);
         return PERSONALITY_BUCKET_ORDER.contains(normalized) ? normalized : UNASSIGNED;
     }
 
