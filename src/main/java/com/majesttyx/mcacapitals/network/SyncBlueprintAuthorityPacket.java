@@ -10,6 +10,8 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.MCAReputationBridge;
 import net.conczin.mca.server.world.data.Village;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -30,7 +32,7 @@ public class SyncBlueprintAuthorityPacket implements CustomPacketPayload {
 
     private final int villageId;
     private final boolean activeCapital;
-    private final String displayTitle;
+    private final Component displayTitle;
     private final int permissionMask;
     private final int population;
     private final int reputation;
@@ -41,7 +43,7 @@ public class SyncBlueprintAuthorityPacket implements CustomPacketPayload {
     public SyncBlueprintAuthorityPacket(
             int villageId,
             boolean activeCapital,
-            String displayTitle,
+            Component displayTitle,
             int permissionMask,
             int population,
             int reputation,
@@ -51,7 +53,9 @@ public class SyncBlueprintAuthorityPacket implements CustomPacketPayload {
     ) {
         this.villageId = villageId;
         this.activeCapital = activeCapital;
-        this.displayTitle = displayTitle == null || displayTitle.isBlank() ? "Stranger" : displayTitle;
+        this.displayTitle = displayTitle == null
+                ? Component.translatable("mcacapitals.dynamic.rank.stranger")
+                : displayTitle;
         this.permissionMask = permissionMask;
         this.population = population;
         this.reputation = reputation;
@@ -62,7 +66,17 @@ public class SyncBlueprintAuthorityPacket implements CustomPacketPayload {
 
     public static SyncBlueprintAuthorityPacket create(ServerPlayer player, Village village) {
         if (player == null || village == null) {
-            return new SyncBlueprintAuthorityPacket(-1, false, "Stranger", 0, 0, 0, 0, 0, false);
+            return new SyncBlueprintAuthorityPacket(
+                    -1,
+                    false,
+                    Component.translatable("mcacapitals.dynamic.rank.stranger"),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false
+            );
         }
 
         int villageId = village.getId();
@@ -74,7 +88,7 @@ public class SyncBlueprintAuthorityPacket implements CustomPacketPayload {
             return new SyncBlueprintAuthorityPacket(
                     villageId,
                     false,
-                    "Stranger",
+                    Component.translatable("mcacapitals.dynamic.rank.stranger"),
                     0,
                     village.getPopulation(),
                     0,
@@ -129,7 +143,7 @@ public class SyncBlueprintAuthorityPacket implements CustomPacketPayload {
         return activeCapital;
     }
 
-    public String displayTitle() {
+    public Component displayTitle() {
         return displayTitle;
     }
 
@@ -164,7 +178,7 @@ public class SyncBlueprintAuthorityPacket implements CustomPacketPayload {
     private void encode(RegistryFriendlyByteBuf buffer) {
         buffer.writeInt(villageId);
         buffer.writeBoolean(activeCapital);
-        buffer.writeUtf(displayTitle);
+        ComponentSerialization.STREAM_CODEC.encode(buffer, displayTitle);
         buffer.writeInt(permissionMask);
         buffer.writeInt(population);
         buffer.writeInt(reputation);
@@ -177,7 +191,7 @@ public class SyncBlueprintAuthorityPacket implements CustomPacketPayload {
         return new SyncBlueprintAuthorityPacket(
                 buffer.readInt(),
                 buffer.readBoolean(),
-                buffer.readUtf(),
+                ComponentSerialization.STREAM_CODEC.decode(buffer),
                 buffer.readInt(),
                 buffer.readInt(),
                 buffer.readInt(),

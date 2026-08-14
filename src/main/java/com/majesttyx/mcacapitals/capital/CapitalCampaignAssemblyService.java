@@ -65,7 +65,9 @@ final class CapitalCampaignAssemblyService {
         if (attackingVillage == null
                 || defendingVillage == null) {
             return AssemblyResult.invalid(
-                    "One of the campaign villages is unavailable."
+                    Component.translatable(
+                            "mcacapitals.system.campaign.village_unavailable"
+                    )
             );
         }
 
@@ -114,9 +116,7 @@ final class CapitalCampaignAssemblyService {
 
                 if (initiatingPlayer != null) {
                     initiatingPlayer.sendSystemMessage(
-                            Component.literal(
-                                    "Campaign assembly was halted because you left the defending capital. Re-enter the capital to begin assembling again."
-                            )
+                            Component.translatable("mcacapitals.system.capital_campaign_assembly_service.campaign_assembly_was_halted_because_you_left_the_defending_capital_re")
                     );
                 }
             }
@@ -137,9 +137,7 @@ final class CapitalCampaignAssemblyService {
                     .setDirty();
 
             player.sendSystemMessage(
-                    Component.literal(
-                            "Your campaign force is assembling, get to an open area and prepare to fight."
-                    )
+                    Component.translatable("mcacapitals.system.capital_campaign_assembly_service.your_campaign_force_is_assembling_get_to_an_open_area_and_prepare_to_f")
             );
         }
 
@@ -242,28 +240,27 @@ final class CapitalCampaignAssemblyService {
 
         if (assembledAttackers.isEmpty()) {
             return AssemblyResult.invalid(
-                    "The campaign force could not assemble any eligible Guards or Archers. The planned attack was cancelled before war began."
+                    Component.translatable(
+                            "mcacapitals.system.campaign.assembly_no_eligible_attackers"
+                    )
             );
         }
 
-        String completionMessage =
+        Component completionMessage =
                 assembledCount
                         >= campaign.getTargetAttackerCount()
-                        ? "Campaign assembly is complete: "
-                        + assembledCount
-                        + " soldiers are ready to deploy."
-                        : "Campaign assembly ended with "
-                        + assembledCount
-                        + " of the preferred "
-                        + campaign.getTargetAttackerCount()
-                        + " soldiers available. The attack will proceed with the assembled force.";
+                        ? Component.translatable(
+                                "mcacapitals.system.campaign.assembly_complete",
+                                assembledCount
+                        )
+                        : Component.translatable(
+                                "mcacapitals.system.campaign.assembly_partial",
+                                assembledCount,
+                                campaign.getTargetAttackerCount()
+                        );
 
         if (elapsed < ASSEMBLY_DURATION_TICKS + 10L) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            completionMessage
-                    )
-            );
+            player.sendSystemMessage(completionMessage);
         }
 
         return AssemblyResult.ready(
@@ -383,7 +380,9 @@ final class CapitalCampaignAssemblyService {
 
         if (initiatingPlayerId == null) {
             return PlayerValidation.invalid(
-                    "The planned attack has no initiating player and cannot assemble."
+                    Component.translatable(
+                            "mcacapitals.system.campaign.no_initiating_player"
+                    )
             );
         }
 
@@ -394,7 +393,9 @@ final class CapitalCampaignAssemblyService {
                         initiatingPlayerId
                 )) {
             return PlayerValidation.invalid(
-                    "The player who planned this attack no longer has authority to command the capital's foreign affairs."
+                    Component.translatable(
+                            "mcacapitals.system.campaign.planner_lost_authority"
+                    )
             );
         }
 
@@ -584,7 +585,7 @@ final class CapitalCampaignAssemblyService {
     record AssemblyResult(
             boolean ready,
             boolean invalid,
-            String failureMessage,
+            Component failureMessage,
             ServerPlayer player,
             List<VillagerEntityMCA> attackers
     ) {
@@ -613,7 +614,7 @@ final class CapitalCampaignAssemblyService {
         }
 
         static AssemblyResult invalid(
-                String message
+                Component message
         ) {
             return new AssemblyResult(
                     false,
@@ -628,7 +629,7 @@ final class CapitalCampaignAssemblyService {
     private record PlayerValidation(
             ServerPlayer player,
             boolean invalid,
-            String failureMessage
+            Component failureMessage
     ) {
 
         static PlayerValidation success(
@@ -650,7 +651,7 @@ final class CapitalCampaignAssemblyService {
         }
 
         static PlayerValidation invalid(
-                String message
+                Component message
         ) {
             return new PlayerValidation(
                     null,

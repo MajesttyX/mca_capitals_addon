@@ -31,7 +31,7 @@ public class DeclarationOfAbdicationItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("A formal declaration used to relinquish the crown.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Right-click while standing in the capital.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.declaration_of_abdication_item.a_formal_declaration_used_to_relinquish_the_crown").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.declaration_of_abdication_item.right_click_while_standing_in_the_capital").withStyle(ChatFormatting.GRAY));
     }
 }

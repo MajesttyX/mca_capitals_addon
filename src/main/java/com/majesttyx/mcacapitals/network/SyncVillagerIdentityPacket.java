@@ -3,6 +3,8 @@ package com.majesttyx.mcacapitals.network;
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.client.VillagerIdentityClientCache;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -19,12 +21,15 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
             StreamCodec.ofMember(SyncVillagerIdentityPacket::encode, SyncVillagerIdentityPacket::decode);
 
     private final UUID villagerId;
-    private final String originVillageName;
+    private final Component originVillageName;
     private final String originSource;
     private final String currentSurname;
-    private final String displayTitle;
-    private final String royalGuardOrderLine;
-    private final String courtOfficeLine;
+    private final String baseName;
+    private final String displayTitleId;
+    private final Component displayTitle;
+    private final Component royalGuardOrderLine;
+    private final String courtOfficeId;
+    private final Component courtOfficeLine;
     private final boolean houseFounded;
     private final String houseName;
     private final String houseWords;
@@ -32,24 +37,30 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
 
     public SyncVillagerIdentityPacket(
             UUID villagerId,
-            String originVillageName,
+            Component originVillageName,
             String originSource,
             String currentSurname,
-            String displayTitle,
-            String royalGuardOrderLine,
-            String courtOfficeLine,
+            String baseName,
+            String displayTitleId,
+            Component displayTitle,
+            Component royalGuardOrderLine,
+            String courtOfficeId,
+            Component courtOfficeLine,
             boolean houseFounded,
             String houseName,
             String houseWords,
             String houseWordsPersonality
     ) {
         this.villagerId = villagerId;
-        this.originVillageName = originVillageName == null ? "" : originVillageName;
+        this.originVillageName = originVillageName == null ? Component.empty() : originVillageName;
         this.originSource = originSource == null ? "" : originSource;
         this.currentSurname = currentSurname == null ? "" : currentSurname;
-        this.displayTitle = displayTitle == null ? "" : displayTitle;
-        this.royalGuardOrderLine = royalGuardOrderLine == null ? "" : royalGuardOrderLine;
-        this.courtOfficeLine = courtOfficeLine == null ? "" : courtOfficeLine;
+        this.baseName = baseName == null ? "" : baseName;
+        this.displayTitleId = displayTitleId == null ? "" : displayTitleId;
+        this.displayTitle = displayTitle == null ? Component.empty() : displayTitle;
+        this.royalGuardOrderLine = royalGuardOrderLine == null ? Component.empty() : royalGuardOrderLine;
+        this.courtOfficeId = courtOfficeId == null ? "" : courtOfficeId;
+        this.courtOfficeLine = courtOfficeLine == null ? Component.empty() : courtOfficeLine;
         this.houseFounded = houseFounded;
         this.houseName = houseName == null ? "" : houseName;
         this.houseWords = houseWords == null ? "" : houseWords;
@@ -60,7 +71,7 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
         return villagerId;
     }
 
-    public String originVillageName() {
+    public Component originVillageName() {
         return originVillageName;
     }
 
@@ -72,15 +83,27 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
         return currentSurname;
     }
 
-    public String displayTitle() {
+    public String baseName() {
+        return baseName;
+    }
+
+    public String displayTitleId() {
+        return displayTitleId;
+    }
+
+    public Component displayTitle() {
         return displayTitle;
     }
 
-    public String royalGuardOrderLine() {
+    public Component royalGuardOrderLine() {
         return royalGuardOrderLine;
     }
 
-    public String courtOfficeLine() {
+    public String courtOfficeId() {
+        return courtOfficeId;
+    }
+
+    public Component courtOfficeLine() {
         return courtOfficeLine;
     }
 
@@ -102,12 +125,15 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
 
     private void encode(RegistryFriendlyByteBuf buffer) {
         buffer.writeUUID(villagerId);
-        buffer.writeUtf(originVillageName);
+        ComponentSerialization.STREAM_CODEC.encode(buffer, originVillageName);
         buffer.writeUtf(originSource);
         buffer.writeUtf(currentSurname);
-        buffer.writeUtf(displayTitle);
-        buffer.writeUtf(royalGuardOrderLine);
-        buffer.writeUtf(courtOfficeLine);
+        buffer.writeUtf(baseName);
+        buffer.writeUtf(displayTitleId);
+        ComponentSerialization.STREAM_CODEC.encode(buffer, displayTitle);
+        ComponentSerialization.STREAM_CODEC.encode(buffer, royalGuardOrderLine);
+        buffer.writeUtf(courtOfficeId);
+        ComponentSerialization.STREAM_CODEC.encode(buffer, courtOfficeLine);
         buffer.writeBoolean(houseFounded);
         buffer.writeUtf(houseName);
         buffer.writeUtf(houseWords);
@@ -116,12 +142,15 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
 
     private static SyncVillagerIdentityPacket decode(RegistryFriendlyByteBuf buffer) {
         UUID villagerId = buffer.readUUID();
-        String originVillageName = buffer.readUtf();
+        Component originVillageName = ComponentSerialization.STREAM_CODEC.decode(buffer);
         String originSource = buffer.readUtf();
         String currentSurname = buffer.readUtf();
-        String displayTitle = buffer.readUtf();
-        String royalGuardOrderLine = buffer.readUtf();
-        String courtOfficeLine = buffer.readUtf();
+        String baseName = buffer.readUtf();
+        String displayTitleId = buffer.readUtf();
+        Component displayTitle = ComponentSerialization.STREAM_CODEC.decode(buffer);
+        Component royalGuardOrderLine = ComponentSerialization.STREAM_CODEC.decode(buffer);
+        String courtOfficeId = buffer.readUtf();
+        Component courtOfficeLine = ComponentSerialization.STREAM_CODEC.decode(buffer);
         boolean houseFounded = buffer.readBoolean();
         String houseName = buffer.readUtf();
         String houseWords = buffer.readUtf();
@@ -132,8 +161,11 @@ public class SyncVillagerIdentityPacket implements CustomPacketPayload {
                 originVillageName,
                 originSource,
                 currentSurname,
+                baseName,
+                displayTitleId,
                 displayTitle,
                 royalGuardOrderLine,
+                courtOfficeId,
                 courtOfficeLine,
                 houseFounded,
                 houseName,

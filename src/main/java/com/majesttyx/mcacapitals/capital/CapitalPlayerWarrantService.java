@@ -41,10 +41,9 @@ public final class CapitalPlayerWarrantService {
                 caseKey
         );
 
-        player.sendSystemMessage(Component.literal(
-                "The court of "
-                        + CapitalDiplomaticAgreementText.capitalName(level, issuingCapital)
-                        + " has ordered you to leave. You have two real-time minutes to depart its bounds."
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.justice.player_warrant.leave_order",
+                CapitalDiplomaticAgreementText.capitalName(level, issuingCapital)
         ));
     }
 
@@ -70,9 +69,7 @@ public final class CapitalPlayerWarrantService {
         }
 
         if (countEmeralds(player) < WARRANT_FINE_EMERALDS) {
-            player.sendSystemMessage(Component.literal(
-                    "You need exactly 32 emerald items to pay this warrant fine. Emerald blocks are not accepted."
-            ));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_player_warrant_service.you_need_exactly_32_emerald_items_to_pay_this_warrant_fine_emerald_blo"));
             return 0;
         }
 
@@ -83,13 +80,13 @@ public final class CapitalPlayerWarrantService {
                 issuingCapital.getCapitalId()
         );
         player.getInventory().setChanged();
-        player.sendSystemMessage(Component.literal(
-                "You paid 32 emeralds. The warrant issued by "
-                        + CapitalDiplomaticAgreementText.capitalName(
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.justice.player_warrant.fine_paid",
+                WARRANT_FINE_EMERALDS,
+                CapitalDiplomaticAgreementText.capitalName(
                         player.serverLevel(),
                         issuingCapital
                 )
-                        + " has been cleared."
         ));
         return 1;
     }
@@ -105,9 +102,7 @@ public final class CapitalPlayerWarrantService {
                 issuingCapital
         );
         if (prisonCenters.isEmpty()) {
-            player.sendSystemMessage(Component.literal(
-                    "This Capital has no recognized Prison in which the sentence can be served."
-            ));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_player_warrant_service.this_capital_has_no_recognized_prison_in_which_the_sentence_can_be_ser"));
             return 0;
         }
 
@@ -123,10 +118,9 @@ public final class CapitalPlayerWarrantService {
                 issuingCapital.getCapitalId(),
                 SENTENCE_TICKS
         );
-        player.sendSystemMessage(Component.literal(
-                "You surrendered to "
-                        + CapitalDiplomaticAgreementText.capitalName(level, issuingCapital)
-                        + ". Remain within its recognized Prison for five real-time minutes to complete the sentence."
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.justice.player_warrant.surrendered",
+                CapitalDiplomaticAgreementText.capitalName(level, issuingCapital)
         ));
         return 1;
     }
@@ -159,9 +153,7 @@ public final class CapitalPlayerWarrantService {
                 issuingCapital.getCapitalId()
         )) {
             if (player != null) {
-                player.sendSystemMessage(Component.literal(
-                        "This Capital has no active warrant for you."
-                ));
+                player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_player_warrant_service.this_capital_has_no_active_warrant_for_you"));
             }
             return false;
         }

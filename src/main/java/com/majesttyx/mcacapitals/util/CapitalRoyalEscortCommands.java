@@ -49,9 +49,7 @@ public final class CapitalRoyalEscortCommands {
             player = source.getPlayerOrException();
         } catch (Exception ignored) {
             source.sendFailure(
-                    Component.literal(
-                            "Only a player may review Royal Escort requests."
-                    )
+                    Component.translatable("mcacapitals.system.capital_royal_escort_commands.only_a_player_may_review_royal_escort_requests")
             );
 
             return 0;
@@ -65,9 +63,7 @@ public final class CapitalRoyalEscortCommands {
             );
         } catch (IllegalArgumentException ignored) {
             source.sendFailure(
-                    Component.literal(
-                            "The Ambassador ID is invalid."
-                    )
+                    Component.translatable("mcacapitals.system.capital_royal_escort_commands.the_ambassador_id_is_invalid")
             );
 
             return 0;

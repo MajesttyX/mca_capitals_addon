@@ -20,12 +20,9 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
             UUID targetId,
             String targetName
     ) {
-        super(Component.literal("Royal Scepter"));
+        super(Component.translatable("mcacapitals.system.royal_scepter_action_screen.royal_scepter"));
         this.targetId = targetId;
-        this.targetName =
-                targetName == null || targetName.isBlank()
-                        ? "Unnamed"
-                        : targetName;
+        this.targetName = targetName == null ? "" : targetName.trim();
     }
 
     @Override
@@ -60,7 +57,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
                 BUTTON_HEIGHT + ROW_GAP;
 
         addActionButton(
-                "Name Heir Apparent",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.name_heir_apparent"),
                 "royalscepter heir " + targetId,
                 left,
                 top,
@@ -68,7 +65,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         );
 
         addActionButton(
-                "Name Hand of the Crown",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.name_hand_of_the_crown"),
                 "royalscepter hand " + targetId,
                 right,
                 top,
@@ -76,7 +73,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         );
 
         addActionButton(
-                "Name Grand Maester",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.name_grand_maester"),
                 "royalscepter grandmaester " + targetId,
                 left,
                 top + rowStep,
@@ -84,7 +81,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         );
 
         addActionButton(
-                "Appoint Lord Commander",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.appoint_lord_commander"),
                 "royalscepter commander " + targetId,
                 right,
                 top + rowStep,
@@ -92,7 +89,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         );
 
         addActionButton(
-                "Appoint Royal Guard",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.appoint_royal_guard"),
                 "royalscepter royalguard " + targetId,
                 left,
                 top + rowStep * 2,
@@ -100,7 +97,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         );
 
         addActionButton(
-                "Bestow Dukedom",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.bestow_dukedom"),
                 "royalscepter duke " + targetId,
                 right,
                 top + rowStep * 2,
@@ -108,7 +105,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         );
 
         addActionButton(
-                "Appoint Master of Laws",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.appoint_master_of_laws"),
                 "royalscepter masteroflaws " + targetId,
                 left,
                 top + rowStep * 3,
@@ -116,7 +113,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         );
 
         addActionButton(
-                "Appoint Ambassador",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.appoint_ambassador"),
                 "royalscepter ambassador " + targetId,
                 right,
                 top + rowStep * 3,
@@ -125,7 +122,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
 
         addRenderableWidget(
                 Button.builder(
-                                Component.literal("Cancel"),
+                                Component.translatable("mcacapitals.system.royal_scepter_action_screen.cancel"),
                                 button -> onClose()
                         )
                         .bounds(
@@ -139,7 +136,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
     }
 
     private void addActionButton(
-            String label,
+            Component label,
             String command,
             int x,
             int y,
@@ -147,7 +144,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
     ) {
         addRenderableWidget(
                 Button.builder(
-                                Component.literal(label),
+                                label,
                                 button -> runCommand(command)
                         )
                         .bounds(
@@ -173,14 +170,18 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
         onClose();
     }
 
-    private String getTrimmedTargetName() {
-        return this.font.plainSubstrByWidth(
+    private Component getTrimmedTargetName() {
+        if (this.targetName.isBlank()) {
+            return Component.translatable("mcacapitals.system.common.unnamed");
+        }
+
+        return Component.literal(this.font.plainSubstrByWidth(
                 this.targetName,
                 Math.min(
                         360,
                         this.width - 32
                 )
-        );
+        ));
     }
 
     @Override
@@ -204,7 +205,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
 
         guiGraphics.drawCenteredString(
                 this.font,
-                "Royal Scepter",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.royal_scepter"),
                 centerX,
                 titleY,
                 0xFFFFFF
@@ -212,7 +213,7 @@ public class RoyalScepterActionScreen extends CapitalNoBlurScreen {
 
         guiGraphics.drawCenteredString(
                 this.font,
-                "Choose appointment for:",
+                Component.translatable("mcacapitals.system.royal_scepter_action_screen.choose_appointment_for"),
                 centerX,
                 titleY + 14,
                 0xCCCCCC

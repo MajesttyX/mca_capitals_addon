@@ -16,7 +16,6 @@ import net.minecraft.world.entity.Entity;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Locale;
 import java.util.UUID;
 
 public final class MarriageSurnameService {
@@ -211,8 +210,8 @@ public final class MarriageSurnameService {
             return 900;
         }
 
-        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, entity.getUUID());
-        return rankValue(title);
+        CapitalTitleResolver.ResolvedTitleId titleId = CapitalTitleResolver.getResolvedTitleIdForEntity(level, entity.getUUID());
+        return rankValue(titleId);
     }
 
     private static int getPlayerTitleRank(UUID playerId) {
@@ -237,31 +236,29 @@ public final class MarriageSurnameService {
         return 900;
     }
 
-    private static int rankValue(String title) {
-        if (title == null || title.isBlank()) {
+    private static int rankValue(CapitalTitleResolver.ResolvedTitleId titleId) {
+        if (titleId == null) {
             return 900;
         }
 
-        String normalized = title.trim().toLowerCase(Locale.ROOT);
-
-        return switch (normalized) {
-            case "high queen", "high king" -> 20;
-            case "queen", "king" -> 30;
-            case "queen consort", "king consort" -> 40;
-            case "dowager queen", "dowager king" -> 50;
-            case "heir apparent" -> 60;
-            case "crown princess", "crown prince" -> 70;
-            case "princess", "prince" -> 80;
-            case "princess consort", "prince consort" -> 90;
-            case "dowager princess", "dowager prince" -> 100;
-            case "hand of the queen", "hand of the king" -> 110;
-            case "grand maester" -> 115;
-            case "duchess", "duke" -> 120;
-            case "dowager duchess", "dowager duke" -> 130;
-            case "maester" -> 140;
-            case "lord commander" -> 150;
-            case "lady", "lord" -> 170;
-            case "dame", "sir" -> 180;
+        return switch (titleId) {
+            case HIGH_SOVEREIGN -> 20;
+            case SOVEREIGN -> 30;
+            case SOVEREIGN_CONSORT -> 40;
+            case SOVEREIGN_DOWAGER -> 50;
+            case HEIR_APPARENT -> 60;
+            case CROWN_HEIR -> 70;
+            case ROYAL_CHILD -> 80;
+            case PRINCE_CONSORT -> 90;
+            case DOWAGER_PRINCE -> 100;
+            case HAND -> 110;
+            case GRAND_MAESTER -> 115;
+            case DUKE -> 120;
+            case DOWAGER_DUKE -> 130;
+            case MAESTER -> 140;
+            case LORD_COMMANDER -> 150;
+            case LORD -> 170;
+            case ROYAL_GUARD, KNIGHT -> 180;
             default -> 900;
         };
     }

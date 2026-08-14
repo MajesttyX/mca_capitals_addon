@@ -1,5 +1,8 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
+
 import com.majesttyx.mcacapitals.capital.CapitalAmbassadorService;
 import com.majesttyx.mcacapitals.capital.CapitalBuildingService;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
@@ -194,7 +197,7 @@ public final class RoyalScepterCommands {
         try {
             return UUID.fromString(rawVillagerId);
         } catch (IllegalArgumentException ex) {
-            source.sendFailure(Component.literal("Invalid UUID."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.invalid_uuid"));
             return null;
         }
     }
@@ -232,9 +235,7 @@ public final class RoyalScepterCommands {
             return false;
         }
 
-        source.sendFailure(Component.literal(
-                "The Ambassador cannot hold another royal or court appointment."
-        ));
+        source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.the_ambassador_cannot_hold_another_royal_or_court_appointment"));
 
         return true;
     }
@@ -246,9 +247,7 @@ public final class RoyalScepterCommands {
         ServerPlayer player = getPlayer(source);
 
         if (player == null) {
-            source.sendFailure(Component.literal(
-                    "Only a player can use this."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
@@ -264,25 +263,19 @@ public final class RoyalScepterCommands {
         }
 
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal(
-                    "Target is not an MCA villager."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
 
         if (capital == null) {
-            source.sendFailure(Component.literal(
-                    "That villager is not part of a capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal(
-                    "Only the sovereign or an operator may use the Royal Scepter here."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
@@ -292,23 +285,17 @@ public final class RoyalScepterCommands {
         );
 
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal(
-                    "That villager is not a resident of the capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
         if (villagerId.equals(capital.getSovereign())) {
-            source.sendFailure(Component.literal(
-                    "The sovereign is already on the throne."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.the_sovereign_is_already_on_the_throne"));
             return 0;
         }
 
         if (capital.isDisinheritedRoyalChild(villagerId)) {
-            source.sendFailure(Component.literal(
-                    "A disinherited royal child cannot be named Heir Apparent."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.a_disinherited_royal_child_cannot_be_named_heir_apparent"));
             return 0;
         }
 
@@ -319,18 +306,16 @@ public final class RoyalScepterCommands {
                 level,
                 villagerId
         )) {
-            source.sendFailure(Component.literal(
-                    "That villager is not eligible to be named Heir Apparent."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_be_named_heir_apparent"));
             return 0;
         }
 
         if (villagerId.equals(capital.getHeir())
                 && capital.getHeirMode()
                 == CapitalRecord.HeirMode.MANUAL) {
-            source.sendFailure(Component.literal(
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_heir_apparent",
                     resolveName(level, villagerId)
-                            + " is already the named Heir Apparent."
             ));
             return 0;
         }
@@ -358,19 +343,9 @@ public final class RoyalScepterCommands {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String name = resolveName(level, villagerId);
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                name
-                        + " was named Heir Apparent of "
-                        + MCAIntegrationBridge.getVillageName(
-                        level,
-                        capital.getVillageId()
-                )
-                        + "."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.HEIR_APPARENT_NAMED, name, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
 
         return 1;
     }
@@ -382,9 +357,7 @@ public final class RoyalScepterCommands {
         ServerPlayer player = getPlayer(source);
 
         if (player == null) {
-            source.sendFailure(Component.literal(
-                    "Only a player can use this."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
@@ -400,25 +373,19 @@ public final class RoyalScepterCommands {
         }
 
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal(
-                    "Target is not an MCA villager."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
 
         if (capital == null) {
-            source.sendFailure(Component.literal(
-                    "That villager is not part of a capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal(
-                    "Only the sovereign or an operator may use the Royal Scepter here."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
@@ -428,9 +395,7 @@ public final class RoyalScepterCommands {
         );
 
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal(
-                    "That villager is not a resident of the capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
@@ -440,16 +405,14 @@ public final class RoyalScepterCommands {
                 villagerId,
                 residents
         )) {
-            source.sendFailure(Component.literal(
-                    "That villager is not eligible to serve as Hand of the Crown."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_hand_of_the_crown"));
             return 0;
         }
 
         if (villagerId.equals(capital.getHand())) {
-            source.sendFailure(Component.literal(
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_hand",
                     resolveName(level, villagerId)
-                            + " already holds the office of Hand of the Crown."
             ));
             return 0;
         }
@@ -463,20 +426,9 @@ public final class RoyalScepterCommands {
 
         if (previousHand != null
                 && !previousHand.equals(villagerId)) {
-            String formerName = resolveName(level, previousHand);
+            String formerName = CapitalChronicleIdentitySnapshot.name(level, capital, previousHand);
 
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    formerName
-                            + " was relieved of the office of "
-                            + (capital.isSovereignFemale()
-                            ? "Hand of the Queen"
-                            : "Hand of the King")
-                            + " of "
-                            + villageName
-                            + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.OFFICE_RELIEVED, formerName, CapitalChronicleIdentitySnapshot.handOffice(level, capital), villageName);
         }
 
         capital.setHand(villagerId);
@@ -499,22 +451,13 @@ public final class RoyalScepterCommands {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String name = resolveName(level, villagerId);
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
         String officeName = capital.isSovereignFemale()
                 ? "Hand of the Queen"
                 : "Hand of the King";
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                name
-                        + " was appointed "
-                        + officeName
-                        + " of "
-                        + villageName
-                        + "."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.HAND_APPOINTED, name, CapitalChronicleIdentitySnapshot.handOffice(level, capital), villageName);
 
         return 1;
     }
@@ -526,9 +469,7 @@ public final class RoyalScepterCommands {
         ServerPlayer player = getPlayer(source);
 
         if (player == null) {
-            source.sendFailure(Component.literal(
-                    "Only a player can use this."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
@@ -544,25 +485,19 @@ public final class RoyalScepterCommands {
         }
 
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal(
-                    "Target is not an MCA villager."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
 
         if (capital == null) {
-            source.sendFailure(Component.literal(
-                    "That villager is not part of a capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal(
-                    "Only the sovereign or an operator may use the Royal Scepter here."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
@@ -572,9 +507,7 @@ public final class RoyalScepterCommands {
         );
 
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal(
-                    "That villager is not a resident of the capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
@@ -584,16 +517,14 @@ public final class RoyalScepterCommands {
                 villagerId,
                 residents
         )) {
-            source.sendFailure(Component.literal(
-                    "That villager is not eligible to serve as Grand Maester."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_grand_maester"));
             return 0;
         }
 
         if (villagerId.equals(capital.getGrandMaester())) {
-            source.sendFailure(Component.literal(
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_grand_maester",
                     resolveName(level, villagerId)
-                            + " already holds the office of Grand Maester."
             ));
             return 0;
         }
@@ -607,19 +538,13 @@ public final class RoyalScepterCommands {
 
         if (previousGrandMaester != null
                 && !previousGrandMaester.equals(villagerId)) {
-            String formerName = resolveName(
+            String formerName = CapitalChronicleIdentitySnapshot.name(
                     level,
+                    capital,
                     previousGrandMaester
             );
 
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    formerName
-                            + " was relieved of the office of Grand Maester of "
-                            + villageName
-                            + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.GRAND_MAESTER_RELIEVED, formerName, villageName);
         }
 
         capital.setGrandMaester(villagerId);
@@ -642,16 +567,9 @@ public final class RoyalScepterCommands {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String name = resolveName(level, villagerId);
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                name
-                        + " was appointed Grand Maester of "
-                        + villageName
-                        + "."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.GRAND_MAESTER_APPOINTED, name, villageName);
 
         return 1;
     }
@@ -663,9 +581,7 @@ public final class RoyalScepterCommands {
         ServerPlayer player = getPlayer(source);
 
         if (player == null) {
-            source.sendFailure(Component.literal(
-                    "Only a player can use this."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
@@ -681,25 +597,19 @@ public final class RoyalScepterCommands {
         }
 
         if (!MCAIntegrationBridge.isMCAGuard(level, villagerId)) {
-            source.sendFailure(Component.literal(
-                    "Only a guard or archer can be named Commander of the Army."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_guard_or_archer_can_be_named_commander_of_the_army"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
 
         if (capital == null) {
-            source.sendFailure(Component.literal(
-                    "That villager is not part of a capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal(
-                    "Only the sovereign or an operator may use the Royal Scepter here."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
@@ -709,9 +619,7 @@ public final class RoyalScepterCommands {
         );
 
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal(
-                    "That villager is not a resident of the capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
@@ -721,9 +629,7 @@ public final class RoyalScepterCommands {
                 villagerId,
                 residents
         )) {
-            source.sendFailure(Component.literal(
-                    "That villager is not eligible to serve as Commander of the Army."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_commander_of_the_army"));
             return 0;
         }
 
@@ -736,9 +642,9 @@ public final class RoyalScepterCommands {
                 );
 
         if (villagerId.equals(previousVillagerCommander)) {
-            source.sendFailure(Component.literal(
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_commander",
                     resolveName(level, villagerId)
-                            + " already holds the office of Commander of the Army."
             ));
             return 0;
         }
@@ -761,31 +667,18 @@ public final class RoyalScepterCommands {
                     previousPlayerCommander
             );
 
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    formerPlayerName
-                            + " was relieved of the office of Commander of the Army of "
-                            + villageName
-                            + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.COMMANDER_ARMY_RELIEVED, formerPlayerName, villageName);
         }
 
         if (previousVillagerCommander != null
                 && !previousVillagerCommander.equals(villagerId)) {
-            String formerVillagerName = resolveName(
+            String formerVillagerName = CapitalChronicleIdentitySnapshot.name(
                     level,
+                    capital,
                     previousVillagerCommander
             );
 
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    formerVillagerName
-                            + " was relieved of the office of Commander of the Army of "
-                            + villageName
-                            + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.COMMANDER_ARMY_RELIEVED, formerVillagerName, villageName);
         }
 
         capital.setCommander(villagerId);
@@ -808,16 +701,9 @@ public final class RoyalScepterCommands {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String name = resolveName(level, villagerId);
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                name
-                        + " was appointed Commander of the Army of "
-                        + villageName
-                        + "."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.COMMANDER_ARMY_APPOINTED, name, villageName);
 
         return 1;
     }
@@ -829,9 +715,7 @@ public final class RoyalScepterCommands {
         ServerPlayer player = getPlayer(source);
 
         if (player == null) {
-            source.sendFailure(Component.literal(
-                    "Only a player can use this."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
@@ -849,16 +733,12 @@ public final class RoyalScepterCommands {
         CapitalRecord capital = resolveCapital(level, villagerId);
 
         if (capital == null) {
-            source.sendFailure(Component.literal(
-                    "That villager is not part of a capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal(
-                    "Only the sovereign or an operator may use the Royal Scepter here."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
@@ -868,9 +748,7 @@ public final class RoyalScepterCommands {
         );
 
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal(
-                    "That villager is not a resident of the capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
@@ -879,9 +757,7 @@ public final class RoyalScepterCommands {
                 capital,
                 villagerId
         )) {
-            source.sendFailure(Component.literal(
-                    "That villager is not eligible to join the royal guard."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_join_the_royal_guard"));
             return 0;
         }
 
@@ -896,9 +772,7 @@ public final class RoyalScepterCommands {
         ServerPlayer player = getPlayer(source);
 
         if (player == null) {
-            source.sendFailure(Component.literal(
-                    "Only a player can use this."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
@@ -914,25 +788,19 @@ public final class RoyalScepterCommands {
         }
 
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal(
-                    "Target is not an MCA villager."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
 
         if (capital == null) {
-            source.sendFailure(Component.literal(
-                    "That villager is not part of a capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal(
-                    "Only the sovereign or an operator may use the Royal Scepter here."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
@@ -942,9 +810,7 @@ public final class RoyalScepterCommands {
         );
 
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal(
-                    "That villager is not a resident of the capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
@@ -953,9 +819,7 @@ public final class RoyalScepterCommands {
                 capital,
                 villagerId
         )) {
-            source.sendFailure(Component.literal(
-                    "That villager already holds a rank that cannot be replaced by a ducal appointment."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_already_holds_a_rank_that_cannot_be_replaced_by_a_ducal"));
             return 0;
         }
 
@@ -979,19 +843,9 @@ public final class RoyalScepterCommands {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String name = resolveName(level, villagerId);
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                name
-                        + " was elevated to the ducal rank in "
-                        + MCAIntegrationBridge.getVillageName(
-                        level,
-                        capital.getVillageId()
-                )
-                        + "."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.DUCAL_ELEVATED, name, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
 
         return 1;
     }
@@ -1003,9 +857,7 @@ public final class RoyalScepterCommands {
         ServerPlayer player = getPlayer(source);
 
         if (player == null) {
-            source.sendFailure(Component.literal(
-                    "Only a player can use this."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
@@ -1017,25 +869,19 @@ public final class RoyalScepterCommands {
         }
 
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal(
-                    "Target is not an MCA villager."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
 
         if (capital == null) {
-            source.sendFailure(Component.literal(
-                    "That villager is not part of a capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal(
-                    "Only the sovereign, authorized Hand, or an operator may use the Royal Scepter here."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_authorized_hand_or_an_operator_may_use_the_royal_sc"));
             return 0;
         }
 
@@ -1045,23 +891,19 @@ public final class RoyalScepterCommands {
         );
 
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal(
-                    "That villager is not a resident of the capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
         if (!CapitalBuildingService.hasPrison(level, capital)) {
-            source.sendFailure(Component.literal(
-                    "A recognized Prison is required before appointing a Master of Laws."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.a_recognized_prison_is_required_before_appointing_a_master_of_laws"));
             return 0;
         }
 
         if (villagerId.equals(capital.getMasterOfLaws())) {
-            source.sendFailure(Component.literal(
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_master_of_laws",
                     resolveName(level, villagerId)
-                            + " already holds the office of Master of Laws."
             ));
             return 0;
         }
@@ -1072,9 +914,7 @@ public final class RoyalScepterCommands {
                 villagerId,
                 residents
         )) {
-            source.sendFailure(Component.literal(
-                    "That villager is not eligible to serve as Master of Laws."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_master_of_laws"));
             return 0;
         }
 
@@ -1084,17 +924,16 @@ public final class RoyalScepterCommands {
                 villagerId,
                 residents
         )) {
-            source.sendFailure(Component.literal(
-                    "The Master of Laws appointment could not be completed."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.the_master_of_laws_appointment_could_not_be_completed"));
             return 0;
         }
 
         String name = resolveName(level, villagerId);
 
         source.sendSuccess(
-                () -> Component.literal(
-                        name + " was appointed Master of Laws."
+                () -> Component.translatable(
+                        "mcacapitals.system.royal_scepter_commands.master_of_laws_appointed",
+                        name
                 ),
                 false
         );
@@ -1109,9 +948,7 @@ public final class RoyalScepterCommands {
         ServerPlayer player = getPlayer(source);
 
         if (player == null) {
-            source.sendFailure(Component.literal(
-                    "Only a player can use this."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
@@ -1123,25 +960,19 @@ public final class RoyalScepterCommands {
         }
 
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal(
-                    "Target is not an MCA villager."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
 
         if (capital == null) {
-            source.sendFailure(Component.literal(
-                    "That villager is not part of a capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal(
-                    "Only the sovereign, authorized Hand, or an operator may use the Royal Scepter here."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_authorized_hand_or_an_operator_may_use_the_royal_sc"));
             return 0;
         }
 
@@ -1151,16 +982,12 @@ public final class RoyalScepterCommands {
         );
 
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal(
-                    "That villager is not a resident of the capital."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
         if (!CapitalBuildingService.hasAmbassadorBuildings(level, capital)) {
-            source.sendFailure(Component.literal(
-                    "A recognized Inn and Storage are required before appointing an Ambassador."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.a_recognized_inn_and_storage_are_required_before_appointing_an_ambassa"));
             return 0;
         }
 
@@ -1169,9 +996,9 @@ public final class RoyalScepterCommands {
                 capital,
                 villagerId
         )) {
-            source.sendFailure(Component.literal(
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_ambassador",
                     resolveName(level, villagerId)
-                            + " already holds the office of Ambassador."
             ));
             return 0;
         }
@@ -1182,9 +1009,7 @@ public final class RoyalScepterCommands {
                 villagerId,
                 residents
         )) {
-            source.sendFailure(Component.literal(
-                    "That villager is not eligible to serve as Ambassador."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_ambassador"));
             return 0;
         }
 
@@ -1194,17 +1019,16 @@ public final class RoyalScepterCommands {
                 villagerId,
                 residents
         )) {
-            source.sendFailure(Component.literal(
-                    "The Ambassador appointment could not be completed."
-            ));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.the_ambassador_appointment_could_not_be_completed"));
             return 0;
         }
 
         String name = resolveName(level, villagerId);
 
         source.sendSuccess(
-                () -> Component.literal(
-                        name + " was appointed Ambassador."
+                () -> Component.translatable(
+                        "mcacapitals.system.royal_scepter_commands.ambassador_appointed",
+                        name
                 ),
                 false
         );

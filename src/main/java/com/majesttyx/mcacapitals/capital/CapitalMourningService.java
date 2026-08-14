@@ -21,7 +21,7 @@ public class CapitalMourningService {
     private CapitalMourningService() {
     }
 
-    public static void startMourning(ServerLevel level, CapitalRecord capital, String reason) {
+    public static void startMourning(ServerLevel level, CapitalRecord capital, String deceasedName) {
         if (level == null || capital == null) {
             return;
         }
@@ -34,13 +34,17 @@ public class CapitalMourningService {
         capital.setMourningEndDay(Math.max(capital.getMourningEndDay(), endDay));
 
         if (!wasActive) {
-            CapitalChronicleService.addEntry(level, capital,
-                    "Mourning was declared in " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
-                            + " for two days. " + reason);
-
             PENDING_MOURNING_APPLICATION_TICKS.put(
                     capital.getCapitalId(),
                     level.getGameTime() + MOURNING_CLOTHING_DELAY_TICKS
+            );
+
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.MOURNING_DECLARED,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    deceasedName
             );
         } else {
             applyMourning(level, capital);
@@ -121,8 +125,12 @@ public class CapitalMourningService {
         capital.setMourningActive(false);
         capital.setMourningEndDay(0L);
 
-        CapitalChronicleService.addEntry(level, capital,
-                "The mourning period in " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + " came to an end.");
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.MOURNING_ENDED,
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+        );
 
         CapitalDataAccess.markDirty(level);
     }

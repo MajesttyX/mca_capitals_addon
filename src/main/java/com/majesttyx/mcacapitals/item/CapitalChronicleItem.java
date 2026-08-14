@@ -48,7 +48,7 @@ public class CapitalChronicleItem extends Item {
 
         CapitalRecord capital = resolveCapital(serverPlayer, heldStack);
         if (capital == null) {
-            serverPlayer.sendSystemMessage(Component.literal("No capital chronicle can be found from here."));
+            serverPlayer.sendSystemMessage(Component.translatable("mcacapitals.chronicle.item.not_found"));
             return InteractionResultHolder.fail(heldStack);
         }
 
@@ -74,8 +74,8 @@ public class CapitalChronicleItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("A written record of royal events, appointments, and succession.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Right-click within a capital to read.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.chronicle.item.tooltip.record").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.chronicle.item.tooltip.use").withStyle(ChatFormatting.GRAY));
     }
 
     private CapitalRecord resolveCapital(ServerPlayer player, ItemStack stack) {
@@ -93,12 +93,7 @@ public class CapitalChronicleItem extends Item {
             }
         }
 
-        CapitalRecord bySovereign = CapitalManager.getCapitalBySovereign(player.getUUID());
-        if (bySovereign != null) {
-            return bySovereign;
-        }
-
-        return CapitalManager.getAllCapitalRecords().stream()
+        CapitalRecord nearbyCapital = CapitalManager.getAllCapitalRecords().stream()
                 .filter(capital -> capital.getVillageId() != null)
                 .filter(capital -> MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()) != null)
                 .min(Comparator.comparingDouble(capital -> {
@@ -119,5 +114,11 @@ public class CapitalChronicleItem extends Item {
                     return distance <= MAX_BIND_DISTANCE_SQR;
                 })
                 .orElse(null);
+
+        if (nearbyCapital != null) {
+            return nearbyCapital;
+        }
+
+        return CapitalManager.getCapitalBySovereign(player.getUUID());
     }
 }

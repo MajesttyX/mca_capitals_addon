@@ -41,9 +41,14 @@ public final class CapitalMaesterService {
                 capital.setGrandMaesterFemale(MCAIntegrationBridge.isFemale(level, newGrandMaester));
 
                 String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-                String name = resolveName(level, newGrandMaester);
-                CapitalChronicleService.addEntry(level, capital,
-                        name + " was appointed Grand Maester of " + villageName + ".");
+                String name = CapitalChronicleIdentitySnapshot.name(level, capital, newGrandMaester);
+                CapitalChronicleService.addEvent(
+                        level,
+                        capital,
+                        CapitalChronicleEventId.GRAND_MAESTER_APPOINTED,
+                        name,
+                        villageName
+                );
                 changed = true;
             }
         }

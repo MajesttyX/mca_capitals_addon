@@ -43,7 +43,7 @@ public final class CapitalLawCommands {
         try {
             player = source.getPlayerOrException();
         } catch (Exception ex) {
-            source.sendFailure(Component.literal("Only a player may make an accusation before the Master of Laws."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_law_commands.only_a_player_may_make_an_accusation_before_the_master_of_laws"));
             return 0;
         }
 
@@ -53,7 +53,7 @@ public final class CapitalLawCommands {
             capitalId = UUID.fromString(rawCapitalId);
             targetId = UUID.fromString(rawTargetId);
         } catch (IllegalArgumentException ex) {
-            source.sendFailure(Component.literal("That accusation carried an invalid seal."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_law_commands.that_accusation_carried_an_invalid_seal"));
             return 0;
         }
 
@@ -65,7 +65,7 @@ public final class CapitalLawCommands {
         try {
             player = source.getPlayerOrException();
         } catch (Exception ex) {
-            source.sendFailure(Component.literal("Only a player may gift a Sealed Purse."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_law_commands.only_a_player_may_gift_a_sealed_purse"));
             return 0;
         }
 
@@ -75,7 +75,7 @@ public final class CapitalLawCommands {
             capitalId = UUID.fromString(rawCapitalId);
             targetId = UUID.fromString(rawTargetId);
         } catch (IllegalArgumentException ex) {
-            source.sendFailure(Component.literal("That Sealed Purse request carried an invalid seal."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_law_commands.that_sealed_purse_request_carried_an_invalid_seal"));
             return 0;
         }
 

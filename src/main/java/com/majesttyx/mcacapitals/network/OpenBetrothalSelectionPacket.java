@@ -3,6 +3,8 @@ package com.majesttyx.mcacapitals.network;
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.client.BetrothalSelectionClient;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -82,7 +84,7 @@ public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
         buffer.writeInt(candidates.size());
         for (Candidate candidate : candidates) {
             buffer.writeUUID(candidate.id);
-            buffer.writeUtf(candidate.name);
+            ComponentSerialization.STREAM_CODEC.encode(buffer, candidate.name);
         }
     }
 
@@ -90,7 +92,10 @@ public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
         int size = buffer.readInt();
         List<Candidate> candidates = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            candidates.add(new Candidate(buffer.readUUID(), buffer.readUtf()));
+            candidates.add(new Candidate(
+                    buffer.readUUID(),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer)
+            ));
         }
         return candidates;
     }
@@ -102,18 +107,18 @@ public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
 
     public static class Candidate {
         private final UUID id;
-        private final String name;
+        private final Component name;
 
-        public Candidate(UUID id, String name) {
+        public Candidate(UUID id, Component name) {
             this.id = id;
-            this.name = name;
+            this.name = name == null ? Component.empty() : name;
         }
 
         public UUID id() {
             return id;
         }
 
-        public String name() {
+        public Component name() {
             return name;
         }
     }

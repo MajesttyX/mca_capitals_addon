@@ -1,6 +1,10 @@
 package com.majesttyx.mcacapitals.client;
 
+import com.majesttyx.mcacapitals.identity.HouseWordsLocalization;
+
+import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.network.SyncVillagerIdentityPacket;
+import net.minecraft.network.chat.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,8 +27,11 @@ public final class VillagerIdentityClientCache {
                 packet.originVillageName(),
                 packet.originSource(),
                 packet.currentSurname(),
+                packet.baseName(),
+                packet.displayTitleId(),
                 packet.displayTitle(),
                 packet.royalGuardOrderLine(),
+                packet.courtOfficeId(),
                 packet.courtOfficeLine(),
                 packet.houseFounded(),
                 packet.houseName(),
@@ -49,19 +56,22 @@ public final class VillagerIdentityClientCache {
 
     public record ClientVillagerIdentity(
             UUID villagerId,
-            String originVillageName,
+            Component originVillageName,
             String originSource,
             String currentSurname,
-            String displayTitle,
-            String royalGuardOrderLine,
-            String courtOfficeLine,
+            String baseName,
+            String displayTitleId,
+            Component displayTitle,
+            Component royalGuardOrderLine,
+            String courtOfficeId,
+            Component courtOfficeLine,
             boolean houseFounded,
             String houseName,
             String houseWords,
             String houseWordsPersonality
     ) {
         public boolean hasOrigin() {
-            return originVillageName != null && !originVillageName.isBlank();
+            return originVillageName != null && !originVillageName.getString().isBlank();
         }
 
         public boolean hasSurname() {
@@ -77,52 +87,102 @@ public final class VillagerIdentityClientCache {
         }
 
         public boolean hasTitle() {
-            return displayTitle != null
-                    && !displayTitle.isBlank()
-                    && !"None".equals(displayTitle)
-                    && !"Commoner".equals(displayTitle);
+            CapitalTitleResolver.ResolvedTitleId titleId = resolvedTitleId();
+            return titleId != CapitalTitleResolver.ResolvedTitleId.NONE
+                    && titleId != CapitalTitleResolver.ResolvedTitleId.COMMONER;
         }
 
         public boolean isRoyalGuardOrder() {
-            return royalGuardOrderLine != null && !royalGuardOrderLine.isBlank();
+            return royalGuardOrderLine != null
+                    && !royalGuardOrderLine.getString().isBlank();
         }
 
         public boolean hasCourtOfficeLine() {
-            return courtOfficeLine != null && !courtOfficeLine.isBlank();
+            return courtOfficeLine != null
+                    && !courtOfficeLine.getString().isBlank();
         }
 
-        public String originDisplayLine() {
-            if (!hasOrigin()) {
-                return "";
+        public CapitalTitleResolver.ResolvedTitleId resolvedTitleId() {
+            if (displayTitleId == null || displayTitleId.isBlank()) {
+                return CapitalTitleResolver.ResolvedTitleId.NONE;
             }
 
+            try {
+                return CapitalTitleResolver.ResolvedTitleId.valueOf(displayTitleId);
+            } catch (IllegalArgumentException ignored) {
+                return CapitalTitleResolver.ResolvedTitleId.NONE;
+            }
+        }
+
+        public CapitalTitleResolver.SecondaryOfficeId resolvedCourtOfficeId() {
+            if (courtOfficeId == null || courtOfficeId.isBlank()) {
+                return CapitalTitleResolver.SecondaryOfficeId.NONE;
+            }
+
+            try {
+                return CapitalTitleResolver.SecondaryOfficeId.valueOf(courtOfficeId);
+            } catch (IllegalArgumentException ignored) {
+                return CapitalTitleResolver.SecondaryOfficeId.NONE;
+            }
+        }
+
+        public Component originDisplayLine() {
+            if (!hasOrigin()) {
+                return Component.empty();
+            }
+
+            Component originName = originVillageName;
             String source = originSource == null ? "" : originSource;
             return switch (source) {
-                case "BIRTH" -> "Born of " + originVillageName;
-                case "INN_SETTLED" -> "Sworn to " + originVillageName;
-                case "DISCOVERED", "LEGACY_BACKFILL" -> "Native of " + originVillageName;
-                case "DEBUG" -> "Origin: " + originVillageName;
-                default -> "Origin: " + originVillageName;
+                case "BIRTH" -> Component.translatable(
+                        "mcacapitals.system.identity.origin.born_of",
+                        originName
+                );
+                case "INN_SETTLED" -> Component.translatable(
+                        "mcacapitals.system.identity.origin.sworn_to",
+                        originName
+                );
+                case "DISCOVERED", "LEGACY_BACKFILL" -> Component.translatable(
+                        "mcacapitals.system.identity.origin.native_of",
+                        originName
+                );
+                case "DEBUG" -> Component.translatable(
+                        "mcacapitals.system.identity.origin.generic",
+                        originName
+                );
+                default -> Component.translatable(
+                        "mcacapitals.system.identity.origin.generic",
+                        originName
+                );
             };
         }
 
-        public String surnameOrHouseDisplayLine() {
+        public Component surnameOrHouseDisplayLine() {
             if (hasFoundedHouse()) {
-                return "House " + houseName;
+                return Component.translatable(
+                        "mcacapitals.system.identity.house",
+                        Component.literal(houseName)
+                );
             }
 
             if (hasSurname()) {
-                return "Surname: " + currentSurname;
+                return Component.translatable(
+                        "mcacapitals.system.identity.surname",
+                        Component.literal(currentSurname)
+                );
             }
 
-            return "";
+            return Component.empty();
         }
 
-        public String houseWordsDisplayLine() {
+        public Component houseWordsDisplayLine() {
             if (!hasHouseWords()) {
-                return "";
+                return Component.empty();
             }
-            return "House Words: " + houseWords;
+            return Component.translatable(
+                    "mcacapitals.system.identity.house_words",
+                    HouseWordsLocalization.displayComponent(houseWords)
+            );
         }
     }
 }

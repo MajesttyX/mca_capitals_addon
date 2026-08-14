@@ -4,6 +4,7 @@ import com.majesttyx.mcacapitals.data.DiplomaticShipment;
 import com.majesttyx.mcacapitals.item.DiplomaticPackageItem;
 import com.majesttyx.mcacapitals.item.ModItems;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -32,7 +33,7 @@ final class CapitalDiplomaticGiftValidation {
                 || ambassadorEntity == null
                 || !ambassadorEntity.isAlive()) {
             return Validation.failure(
-                    "The Ambassador is unavailable."
+                    Component.translatable("mcacapitals.diplomacy.validation.ambassador_unavailable")
             );
         }
 
@@ -40,7 +41,7 @@ final class CapitalDiplomaticGiftValidation {
                 || player.distanceToSqr(ambassadorEntity)
                 > MAX_AMBASSADOR_DISTANCE_SQR) {
             return Validation.failure(
-                    "You must remain near the Ambassador."
+                    Component.translatable("mcacapitals.diplomacy.validation.remain_near_ambassador")
             );
         }
 
@@ -54,7 +55,7 @@ final class CapitalDiplomaticGiftValidation {
         if (sourceCapital == null
                 || sourceCapital.getState() != CapitalState.ACTIVE) {
             return Validation.failure(
-                    "This villager is not the Ambassador of an active capital."
+                    Component.translatable("mcacapitals.diplomacy.validation.not_active_ambassador")
             );
         }
 
@@ -64,7 +65,7 @@ final class CapitalDiplomaticGiftValidation {
                 player.getUUID()
         )) {
             return Validation.failure(
-                    "Only the sovereign or a Lord, Lady, Duke, or Duchess who holds the title in their own right may send diplomatic packages."
+                    Component.translatable("mcacapitals.diplomacy.gift.validation.authority")
             );
         }
 
@@ -73,7 +74,7 @@ final class CapitalDiplomaticGiftValidation {
                 sourceCapital
         )) {
             return Validation.failure(
-                    "The capital requires an operational Inn and Storage building before packages can be sent."
+                    Component.translatable("mcacapitals.diplomacy.gift.validation.requires_inn_storage")
             );
         }
 
@@ -85,7 +86,7 @@ final class CapitalDiplomaticGiftValidation {
                     heldPackage.stack()
             ).isEmpty()) {
                 return Validation.failure(
-                        "Hold a filled Diplomatic Package in either hand."
+                        Component.translatable("mcacapitals.diplomacy.gift.validation.hold_filled_package")
                 );
             }
         }
@@ -199,7 +200,7 @@ final class CapitalDiplomaticGiftValidation {
     record Validation(
             boolean valid,
             CapitalRecord sourceCapital,
-            String failureMessage
+            Component failureMessage
     ) {
 
         static Validation success(
@@ -213,7 +214,7 @@ final class CapitalDiplomaticGiftValidation {
         }
 
         static Validation failure(
-                String message
+                Component message
         ) {
             return new Validation(
                     false,

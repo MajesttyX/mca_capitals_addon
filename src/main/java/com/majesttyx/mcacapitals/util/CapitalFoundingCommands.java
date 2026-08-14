@@ -40,19 +40,21 @@ public class CapitalFoundingCommands {
                                                             UUID capitalId = UUID.fromString(StringArgumentType.getString(ctx, "capitalId"));
                                                             CapitalRecord capital = CapitalManager.getCapital(capitalId);
                                                             if (capital == null) {
-                                                                player.sendSystemMessage(Component.literal("That capital no longer exists."));
+                                                                player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.that_capital_no_longer_exists"));
                                                                 return 0;
                                                             }
 
                                                             if (capital.getSovereign() != null) {
-                                                                player.sendSystemMessage(Component.literal("That capital already has a sovereign."));
+                                                                player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.that_capital_already_has_a_sovereign"));
                                                                 return 0;
                                                             }
 
                                                             int hearts = countCapitalHearts(player, capital);
                                                             if (hearts < CLAIM_HEARTS_REQUIRED) {
-                                                                player.sendSystemMessage(Component.literal(
-                                                                        "You need " + CLAIM_HEARTS_REQUIRED + " total hearts with the people of this capital to claim the throne. Current: " + hearts + "."
+                                                                player.sendSystemMessage(Component.translatable(
+                                                                        "mcacapitals.system.capital_founding_commands.claim_hearts_required",
+                                                                        CLAIM_HEARTS_REQUIRED,
+                                                                        hearts
                                                                 ));
                                                                 return 0;
                                                             }
@@ -65,7 +67,7 @@ public class CapitalFoundingCommands {
                                                             );
 
                                                             consumeMatchingCharters(player, capitalId);
-                                                            player.sendSystemMessage(Component.literal("You have claimed the throne."));
+                                                            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.you_have_claimed_the_throne"));
                                                             return 1;
                                                         })
                                         )
@@ -86,17 +88,17 @@ public class CapitalFoundingCommands {
 
                                                                             CapitalRecord capital = CapitalManager.getCapital(capitalId);
                                                                             if (capital == null) {
-                                                                                player.sendSystemMessage(Component.literal("That capital no longer exists."));
+                                                                                player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.that_capital_no_longer_exists"));
                                                                                 return 0;
                                                                             }
 
                                                                             if (capital.getSovereign() != null) {
-                                                                                player.sendSystemMessage(Component.literal("That capital already has a sovereign."));
+                                                                                player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.that_capital_already_has_a_sovereign"));
                                                                                 return 0;
                                                                             }
 
                                                                             if (!MCAIntegrationBridge.isMCAVillager(player.serverLevel(), villagerId)) {
-                                                                                player.sendSystemMessage(Component.literal("That villager is no longer available."));
+                                                                                player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.that_villager_is_no_longer_available"));
                                                                                 return 0;
                                                                             }
 
@@ -108,7 +110,7 @@ public class CapitalFoundingCommands {
                                                                             );
 
                                                                             consumeMatchingCharters(player, capitalId);
-                                                                            player.sendSystemMessage(Component.literal("The sovereign has been appointed."));
+                                                                            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.the_sovereign_has_been_appointed"));
                                                                             return 1;
                                                                         })
                                                         )
@@ -126,12 +128,12 @@ public class CapitalFoundingCommands {
                                                             UUID capitalId = UUID.fromString(StringArgumentType.getString(ctx, "capitalId"));
                                                             CapitalRecord capital = CapitalManager.getCapital(capitalId);
                                                             if (capital == null) {
-                                                                player.sendSystemMessage(Component.literal("That capital no longer exists."));
+                                                                player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.that_capital_no_longer_exists"));
                                                                 return 0;
                                                             }
 
                                                             if (capital.getSovereign() != null) {
-                                                                player.sendSystemMessage(Component.literal("That capital already has a sovereign."));
+                                                                player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.that_capital_already_has_a_sovereign"));
                                                                 return 0;
                                                             }
 
@@ -140,7 +142,7 @@ public class CapitalFoundingCommands {
                                                             CapitalDataAccess.markDirty(player.serverLevel());
                                                             consumeMatchingCharters(player, capitalId);
 
-                                                            player.sendSystemMessage(Component.literal("The people will remain without a crown."));
+                                                            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_founding_commands.the_people_will_remain_without_a_crown"));
                                                             return 1;
                                                         })
                                         )

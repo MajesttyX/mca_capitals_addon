@@ -146,30 +146,26 @@ public final class CapitalCampaignHornRetreatHandler {
                                 defendingCapital
                         );
 
-        String entry =
-                player.getName().getString()
-                        + " sounded the retreat within "
-                        + defendingName
-                        + ". The occupying force from "
-                        + attackingName
-                        + " withdrew from the capital.";
+        CapitalChronicleService.addEventWithoutHerald(
+                level,
+                attackingCapital,
+                CapitalChronicleEventId.CAMPAIGN_RETREAT_ORDERED,
+                player.getName().getString(),
+                defendingName,
+                attackingName
+        );
 
-        CapitalChronicleService
-                .addEntryWithoutHerald(
-                        attackingCapital,
-                        entry
-                );
-
-        CapitalChronicleService
-                .addEntryWithoutHerald(
-                        defendingCapital,
-                        entry
-                );
+        CapitalChronicleService.addEventWithoutHerald(
+                level,
+                defendingCapital,
+                CapitalChronicleEventId.CAMPAIGN_RETREAT_ORDERED,
+                player.getName().getString(),
+                defendingName,
+                attackingName
+        );
 
         player.sendSystemMessage(
-                Component.literal(
-                        "You sounded the retreat. Your surviving soldiers are returning home."
-                )
+                Component.translatable("mcacapitals.system.campaign.retreat.self")
         );
 
         notifyOtherPlayersInDefendingCapital(
@@ -179,16 +175,14 @@ public final class CapitalCampaignHornRetreatHandler {
                 attackingName
         );
 
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        attackingCapital,
-                        Component.literal(
-                                "The attacking commander sounded the retreat from "
-                                        + defendingName
-                                        + ". The surviving force is returning home."
-                        )
-                );
+        CapitalPlayerNotificationService.notifyPlayersInCapital(
+                level,
+                attackingCapital,
+                Component.translatable(
+                        "mcacapitals.system.campaign.retreat.attacker",
+                        defendingName
+                )
+        );
     }
 
     private static void
@@ -224,10 +218,9 @@ public final class CapitalCampaignHornRetreatHandler {
             }
 
             player.sendSystemMessage(
-                    Component.literal(
-                            "The occupying force from "
-                                    + attackingName
-                                    + " has sounded a retreat."
+                    Component.translatable(
+                            "mcacapitals.system.campaign.retreat.defender",
+                            attackingName
                     )
             );
         }

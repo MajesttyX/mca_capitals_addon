@@ -53,9 +53,7 @@ public final class CapitalDiplomaticResponseCommands {
         }
 
         player.sendSystemMessage(
-                Component.literal(
-                        "Speak to your Ambassador to inspect and answer pending diplomatic packages."
-                )
+                Component.translatable("mcacapitals.system.capital_diplomatic_response_commands.speak_to_your_ambassador_to_inspect_and_answer_pending_diplomatic_pack")
         );
         return 1;
     }
@@ -76,7 +74,7 @@ public final class CapitalDiplomaticResponseCommands {
         try {
             shipmentId = UUID.fromString(rawShipmentId);
         } catch (IllegalArgumentException ignored) {
-            source.sendFailure(Component.literal("That diplomatic package ID is invalid."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_diplomatic_response_commands.that_diplomatic_package_id_is_invalid"));
             return 0;
         }
 
@@ -89,7 +87,7 @@ public final class CapitalDiplomaticResponseCommands {
         try {
             return source.getPlayerOrException();
         } catch (Exception ignored) {
-            source.sendFailure(Component.literal("Only a player may answer diplomatic packages."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_diplomatic_response_commands.only_a_player_may_answer_diplomatic_packages"));
             return null;
         }
     }

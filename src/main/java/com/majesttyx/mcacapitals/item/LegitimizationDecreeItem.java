@@ -16,7 +16,7 @@ public class LegitimizationDecreeItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("Restores or grants dynastic legitimacy to a royal child.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Shift-right-click a valid target.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.legitimization_decree_item.restores_or_grants_dynastic_legitimacy_to_a_royal_child").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.legitimization_decree_item.shift_right_click_a_valid_target").withStyle(ChatFormatting.GRAY));
     }
 }

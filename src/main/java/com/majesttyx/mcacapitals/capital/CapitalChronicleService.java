@@ -4,6 +4,7 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
 import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
@@ -18,66 +19,71 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class CapitalChronicleService {
 
     private static final int CHARS_PER_PAGE = 220;
     private static final int MAX_PAGES = 100;
 
-    private static final Map<UUID, HeraldAnnouncement>
-            LAST_HERALD_ANNOUNCEMENTS = new HashMap<>();
-
-    private static final Pattern DUCAL_APPOINTMENT = Pattern.compile("^(.*) was elevated to the ducal rank in (.*)\\.$");
-    private static final Pattern ROYAL_MARRIAGE = Pattern.compile("^(.*) was married to (.*)\\.$");
-    private static final Pattern CAPITAL_MARRIAGE = Pattern.compile("^(.*) and (.*) were married in (.*)\\.$");
-    private static final Pattern ROYAL_CHILD = Pattern.compile("^A royal child, (.*), was entered into the dynastic record of (.*)\\.$");
-    private static final Pattern HAND_APPOINTMENT = Pattern.compile("^(.*) was appointed (Hand of the (?:Queen|King)) of (.*)\\.$");
-    private static final Pattern GRAND_MAESTER_APPOINTMENT = Pattern.compile("^(.*) was appointed Grand Maester of (.*)\\.$");
-    private static final Pattern HERALD_APPOINTMENT = Pattern.compile("^(.*) was appointed Court Herald of (.*)\\.$");
-    private static final Pattern ROYAL_GUARD_APPOINTMENT = Pattern.compile("^(.*) was named to the royal guard of (.*)\\.$");
-    private static final Pattern COMMANDER_APPOINTMENT = Pattern.compile("^(.*) was appointed Commander of the (Royal Guard|Army) of (.*)\\.$");
-    private static final Pattern VACANCY = Pattern.compile("^The office of (.*) stands vacant in (.*)\\.$");
-    private static final Pattern CAPITAL_CREATION = Pattern.compile("^(.*) rose to capital status\\.$");
-    private static final Pattern ACCLAIMED_SOVEREIGN = Pattern.compile("^(.*) was acclaimed as (King|Queen) of (.*)\\.$");
-    private static final Pattern CLAIMED_THRONE = Pattern.compile("^(.*) claimed the throne as (King|Queen) of (.*)\\.$");
-
-    private static final String[] KNOWN_TITLE_PREFIXES = new String[] {
-            "High Queen",
-            "High King",
-            "Dowager Queen",
-            "Dowager King",
-            "Queen Consort",
-            "King Consort",
-            "Heir Apparent",
-            "Crown Princess",
-            "Crown Prince",
-            "Dowager Princess",
-            "Dowager Prince",
-            "Princess Consort",
-            "Prince Consort",
-            "Hand of the Queen",
-            "Hand of the King",
-            "Grand Maester",
-            "Maester",
-            "Court Herald",
-            "Princess",
-            "Prince",
-            "Lord Commander",
-            "Dowager Duchess",
-            "Dowager Duke",
-            "Duchess",
-            "Duke",
-            "Lady",
-            "Lord",
-            "Dame",
-            "Sir",
-            "Queen",
-            "King"
-    };
+    private static final Map<UUID, HeraldAnnouncement> LAST_HERALD_ANNOUNCEMENTS = new HashMap<>();
 
     private CapitalChronicleService() {
+    }
+
+    public static void addEvent(
+            ServerLevel level,
+            CapitalRecord capital,
+            CapitalChronicleEventId eventId,
+            Object... arguments
+    ) {
+        addEventInternal(level, capital, eventId, true, arguments);
+    }
+
+    public static void addEventWithoutHerald(
+            ServerLevel level,
+            CapitalRecord capital,
+            CapitalChronicleEventId eventId,
+            Object... arguments
+    ) {
+        addEventInternal(level, capital, eventId, false, arguments);
+    }
+
+    public static CapitalChronicleEntry.Argument literal(Object value) {
+        return CapitalChronicleEntry.Argument.literal(value);
+    }
+
+    public static CapitalChronicleEntry.Argument translatable(String translationKey) {
+        return CapitalChronicleEntry.Argument.translatable(translationKey);
+    }
+
+    public static CapitalChronicleEntry.Argument translatableSnapshot(
+            String translationKey,
+            Object... literalArguments
+    ) {
+        return CapitalChronicleEntry.Argument.translatableSnapshot(
+                translationKey,
+                literalArguments
+        );
+    }
+
+    public static CapitalChronicleEntry.Argument itemList(List<ItemStack> stacks) {
+        if (stacks == null || stacks.isEmpty()) {
+            return CapitalChronicleEntry.Argument.itemList("");
+        }
+
+        StringBuilder encoded = new StringBuilder();
+        for (ItemStack stack : stacks) {
+            if (stack == null || stack.isEmpty()) {
+                continue;
+            }
+            if (!encoded.isEmpty()) {
+                encoded.append(';');
+            }
+            encoded.append(BuiltInRegistries.ITEM.getKey(stack.getItem()))
+                    .append('=')
+                    .append(stack.getCount());
+        }
+        return CapitalChronicleEntry.Argument.itemList(encoded.toString());
     }
 
     public static void addEntry(
@@ -85,31 +91,17 @@ public class CapitalChronicleService {
             CapitalRecord capital,
             String entry
     ) {
-        if (level == null
-                || capital == null
-                || entry == null
-                || entry.isBlank()) {
+        if (level == null || capital == null || entry == null || entry.isBlank()) {
             return;
         }
 
         String normalized = entry.trim();
-
-        if (hasChronicleEntry(
-                capital,
-                normalized
-        )) {
+        if (hasRawChronicleEntry(capital, normalized)) {
             return;
         }
 
-        capital.addChronicleEntry(
-                normalized
-        );
-
-        announceThroughHerald(
-                level,
-                capital,
-                normalized
-        );
+        capital.addChronicleEntry(normalized);
+        announceLegacyThroughHerald(level, capital, normalized);
     }
 
     public static void addEntryWithoutHerald(CapitalRecord capital, String entry) {
@@ -118,22 +110,146 @@ public class CapitalChronicleService {
         }
 
         String normalized = entry.trim();
-        if (hasChronicleEntry(capital, normalized)) {
+        if (hasRawChronicleEntry(capital, normalized)) {
             return;
         }
 
         capital.addChronicleEntry(normalized);
     }
 
-    private static boolean hasChronicleEntry(CapitalRecord capital, String normalized) {
+    public static Component renderStoredEntry(String storedEntry) {
+        CapitalChronicleEntry semantic = CapitalChronicleEntry.decode(storedEntry);
+        if (semantic != null) {
+            return semantic.renderWithDay();
+        }
+        return Component.literal(storedEntry == null ? "" : storedEntry);
+    }
+
+    public static CapitalChronicleEntry decodeSemanticEntry(String storedEntry) {
+        return CapitalChronicleEntry.decode(storedEntry);
+    }
+
+    public static boolean hasMarriageEvent(
+            CapitalRecord capital,
+            CapitalChronicleEventId eventId,
+            String firstName,
+            String secondName,
+            String capitalName
+    ) {
+        if (capital == null
+                || (eventId != CapitalChronicleEventId.ROYAL_MARRIAGE
+                && eventId != CapitalChronicleEventId.CAPITAL_MARRIAGE)) {
+            return false;
+        }
+
+        List<CapitalChronicleEntry.Argument> arguments = new ArrayList<>();
+        arguments.add(CapitalChronicleEntry.Argument.literal(firstName));
+        arguments.add(CapitalChronicleEntry.Argument.literal(secondName));
+        if (eventId == CapitalChronicleEventId.CAPITAL_MARRIAGE) {
+            arguments.add(CapitalChronicleEntry.Argument.literal(capitalName));
+        }
+
+        if (hasSemanticChronicleEntry(capital, semanticDedupeKey(eventId, arguments))) {
+            return true;
+        }
+
+        String legacyKey = canonicalMarriage(
+                eventId == CapitalChronicleEventId.ROYAL_MARRIAGE
+                        ? "royal_marriage"
+                        : "capital_marriage",
+                firstName,
+                secondName,
+                eventId == CapitalChronicleEventId.CAPITAL_MARRIAGE ? capitalName : null
+        );
+
+        for (String stored : capital.getChronicleEntries()) {
+            if (stored == null || CapitalChronicleEntry.decode(stored) != null) {
+                continue;
+            }
+            if (legacyKey.equals(canonicalLegacyChronicleEntry(stored))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void addEventInternal(
+            ServerLevel level,
+            CapitalRecord capital,
+            CapitalChronicleEventId eventId,
+            boolean announceHerald,
+            Object... rawArguments
+    ) {
+        if (level == null || capital == null || eventId == null) {
+            return;
+        }
+
+        List<CapitalChronicleEntry.Argument> arguments = normalizeArguments(rawArguments);
+        String dedupeKey = semanticDedupeKey(eventId, arguments);
+        CapitalChronicleEntry entry = new CapitalChronicleEntry(
+                currentDay(level),
+                eventId.type(),
+                eventId.chronicleKey(),
+                announceHerald ? eventId.heraldKey() : "",
+                dedupeKey,
+                arguments
+        );
+
+        if (hasSemanticChronicleEntry(capital, dedupeKey)) {
+            return;
+        }
+
+        capital.addChronicleEntry(entry.encode());
+        if (announceHerald) {
+            announceSemanticThroughHerald(level, capital, entry);
+        }
+    }
+
+    private static List<CapitalChronicleEntry.Argument> normalizeArguments(Object[] rawArguments) {
+        if (rawArguments == null || rawArguments.length == 0) {
+            return List.of();
+        }
+
+        List<CapitalChronicleEntry.Argument> arguments = new ArrayList<>(rawArguments.length);
+        for (Object rawArgument : rawArguments) {
+            if (rawArgument instanceof CapitalChronicleEntry.Argument argument) {
+                arguments.add(argument);
+            } else if (rawArgument instanceof Number number) {
+                arguments.add(CapitalChronicleEntry.Argument.literal(number.toString()));
+            } else if (rawArgument instanceof Boolean value) {
+                arguments.add(CapitalChronicleEntry.Argument.literal(Boolean.toString(value)));
+            } else if (rawArgument == null) {
+                arguments.add(CapitalChronicleEntry.Argument.literal(""));
+            } else {
+                arguments.add(CapitalChronicleEntry.Argument.literal(rawArgument));
+            }
+        }
+        return List.copyOf(arguments);
+    }
+
+    private static boolean hasSemanticChronicleEntry(CapitalRecord capital, String dedupeKey) {
+        if (capital == null || dedupeKey == null || dedupeKey.isBlank()) {
+            return false;
+        }
+
+        for (String stored : capital.getChronicleEntries()) {
+            CapitalChronicleEntry decoded = CapitalChronicleEntry.decode(stored);
+            if (decoded != null && dedupeKey.equals(decoded.dedupeKey())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasRawChronicleEntry(CapitalRecord capital, String normalized) {
         if (capital == null || normalized == null || normalized.isBlank()) {
             return false;
         }
 
-        String canonical = canonicalChronicleEntry(normalized);
-
+        String canonical = canonicalLegacyChronicleEntry(normalized);
         for (String existing : capital.getChronicleEntries()) {
-            if (existing == null) {
+            if (existing == null || CapitalChronicleEntry.decode(existing) != null) {
                 continue;
             }
 
@@ -142,293 +258,191 @@ public class CapitalChronicleService {
                 return true;
             }
 
-            if (canonical != null && canonical.equals(canonicalChronicleEntry(existingNormalized))) {
+            if (canonical != null && canonical.equals(canonicalLegacyChronicleEntry(existingNormalized))) {
                 return true;
             }
         }
-
         return false;
     }
 
-    private static String canonicalChronicleEntry(String entry) {
+    private static String semanticDedupeKey(
+            CapitalChronicleEventId eventId,
+            List<CapitalChronicleEntry.Argument> arguments
+    ) {
+        if ((eventId == CapitalChronicleEventId.ROYAL_MARRIAGE
+                || eventId == CapitalChronicleEventId.CAPITAL_MARRIAGE)
+                && arguments.size() >= 2) {
+            String first = canonicalText(arguments.get(0).value());
+            String second = canonicalText(arguments.get(1).value());
+            String left = first.compareTo(second) <= 0 ? first : second;
+            String right = first.compareTo(second) <= 0 ? second : first;
+            StringBuilder marriage = new StringBuilder(eventId.path())
+                    .append(':')
+                    .append(left)
+                    .append(':')
+                    .append(right);
+            for (int i = 2; i < arguments.size(); i++) {
+                marriage.append(':').append(canonicalText(arguments.get(i).value()));
+            }
+            return marriage.toString();
+        }
+
+        StringBuilder key = new StringBuilder(eventId.path());
+        for (CapitalChronicleEntry.Argument argument : arguments) {
+            key.append(':')
+                    .append(argument.dedupeKindName())
+                    .append(':')
+                    .append(canonicalText(argument.dedupeValue()));
+        }
+        return key.toString();
+    }
+
+    private static String canonicalLegacyChronicleEntry(String entry) {
         if (entry == null || entry.isBlank()) {
             return null;
         }
 
-        String trimmed = entry.trim();
-
-        Matcher royalMarriage = ROYAL_MARRIAGE.matcher(trimmed);
-        if (royalMarriage.matches()) {
-            return canonicalMarriageEntry(
-                    "royal_marriage",
-                    royalMarriage.group(1),
-                    royalMarriage.group(2),
-                    null
-            );
+        String trimmed = stripLegacyDayPrefix(entry.trim());
+        String royalMarker = " was married to ";
+        int royalIndex = trimmed.indexOf(royalMarker);
+        if (royalIndex > 0 && trimmed.endsWith(".")) {
+            String first = trimmed.substring(0, royalIndex);
+            String second = trimmed.substring(royalIndex + royalMarker.length(), trimmed.length() - 1);
+            return canonicalMarriage("royal_marriage", first, second, null);
         }
 
-        Matcher capitalMarriage = CAPITAL_MARRIAGE.matcher(trimmed);
-        if (capitalMarriage.matches()) {
-            return canonicalMarriageEntry(
-                    "capital_marriage",
-                    capitalMarriage.group(1),
-                    capitalMarriage.group(2),
-                    capitalMarriage.group(3)
-            );
+        String capitalMarker = " and ";
+        String marriedMarker = " were married in ";
+        int firstJoin = trimmed.indexOf(capitalMarker);
+        int marriedIndex = trimmed.indexOf(marriedMarker);
+        if (firstJoin > 0 && marriedIndex > firstJoin && trimmed.endsWith(".")) {
+            String first = trimmed.substring(0, firstJoin);
+            String second = trimmed.substring(firstJoin + capitalMarker.length(), marriedIndex);
+            String capital = trimmed.substring(marriedIndex + marriedMarker.length(), trimmed.length() - 1);
+            return canonicalMarriage("capital_marriage", first, second, capital);
         }
 
         return null;
     }
 
-    private static String canonicalMarriageEntry(String prefix, String firstName, String secondName, String villageName) {
-        String first = canonicalPersonName(firstName);
-        String second = canonicalPersonName(secondName);
-
+    private static String canonicalMarriage(String prefix, String firstName, String secondName, String capitalName) {
+        String first = canonicalText(CapitalNameService.normalizeBaseName(firstName));
+        String second = canonicalText(CapitalNameService.normalizeBaseName(secondName));
         String left = first.compareTo(second) <= 0 ? first : second;
         String right = first.compareTo(second) <= 0 ? second : first;
-
-        if (villageName == null || villageName.isBlank()) {
-            return prefix + ":" + left + ":" + right;
+        if (capitalName == null || capitalName.isBlank()) {
+            return prefix + ':' + left + ':' + right;
         }
-
-        return prefix + ":" + left + ":" + right + ":" + canonicalText(villageName);
+        return prefix + ':' + left + ':' + right + ':' + canonicalText(capitalName);
     }
 
-    private static String canonicalPersonName(String name) {
-        if (name == null || name.isBlank()) {
-            return "";
+    private static String stripLegacyDayPrefix(String value) {
+        if (value == null || !value.startsWith("Day ")) {
+            return value;
         }
 
-        String result = name.trim();
-
-        if (result.endsWith(" of the Kingsguard")) {
-            result = result.substring(0, result.length() - " of the Kingsguard".length()).trim();
-        }
-        if (result.endsWith(" of the Queensguard")) {
-            result = result.substring(0, result.length() - " of the Queensguard".length()).trim();
+        int separator = value.indexOf(": ");
+        if (separator <= 4) {
+            return value;
         }
 
-        boolean changed = true;
-        while (changed) {
-            changed = false;
-            for (String title : KNOWN_TITLE_PREFIXES) {
-                String prefix = title + " ";
-                if (result.startsWith(prefix)) {
-                    result = result.substring(prefix.length()).trim();
-                    changed = true;
-                    break;
-                }
+        String day = value.substring(4, separator);
+        for (int i = 0; i < day.length(); i++) {
+            if (!Character.isDigit(day.charAt(i))) {
+                return value;
             }
         }
 
-        return canonicalText(result);
+        return value.substring(separator + 2).trim();
     }
 
     private static String canonicalText(String value) {
         if (value == null) {
             return "";
         }
-
         return value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 
-    private static void announceThroughHerald(ServerLevel level, CapitalRecord capital, String entry) {
-        if (level == null || capital == null || entry == null || entry.isBlank()) {
+    private static void announceSemanticThroughHerald(
+            ServerLevel level,
+            CapitalRecord capital,
+            CapitalChronicleEntry entry
+    ) {
+        if (level == null || capital == null || entry == null || capital.getHerald() == null) {
             return;
         }
 
-        if (capital.getHerald() == null) {
+        Component announcement = entry.renderHerald();
+        if (announcement == null) {
             return;
         }
 
-        String news = toHeraldNews(entry);
-        if (news == null || news.isBlank()) {
+        String signature = entry.heraldKey() + ':' + entry.dedupeKey();
+        if (!reserveHeraldAnnouncement(level, capital, signature)) {
             return;
         }
 
-        UUID capitalId = capital.getCapitalId();
-        String normalizedNews = news.trim();
-        long gameTime = level.getGameTime();
-
-        if (capitalId != null) {
-            HeraldAnnouncement previous =
-                    LAST_HERALD_ANNOUNCEMENTS.get(capitalId);
-
-            if (previous != null
-                    && previous.gameTime() == gameTime
-                    && previous.news().equals(normalizedNews)) {
-                return;
-            }
-
-            LAST_HERALD_ANNOUNCEMENTS.put(
-                    capitalId,
-                    new HeraldAnnouncement(
-                            gameTime,
-                            normalizedNews
-                    )
-            );
-        }
-
-        String speakerName = CapitalHeraldService.resolveHeraldSpeakerName(level, capital);
+        Component speakerName = CapitalHeraldService.resolveHeraldSpeakerName(level, capital);
         CapitalPlayerNotificationService.notifyPlayersInCapital(
                 level,
                 capital,
-                Component.literal(speakerName + ": " + normalizedNews)
+                Component.translatable(
+                        "mcacapitals.herald.spoken",
+                        speakerName,
+                        announcement
+                )
         );
     }
 
-    private record HeraldAnnouncement(
-            long gameTime,
-            String news
+    private static void announceLegacyThroughHerald(
+            ServerLevel level,
+            CapitalRecord capital,
+            String entry
     ) {
+        if (level == null || capital == null || entry == null || entry.isBlank() || capital.getHerald() == null) {
+            return;
+        }
+
+        String signature = "legacy:" + entry.trim();
+        if (!reserveHeraldAnnouncement(level, capital, signature)) {
+            return;
+        }
+
+        Component speakerName = CapitalHeraldService.resolveHeraldSpeakerName(level, capital);
+        CapitalPlayerNotificationService.notifyPlayersInCapital(
+                level,
+                capital,
+                Component.translatable(
+                        "mcacapitals.herald.spoken",
+                        speakerName,
+                        Component.literal(entry.trim())
+                )
+        );
     }
 
-    public static String toHeraldNews(String entry) {
-        if (entry == null || entry.isBlank()) {
-            return "";
+    private static boolean reserveHeraldAnnouncement(
+            ServerLevel level,
+            CapitalRecord capital,
+            String signature
+    ) {
+        UUID capitalId = capital.getCapitalId();
+        if (capitalId == null) {
+            return true;
         }
 
-        String trimmed = entry.trim();
-
-        Matcher ducal = DUCAL_APPOINTMENT.matcher(trimmed);
-        if (ducal.matches()) {
-            return pick(trimmed,
-                    "Let all in " + ducal.group(2) + " know: " + ducal.group(1) + " is raised to ducal rank.",
-                    "By decree of the crown, " + ducal.group(1) + " now holds ducal rank in " + ducal.group(2) + ".",
-                    ducal.group(1) + " has been elevated among the high nobility of " + ducal.group(2) + ".",
-                    "The court proclaims " + ducal.group(1) + " a duke of " + ducal.group(2) + ".",
-                    "A new ducal title is granted in " + ducal.group(2) + ": " + ducal.group(1) + ".");
+        long gameTime = level.getGameTime();
+        HeraldAnnouncement previous = LAST_HERALD_ANNOUNCEMENTS.get(capitalId);
+        if (previous != null
+                && previous.gameTime() == gameTime
+                && previous.signature().equals(signature)) {
+            return false;
         }
 
-        Matcher royalMarriage = ROYAL_MARRIAGE.matcher(trimmed);
-        if (royalMarriage.matches()) {
-            return pick(trimmed,
-                    "Hear this joyous proclamation: " + royalMarriage.group(1) + " is wed to " + royalMarriage.group(2) + ".",
-                    "The court rejoices in the marriage of " + royalMarriage.group(1) + " and " + royalMarriage.group(2) + ".",
-                    royalMarriage.group(1) + " and " + royalMarriage.group(2) + " are joined in royal marriage.",
-                    "Let bells ring for the union of " + royalMarriage.group(1) + " and " + royalMarriage.group(2) + ".",
-                    "A royal marriage is proclaimed: " + royalMarriage.group(1) + " and " + royalMarriage.group(2) + ".");
-        }
-
-        Matcher capitalMarriage = CAPITAL_MARRIAGE.matcher(trimmed);
-        if (capitalMarriage.matches()) {
-            return pick(trimmed,
-                    capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " were wed in " + capitalMarriage.group(3) + ".",
-                    "Joy comes to " + capitalMarriage.group(3) + ": " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " are married.",
-                    "The court records the marriage of " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " in " + capitalMarriage.group(3) + ".",
-                    "Let all in " + capitalMarriage.group(3) + " celebrate the union of " + capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + ".",
-                    capitalMarriage.group(1) + " and " + capitalMarriage.group(2) + " have joined houses in " + capitalMarriage.group(3) + ".");
-        }
-
-        Matcher child = ROYAL_CHILD.matcher(trimmed);
-        if (child.matches()) {
-            return pick(trimmed,
-                    "A royal child is entered into the dynastic record: " + child.group(1) + " of " + child.group(2) + ".",
-                    "The dynasty of " + child.group(2) + " welcomes " + child.group(1) + ".",
-                    "Let the court record the royal child " + child.group(1) + " of " + child.group(2) + ".",
-                    child.group(1) + " is recognized in the royal line of " + child.group(2) + ".",
-                    "The bloodline of " + child.group(2) + " is strengthened by " + child.group(1) + ".");
-        }
-
-        Matcher hand = HAND_APPOINTMENT.matcher(trimmed);
-        if (hand.matches()) {
-            return pick(trimmed,
-                    hand.group(1) + " is appointed " + hand.group(2) + " of " + hand.group(3) + ".",
-                    "The crown names " + hand.group(1) + " as " + hand.group(2) + ".",
-                    "Let all know: " + hand.group(1) + " now serves as " + hand.group(2) + " of " + hand.group(3) + ".",
-                    hand.group(1) + " takes up the office of " + hand.group(2) + ".",
-                    "The court confirms " + hand.group(1) + " as " + hand.group(2) + " of " + hand.group(3) + ".");
-        }
-
-        Matcher maester = GRAND_MAESTER_APPOINTMENT.matcher(trimmed);
-        if (maester.matches()) {
-            return pick(trimmed,
-                    maester.group(1) + " is appointed Grand Maester of " + maester.group(2) + ".",
-                    "The court names " + maester.group(1) + " Grand Maester of " + maester.group(2) + ".",
-                    "Wisdom is called to court: " + maester.group(1) + " becomes Grand Maester.",
-                    "Let all know that " + maester.group(1) + " now serves as Grand Maester of " + maester.group(2) + ".",
-                    maester.group(1) + " takes up the chain and duties of Grand Maester in " + maester.group(2) + ".");
-        }
-
-        Matcher herald = HERALD_APPOINTMENT.matcher(trimmed);
-        if (herald.matches()) {
-            return pick(trimmed,
-                    herald.group(1) + " is appointed Court Herald of " + herald.group(2) + ".",
-                    "Let all know: " + herald.group(1) + " will speak the court's proclamations.",
-                    "The court names " + herald.group(1) + " as Herald of " + herald.group(2) + ".",
-                    herald.group(1) + " now bears the voice of the court.",
-                    "Proclamations of " + herald.group(2) + " shall be carried by " + herald.group(1) + ".");
-        }
-
-        Matcher guard = ROYAL_GUARD_APPOINTMENT.matcher(trimmed);
-        if (guard.matches()) {
-            return pick(trimmed,
-                    guard.group(1) + " is named to the royal guard of " + guard.group(2) + ".",
-                    "The crown's shield grows stronger: " + guard.group(1) + " joins the royal guard.",
-                    "Let all know: " + guard.group(1) + " now stands among the royal guard of " + guard.group(2) + ".",
-                    guard.group(1) + " takes the oath of the royal guard.",
-                    "The court names " + guard.group(1) + " to guard the crown of " + guard.group(2) + ".");
-        }
-
-        Matcher commander = COMMANDER_APPOINTMENT.matcher(trimmed);
-        if (commander.matches()) {
-            return pick(trimmed,
-                    commander.group(1) + " is appointed Commander of the " + commander.group(2) + " of " + commander.group(3) + ".",
-                    "The crown names " + commander.group(1) + " to command the " + commander.group(2) + ".",
-                    "Let all know: " + commander.group(1) + " now commands the " + commander.group(2) + " of " + commander.group(3) + ".",
-                    commander.group(1) + " takes command in service of " + commander.group(3) + ".",
-                    "The court proclaims " + commander.group(1) + " Commander of the " + commander.group(2) + " of " + commander.group(3) + ".");
-        }
-
-        Matcher vacancy = VACANCY.matcher(trimmed);
-        if (vacancy.matches()) {
-            return pick(trimmed,
-                    "Let all in " + vacancy.group(2) + " know: the office of " + vacancy.group(1) + " stands vacant.",
-                    "The court declares the office of " + vacancy.group(1) + " vacant in " + vacancy.group(2) + ".",
-                    "Until further decree, no holder stands in the office of " + vacancy.group(1) + " in " + vacancy.group(2) + ".",
-                    "The office of " + vacancy.group(1) + " now lies vacant in " + vacancy.group(2) + ".",
-                    "No appointment currently fills the office of " + vacancy.group(1) + " in " + vacancy.group(2) + ".");
-        }
-
-        Matcher creation = CAPITAL_CREATION.matcher(trimmed);
-        if (creation.matches()) {
-            return pick(trimmed,
-                    creation.group(1) + " has risen to capital status.",
-                    "Let all know: " + creation.group(1) + " now stands as a capital.",
-                    "By proclamation of the court, " + creation.group(1) + " is raised to capital standing.",
-                    creation.group(1) + " is this day declared a capital.",
-                    "The village of " + creation.group(1) + " now holds capital status.");
-        }
-
-        Matcher acclaimed = ACCLAIMED_SOVEREIGN.matcher(trimmed);
-        if (acclaimed.matches()) {
-            return pick(trimmed,
-                    "Let all in " + acclaimed.group(3) + " know: " + acclaimed.group(1) + " is acclaimed as " + acclaimed.group(2) + ".",
-                    "By proclamation of the court, " + acclaimed.group(1) + " has been hailed as " + acclaimed.group(2) + " of " + acclaimed.group(3) + ".",
-                    acclaimed.group(1) + " is this day acclaimed " + acclaimed.group(2) + " of " + acclaimed.group(3) + ".",
-                    "The crown of " + acclaimed.group(3) + " now rests upon " + acclaimed.group(1) + ", acclaimed as " + acclaimed.group(2) + ".",
-                    acclaimed.group(1) + " now holds the crown of " + acclaimed.group(3) + " as " + acclaimed.group(2) + ".");
-        }
-
-        Matcher claimed = CLAIMED_THRONE.matcher(trimmed);
-        if (claimed.matches()) {
-            return pick(trimmed,
-                    "Let all in " + claimed.group(3) + " know: " + claimed.group(1) + " now reigns as " + claimed.group(2) + ".",
-                    "By bold claim and sovereign right, " + claimed.group(1) + " takes the throne as " + claimed.group(2) + " of " + claimed.group(3) + ".",
-                    "The throne of " + claimed.group(3) + " is now held by " + claimed.group(1) + ", who claims it as " + claimed.group(2) + ".",
-                    claimed.group(1) + " has taken the throne of " + claimed.group(3) + " as " + claimed.group(2) + ".",
-                    claimed.group(1) + " now sits the throne of " + claimed.group(3) + " as " + claimed.group(2) + ".");
-        }
-
-        return trimmed;
-    }
-
-    private static String pick(String seed, String... options) {
-        if (options == null || options.length == 0) {
-            return seed;
-        }
-        int index = Math.floorMod(seed.hashCode(), options.length);
-        return options[index];
+        LAST_HERALD_ANNOUNCEMENTS.put(
+                capitalId,
+                new HeraldAnnouncement(gameTime, signature)
+        );
+        return true;
     }
 
     public static void bindChronicleItem(ServerLevel level, CapitalRecord capital, ItemStack stack) {
@@ -436,21 +450,19 @@ public class CapitalChronicleService {
             return;
         }
 
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        if (villageName == null || villageName.isBlank()) {
-            villageName = "Unknown Capital";
-        }
+        String capitalName = resolveChronicleCapitalName(level, capital);
+        Component capitalNameComponent = chronicleCapitalNameComponent(capitalName);
 
-        String resolvedVillageName = villageName;
         ModItemStackData.updateCustomData(stack, tag -> {
             tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
             tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId() == null ? -1 : capital.getVillageId());
-            tag.putString(ModDataKeys.VILLAGE_NAME, resolvedVillageName);
+            tag.putString(ModDataKeys.VILLAGE_NAME, capitalName);
         });
         stack.set(
                 DataComponents.CUSTOM_NAME,
-                Component.literal(
-                        "Chronicle of " + resolvedVillageName
+                Component.translatable(
+                        "mcacapitals.chronicle.item.bound_name",
+                        capitalNameComponent
                 )
         );
     }
@@ -460,34 +472,32 @@ public class CapitalChronicleService {
             return;
         }
 
-        List<String> pages = createPages(level, capital);
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        String title = "Chronicle of " + villageName;
-        String author = "The Royal Chancery";
+        List<Component> pages = createPages(level, capital);
+        String capitalName = resolveChronicleCapitalName(level, capital);
 
         List<Filterable<Component>> writtenPages = new ArrayList<>();
         ListTag pageList = new ListTag();
         int count = 0;
-        for (String page : pages) {
+        for (Component page : pages) {
             if (count >= MAX_PAGES) {
                 break;
             }
-            writtenPages.add(Filterable.passThrough(Component.literal(page)));
-            pageList.add(StringTag.valueOf(page));
+            writtenPages.add(Filterable.passThrough(page));
+            pageList.add(StringTag.valueOf(Component.Serializer.toJson(page, level.registryAccess())));
             count++;
         }
 
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
-                Filterable.passThrough(title),
-                author,
+                Filterable.passThrough(capitalName),
+                "",
                 0,
                 writtenPages,
                 true
         ));
 
         ModItemStackData.updateCustomData(stack, tag -> {
-            tag.putString(ModDataKeys.BOOK_TITLE, title);
-            tag.putString(ModDataKeys.BOOK_AUTHOR, author);
+            tag.putString(ModDataKeys.BOOK_TITLE, "mcacapitals.chronicle.book.title");
+            tag.putString(ModDataKeys.BOOK_AUTHOR, "mcacapitals.chronicle.book.author");
             tag.putBoolean(ModDataKeys.BOOK_RESOLVED, true);
             tag.putInt(ModDataKeys.BOOK_GENERATION, 0);
             tag.put(ModDataKeys.BOOK_PAGES, pageList);
@@ -496,30 +506,65 @@ public class CapitalChronicleService {
         bindChronicleItem(level, capital, stack);
     }
 
-    private static List<String> createPages(ServerLevel level, CapitalRecord capital) {
-        List<String> pages = new ArrayList<>();
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+    private static List<Component> createPages(ServerLevel level, CapitalRecord capital) {
+        List<Component> pages = new ArrayList<>();
+        Component capitalName = chronicleCapitalNameComponent(resolveChronicleCapitalName(level, capital));
 
-        pages.add("Chronicle of " + villageName + "\n\nA record of the crown, the court, and the great events of the capital.");
+        pages.add(Component.translatable(
+                "mcacapitals.chronicle.book.introduction",
+                capitalName
+        ));
 
-        StringBuilder current = new StringBuilder();
-        for (String entry : capital.getChronicleEntries()) {
-            String line = entry + "\n\n";
-            if (current.length() + line.length() > CHARS_PER_PAGE) {
-                pages.add(current.toString());
-                current = new StringBuilder();
+        Component current = Component.empty();
+        int currentLength = 0;
+        for (String storedEntry : capital.getChronicleEntries()) {
+            Component line = renderStoredEntry(storedEntry);
+            int lineLength = line.getString().length() + 2;
+            if (currentLength > 0 && currentLength + lineLength > CHARS_PER_PAGE) {
+                pages.add(current);
+                current = Component.empty();
+                currentLength = 0;
             }
-            current.append(line);
+
+            if (currentLength > 0) {
+                current = current.copy().append("\n\n");
+            }
+            current = current.copy().append(line);
+            currentLength += lineLength;
         }
 
-        if (!current.isEmpty()) {
-            pages.add(current.toString());
-        }
-
-        if (pages.isEmpty()) {
-            pages.add("No entries have yet been recorded.");
+        if (currentLength > 0) {
+            pages.add(current);
         }
 
         return pages;
+    }
+
+    private static String resolveChronicleCapitalName(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null) {
+            return "";
+        }
+
+        String capitalName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        if (capitalName == null
+                || capitalName.isBlank()
+                || "Unknown Village".equals(capitalName)
+                || "Unknown Capital".equals(capitalName)) {
+            return "";
+        }
+        return capitalName;
+    }
+
+    private static Component chronicleCapitalNameComponent(String capitalName) {
+        return capitalName == null || capitalName.isBlank()
+                ? Component.translatable("mcacapitals.chronicle.unknown_capital")
+                : Component.literal(capitalName);
+    }
+
+    private static long currentDay(ServerLevel level) {
+        return Math.max(1L, level.getDayTime() / 24000L + 1L);
+    }
+
+    private record HeraldAnnouncement(long gameTime, String signature) {
     }
 }

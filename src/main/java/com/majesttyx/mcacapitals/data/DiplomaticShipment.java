@@ -136,7 +136,7 @@ public final class DiplomaticShipment {
         this.availableAt = Math.max(this.createdAt, availableAt);
         this.relationshipDelta = Math.max(-15, Math.min(10, relationshipDelta));
         this.appraisal = appraisal == null || appraisal.isBlank()
-                ? "Trivial or confusing"
+                ? "trivial_or_confusing"
                 : appraisal;
         this.status = status == null
                 ? DiplomaticShipmentStatus.DISPATCHED

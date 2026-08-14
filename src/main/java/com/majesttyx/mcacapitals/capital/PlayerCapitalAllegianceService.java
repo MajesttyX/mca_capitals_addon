@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
 import com.majesttyx.mcacapitals.data.PlayerCapitalAllegianceDataAccess;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -49,12 +50,20 @@ public final class PlayerCapitalAllegianceService {
             CapitalRecord target
     ) {
         if (player == null || target == null || target.getCapitalId() == null) {
-            return DeclarationResult.failure("That Capital cannot receive your declaration.");
+            return DeclarationResult.failure(
+                    Component.translatable(
+                            "mcacapitals.system.declaration.invalid_capital"
+                    )
+            );
         }
 
         ServerLevel level = player.serverLevel();
         if (target.getState() != CapitalState.ACTIVE) {
-            return DeclarationResult.failure("Only an established Capital may receive your declaration.");
+            return DeclarationResult.failure(
+                    Component.translatable(
+                            "mcacapitals.system.declaration.inactive_capital"
+                    )
+            );
         }
 
         UUID playerId = player.getUUID();
@@ -63,16 +72,19 @@ public final class PlayerCapitalAllegianceService {
                 && sovereignCapitals.stream().noneMatch(capital ->
                 target.getCapitalId().equals(capital.getCapitalId()))) {
             return DeclarationResult.failure(
-                    "A sovereign may declare only for a Capital under their own Crown."
+                    Component.translatable(
+                            "mcacapitals.system.declaration.sovereign_other_crown"
+                    )
             );
         }
 
         UUID currentId = getDeclaredCapitalId(level, playerId);
         if (target.getCapitalId().equals(currentId)) {
             return DeclarationResult.failure(
-                    "You are already declared for "
-                            + CapitalDiplomaticAgreementText.capitalName(level, target)
-                            + "."
+                    Component.translatable(
+                            "mcacapitals.system.declaration.already_declared",
+                            CapitalDiplomaticAgreementText.capitalName(level, target)
+                    )
             );
         }
 
@@ -86,10 +98,12 @@ public final class PlayerCapitalAllegianceService {
             if (currentDay < availableDay) {
                 long remaining = availableDay - currentDay;
                 return DeclarationResult.failure(
-                        "You must wait "
-                                + remaining
-                                + (remaining == 1L ? " Minecraft day" : " Minecraft days")
-                                + " before changing your declared Capital."
+                        Component.translatable(
+                                remaining == 1L
+                                        ? "mcacapitals.system.declaration.cooldown.one"
+                                        : "mcacapitals.system.declaration.cooldown.many",
+                                remaining
+                        )
                 );
             }
         }
@@ -102,9 +116,10 @@ public final class PlayerCapitalAllegianceService {
         );
 
         return DeclarationResult.success(
-                "You are now declared for "
-                        + CapitalDiplomaticAgreementText.capitalName(level, target)
-                        + "."
+                Component.translatable(
+                        "mcacapitals.system.declaration.success",
+                        CapitalDiplomaticAgreementText.capitalName(level, target)
+                )
         );
     }
 
@@ -174,12 +189,12 @@ public final class PlayerCapitalAllegianceService {
         return result;
     }
 
-    public record DeclarationResult(boolean successful, String message) {
-        private static DeclarationResult success(String message) {
+    public record DeclarationResult(boolean successful, Component message) {
+        private static DeclarationResult success(Component message) {
             return new DeclarationResult(true, message);
         }
 
-        private static DeclarationResult failure(String message) {
+        private static DeclarationResult failure(Component message) {
             return new DeclarationResult(false, message);
         }
     }

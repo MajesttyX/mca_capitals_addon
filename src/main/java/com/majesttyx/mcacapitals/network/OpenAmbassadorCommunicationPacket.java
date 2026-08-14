@@ -3,6 +3,8 @@ package com.majesttyx.mcacapitals.network;
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.client.AmbassadorCommunicationClient;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -26,18 +28,18 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
             );
 
     private final Mode mode;
-    private final String title;
-    private final String subtitle;
-    private final String message;
+    private final Component title;
+    private final Component subtitle;
+    private final Component message;
     private final String backCommand;
     private final List<Entry> entries;
     private final List<Action> actions;
 
     public OpenAmbassadorCommunicationPacket(
             Mode mode,
-            String title,
-            String subtitle,
-            String message,
+            Component title,
+            Component subtitle,
+            Component message,
             String backCommand,
             List<Entry> entries,
             List<Action> actions
@@ -55,15 +57,15 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
         return mode;
     }
 
-    public String title() {
+    public Component title() {
         return title;
     }
 
-    public String subtitle() {
+    public Component subtitle() {
         return subtitle;
     }
 
-    public String message() {
+    public Component message() {
         return message;
     }
 
@@ -81,27 +83,27 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
 
     private void encode(RegistryFriendlyByteBuf buffer) {
         buffer.writeVarInt(mode.ordinal());
-        buffer.writeUtf(title);
-        buffer.writeUtf(subtitle);
-        buffer.writeUtf(message);
+        ComponentSerialization.STREAM_CODEC.encode(buffer, title);
+        ComponentSerialization.STREAM_CODEC.encode(buffer, subtitle);
+        ComponentSerialization.STREAM_CODEC.encode(buffer, message);
         buffer.writeUtf(backCommand);
 
         buffer.writeVarInt(entries.size());
         for (Entry entry : entries) {
-            buffer.writeUtf(entry.heading());
-            buffer.writeUtf(entry.lineOne());
-            buffer.writeUtf(entry.lineTwo());
-            buffer.writeUtf(entry.lineThree());
-            buffer.writeUtf(entry.buttonLabel());
+            ComponentSerialization.STREAM_CODEC.encode(buffer, entry.heading());
+            ComponentSerialization.STREAM_CODEC.encode(buffer, entry.lineOne());
+            ComponentSerialization.STREAM_CODEC.encode(buffer, entry.lineTwo());
+            ComponentSerialization.STREAM_CODEC.encode(buffer, entry.lineThree());
+            ComponentSerialization.STREAM_CODEC.encode(buffer, entry.buttonLabel());
             buffer.writeUtf(entry.command());
             buffer.writeBoolean(entry.enabled());
-            buffer.writeUtf(entry.disabledReason());
+            ComponentSerialization.STREAM_CODEC.encode(buffer, entry.disabledReason());
         }
 
         buffer.writeVarInt(actions.size());
         for (Action action : actions) {
-            buffer.writeUtf(action.label());
-            buffer.writeUtf(action.description());
+            ComponentSerialization.STREAM_CODEC.encode(buffer, action.label());
+            ComponentSerialization.STREAM_CODEC.encode(buffer, action.description());
             buffer.writeUtf(action.command());
             buffer.writeBoolean(action.enabled());
         }
@@ -117,9 +119,9 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
                 ? values[modeIndex]
                 : Mode.MESSAGE;
 
-        String title = buffer.readUtf();
-        String subtitle = buffer.readUtf();
-        String message = buffer.readUtf();
+        Component title = ComponentSerialization.STREAM_CODEC.decode(buffer);
+        Component subtitle = ComponentSerialization.STREAM_CODEC.decode(buffer);
+        Component message = ComponentSerialization.STREAM_CODEC.decode(buffer);
         String backCommand = buffer.readUtf();
 
         int entryCount = buffer.readVarInt();
@@ -127,14 +129,14 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
 
         for (int index = 0; index < entryCount; index++) {
             entries.add(new Entry(
-                    buffer.readUtf(),
-                    buffer.readUtf(),
-                    buffer.readUtf(),
-                    buffer.readUtf(),
-                    buffer.readUtf(),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer),
                     buffer.readUtf(),
                     buffer.readBoolean(),
-                    buffer.readUtf()
+                    ComponentSerialization.STREAM_CODEC.decode(buffer)
             ));
         }
 
@@ -143,8 +145,8 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
 
         for (int index = 0; index < actionCount; index++) {
             actions.add(new Action(
-                    buffer.readUtf(),
-                    buffer.readUtf(),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer),
                     buffer.readUtf(),
                     buffer.readBoolean()
             ));
@@ -177,6 +179,10 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
         return value == null ? "" : value;
     }
 
+    private static Component safe(Component value) {
+        return value == null ? Component.empty() : value;
+    }
+
     public enum Mode {
         FOREIGN_AFFAIRS,
         GIFT_DESTINATIONS,
@@ -189,14 +195,14 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
     }
 
     public record Entry(
-            String heading,
-            String lineOne,
-            String lineTwo,
-            String lineThree,
-            String buttonLabel,
+            Component heading,
+            Component lineOne,
+            Component lineTwo,
+            Component lineThree,
+            Component buttonLabel,
             String command,
             boolean enabled,
-            String disabledReason
+            Component disabledReason
     ) {
         public Entry {
             heading = safe(heading);
@@ -210,8 +216,8 @@ public final class OpenAmbassadorCommunicationPacket implements CustomPacketPayl
     }
 
     public record Action(
-            String label,
-            String description,
+            Component label,
+            Component description,
             String command,
             boolean enabled
     ) {

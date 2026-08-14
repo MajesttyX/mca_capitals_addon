@@ -1,5 +1,8 @@
 package com.majesttyx.mcacapitals.item;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
@@ -53,7 +56,7 @@ public class BetrothalDecreeHandler {
         }
 
         if (actualHeld.getCount() < 2) {
-            player.sendSystemMessage(Component.literal("You need two Betrothal Decrees to arrange this match."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.betrothal_decree_handler.you_need_two_betrothal_decrees_to_arrange_this_match"));
             return true;
         }
 
@@ -64,11 +67,16 @@ public class BetrothalDecreeHandler {
             Entity partner = MCAIntegrationBridge.getEntityByUuid(level, partnerId);
 
             if (partner != null && partner.isAlive() && !partner.isRemoved()) {
-                player.sendSystemMessage(Component.literal(
-                        target.getName().getString() + " is already betrothed to " + partner.getName().getString() + "."
+                player.sendSystemMessage(Component.translatable(
+                        "mcacapitals.system.betrothal_decree_handler.already_betrothed_to",
+                        target.getName(),
+                        partner.getName()
                 ));
             } else {
-                player.sendSystemMessage(Component.literal(target.getName().getString() + " is already betrothed elsewhere."));
+                player.sendSystemMessage(Component.translatable(
+                        "mcacapitals.system.betrothal_decree_handler.already_betrothed_elsewhere",
+                        target.getName()
+                ));
             }
             return true;
         }
@@ -86,14 +94,14 @@ public class BetrothalDecreeHandler {
 
         nearbyVillagers.sort(Comparator.comparingDouble(target::distanceToSqr));
 
-        String lastFailure = null;
+        Component lastFailure = null;
 
         for (Entity candidate : nearbyVillagers) {
             MCARelationshipBridge.BetrothalResult validation =
                     MCARelationshipBridge.validatePendingVillagerBetrothal(level, target, candidate);
 
             if (!validation.success()) {
-                if (validation.message() != null && !validation.message().isBlank()) {
+                if (validation.message() != null && !validation.message().getString().isBlank()) {
                     lastFailure = validation.message();
                 }
                 continue;
@@ -105,8 +113,10 @@ public class BetrothalDecreeHandler {
                 actualHeld.shrink(2);
             }
 
-            player.sendSystemMessage(Component.literal(
-                    target.getName().getString() + " is now betrothed to " + candidate.getName().getString() + "."
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.system.betrothal_decree_handler.now_betrothed_to",
+                    target.getName(),
+                    candidate.getName()
             ));
 
             level.broadcastEntityEvent(target, (byte) 12);
@@ -114,11 +124,13 @@ public class BetrothalDecreeHandler {
             return true;
         }
 
-        if (lastFailure == null || lastFailure.isBlank()) {
-            lastFailure = "No suitable nearby MCA villager could be found for this betrothal decree.";
+        if (lastFailure == null || lastFailure.getString().isBlank()) {
+            lastFailure = Component.translatable(
+                    "mcacapitals.system.betrothal_decree_handler.no_suitable_nearby_villager"
+            );
         }
 
-        player.sendSystemMessage(Component.literal(lastFailure));
+        player.sendSystemMessage(lastFailure);
         return true;
     }
 
@@ -287,11 +299,13 @@ public class BetrothalDecreeHandler {
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                firstVillager.getName().getString() + " and " + secondVillager.getName().getString()
-                        + " were married in " + villageName + "."
+                CapitalChronicleEventId.CAPITAL_MARRIAGE,
+                CapitalChronicleIdentitySnapshot.name(level, capital, firstVillager.getUUID()),
+                CapitalChronicleIdentitySnapshot.name(level, capital, secondVillager.getUUID()),
+                villageName
         );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());

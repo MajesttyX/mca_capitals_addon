@@ -3,6 +3,8 @@ package com.majesttyx.mcacapitals.network;
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.client.SealedPurseCaseSelectionClient;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -50,7 +52,7 @@ public class OpenSealedPurseCaseSelectionPacket implements CustomPacketPayload {
         for (CaseEntry caseEntry : cases) {
             buffer.writeUUID(caseEntry.id());
             buffer.writeUtf(caseEntry.name());
-            buffer.writeUtf(caseEntry.status());
+            ComponentSerialization.STREAM_CODEC.encode(buffer, caseEntry.status());
         }
     }
 
@@ -61,7 +63,11 @@ public class OpenSealedPurseCaseSelectionPacket implements CustomPacketPayload {
 
         List<CaseEntry> cases = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            cases.add(new CaseEntry(buffer.readUUID(), buffer.readUtf(), buffer.readUtf()));
+            cases.add(new CaseEntry(
+                    buffer.readUUID(),
+                    buffer.readUtf(),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer)
+            ));
         }
 
         return new OpenSealedPurseCaseSelectionPacket(capitalId, villageName, cases);
@@ -76,6 +82,6 @@ public class OpenSealedPurseCaseSelectionPacket implements CustomPacketPayload {
         return TYPE;
     }
 
-    public record CaseEntry(UUID id, String name, String status) {
+    public record CaseEntry(UUID id, String name, Component status) {
     }
 }

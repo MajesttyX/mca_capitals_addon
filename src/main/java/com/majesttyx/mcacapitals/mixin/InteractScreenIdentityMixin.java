@@ -59,19 +59,19 @@ public abstract class InteractScreenIdentityMixin {
 
         List<Component> bottomUpBlocks = new ArrayList<>();
 
-        String wordsLine = identity.houseWordsDisplayLine();
-        if (!wordsLine.isBlank()) {
-            bottomUpBlocks.add(Component.literal(wordsLine));
+        Component wordsLine = identity.houseWordsDisplayLine();
+        if (!wordsLine.getString().isBlank()) {
+            bottomUpBlocks.add(wordsLine);
         }
 
-        String surnameOrHouseLine = identity.surnameOrHouseDisplayLine();
-        if (!surnameOrHouseLine.isBlank()) {
-            bottomUpBlocks.add(Component.literal(surnameOrHouseLine));
+        Component surnameOrHouseLine = identity.surnameOrHouseDisplayLine();
+        if (!surnameOrHouseLine.getString().isBlank()) {
+            bottomUpBlocks.add(surnameOrHouseLine);
         }
 
-        String originLine = identity.originDisplayLine();
-        if (!originLine.isBlank()) {
-            bottomUpBlocks.add(Component.literal(originLine));
+        Component originLine = identity.originDisplayLine();
+        if (!originLine.getString().isBlank()) {
+            bottomUpBlocks.add(originLine);
         }
 
         if (bottomUpBlocks.isEmpty()) {

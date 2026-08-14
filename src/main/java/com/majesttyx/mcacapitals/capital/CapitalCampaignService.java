@@ -56,11 +56,7 @@ public final class CapitalCampaignService {
                         );
 
         if (!audience.valid()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            audience.failureMessage()
-                    )
-            );
+            player.sendSystemMessage(audience.failureMessage());
 
             return 0;
         }
@@ -76,7 +72,7 @@ public final class CapitalCampaignService {
                         defendingCapitalId
                 );
 
-        String targetFailure =
+        Component targetFailure =
                 CapitalDiplomaticAgreementValidation
                         .validateTarget(
                                 attackingCapital,
@@ -84,9 +80,7 @@ public final class CapitalCampaignService {
                         );
 
         if (targetFailure != null) {
-            player.sendSystemMessage(
-                    Component.literal(targetFailure)
-            );
+            player.sendSystemMessage(targetFailure);
 
             return 0;
         }
@@ -101,11 +95,7 @@ public final class CapitalCampaignService {
                 );
 
         if (!result.successful()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            result.failureMessage()
-                    )
-            );
+            player.sendSystemMessage(result.failureMessage());
 
             return 0;
         }
@@ -156,7 +146,7 @@ public final class CapitalCampaignService {
             UUID initiatingPlayerId,
             CapitalWarGoal warGoal
     ) {
-        String recoveryFailure = CapitalWarPlanningService
+        Component recoveryFailure = CapitalWarPlanningService
                 .validateRecovery(level, attackingCapital);
         if (recoveryFailure != null) {
             return CampaignCreationResult.failure(recoveryFailure);
@@ -199,7 +189,7 @@ public final class CapitalCampaignService {
                 campaign
         )) {
             return CampaignCreationResult.failure(
-                    "The attack could not be reserved because one of its capitals or guards is already committed elsewhere."
+                    Component.translatable("mcacapitals.war.validation.reservation_failed")
             );
         }
 
@@ -215,36 +205,27 @@ public final class CapitalCampaignService {
                         defendingCapital.getVillageId()
                 );
 
-        if (attackingName == null
-                || attackingName.isBlank()) {
-            attackingName =
-                    "The attacking capital";
-        }
+        Object attackingChronicleName = attackingName == null || attackingName.isBlank()
+                ? CapitalChronicleService.translatable("mcacapitals.chronicle.fallback.attacking_capital")
+                : attackingName;
+        Object defendingChronicleName = defendingName == null || defendingName.isBlank()
+                ? CapitalChronicleService.translatable("mcacapitals.chronicle.fallback.defending_capital")
+                : defendingName;
 
-        if (defendingName == null
-                || defendingName.isBlank()) {
-            defendingName =
-                    "the defending capital";
-        }
-
-        String entry =
-                attackingName
-                        + " planned a "
-                        + campaign.getWarGoal().getDisplayName()
-                        + " against "
-                        + defendingName
-                        + " for "
-                        + campaign.getWarCause().getDisplayName()
-                        + " and ordered the campaign to assemble a preferred force of "
-                        + campaign.getTargetAttackerCount()
-                        + " Guards and Archers, with a maximum of "
-                        + CapitalCampaignRecord.MAX_ATTACKERS
-                        + ".";
-
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 attackingCapital,
-                entry
+                CapitalChronicleEventId.CAMPAIGN_PLANNED,
+                attackingChronicleName,
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.war_goal." + campaign.getWarGoal().getSerializedName()
+                ),
+                defendingChronicleName,
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.war_cause." + campaign.getWarCause().getSerializedName()
+                ),
+                campaign.getTargetAttackerCount(),
+                CapitalCampaignRecord.MAX_ATTACKERS
         );
 
         return CampaignCreationResult.success(
@@ -478,7 +459,7 @@ public final class CapitalCampaignService {
     public record CampaignCreationResult(
             boolean successful,
             CapitalCampaignRecord campaign,
-            String failureMessage
+            Component failureMessage
     ) {
 
         static CampaignCreationResult success(
@@ -492,7 +473,7 @@ public final class CapitalCampaignService {
         }
 
         static CampaignCreationResult failure(
-                String message
+                Component message
         ) {
             return new CampaignCreationResult(
                     false,

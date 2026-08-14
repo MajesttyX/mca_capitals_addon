@@ -345,36 +345,33 @@ public class CapitalExileDiscoveryHandler {
                 capital.getCapitalId()
         );
 
-        String discoveryLine =
-                targetName
-                        + " was discovered to be an Enemy of the Crown.";
-
-        String warrantLine =
+        Component warrantLine =
                 CapitalJusticeText
                         .arrestWarrantIssued(
                                 targetName
                         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                discoveryLine
+                CapitalChronicleEventId.ENEMY_DISCOVERED,
+                targetName
         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                warrantLine
+                CapitalChronicleEventId.ARREST_WARRANT_ISSUED,
+                targetName
         );
 
         CapitalPlayerNotificationService
                 .notifyPlayersInCapital(
                         level,
                         capital,
-                        Component.literal(
-                                "Reports reach the Master of Laws: "
-                                        + targetName
-                                        + " has been discovered as an Enemy of the Crown."
+                        Component.translatable(
+                                "mcacapitals.justice.enemy_discovered.report",
+                                targetName
                         )
                 );
 
@@ -382,9 +379,7 @@ public class CapitalExileDiscoveryHandler {
                 .notifyPlayersInCapital(
                         level,
                         capital,
-                        Component.literal(
-                                warrantLine
-                        )
+                        warrantLine
                 );
 
         return true;

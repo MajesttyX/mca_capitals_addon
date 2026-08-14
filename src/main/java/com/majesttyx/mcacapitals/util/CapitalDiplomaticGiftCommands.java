@@ -63,9 +63,7 @@ public final class CapitalDiplomaticGiftCommands {
                     source.getPlayerOrException();
         } catch (Exception ignored) {
             source.sendFailure(
-                    Component.literal(
-                            "Only a player may send a diplomatic package."
-                    )
+                    Component.translatable("mcacapitals.system.capital_diplomatic_gift_commands.only_a_player_may_send_a_diplomatic_package")
             );
 
             return 0;
@@ -86,9 +84,7 @@ public final class CapitalDiplomaticGiftCommands {
                     );
         } catch (IllegalArgumentException ignored) {
             source.sendFailure(
-                    Component.literal(
-                            "The diplomatic destination is invalid."
-                    )
+                    Component.translatable("mcacapitals.system.capital_diplomatic_gift_commands.the_diplomatic_destination_is_invalid")
             );
 
             return 0;

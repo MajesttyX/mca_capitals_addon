@@ -3,6 +3,7 @@ package com.majesttyx.mcacapitals.capital;
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import net.conczin.mca.resources.Rank;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.Collections;
@@ -96,9 +97,10 @@ public final class CapitalPlayerAuthorityResolver {
             playerRank = PlayerRank.COMMONER;
         }
 
-        String displayTitle = CapitalTitleResolver.getDisplayTitle(level, capital, playerId);
-        if (displayTitle == null || displayTitle.isBlank() || "None".equals(displayTitle)) {
-            displayTitle = playerRank.defaultDisplayTitle();
+        Component displayTitle = CapitalTitleResolver.getDisplayTitleComponent(level, capital, playerId);
+        if (CapitalTitleResolver.getResolvedTitleId(level, capital, playerId)
+                == CapitalTitleResolver.ResolvedTitleId.NONE) {
+            displayTitle = playerRank.defaultDisplayTitleComponent();
         }
 
         return new ResolvedAuthority(
@@ -139,26 +141,26 @@ public final class CapitalPlayerAuthorityResolver {
     }
 
     public enum PlayerRank {
-        STRANGER("Stranger"),
-        COMMONER("Commoner"),
-        LORD("Lord or Lady"),
-        DUKE("Duke or Duchess"),
-        PRINCE("Prince or Princess"),
-        PRINCE_CONSORT("Prince Consort or Princess Consort"),
-        SOVEREIGN("King or Queen"),
-        SOVEREIGN_CONSORT("King Consort or Queen Consort"),
-        LORD_COMMANDER("Lord Commander"),
-        HAND("Hand of the Sovereign"),
-        HIGH_SOVEREIGN("High King or High Queen");
+        STRANGER("mcacapitals.dynamic.rank.stranger"),
+        COMMONER("mcacapitals.dynamic.rank.commoner"),
+        LORD("mcacapitals.dynamic.rank.lord"),
+        DUKE("mcacapitals.dynamic.rank.duke"),
+        PRINCE("mcacapitals.dynamic.rank.prince"),
+        PRINCE_CONSORT("mcacapitals.dynamic.rank.prince_consort"),
+        SOVEREIGN("mcacapitals.dynamic.rank.sovereign"),
+        SOVEREIGN_CONSORT("mcacapitals.dynamic.rank.sovereign_consort"),
+        LORD_COMMANDER("mcacapitals.dynamic.rank.lord_commander"),
+        HAND("mcacapitals.dynamic.rank.hand"),
+        HIGH_SOVEREIGN("mcacapitals.dynamic.rank.high_sovereign");
 
-        private final String defaultDisplayTitle;
+        private final String translationKey;
 
-        PlayerRank(String defaultDisplayTitle) {
-            this.defaultDisplayTitle = defaultDisplayTitle;
+        PlayerRank(String translationKey) {
+            this.translationKey = translationKey;
         }
 
-        public String defaultDisplayTitle() {
-            return defaultDisplayTitle;
+        public Component defaultDisplayTitleComponent() {
+            return Component.translatable(translationKey);
         }
     }
 
@@ -170,14 +172,14 @@ public final class CapitalPlayerAuthorityResolver {
 
     public record ResolvedAuthority(
             PlayerRank rank,
-            String displayTitle,
+            Component displayTitle,
             Set<Permission> permissions,
             UUID capitalId
     ) {
         public static ResolvedAuthority stranger() {
             return new ResolvedAuthority(
                     PlayerRank.STRANGER,
-                    PlayerRank.STRANGER.defaultDisplayTitle(),
+                    PlayerRank.STRANGER.defaultDisplayTitleComponent(),
                     Set.of(),
                     null
             );

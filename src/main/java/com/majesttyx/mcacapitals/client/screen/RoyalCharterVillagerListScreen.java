@@ -28,7 +28,7 @@ public class RoyalCharterVillagerListScreen extends CapitalNoBlurScreen {
     private int page = 0;
 
     public RoyalCharterVillagerListScreen() {
-        super(Component.literal("Choose Sovereign"));
+        super(Component.translatable("mcacapitals.system.royal_charter_villager_list_screen.choose_sovereign"));
     }
 
     @Override
@@ -51,14 +51,14 @@ public class RoyalCharterVillagerListScreen extends CapitalNoBlurScreen {
             int y = top + 36 + (i * 18);
 
             addRenderableWidget(
-                    Button.builder(Component.literal(candidate.name), button -> appoint(candidate.id))
+                    Button.builder(candidateNameComponent(candidate.name), button -> appoint(candidate.id))
                             .bounds(left + 16, y, 128, 16)
                             .build()
             );
         }
 
         addRenderableWidget(
-                Button.builder(Component.literal("Back"), button -> Minecraft.getInstance().setScreen(new RoyalCharterDecisionScreen()))
+                Button.builder(Component.translatable("mcacapitals.system.royal_charter_villager_list_screen.back"), button -> Minecraft.getInstance().setScreen(new RoyalCharterDecisionScreen()))
                         .bounds(left + 16, top + 134, 42, 18)
                         .build()
         );
@@ -89,9 +89,19 @@ public class RoyalCharterVillagerListScreen extends CapitalNoBlurScreen {
 
         guiGraphics.blit(BACKGROUND, left, top, 0, 0, BG_WIDTH, BG_HEIGHT, BG_WIDTH, BG_HEIGHT);
 
-        drawCenteredNoShadow(guiGraphics, "Choose Sovereign", this.width / 2, top + 16, 0x3E2E1F);
+        drawCenteredNoShadow(guiGraphics, Component.translatable("mcacapitals.system.royal_charter_villager_list_screen.choose_sovereign"), this.width / 2, top + 16, 0x3E2E1F);
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+    }
+
+    private static Component candidateNameComponent(String name) {
+        if (name == null || name.isBlank() || "Unnamed".equals(name)) {
+            return Component.translatable("mcacapitals.system.common.unnamed");
+        }
+        if ("Unknown".equals(name)) {
+            return Component.translatable("mcacapitals.system.common.unknown");
+        }
+        return Component.literal(name);
     }
 
     private void appoint(String villagerId) {
@@ -151,7 +161,7 @@ public class RoyalCharterVillagerListScreen extends CapitalNoBlurScreen {
         return ItemStack.EMPTY;
     }
 
-    private void drawCenteredNoShadow(GuiGraphics guiGraphics, String text, int centerX, int y, int color) {
+    private void drawCenteredNoShadow(GuiGraphics guiGraphics, Component text, int centerX, int y, int color) {
         int width = this.font.width(text);
         guiGraphics.drawString(this.font, text, centerX - width / 2, y, color, false);
     }

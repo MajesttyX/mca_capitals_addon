@@ -5,6 +5,7 @@ import com.majesttyx.mcacapitals.data.CapitalRelationKey;
 import com.majesttyx.mcacapitals.data.CapitalRelationRecord;
 import com.majesttyx.mcacapitals.data.CapitalWarCause;
 import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.Map;
@@ -59,7 +60,7 @@ public final class CapitalWarPlanningService {
         return CapitalWarCause.UNJUST;
     }
 
-    public static String describePlan(
+    public static Component describePlan(
             ServerLevel level,
             CapitalRecord source,
             CapitalRecord target
@@ -70,9 +71,12 @@ public final class CapitalWarPlanningService {
                 target
         );
 
-        String description = cause.isJustified()
-                ? "Cause: " + cause.getDisplayName() + "."
-                : "No recognized cause exists. This will be an unjust war and will damage relations with every known capital.";
+        Component description = cause.isJustified()
+                ? Component.translatable(
+                        "mcacapitals.war.plan.cause",
+                        cause.getDisplayComponent()
+                )
+                : Component.translatable("mcacapitals.war.plan.unjust");
 
         if (level != null
                 && source != null
@@ -84,20 +88,23 @@ public final class CapitalWarPlanningService {
                 source.getCapitalId(),
                 target.getCapitalId()
         ) == CapitalDiplomaticState.TRUCE) {
-            description += " Breaking the active Truce may cause other capitals to condemn the breach.";
+            return Component.translatable(
+                    "mcacapitals.war.plan.with_truce_warning",
+                    description
+            );
         }
 
         return description;
     }
 
-    public static String validateRecovery(
+    public static Component validateRecovery(
             ServerLevel level,
             CapitalRecord source
     ) {
         if (level == null
                 || source == null
                 || source.getCapitalId() == null) {
-            return "The attacking capital is unavailable.";
+            return Component.translatable("mcacapitals.war.validation.attacking_capital_unavailable");
         }
 
         long currentDay =
@@ -110,9 +117,10 @@ public final class CapitalWarPlanningService {
                 );
 
         if (availableDay > currentDay) {
-            return "The capital is recovering from its previous campaign and cannot plan another war until day "
-                    + availableDay
-                    + ".";
+            return Component.translatable(
+                    "mcacapitals.war.validation.recovering_until_day",
+                    availableDay
+            );
         }
 
         return null;

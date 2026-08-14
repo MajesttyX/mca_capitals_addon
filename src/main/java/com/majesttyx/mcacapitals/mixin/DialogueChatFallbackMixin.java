@@ -4,9 +4,11 @@ import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
+import com.majesttyx.mcacapitals.capital.CapitalTitleOfficeIdentityResolver;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueRuntime;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueService;
+import com.majesttyx.mcacapitals.dialogue.CapitalDialogueSpeaker;
 import com.majesttyx.mcacapitals.dialogue.CapitalPoliticalDialogueService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
@@ -152,14 +154,20 @@ public abstract class DialogueChatFallbackMixin {
             return;
         }
 
-        String line = CapitalDialogueRuntime.formatManagedRuntimeLine(nextKey, player, villager, level, capital);
-        if (line == null || line.isBlank()) {
+        Component line = CapitalDialogueRuntime.formatManagedRuntimeComponent(
+                nextKey,
+                player,
+                villager,
+                level,
+                capital
+        );
+        if (line == null) {
             MCAIntegrationBridge.stopInteracting(villager);
             ci.cancel();
             return;
         }
 
-        player.sendSystemMessage(Component.literal(villager.getName().getString() + ": " + line));
+        player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(villager, line));
         MCAIntegrationBridge.stopInteracting(villager);
         ci.cancel();
     }
@@ -174,11 +182,7 @@ public abstract class DialogueChatFallbackMixin {
     }
 
     private static boolean isUntitledCommoner(ServerLevel level, UUID villagerId) {
-        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, villagerId);
-        return title == null
-                || title.isBlank()
-                || "Commoner".equals(title)
-                || "None".equals(title);
+        return CapitalTitleOfficeIdentityResolver.isUntitledCommoner(level, villagerId);
     }
 
     private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {

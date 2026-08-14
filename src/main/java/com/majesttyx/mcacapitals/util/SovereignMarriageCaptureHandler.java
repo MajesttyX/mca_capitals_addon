@@ -1,5 +1,8 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
@@ -63,11 +66,17 @@ public class SovereignMarriageCaptureHandler {
         capital.setPlayerConsortId(player.getUUID());
         capital.setPlayerConsortName(player.getGameProfile().getName());
 
-        String sovereignName = sovereign.getName().getString();
+        String sovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign.getUUID());
         String playerName = player.getGameProfile().getName();
 
         if (!player.getUUID().equals(previousConsort) && !hasMarriageEntry(capital, sovereignName, playerName)) {
-            CapitalChronicleService.addEntry(level, capital, sovereignName + " was married to " + playerName + ".");
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.ROYAL_MARRIAGE,
+                    sovereignName,
+                    playerName
+            );
         }
 
         CapitalDataAccess.markDirty(level);
@@ -99,12 +108,12 @@ public class SovereignMarriageCaptureHandler {
     }
 
     private static boolean hasMarriageEntry(CapitalRecord capital, String sovereignName, String playerName) {
-        String needle = sovereignName + " was married to " + playerName + ".";
-        for (String entry : capital.getChronicleEntries()) {
-            if (needle.equals(entry) || entry.endsWith(needle)) {
-                return true;
-            }
-        }
-        return false;
+        return CapitalChronicleService.hasMarriageEvent(
+                capital,
+                CapitalChronicleEventId.ROYAL_MARRIAGE,
+                sovereignName,
+                playerName,
+                null
+        );
     }
 }

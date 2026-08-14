@@ -42,24 +42,25 @@ public final class CapitalHandService {
 
                 String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
                 String officeName = capital.isSovereignFemale() ? "Hand of the Queen" : "Hand of the King";
-                String handName = resolveName(level, newHand);
+                String handName = CapitalChronicleIdentitySnapshot.name(level, capital, newHand);
 
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        handName + " was appointed " + officeName + " of " + villageName + "."
-                );
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.HAND_APPOINTED, handName, CapitalChronicleIdentitySnapshot.handOffice(level, capital), villageName);
                 changed = true;
             }
         }
 
         if (previousHand != null && capital.getHand() == null && !capital.isPlayerSovereign()) {
             String officeName = capital.isSovereignFemale() ? "Hand of the Queen" : "Hand of the King";
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    "The office of " + officeName + " stands vacant in "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                    CapitalChronicleEventId.HAND_VACANT,
+                    CapitalChronicleService.translatable(
+                            capital.isSovereignFemale()
+                                    ? "mcacapitals.dynamic.office.hand.female"
+                                    : "mcacapitals.dynamic.office.hand.male"
+                    ),
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
             );
         }
 

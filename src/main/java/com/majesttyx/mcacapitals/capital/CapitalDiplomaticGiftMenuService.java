@@ -4,6 +4,7 @@ import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenAmbassadorCommunicationPacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -36,7 +37,7 @@ final class CapitalDiplomaticGiftMenuService {
             if (player != null) {
                 sendMessage(
                         player,
-                        "Diplomatic Gifts",
+                        Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
                         validation.failureMessage()
                 );
             }
@@ -58,11 +59,11 @@ final class CapitalDiplomaticGiftMenuService {
 
             sendMessage(
                     player,
-                    "Diplomatic Gifts",
-                    ambassadorEntity
-                            .getName()
-                            .getString()
-                            + ": You will need to hold a filled Diplomatic Package before I can send a gift to another capital."
+                    Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomatic_gifts.need_filled_package",
+                            ambassadorEntity.getName()
+                    )
             );
 
             return true;
@@ -81,11 +82,11 @@ final class CapitalDiplomaticGiftMenuService {
 
             sendMessage(
                     player,
-                    "Diplomatic Gifts",
-                    ambassadorEntity
-                            .getName()
-                            .getString()
-                            + ": This Diplomatic Package is empty. Place at least one gift inside it before we send it."
+                    Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomatic_gifts.package_empty",
+                            ambassadorEntity.getName()
+                    )
             );
 
             return true;
@@ -142,11 +143,11 @@ final class CapitalDiplomaticGiftMenuService {
         if (targets.isEmpty()) {
             sendMessage(
                     player,
-                    "Diplomatic Gifts",
-                    ambassadorEntity
-                            .getName()
-                            .getString()
-                            + ": There are no other established capitals to receive a package."
+                    Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomatic_gifts.no_targets",
+                            ambassadorEntity.getName()
+                    )
             );
 
             return true;
@@ -182,42 +183,47 @@ final class CapitalDiplomaticGiftMenuService {
                                     target
                             );
 
-            String relationship =
+            Component targetNameComponent = targetName.isBlank()
+                    ? Component.translatable("mcacapitals.diplomacy.unknown_capital")
+                    : Component.literal(targetName);
+
+            Component relationship =
                     CapitalRelationshipBand
                             .fromScore(score)
-                            .getDisplayName();
+                            .getDisplayComponent();
 
             boolean enabled =
                     cooldown <= 0L;
 
-            String cooldownText =
+            Component cooldownText =
                     enabled
-                            ? "Status: Ready to Send"
-                            : "Available in "
-                            + CapitalDiplomaticGiftText
-                            .formatDuration(
-                                    cooldown
+                            ? Component.translatable("mcacapitals.ui.diplomatic_gifts.ready")
+                            : Component.translatable(
+                                    "mcacapitals.ui.diplomatic_gifts.available_in",
+                                    CapitalDiplomaticGiftText.formatDuration(cooldown)
                             );
 
             entries.add(
                     new OpenAmbassadorCommunicationPacket.Entry(
-                            targetName,
-                            "Relationship: "
-                                    + relationship
-                                    + " ("
-                                    + score
-                                    + ")",
+                            targetNameComponent,
+                            Component.translatable(
+                                    "mcacapitals.ui.diplomacy.relationship_score",
+                                    relationship,
+                                    score
+                            ),
                             cooldownText,
-                            "",
-                            "Send Gift to "
-                                    + targetName,
+                            Component.empty(),
+                            Component.translatable(
+                                    "mcacapitals.ui.diplomatic_gifts.send_to",
+                                    targetNameComponent
+                            ),
                             "/capitalgift send "
                                     + ambassadorId
                                     + " "
                                     + target.getCapitalId(),
                             enabled,
                             enabled
-                                    ? ""
+                                    ? Component.empty()
                                     : cooldownText
                     )
             );
@@ -227,11 +233,9 @@ final class CapitalDiplomaticGiftMenuService {
                 player,
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.GIFT_DESTINATIONS,
-                        "Send Gift to Capital",
-                        ambassadorEntity
-                                .getName()
-                                .getString(),
-                        "Choose the capital that should receive the held Diplomatic Package.",
+                        Component.translatable("mcacapitals.ui.diplomatic_gifts.send_title"),
+                        ambassadorEntity.getName(),
+                        Component.translatable("mcacapitals.ui.diplomatic_gifts.choose_target"),
                         "",
                         entries,
                         List.of()
@@ -243,15 +247,15 @@ final class CapitalDiplomaticGiftMenuService {
 
     private static void sendMessage(
             ServerPlayer player,
-            String title,
-            String message
+            Component title,
+            Component message
     ) {
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.MESSAGE,
                         title,
-                        "",
+                        Component.empty(),
                         message,
                         "",
                         List.of(),

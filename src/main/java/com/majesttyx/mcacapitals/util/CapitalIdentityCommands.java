@@ -109,7 +109,7 @@ public class CapitalIdentityCommands {
     private static int showLookTarget(CommandSourceStack source) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
@@ -130,7 +130,7 @@ public class CapitalIdentityCommands {
     private static int ensureLookTarget(CommandSourceStack source) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
@@ -155,13 +155,13 @@ public class CapitalIdentityCommands {
     private static int assignOriginLookTarget(CommandSourceStack source) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
         boolean changed = VillagerIdentityService.assignOriginFromCurrentVillage(source.getLevel(), target);
         if (!changed) {
-            source.sendFailure(Component.literal("Could not assign origin. The villager may not currently belong to an MCA village."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.could_not_assign_origin_the_villager_may_not_currently_belong_to_an_mc"));
             return 0;
         }
 
@@ -178,7 +178,7 @@ public class CapitalIdentityCommands {
 
         boolean changed = VillagerIdentityService.assignOriginFromCurrentVillage(source.getLevel(), target);
         if (!changed) {
-            source.sendFailure(Component.literal("Could not assign origin. The villager may not currently belong to an MCA village."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.could_not_assign_origin_the_villager_may_not_currently_belong_to_an_mc"));
             return 0;
         }
 
@@ -190,7 +190,7 @@ public class CapitalIdentityCommands {
     private static int assignSurnameLookTarget(CommandSourceStack source, String surname) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
@@ -209,7 +209,7 @@ public class CapitalIdentityCommands {
     private static int assignBirthSurnameLookTarget(CommandSourceStack source, String surname) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
@@ -228,7 +228,7 @@ public class CapitalIdentityCommands {
     private static int assignCurrentSurnameLookTarget(CommandSourceStack source, String surname) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
@@ -247,7 +247,7 @@ public class CapitalIdentityCommands {
     private static int clearOriginLookTarget(CommandSourceStack source) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
@@ -272,7 +272,7 @@ public class CapitalIdentityCommands {
     private static int clearSurnameLookTarget(CommandSourceStack source) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
@@ -296,13 +296,13 @@ public class CapitalIdentityCommands {
 
     private static int assignSurname(CommandSourceStack source, Entity target, String surname) {
         if (!VillagerIdentityService.isValidDebugSurname(surname)) {
-            source.sendFailure(Component.literal("Invalid surname. Use 1-40 characters, no formatting codes."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.invalid_surname_use_1_40_characters_no_formatting_codes"));
             return 0;
         }
 
         boolean changed = VillagerIdentityService.assignSurname(source.getLevel(), target, surname, SurnameSource.DEBUG);
         if (!changed) {
-            source.sendFailure(Component.literal("Could not assign surname."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.could_not_assign_surname"));
             return 0;
         }
 
@@ -313,13 +313,13 @@ public class CapitalIdentityCommands {
 
     private static int assignBirthSurname(CommandSourceStack source, Entity target, String surname) {
         if (!VillagerIdentityService.isValidDebugSurname(surname)) {
-            source.sendFailure(Component.literal("Invalid surname. Use 1-40 characters, no formatting codes."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.invalid_surname_use_1_40_characters_no_formatting_codes"));
             return 0;
         }
 
         boolean changed = VillagerIdentityService.assignBirthSurname(source.getLevel(), target, surname, SurnameSource.DEBUG);
         if (!changed) {
-            source.sendFailure(Component.literal("Could not assign birth surname."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.could_not_assign_birth_surname"));
             return 0;
         }
 
@@ -330,13 +330,13 @@ public class CapitalIdentityCommands {
 
     private static int assignCurrentSurname(CommandSourceStack source, Entity target, String surname) {
         if (!VillagerIdentityService.isValidDebugSurname(surname)) {
-            source.sendFailure(Component.literal("Invalid surname. Use 1-40 characters, no formatting codes."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.invalid_surname_use_1_40_characters_no_formatting_codes"));
             return 0;
         }
 
         boolean changed = VillagerIdentityService.assignCurrentSurname(source.getLevel(), target, surname, SurnameSource.DEBUG);
         if (!changed) {
-            source.sendFailure(Component.literal("Could not assign current surname."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.could_not_assign_current_surname"));
             return 0;
         }
 
@@ -352,7 +352,7 @@ public class CapitalIdentityCommands {
     private static Entity getLookedAtMCAVillager(CommandSourceStack source) {
         ServerPlayer player = getPlayer(source);
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use the look-target version of this command."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_identity_commands.only_a_player_can_use_the_look_target_version_of_this_command"));
             return null;
         }
 

@@ -39,6 +39,27 @@ public final class PlayerCapitalAllegianceDataAccess {
                 : get(level).getLastChangeDay(playerId);
     }
 
+    public static boolean hasDeclinedPrompt(
+            ServerLevel level,
+            UUID playerId,
+            UUID capitalId
+    ) {
+        return level != null
+                && playerId != null
+                && capitalId != null
+                && get(level).hasDeclinedPrompt(playerId, capitalId);
+    }
+
+    public static void markPromptDeclined(
+            ServerLevel level,
+            UUID playerId,
+            UUID capitalId
+    ) {
+        if (level != null && playerId != null && capitalId != null) {
+            get(level).markPromptDeclined(playerId, capitalId);
+        }
+    }
+
     public static void setDeclaration(
             ServerLevel level,
             UUID playerId,

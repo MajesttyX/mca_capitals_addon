@@ -53,9 +53,7 @@ public final class CapitalDiplomaticProposalResponseCommands {
         }
 
         player.sendSystemMessage(
-                Component.literal(
-                        "Speak to your Ambassador to review and answer pending diplomatic proposals."
-                )
+                Component.translatable("mcacapitals.system.capital_diplomatic_proposal_response_commands.speak_to_your_ambassador_to_review_and_answer_pending_diplomatic_propo")
         );
         return 1;
     }
@@ -76,7 +74,7 @@ public final class CapitalDiplomaticProposalResponseCommands {
         try {
             proposalId = UUID.fromString(rawProposalId);
         } catch (IllegalArgumentException ignored) {
-            source.sendFailure(Component.literal("That diplomatic proposal ID is invalid."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_diplomatic_proposal_response_commands.that_diplomatic_proposal_id_is_invalid"));
             return 0;
         }
 
@@ -89,7 +87,7 @@ public final class CapitalDiplomaticProposalResponseCommands {
         try {
             return source.getPlayerOrException();
         } catch (Exception ignored) {
-            source.sendFailure(Component.literal("Only a player may answer diplomatic proposals."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_diplomatic_proposal_response_commands.only_a_player_may_answer_diplomatic_proposals"));
             return null;
         }
     }

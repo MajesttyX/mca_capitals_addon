@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalRelationshipEvent;
 import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
 import net.minecraft.server.level.ServerLevel;
 
@@ -52,10 +53,12 @@ public final class CapitalWarPenaltyService {
                     aggressor.getCapitalId(),
                     known.getCapitalId(),
                     UNJUST_RELATIONSHIP_PENALTY,
-                    "Unjust war declared against "
-                            + CapitalDiplomaticAgreementText.capitalName(
-                            level,
-                            target
+                    CapitalRelationshipEvent.localizedReason(
+                            "mcacapitals.relationship_reason.unjust_war_declared_against",
+                            CapitalDiplomaticAgreementText.capitalName(
+                                    level,
+                                    target
+                            )
                     ),
                     aggressor.getCapitalId()
             );
@@ -67,15 +70,23 @@ public final class CapitalWarPenaltyService {
                 UNJUST_DIPLOMATIC_PENALTY_DAYS
         );
 
-        String entry = CapitalDiplomaticAgreementText.capitalName(
-                level,
-                aggressor
-        ) + " began an unjust war against "
-                + CapitalDiplomaticAgreementText.capitalName(level, target)
-                + ", damaging its standing with every other known capital.";
+        String aggressorName = CapitalDiplomaticAgreementText.capitalName(level, aggressor);
+        String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
 
-        CapitalChronicleService.addEntry(level, aggressor, entry);
-        CapitalChronicleService.addEntry(level, target, entry);
+        CapitalChronicleService.addEvent(
+                level,
+                aggressor,
+                CapitalChronicleEventId.UNJUST_WAR,
+                aggressorName,
+                targetName
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                target,
+                CapitalChronicleEventId.UNJUST_WAR,
+                aggressorName,
+                targetName
+        );
     }
 
     public static void applyTruceBreakingPenalty(
@@ -122,10 +133,12 @@ public final class CapitalWarPenaltyService {
                     aggressorId,
                     observerId,
                     TRUCE_BREAK_RELATIONSHIP_PENALTY,
-                    "Condemned the breaking of a Truce with "
-                            + CapitalDiplomaticAgreementText.capitalName(
-                            level,
-                            target
+                    CapitalRelationshipEvent.localizedReason(
+                            "mcacapitals.relationship_reason.truce_break_condemned",
+                            CapitalDiplomaticAgreementText.capitalName(
+                                    level,
+                                    target
+                            )
                     ),
                     aggressorId
             );
@@ -137,19 +150,25 @@ public final class CapitalWarPenaltyService {
             return;
         }
 
-        String entry = CapitalDiplomaticAgreementText.capitalName(
-                level,
-                aggressor
-        ) + " broke its Truce with "
-                + CapitalDiplomaticAgreementText.capitalName(level, target)
-                + ". "
-                + condemnedBy
-                + (condemnedBy == 1
-                ? " other capital condemned the breach."
-                : " other capitals condemned the breach.");
+        String aggressorName = CapitalDiplomaticAgreementText.capitalName(level, aggressor);
+        String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
 
-        CapitalChronicleService.addEntry(level, aggressor, entry);
-        CapitalChronicleService.addEntry(level, target, entry);
+        CapitalChronicleService.addEvent(
+                level,
+                aggressor,
+                CapitalChronicleEventId.TRUCE_BROKEN,
+                aggressorName,
+                targetName,
+                condemnedBy
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                target,
+                CapitalChronicleEventId.TRUCE_BROKEN,
+                aggressorName,
+                targetName,
+                condemnedBy
+        );
     }
 
     private static int truceBreakingReactionChance(
