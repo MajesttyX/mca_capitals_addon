@@ -13,6 +13,14 @@ final class CapitalDiplomaticTradeAgreementService {
 
     static final int MINIMUM_RELATIONSHIP = 30;
 
+    enum TradeAgreementEndReason {
+        REQUESTED,
+        TERM_EXPIRED,
+        MILITARY_ATTACK,
+        WAR_DECLARED,
+        TRADE_IMPOSSIBLE
+    }
+
     private CapitalDiplomaticTradeAgreementService() {
     }
 
@@ -21,17 +29,8 @@ final class CapitalDiplomaticTradeAgreementService {
             CapitalRecord first,
             CapitalRecord second
     ) {
-        CapitalTradeAgreement agreement =
-                getAgreement(
-                        level,
-                        first,
-                        second
-                );
-
-        return agreement != null
-                && !agreement.isExpired(
-                level.getGameTime()
-        );
+        CapitalTradeAgreement agreement = getAgreement(level, first, second);
+        return agreement != null && !agreement.isExpired(level.getGameTime());
     }
 
     static boolean isRenewal(
@@ -39,11 +38,7 @@ final class CapitalDiplomaticTradeAgreementService {
             CapitalRecord first,
             CapitalRecord second
     ) {
-        return getAgreement(
-                level,
-                first,
-                second
-        ) != null;
+        return getAgreement(level, first, second) != null;
     }
 
     static CapitalTradeAgreement getAgreement(
@@ -71,39 +66,24 @@ final class CapitalDiplomaticTradeAgreementService {
             CapitalRecord first,
             CapitalRecord second
     ) {
-        CapitalTradeAgreement agreement =
-                getAgreement(
-                        level,
-                        first,
-                        second
-                );
-
+        CapitalTradeAgreement agreement = getAgreement(level, first, second);
         if (agreement == null) {
             return false;
         }
 
         if (agreement.needsTermInitialization()) {
-            agreement.initializeLegacyTerm(
-                    level.getGameTime()
-            );
-
-            CapitalAgreementDataAccess.markTradeAgreementChanged(
-                    level
-            );
+            agreement.initializeLegacyTerm(level.getGameTime());
+            CapitalAgreementDataAccess.markTradeAgreementChanged(level);
         }
 
-        if (agreement.isExpired(
-                level.getGameTime()
-        )) {
+        if (agreement.isExpired(level.getGameTime())) {
             return false;
         }
 
-        return agreement.isInRenewalWindow(
-                level.getGameTime()
-        );
+        return agreement.isInRenewalWindow(level.getGameTime());
     }
 
-    static String validateEstablishment(
+    static Component validateEstablishment(
             ServerLevel level,
             CapitalRecord first,
             CapitalRecord second
@@ -113,81 +93,54 @@ final class CapitalDiplomaticTradeAgreementService {
                 || second == null
                 || first.getCapitalId() == null
                 || second.getCapitalId() == null
-                || first.getCapitalId().equals(
-                second.getCapitalId()
-        )) {
-            return "That Trade Agreement is invalid.";
+                || first.getCapitalId().equals(second.getCapitalId())) {
+            return Component.translatable("mcacapitals.diplomacy.trade.validation.invalid");
         }
 
         if (first.getState() != CapitalState.ACTIVE
                 || second.getState() != CapitalState.ACTIVE) {
-            return "Both capitals must be active before establishing trade.";
+            return Component.translatable("mcacapitals.diplomacy.trade.validation.both_active");
         }
 
-        CapitalDiplomaticState diplomaticState =
-                CapitalDiplomacyDataAccess.getDiplomaticState(
-                        level,
-                        first.getCapitalId(),
-                        second.getCapitalId()
-                );
+        CapitalDiplomaticState diplomaticState = CapitalDiplomacyDataAccess.getDiplomaticState(
+                level,
+                first.getCapitalId(),
+                second.getCapitalId()
+        );
 
-        if (diplomaticState
-                == CapitalDiplomaticState.WAR
-                || diplomaticState
-                == CapitalDiplomaticState.TRUCE) {
-            return "A Trade Agreement cannot be established during War or an active Truce.";
+        if (diplomaticState == CapitalDiplomaticState.WAR
+                || diplomaticState == CapitalDiplomaticState.TRUCE) {
+            return Component.translatable("mcacapitals.diplomacy.trade.validation.war_or_truce");
         }
 
-        int relationship =
-                CapitalDiplomacyDataAccess.getRelationshipScore(
-                        level,
-                        first.getCapitalId(),
-                        second.getCapitalId()
-                );
+        int relationship = CapitalDiplomacyDataAccess.getRelationshipScore(
+                level,
+                first.getCapitalId(),
+                second.getCapitalId()
+        );
 
         if (relationship < MINIMUM_RELATIONSHIP) {
-            return "Relations must be Cordial or better before establishing a Trade Agreement.";
+            return Component.translatable("mcacapitals.diplomacy.trade.validation.cordial_required");
         }
 
-        if (!CapitalBuildingService.hasStorage(
-                level,
-                first
-        )
-                || !CapitalBuildingService.hasStorage(
-                level,
-                second
-        )) {
-            return "Both capitals require an operational MCA Storage building before establishing trade.";
+        if (!CapitalBuildingService.hasStorage(level, first)
+                || !CapitalBuildingService.hasStorage(level, second)) {
+            return Component.translatable("mcacapitals.diplomacy.trade.validation.storage_required");
         }
 
-        CapitalTradeAgreement existing =
-                getAgreement(
-                        level,
-                        first,
-                        second
-                );
-
+        CapitalTradeAgreement existing = getAgreement(level, first, second);
         if (existing != null) {
             if (existing.needsTermInitialization()) {
-                existing.initializeLegacyTerm(
-                        level.getGameTime()
-                );
-
-                CapitalAgreementDataAccess.markTradeAgreementChanged(
-                        level
-                );
+                existing.initializeLegacyTerm(level.getGameTime());
+                CapitalAgreementDataAccess.markTradeAgreementChanged(level);
             }
 
-            if (existing.isExpired(
-                    level.getGameTime()
-            )) {
-                return "The current Trade Agreement has expired and must be cleared before another can be proposed.";
+            if (existing.isExpired(level.getGameTime())) {
+                return Component.translatable("mcacapitals.diplomacy.trade.validation.expired_must_clear");
             }
 
-            if (!existing.isInRenewalWindow(
-                    level.getGameTime()
-            )) {
-                return "These capitals already have an active Trade Agreement. Renewal becomes available during the final two Minecraft days of its term.";
+            if (!existing.isInRenewalWindow(level.getGameTime())) {
+                return Component.translatable("mcacapitals.diplomacy.trade.validation.renewal_window");
             }
         }
 
@@ -199,26 +152,14 @@ final class CapitalDiplomaticTradeAgreementService {
             CapitalRecord first,
             CapitalRecord second
     ) {
-        CapitalTradeAgreement existing =
-                getAgreement(
-                        level,
-                        first,
-                        second
-                );
+        CapitalTradeAgreement existing = getAgreement(level, first, second);
+        boolean renewal = existing != null;
 
-        boolean renewal =
-                existing != null;
-
-        if (validateEstablishment(
-                level,
-                first,
-                second
-        ) != null) {
+        if (validateEstablishment(level, first, second) != null) {
             return false;
         }
 
         CapitalTradeAgreement agreement;
-
         if (renewal) {
             if (!CapitalAgreementDataAccess.renewTradeAgreement(
                     level,
@@ -227,56 +168,27 @@ final class CapitalDiplomaticTradeAgreementService {
             )) {
                 return false;
             }
-
             agreement = existing;
         } else {
-            agreement =
-                    CapitalAgreementDataAccess.establishTradeAgreement(
-                            level,
-                            first.getCapitalId(),
-                            second.getCapitalId()
-                    );
+            agreement = CapitalAgreementDataAccess.establishTradeAgreement(
+                    level,
+                    first.getCapitalId(),
+                    second.getCapitalId()
+            );
         }
 
         if (agreement == null) {
             return false;
         }
 
-        String firstName =
-                CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        first
-                );
+        String firstName = CapitalDiplomaticAgreementText.capitalName(level, first);
+        String secondName = CapitalDiplomaticAgreementText.capitalName(level, second);
+        CapitalChronicleEventId eventId = renewal
+                ? CapitalChronicleEventId.TRADE_AGREEMENT_RENEWED
+                : CapitalChronicleEventId.TRADE_AGREEMENT_CREATED;
 
-        String secondName =
-                CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        second
-                );
-
-        String entry =
-                renewal
-                        ? firstName
-                        + " and "
-                        + secondName
-                        + " renewed their Trade Agreement for another thirteen Minecraft days."
-                        : firstName
-                        + " and "
-                        + secondName
-                        + " established a Trade Agreement lasting thirteen Minecraft days.";
-
-        CapitalChronicleService.addEntry(
-                level,
-                first,
-                entry
-        );
-
-        CapitalChronicleService.addEntry(
-                level,
-                second,
-                entry
-        );
-
+        CapitalChronicleService.addEvent(level, first, eventId, firstName, secondName);
+        CapitalChronicleService.addEvent(level, second, eventId, firstName, secondName);
         return true;
     }
 
@@ -285,82 +197,39 @@ final class CapitalDiplomaticTradeAgreementService {
             UUID ambassadorId,
             UUID targetCapitalId
     ) {
-        if (player == null
-                || ambassadorId == null
-                || targetCapitalId == null) {
+        if (player == null || ambassadorId == null || targetCapitalId == null) {
             return 0;
         }
 
         CapitalDiplomaticAgreementValidation.AudienceValidation audience =
-                CapitalDiplomaticAgreementValidation.validateAudience(
-                        player,
-                        ambassadorId
-                );
+                CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
 
         if (!audience.valid()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            audience.failureMessage()
-                    )
-            );
+            player.sendSystemMessage(audience.failureMessage());
             return 0;
         }
 
-        ServerLevel level =
-                player.serverLevel();
+        ServerLevel level = player.serverLevel();
+        CapitalRecord source = audience.sourceCapital();
+        CapitalRecord target = CapitalManager.getCapital(targetCapitalId);
 
-        CapitalRecord source =
-                audience.sourceCapital();
-
-        CapitalRecord target =
-                CapitalManager.getCapital(
-                        targetCapitalId
-                );
-
-        String targetFailure =
-                CapitalDiplomaticAgreementValidation.validateTarget(
-                        source,
-                        target
-                );
-
+        Component targetFailure = CapitalDiplomaticAgreementValidation.validateTarget(source, target);
         if (targetFailure != null) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            targetFailure
-                    )
-            );
+            player.sendSystemMessage(targetFailure);
             return 0;
         }
 
-        if (getAgreement(
-                level,
-                source,
-                target
-        ) == null) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "These capitals do not have an active Trade Agreement."
-                    )
-            );
+        if (getAgreement(level, source, target) == null) {
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.system.capital_diplomatic_trade_agreement_service.these_capitals_do_not_have_an_active_trade_agreement"
+            ));
             return 0;
         }
 
-        if (!end(
-                level,
-                source,
-                target,
-                "at the request of "
-                        + CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        source
-                )
-                        + "."
-        )) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "The Trade Agreement could not be ended."
-                    )
-            );
+        if (!end(level, source, target, TradeAgreementEndReason.REQUESTED)) {
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.system.capital_diplomatic_trade_agreement_service.the_trade_agreement_could_not_be_ended"
+            ));
             return 0;
         }
 
@@ -369,45 +238,29 @@ final class CapitalDiplomaticTradeAgreementService {
                 source.getCapitalId(),
                 target.getCapitalId(),
                 -5,
-                "Trade Agreement ended",
+                "mcacapitals.relationship_reason.trade_agreement_ended",
                 source.getCapitalId()
         );
 
-        String targetName =
-                CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        target
-                );
-
-        UUID targetPlayer =
-                CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
-                        level,
-                        target
-                );
-
+        String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
+        UUID targetPlayer = CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(level, target);
         if (targetPlayer != null) {
             CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
                     level,
                     targetPlayer,
-                    "Trade Agreement Ended",
-                    CapitalDiplomaticAgreementText.capitalName(
-                            level,
-                            source
+                    Component.translatable("mcacapitals.diplomacy.trade.ended_title"),
+                    Component.translatable(
+                            "mcacapitals.diplomacy.trade.ended_by_other",
+                            CapitalDiplomaticAgreementText.capitalName(level, source),
+                            targetName
                     )
-                            + " ended its Trade Agreement with "
-                            + targetName
-                            + "."
             );
         }
 
-        player.sendSystemMessage(
-                Component.literal(
-                        "The Trade Agreement with "
-                                + targetName
-                                + " has ended."
-                )
-        );
-
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.diplomacy.trade.ended_with",
+                targetName
+        ));
         return 1;
     }
 
@@ -415,7 +268,7 @@ final class CapitalDiplomaticTradeAgreementService {
             ServerLevel level,
             CapitalRecord first,
             CapitalRecord second,
-            String reason
+            TradeAgreementEndReason reason
     ) {
         if (level == null
                 || first == null
@@ -425,49 +278,29 @@ final class CapitalDiplomaticTradeAgreementService {
             return false;
         }
 
-        boolean removed =
-                CapitalAgreementDataAccess.endTradeAgreement(
-                        level,
-                        first.getCapitalId(),
-                        second.getCapitalId()
-                );
-
+        boolean removed = CapitalAgreementDataAccess.endTradeAgreement(
+                level,
+                first.getCapitalId(),
+                second.getCapitalId()
+        );
         if (!removed) {
             return false;
         }
 
-        String suffix =
-                reason == null
-                        || reason.isBlank()
-                        ? "."
-                        : " " + reason.trim();
+        String firstName = CapitalDiplomaticAgreementText.capitalName(level, first);
+        String secondName = CapitalDiplomaticAgreementText.capitalName(level, second);
+        CapitalChronicleEventId eventId = reason == null
+                ? CapitalChronicleEventId.TRADE_AGREEMENT_ENDED
+                : switch (reason) {
+                    case REQUESTED -> CapitalChronicleEventId.TRADE_AGREEMENT_ENDED_REQUESTED;
+                    case TERM_EXPIRED -> CapitalChronicleEventId.TRADE_AGREEMENT_ENDED_TERM_EXPIRED;
+                    case MILITARY_ATTACK -> CapitalChronicleEventId.TRADE_AGREEMENT_ENDED_MILITARY_ATTACK;
+                    case WAR_DECLARED -> CapitalChronicleEventId.TRADE_AGREEMENT_ENDED_WAR_DECLARED;
+                    case TRADE_IMPOSSIBLE -> CapitalChronicleEventId.TRADE_AGREEMENT_ENDED_TRADE_IMPOSSIBLE;
+                };
 
-        String entry =
-                "The Trade Agreement between "
-                        + CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        first
-                )
-                        + " and "
-                        + CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        second
-                )
-                        + " ended"
-                        + suffix;
-
-        CapitalChronicleService.addEntry(
-                level,
-                first,
-                entry
-        );
-
-        CapitalChronicleService.addEntry(
-                level,
-                second,
-                entry
-        );
-
+        CapitalChronicleService.addEvent(level, first, eventId, firstName, secondName);
+        CapitalChronicleService.addEvent(level, second, eventId, firstName, secondName);
         return true;
     }
 
@@ -476,11 +309,7 @@ final class CapitalDiplomaticTradeAgreementService {
             CapitalRecord first,
             CapitalRecord second
     ) {
-        if (!isActive(
-                level,
-                first,
-                second
-        )) {
+        if (!isActive(level, first, second)) {
             return false;
         }
 

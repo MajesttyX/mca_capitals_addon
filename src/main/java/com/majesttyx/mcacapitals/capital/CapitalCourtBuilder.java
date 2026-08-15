@@ -142,13 +142,15 @@ public class CapitalCourtBuilder {
             }
 
             if (MCAIntegrationBridge.isMCAVillager(level, newConsort)) {
-                String sovereignName = resolveName(level, sovereign);
-                String consortName = CapitalCourtMarriageResolver.resolveSpouseName(level, sovereign);
+                String sovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
+                String consortName = CapitalChronicleIdentitySnapshot.name(level, capital, newConsort);
 
-                CapitalChronicleService.addEntry(
+                CapitalChronicleService.addEvent(
                         level,
                         capital,
-                        sovereignName + " was married to " + consortName + "."
+                        CapitalChronicleEventId.ROYAL_MARRIAGE,
+                        sovereignName,
+                        consortName
                 );
             }
         }
@@ -205,13 +207,15 @@ public class CapitalCourtBuilder {
         if (validConsort != null
                 && !validConsort.equals(previousConsort)
                 && MCAIntegrationBridge.isMCAVillager(level, validConsort)) {
-            String sovereignName = resolveName(level, sovereign);
-            String consortName = CapitalCourtMarriageResolver.resolveSpouseName(level, sovereign);
+            String sovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
+            String consortName = CapitalChronicleIdentitySnapshot.name(level, capital, validConsort);
 
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    sovereignName + " was married to " + consortName + "."
+                    CapitalChronicleEventId.ROYAL_MARRIAGE,
+                    sovereignName,
+                    consortName
             );
         }
     }
@@ -612,11 +616,14 @@ public class CapitalCourtBuilder {
         for (UUID childId : newRoyalChildren) {
             if (!oldRoyalChildren.contains(childId)) {
                 String name = resolveName(level, childId);
-                CapitalChronicleService.addEntry(
+                CapitalChronicleService.addEvent(
                         level,
                         capital,
-                        "A royal child, " + name + ", was entered into the dynastic record of "
-                                + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                        childId.equals(capital.getHeir())
+                                ? CapitalChronicleEventId.CROWN_CHILD_RECORDED
+                                : CapitalChronicleEventId.ROYAL_CHILD_RECORDED,
+                        name,
+                        MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
                 );
             }
         }

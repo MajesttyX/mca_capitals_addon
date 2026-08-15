@@ -36,7 +36,7 @@ final class CapitalDiplomaticProposalService {
         ProposalContext context = validateProposal(player, ambassadorId, targetCapitalId, type);
         if (!context.valid()) {
             if (player != null) {
-                player.sendSystemMessage(Component.literal(context.failureMessage()));
+                player.sendSystemMessage(context.failureMessage());
             }
             return 0;
         }
@@ -68,13 +68,13 @@ final class CapitalDiplomaticProposalService {
         );
         if (!context.valid()) {
             if (player != null) {
-                player.sendSystemMessage(Component.literal(context.failureMessage()));
+                player.sendSystemMessage(context.failureMessage());
             }
             return 0;
         }
         if (match == null) {
-            player.sendSystemMessage(Component.literal(
-                    "That royal match is no longer eligible."
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.diplomacy.royal_betrothal.validation.match_invalid"
             ));
             return 0;
         }
@@ -104,7 +104,9 @@ final class CapitalDiplomaticProposalService {
             DiplomaticProposalType type
     ) {
         if (player == null || ambassadorId == null || targetCapitalId == null || type == null) {
-            return ProposalContext.failure("That diplomatic proposal is invalid.");
+            return ProposalContext.failure(Component.translatable(
+                    "mcacapitals.diplomacy.validation.proposal_invalid"
+            ));
         }
         CapitalDiplomaticAgreementValidation.AudienceValidation audience =
                 CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
@@ -114,7 +116,7 @@ final class CapitalDiplomaticProposalService {
         ServerLevel level = player.serverLevel();
         CapitalRecord source = audience.sourceCapital();
         CapitalRecord target = CapitalManager.getCapital(targetCapitalId);
-        String targetFailure = CapitalDiplomaticAgreementValidation.validateTarget(source, target);
+        Component targetFailure = CapitalDiplomaticAgreementValidation.validateTarget(source, target);
         if (targetFailure != null) {
             return ProposalContext.failure(targetFailure);
         }
@@ -123,14 +125,14 @@ final class CapitalDiplomaticProposalService {
                 source.getCapitalId(),
                 target.getCapitalId()
         ) != null) {
-            return ProposalContext.failure(
-                    "Only one diplomatic proposal may be pending between two capitals at a time."
-            );
+            return ProposalContext.failure(Component.translatable(
+                    "mcacapitals.diplomacy.validation.pending_between_capitals"
+            ));
         }
         if (CapitalDiplomaticAgreementValidation.getCurrentSovereignId(target) == null) {
-            return ProposalContext.failure(
-                    "The receiving capital has no sovereign able to answer this proposal."
-            );
+            return ProposalContext.failure(Component.translatable(
+                    "mcacapitals.diplomacy.validation.no_sovereign_to_answer"
+            ));
         }
 
         CapitalDiplomaticTruceService.refreshExpiredTruce(level, source, target);
@@ -144,7 +146,7 @@ final class CapitalDiplomaticProposalService {
                 source.getCapitalId(),
                 target.getCapitalId()
         );
-        String failure = CapitalDiplomaticAgreementValidation.validateProposal(
+        Component failure = CapitalDiplomaticAgreementValidation.validateProposal(
                 level,
                 source,
                 target,
@@ -163,22 +165,19 @@ final class CapitalDiplomaticProposalService {
             DiplomaticProposal proposal
     ) {
         CapitalAgreementDataAccess.addProposal(context.level(), proposal);
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 context.level(),
                 context.source(),
-                CapitalDiplomaticAgreementText.capitalizedWithIndefiniteArticle(
-                        context.type().getDisplayName()
-                )
-                        + " was dispatched to "
-                        + CapitalDiplomaticAgreementText.capitalName(
+                CapitalChronicleEventId.DIPLOMATIC_AGREEMENT_DISPATCHED,
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.agreement_type." + context.type().getSerializedName()
+                ),
+                CapitalDiplomaticAgreementText.capitalName(
                         context.level(),
                         context.target()
                 )
-                        + "."
         );
-        player.sendSystemMessage(Component.literal(
-                CapitalDiplomaticDelayService.dispatchMessage()
-        ));
+        player.sendSystemMessage(CapitalDiplomaticDelayService.dispatchMessage());
         return 1;
     }
 
@@ -239,10 +238,11 @@ final class CapitalDiplomaticProposalService {
                         level,
                         proposal,
                         source,
-                        "Proposal Undeliverable",
-                        "The proposed "
-                                + proposal.getType().getDisplayName()
-                                + " could not be delivered because the receiving capital no longer exists."
+                        Component.translatable("mcacapitals.diplomacy.correspondence.undeliverable_title"),
+                        Component.translatable(
+                                "mcacapitals.diplomacy.correspondence.undeliverable_message",
+                                proposal.getType().getDisplayComponent()
+                        )
                 );
             }
             return;
@@ -296,7 +296,7 @@ final class CapitalDiplomaticProposalService {
             CapitalRecord source,
             CapitalRecord target,
             DiplomaticProposalType type,
-            String failureMessage
+            Component failureMessage
     ) {
         static ProposalContext success(
                 ServerLevel level,
@@ -307,7 +307,7 @@ final class CapitalDiplomaticProposalService {
             return new ProposalContext(true, level, source, target, type, null);
         }
 
-        static ProposalContext failure(String message) {
+        static ProposalContext failure(Component message) {
             return new ProposalContext(false, null, null, null, null, message);
         }
     }

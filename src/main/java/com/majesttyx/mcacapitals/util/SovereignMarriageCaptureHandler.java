@@ -1,5 +1,8 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
@@ -74,10 +77,16 @@ public class SovereignMarriageCaptureHandler {
         MarriageIdentityRepairService.repairPlayerVillagerMarriage(level, player, spouse, capital);
 
         String sovereignName = player.getGameProfile().getName();
-        String spouseName = spouse.getName().getString();
+        String spouseName = CapitalChronicleIdentitySnapshot.name(level, capital, spouse.getUUID());
 
         if (!spouse.getUUID().equals(previousConsort) && !hasMarriageEntry(capital, sovereignName, spouseName)) {
-            CapitalChronicleService.addEntry(level, capital, sovereignName + " was married to " + spouseName + ".");
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.ROYAL_MARRIAGE,
+                    sovereignName,
+                    spouseName
+            );
         }
 
         CapitalDataAccess.markDirty(level);
@@ -98,12 +107,12 @@ public class SovereignMarriageCaptureHandler {
     }
 
     private static boolean hasMarriageEntry(CapitalRecord capital, String sovereignName, String spouseName) {
-        String needle = sovereignName + " was married to " + spouseName + ".";
-        for (String entry : capital.getChronicleEntries()) {
-            if (needle.equals(entry) || entry.endsWith(needle)) {
-                return true;
-            }
-        }
-        return false;
+        return CapitalChronicleService.hasMarriageEvent(
+                capital,
+                CapitalChronicleEventId.ROYAL_MARRIAGE,
+                sovereignName,
+                spouseName,
+                null
+        );
     }
 }

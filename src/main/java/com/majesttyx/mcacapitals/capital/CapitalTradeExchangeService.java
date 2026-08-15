@@ -17,20 +17,13 @@ final class CapitalTradeExchangeService {
     private CapitalTradeExchangeService() {
     }
 
-    static void processDueTrade(
-            ServerLevel level,
-            CapitalTradeAgreement agreement
-    ) {
+    static void processDueTrade(ServerLevel level, CapitalTradeAgreement agreement) {
         if (level == null || agreement == null) {
             return;
         }
 
-        CapitalRecord first = CapitalManager.getCapital(
-                agreement.getFirstCapitalId()
-        );
-        CapitalRecord second = CapitalManager.getCapital(
-                agreement.getSecondCapitalId()
-        );
+        CapitalRecord first = CapitalManager.getCapital(agreement.getFirstCapitalId());
+        CapitalRecord second = CapitalManager.getCapital(agreement.getSecondCapitalId());
         if (first == null || second == null) {
             CapitalAgreementDataAccess.endTradeAgreement(
                     level,
@@ -40,24 +33,21 @@ final class CapitalTradeExchangeService {
             return;
         }
 
-        if (first.getState() != CapitalState.ACTIVE
-                || second.getState() != CapitalState.ACTIVE) {
+        if (first.getState() != CapitalState.ACTIVE || second.getState() != CapitalState.ACTIVE) {
             return;
         }
 
-        CapitalDiplomaticState state =
-                CapitalDiplomacyDataAccess.getDiplomaticState(
-                        level,
-                        first.getCapitalId(),
-                        second.getCapitalId()
-                );
-        if (state == CapitalDiplomaticState.WAR
-                || state == CapitalDiplomaticState.TRUCE) {
+        CapitalDiplomaticState state = CapitalDiplomacyDataAccess.getDiplomaticState(
+                level,
+                first.getCapitalId(),
+                second.getCapitalId()
+        );
+        if (state == CapitalDiplomaticState.WAR || state == CapitalDiplomaticState.TRUCE) {
             CapitalDiplomaticTradeAgreementService.end(
                     level,
                     first,
                     second,
-                    "because peaceful trade was no longer possible."
+                    CapitalDiplomaticTradeAgreementService.TradeAgreementEndReason.TRADE_IMPOSSIBLE
             );
             return;
         }
@@ -70,43 +60,29 @@ final class CapitalTradeExchangeService {
         long lastReferenceTime = agreement.getLastTradeAt() > 0L
                 ? agreement.getLastTradeAt()
                 : agreement.getEstablishedAt();
-        if (level.getGameTime() - lastReferenceTime
-                < TRADE_INTERVAL_TICKS) {
+        if (level.getGameTime() - lastReferenceTime < TRADE_INTERVAL_TICKS) {
             return;
         }
 
-        long tradeCycle = Math.max(
-                1L,
-                level.getGameTime() / TRADE_INTERVAL_TICKS
+        long tradeCycle = Math.max(1L, level.getGameTime() / TRADE_INTERVAL_TICKS);
+        List<ItemStack> firstExports = CapitalTradeProfileService.createShipment(
+                level,
+                first,
+                tradeCycle
         );
-        List<ItemStack> firstExports =
-                CapitalTradeProfileService.createShipment(
-                        level,
-                        first,
-                        tradeCycle
-                );
-        List<ItemStack> secondExports =
-                CapitalTradeProfileService.createShipment(
-                        level,
-                        second,
-                        tradeCycle
-                );
+        List<ItemStack> secondExports = CapitalTradeProfileService.createShipment(
+                level,
+                second,
+                tradeCycle
+        );
         if (firstExports.isEmpty() || secondExports.isEmpty()) {
             return;
         }
 
-        if (!CapitalDiplomaticStorageService.deposit(
-                level,
-                second,
-                firstExports
-        )) {
+        if (!CapitalDiplomaticStorageService.deposit(level, second, firstExports)) {
             return;
         }
-        if (!CapitalDiplomaticStorageService.deposit(
-                level,
-                first,
-                secondExports
-        )) {
+        if (!CapitalDiplomaticStorageService.deposit(level, first, secondExports)) {
             return;
         }
 
@@ -115,32 +91,22 @@ final class CapitalTradeExchangeService {
                 first.getCapitalId(),
                 second.getCapitalId()
         );
-        int currentRelationship =
-                CapitalDiplomacyDataAccess.getRelationshipScore(
-                        level,
-                        first.getCapitalId(),
-                        second.getCapitalId()
-                );
+        int currentRelationship = CapitalDiplomacyDataAccess.getRelationshipScore(
+                level,
+                first.getCapitalId(),
+                second.getCapitalId()
+        );
         if (currentRelationship < RELATIONSHIP_CAP) {
             CapitalDiplomacyDataAccess.adjustRelationship(
                     level,
                     first.getCapitalId(),
                     second.getCapitalId(),
-                    Math.min(
-                            RELATIONSHIP_BONUS,
-                            RELATIONSHIP_CAP - currentRelationship
-                    ),
-                    "Trade exchange completed",
+                    Math.min(RELATIONSHIP_BONUS, RELATIONSHIP_CAP - currentRelationship),
+                    "mcacapitals.relationship_reason.trade_exchange_completed",
                     null
             );
         }
-        recordTrade(
-                level,
-                first,
-                second,
-                firstExports,
-                secondExports
-        );
+        recordTrade(level, first, second, firstExports, secondExports);
     }
 
     private static void recordTrade(
@@ -150,37 +116,27 @@ final class CapitalTradeExchangeService {
             List<ItemStack> firstExports,
             List<ItemStack> secondExports
     ) {
-        String firstName =
-                CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        first
-                );
-        String secondName =
-                CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        second
-                );
-        String entry = "A trade caravan delivered "
-                + describe(firstExports)
-                + " from "
-                + firstName
-                + " and "
-                + describe(secondExports)
-                + " from "
-                + secondName
-                + ".";
-        CapitalChronicleService.addEntry(level, first, entry);
-        CapitalChronicleService.addEntry(level, second, entry);
-    }
-
-    private static String describe(List<ItemStack> stacks) {
-        return stacks.stream()
-                .map(stack -> stack.getCount()
-                        + " × "
-                        + stack.getHoverName().getString())
-                .toList()
-                .stream()
-                .reduce((first, second) -> first + ", " + second)
-                .orElse("no goods");
+        String firstName = CapitalDiplomaticAgreementText.capitalName(level, first);
+        String secondName = CapitalDiplomaticAgreementText.capitalName(level, second);
+        CapitalChronicleEntry.Argument firstGoods = CapitalChronicleService.itemList(firstExports);
+        CapitalChronicleEntry.Argument secondGoods = CapitalChronicleService.itemList(secondExports);
+        CapitalChronicleService.addEvent(
+                level,
+                first,
+                CapitalChronicleEventId.TRADE_CARAVAN_EXCHANGE,
+                firstGoods,
+                firstName,
+                secondGoods,
+                secondName
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                second,
+                CapitalChronicleEventId.TRADE_CARAVAN_EXCHANGE,
+                firstGoods,
+                firstName,
+                secondGoods,
+                secondName
+        );
     }
 }

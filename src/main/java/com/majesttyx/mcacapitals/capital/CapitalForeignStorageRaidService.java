@@ -197,7 +197,7 @@ public final class CapitalForeignStorageRaidService {
                 declared.getCapitalId(),
                 storageOwner.getCapitalId(),
                 RELATIONSHIP_PENALTY,
-                "Foreign Storage raided",
+                "mcacapitals.relationship_reason.foreign_storage_raided",
                 declared.getCapitalId()
         );
         CapitalWarDataAccess.recordGrievance(

@@ -47,13 +47,13 @@ public class DecreeOfTheHouseHandler {
         }
 
         if (!MCAIntegrationBridge.isMCAVillagerEntity(target)) {
-            player.sendSystemMessage(Component.literal("A Decree of the House can only be used on an MCA villager."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_handler.a_decree_of_the_house_can_only_be_used_on_an_mca_villager"));
             return InteractionResult.SUCCESS;
         }
 
         OpenDecreeOfTheHousePacket packet = DecreeOfTheHouseService.createOpenPacket(level, target);
         if (packet == null) {
-            player.sendSystemMessage(Component.literal("The records for that villager could not be opened."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_handler.the_records_for_that_villager_could_not_be_opened"));
             return InteractionResult.SUCCESS;
         }
 

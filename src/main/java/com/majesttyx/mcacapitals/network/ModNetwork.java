@@ -22,6 +22,7 @@ public class ModNetwork {
     public static final ResourceLocation SYNC_BLUEPRINT_AUTHORITY = new ResourceLocation(MCACapitals.MODID, "sync_blueprint_authority");
     public static final ResourceLocation OPEN_AMBASSADOR_COMMUNICATION = new ResourceLocation(MCACapitals.MODID, "open_ambassador_communication");
     public static final ResourceLocation OPEN_SEALED_PURSE_CASE_SELECTION = new ResourceLocation(MCACapitals.MODID, "open_sealed_purse_case_selection");
+    public static final ResourceLocation OPEN_ACCUSATION_SELECTION = new ResourceLocation(MCACapitals.MODID, "open_accusation_selection");
     public static final ResourceLocation SELECT_SEALED_PURSE_CASE = new ResourceLocation(MCACapitals.MODID, "select_sealed_purse_case");
 
     public static final ClientChannel CHANNEL = new ClientChannel();
@@ -87,6 +88,11 @@ public class ModNetwork {
             OpenSealedPurseCaseSelectionPacket packet = OpenSealedPurseCaseSelectionPacket.decode(buffer);
             client.execute(() -> OpenSealedPurseCaseSelectionPacket.handle(packet));
         });
+
+        ClientPlayNetworking.registerGlobalReceiver(OPEN_ACCUSATION_SELECTION, (client, handler, buffer, responseSender) -> {
+            OpenAccusationSelectionPacket packet = OpenAccusationSelectionPacket.decode(buffer);
+            client.execute(() -> OpenAccusationSelectionPacket.handle(packet));
+        });
     }
 
     public static void sendToPlayer(ServerPlayer player, OpenCapitalChroniclePacket packet) {
@@ -123,6 +129,10 @@ public class ModNetwork {
 
     public static void sendToPlayer(ServerPlayer player, OpenSealedPurseCaseSelectionPacket packet) {
         sendToPlayer(player, OPEN_SEALED_PURSE_CASE_SELECTION, buffer -> OpenSealedPurseCaseSelectionPacket.encode(packet, buffer));
+    }
+
+    public static void sendToPlayer(ServerPlayer player, OpenAccusationSelectionPacket packet) {
+        sendToPlayer(player, OPEN_ACCUSATION_SELECTION, buffer -> OpenAccusationSelectionPacket.encode(packet, buffer));
     }
 
     private static void sendToPlayer(ServerPlayer player, ResourceLocation id, PacketWriter writer) {

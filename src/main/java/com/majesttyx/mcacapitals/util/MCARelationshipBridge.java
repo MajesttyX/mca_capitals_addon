@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.util;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -47,13 +48,13 @@ public final class MCARelationshipBridge {
         return MCARelationshipOps.isActuallyMarriedToPlayer(player, villagerId);
     }
 
-    public record BetrothalResult(boolean success, String message) {
+    public record BetrothalResult(boolean success, Component message) {
         public static BetrothalResult ok() {
-            return new BetrothalResult(true, "");
+            return new BetrothalResult(true, Component.empty());
         }
 
-        public static BetrothalResult failure(String message) {
-            return new BetrothalResult(false, message);
+        public static BetrothalResult failure(Component message) {
+            return new BetrothalResult(false, message == null ? Component.empty() : message);
         }
     }
 }

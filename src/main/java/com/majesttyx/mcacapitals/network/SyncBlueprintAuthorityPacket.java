@@ -9,6 +9,7 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.MCAReputationBridge;
 import fabric.net.mca.server.world.data.Village;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -19,7 +20,7 @@ public final class SyncBlueprintAuthorityPacket {
 
     private final int villageId;
     private final boolean activeCapital;
-    private final String displayTitle;
+    private final Component displayTitle;
     private final int permissionMask;
     private final int population;
     private final int reputation;
@@ -30,7 +31,7 @@ public final class SyncBlueprintAuthorityPacket {
     public SyncBlueprintAuthorityPacket(
             int villageId,
             boolean activeCapital,
-            String displayTitle,
+            Component displayTitle,
             int permissionMask,
             int population,
             int reputation,
@@ -40,8 +41,8 @@ public final class SyncBlueprintAuthorityPacket {
     ) {
         this.villageId = villageId;
         this.activeCapital = activeCapital;
-        this.displayTitle = displayTitle == null || displayTitle.isBlank()
-                ? "Stranger"
+        this.displayTitle = displayTitle == null
+                ? Component.translatable("mcacapitals.dynamic.rank.stranger")
                 : displayTitle;
         this.permissionMask = permissionMask;
         this.population = population;
@@ -53,7 +54,17 @@ public final class SyncBlueprintAuthorityPacket {
 
     public static SyncBlueprintAuthorityPacket create(ServerPlayer player, Village village) {
         if (player == null || village == null) {
-            return new SyncBlueprintAuthorityPacket(-1, false, "Stranger", 0, 0, 0, 0, 0, false);
+            return new SyncBlueprintAuthorityPacket(
+                    -1,
+                    false,
+                    Component.translatable("mcacapitals.dynamic.rank.stranger"),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false
+            );
         }
 
         int villageId = village.getId();
@@ -65,7 +76,7 @@ public final class SyncBlueprintAuthorityPacket {
             return new SyncBlueprintAuthorityPacket(
                     villageId,
                     false,
-                    "Stranger",
+                    Component.translatable("mcacapitals.dynamic.rank.stranger"),
                     0,
                     village.getPopulation(),
                     0,
@@ -79,9 +90,9 @@ public final class SyncBlueprintAuthorityPacket {
         int reputation = MCAReputationBridge.getCapitalHeartsScore(level, residents, player.getUUID());
         int population = MCAIntegrationBridge.getVillagePopulation(level, villageId);
         int masterProfessionals = countMasterProfessionals(level, residents);
+
         UUID sovereignId = capital.getSovereign();
-        boolean villagerSovereign = sovereignId != null
-                && MCAIntegrationBridge.isAliveMCAVillager(level, sovereignId);
+        boolean villagerSovereign = sovereignId != null && MCAIntegrationBridge.isAliveMCAVillager(level, sovereignId);
         int sovereignReputation = villagerSovereign
                 ? MCAReputationBridge.getHeartsWithVillager(level, sovereignId, player.getUUID())
                 : 0;
@@ -112,15 +123,41 @@ public final class SyncBlueprintAuthorityPacket {
         return count;
     }
 
-    public int villageId() { return villageId; }
-    public boolean activeCapital() { return activeCapital; }
-    public String displayTitle() { return displayTitle; }
-    public int permissionMask() { return permissionMask; }
-    public int population() { return population; }
-    public int reputation() { return reputation; }
-    public int masterProfessionals() { return masterProfessionals; }
-    public int sovereignReputation() { return sovereignReputation; }
-    public boolean villagerSovereign() { return villagerSovereign; }
+    public int villageId() {
+        return villageId;
+    }
+
+    public boolean activeCapital() {
+        return activeCapital;
+    }
+
+    public Component displayTitle() {
+        return displayTitle;
+    }
+
+    public int permissionMask() {
+        return permissionMask;
+    }
+
+    public int population() {
+        return population;
+    }
+
+    public int reputation() {
+        return reputation;
+    }
+
+    public int masterProfessionals() {
+        return masterProfessionals;
+    }
+
+    public int sovereignReputation() {
+        return sovereignReputation;
+    }
+
+    public boolean villagerSovereign() {
+        return villagerSovereign;
+    }
 
     public boolean hasPermission(CapitalPlayerAuthorityResolver.Permission permission) {
         return permission != null && (permissionMask & (1 << permission.ordinal())) != 0;
@@ -129,7 +166,7 @@ public final class SyncBlueprintAuthorityPacket {
     public static void encode(SyncBlueprintAuthorityPacket packet, FriendlyByteBuf buffer) {
         buffer.writeInt(packet.villageId);
         buffer.writeBoolean(packet.activeCapital);
-        buffer.writeUtf(packet.displayTitle);
+        buffer.writeComponent(packet.displayTitle);
         buffer.writeInt(packet.permissionMask);
         buffer.writeInt(packet.population);
         buffer.writeInt(packet.reputation);
@@ -142,7 +179,7 @@ public final class SyncBlueprintAuthorityPacket {
         return new SyncBlueprintAuthorityPacket(
                 buffer.readInt(),
                 buffer.readBoolean(),
-                buffer.readUtf(),
+                buffer.readComponent(),
                 buffer.readInt(),
                 buffer.readInt(),
                 buffer.readInt(),

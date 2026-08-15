@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.util;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -50,13 +51,14 @@ public final class MCAIntegrationBridge {
         return MCAPlayerBridge.getLastSeenVillageId(level, player);
     }
 
+    public static boolean isPlayerInVillage(ServerLevel level, ServerPlayer player, Integer villageId) {
+        return MCAPlayerBridge.isPlayerInVillage(level, player, villageId);
+    }
+
     public static String getPlayerDialogueName(ServerPlayer player) {
         return MCAPlayerBridge.getDialogueName(player);
     }
 
-    public static boolean isPlayerInVillage(ServerLevel level, ServerPlayer player, Integer villageId) {
-        return MCAPlayerBridge.isPlayerInVillage(level, player, villageId);
-    }
 
     public static boolean isPlayerFemale(ServerLevel level, ServerPlayer player) {
         return MCAPlayerBridge.isPlayerFemale(level, player);
@@ -187,6 +189,10 @@ public final class MCAIntegrationBridge {
 
     public static String getVillageName(ServerLevel level, Integer villageId) {
         return MCAVillageBridge.getVillageName(level, villageId);
+    }
+
+    public static Component getVillageNameComponent(ServerLevel level, Integer villageId) {
+        return MCAVillageBridge.getVillageNameComponent(level, villageId);
     }
 
     public static BlockPos getVillageCenter(ServerLevel level, Integer villageId) {

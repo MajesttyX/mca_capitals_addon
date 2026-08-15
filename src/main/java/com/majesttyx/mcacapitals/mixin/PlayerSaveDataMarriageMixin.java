@@ -1,5 +1,7 @@
 package com.majesttyx.mcacapitals.mixin;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
@@ -19,7 +21,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.lang.reflect.Method;
-import java.util.List;
 import java.util.UUID;
 
 @Pseudo
@@ -90,11 +91,11 @@ public class PlayerSaveDataMarriageMixin {
         capital.setPlayerConsortId(playerUuid);
         capital.setPlayerConsortName(player.getGameProfile().getName());
 
-        String spouseName = spouse.getName().getString();
+        String spouseName = CapitalChronicleIdentitySnapshot.name(level, capital, spouse.getUUID());
         String playerName = player.getGameProfile().getName();
 
         if (!playerUuid.equals(previousConsort) && !hasMarriageEntry(capital, spouseName, playerName)) {
-            CapitalChronicleService.addEntry(level, capital, spouseName + " was married to " + playerName + ".");
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, spouseName, playerName);
         }
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
@@ -111,11 +112,11 @@ public class PlayerSaveDataMarriageMixin {
 
         PlayerCapitalTitleService.grantMarriageTitle(level, capital, playerUuid, spouseId, marriageTitle);
 
-        String spouseName = spouse.getName().getString();
+        String spouseName = CapitalChronicleIdentitySnapshot.name(level, capital, spouse.getUUID());
         String playerName = player.getGameProfile().getName();
 
         if (!hasMarriageEntry(capital, spouseName, playerName)) {
-            CapitalChronicleService.addEntry(level, capital, spouseName + " was married to " + playerName + ".");
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, spouseName, playerName);
         }
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
@@ -184,13 +185,12 @@ public class PlayerSaveDataMarriageMixin {
     }
 
     private static boolean hasMarriageEntry(CapitalRecord capital, String spouseName, String playerName) {
-        String needle = spouseName + " was married to " + playerName + ".";
-        List<String> entries = capital.getChronicleEntries();
-        for (String entry : entries) {
-            if (needle.equals(entry) || entry.endsWith(needle)) {
-                return true;
-            }
-        }
-        return false;
+        return CapitalChronicleService.hasMarriageEvent(
+                capital,
+                CapitalChronicleEventId.ROYAL_MARRIAGE,
+                spouseName,
+                playerName,
+                null
+        );
     }
 }

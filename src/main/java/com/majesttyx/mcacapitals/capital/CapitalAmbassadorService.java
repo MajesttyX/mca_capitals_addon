@@ -170,13 +170,12 @@ public final class CapitalAmbassadorService {
         String capitalName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
         if (recordReplacement && previous != null && !previous.equals(candidateId)) {
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    CapitalNameService.resolveDisplayName(level, capital, previous)
-                            + " was relieved of the office of Ambassador of "
-                            + capitalName
-                            + "."
+                    CapitalChronicleEventId.AMBASSADOR_RELIEVED,
+                    CapitalNameService.resolveDisplayName(level, capital, previous),
+                    capitalName
             );
         }
 
@@ -188,13 +187,12 @@ public final class CapitalAmbassadorService {
         }
         sync(level, candidateId);
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                CapitalNameService.resolveDisplayName(level, capital, candidateId)
-                        + " was appointed Ambassador of "
-                        + capitalName
-                        + "."
+                CapitalChronicleEventId.AMBASSADOR_APPOINTED,
+                CapitalNameService.resolveDisplayName(level, capital, candidateId),
+                capitalName
         );
     }
 

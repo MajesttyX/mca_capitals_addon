@@ -95,7 +95,7 @@ final class CapitalTradeAgreementTermService {
                 level,
                 first,
                 second,
-                "when its thirteen-day term ended without renewal."
+                CapitalDiplomaticTradeAgreementService.TradeAgreementEndReason.TERM_EXPIRED
         )) {
             CapitalAgreementDataAccess.endTradeAgreement(
                     level,
@@ -114,11 +114,6 @@ final class CapitalTradeAgreementTermService {
                         level,
                         second
                 );
-        String message = "The Trade Agreement between "
-                + firstName
-                + " and "
-                + secondName
-                + " has reached the end of its term without renewal.";
 
         Set<UUID> recipients = new LinkedHashSet<>();
         UUID firstDecisionMaker =
@@ -133,16 +128,29 @@ final class CapitalTradeAgreementTermService {
                 );
         if (firstDecisionMaker != null) {
             recipients.add(firstDecisionMaker);
-        }
-        if (secondDecisionMaker != null) {
-            recipients.add(secondDecisionMaker);
-        }
-        for (UUID recipient : recipients) {
             CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
                     level,
-                    recipient,
-                    "Trade Agreement Expired",
-                    message
+                    firstDecisionMaker,
+                    net.minecraft.network.chat.Component.translatable(
+                            "mcacapitals.diplomacy.trade.expired_title"
+                    ),
+                    net.minecraft.network.chat.Component.translatable(
+                            "mcacapitals.diplomacy.trade.expired_message",
+                            secondName
+                    )
+            );
+        }
+        if (secondDecisionMaker != null && recipients.add(secondDecisionMaker)) {
+            CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
+                    level,
+                    secondDecisionMaker,
+                    net.minecraft.network.chat.Component.translatable(
+                            "mcacapitals.diplomacy.trade.expired_title"
+                    ),
+                    net.minecraft.network.chat.Component.translatable(
+                            "mcacapitals.diplomacy.trade.expired_message",
+                            firstName
+                    )
             );
         }
     }
@@ -162,11 +170,17 @@ final class CapitalTradeAgreementTermService {
                         level,
                         second
                 );
-        String message = "The Trade Agreement between "
-                + firstName
-                + " and "
-                + secondName
-                + " is nearing the end of its term. Speak with the Ambassador if the Crown wishes to renew it.";
+
+        net.minecraft.network.chat.Component title =
+                net.minecraft.network.chat.Component.translatable(
+                        "mcacapitals.diplomacy.trade.renewal_title"
+                );
+        net.minecraft.network.chat.Component message =
+                net.minecraft.network.chat.Component.translatable(
+                        "mcacapitals.diplomacy.trade.renewal_message",
+                        firstName,
+                        secondName
+                );
 
         Set<UUID> recipients = new LinkedHashSet<>();
         UUID firstDecisionMaker =
@@ -189,7 +203,7 @@ final class CapitalTradeAgreementTermService {
             CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
                     level,
                     recipient,
-                    "Trade Agreement Nearing Expiry",
+                    title,
                     message
             );
         }
@@ -251,13 +265,15 @@ final class CapitalTradeAgreementTermService {
         );
         CapitalAgreementDataAccess.addProposal(level, proposal);
 
-        String entry = "A renewal of the Trade Agreement with "
-                + CapitalDiplomaticAgreementText.capitalName(
+        CapitalChronicleService.addEvent(
                 level,
-                target
-        )
-                + " was dispatched.";
-        CapitalChronicleService.addEntry(level, source, entry);
+                source,
+                CapitalChronicleEventId.TRADE_AGREEMENT_RENEWAL_PROPOSED,
+                CapitalDiplomaticAgreementText.capitalName(
+                        level,
+                        target
+                )
+        );
         return true;
     }
 }

@@ -3,6 +3,7 @@ package com.majesttyx.mcacapitals.capital;
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import fabric.net.mca.resources.Rank;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.Collections;
@@ -21,14 +22,17 @@ public final class CapitalPlayerAuthorityResolver {
         }
 
         EnumSet<Permission> permissions = EnumSet.noneOf(Permission.class);
+
         NobleTitle grantedTitle = PlayerCapitalTitleService.getGrantedTitle(level, capital, playerId);
         NobleTitle marriageTitle = PlayerCapitalTitleService.getMarriageTitle(level, capital, playerId);
         NobleTitle dowagerTitle = PlayerCapitalTitleService.getDowagerBaseTitle(level, capital, playerId);
+
         boolean lord = capital.isLord(playerId)
                 || grantedTitle == NobleTitle.LORD
                 || grantedTitle == NobleTitle.LADY
                 || marriageTitle == NobleTitle.LORD
                 || marriageTitle == NobleTitle.LADY;
+
         boolean duke = capital.isDuke(playerId)
                 || capital.isMarriageDuke(playerId)
                 || capital.isDowagerDuke(playerId)
@@ -38,6 +42,7 @@ public final class CapitalPlayerAuthorityResolver {
                 || marriageTitle == NobleTitle.DUCHESS
                 || dowagerTitle == NobleTitle.DUKE
                 || dowagerTitle == NobleTitle.DUCHESS;
+
         boolean prince = playerId.equals(capital.getHeir())
                 || capital.isRoyalChild(playerId)
                 || capital.isLegitimizedRoyalChild(playerId);
@@ -48,6 +53,7 @@ public final class CapitalPlayerAuthorityResolver {
                 || marriageTitle == NobleTitle.PRINCESS
                 || dowagerTitle == NobleTitle.PRINCE
                 || dowagerTitle == NobleTitle.PRINCESS;
+
         boolean sovereign = playerId.equals(capital.getSovereign())
                 || playerId.equals(capital.getPlayerSovereignId());
         boolean highSovereign = sovereign && countPlayerSovereignties(playerId) >= 2;
@@ -57,6 +63,7 @@ public final class CapitalPlayerAuthorityResolver {
                 || PlayerCapitalTitleService.isCommander(level, capital, playerId);
         boolean hand = playerId.equals(capital.getHand())
                 || PlayerCapitalTitleService.isHand(level, capital, playerId);
+
         if (lord) {
             permissions.add(Permission.CHANGE_TAXES);
         }
@@ -66,6 +73,7 @@ public final class CapitalPlayerAuthorityResolver {
             permissions.add(Permission.CHANGE_BIRTH_POLICY);
             permissions.add(Permission.CHANGE_MARRIAGE_POLICY);
         }
+
         PlayerRank playerRank;
         if (highSovereign) {
             playerRank = PlayerRank.HIGH_SOVEREIGN;
@@ -88,9 +96,11 @@ public final class CapitalPlayerAuthorityResolver {
         } else {
             playerRank = PlayerRank.COMMONER;
         }
-        String displayTitle = CapitalTitleResolver.getDisplayTitle(level, capital, playerId);
-        if (displayTitle == null || displayTitle.isBlank() || "None".equals(displayTitle)) {
-            displayTitle = playerRank.defaultDisplayTitle();
+
+        Component displayTitle = CapitalTitleResolver.getDisplayTitleComponent(level, capital, playerId);
+        if (CapitalTitleResolver.getResolvedTitleId(level, capital, playerId)
+                == CapitalTitleResolver.ResolvedTitleId.NONE) {
+            displayTitle = playerRank.defaultDisplayTitleComponent();
         }
 
         return new ResolvedAuthority(
@@ -131,26 +141,26 @@ public final class CapitalPlayerAuthorityResolver {
     }
 
     public enum PlayerRank {
-        STRANGER("Stranger"),
-        COMMONER("Commoner"),
-        LORD("Lord or Lady"),
-        DUKE("Duke or Duchess"),
-        PRINCE("Prince or Princess"),
-        PRINCE_CONSORT("Prince Consort or Princess Consort"),
-        SOVEREIGN("King or Queen"),
-        SOVEREIGN_CONSORT("King Consort or Queen Consort"),
-        LORD_COMMANDER("Lord Commander"),
-        HAND("Hand of the Sovereign"),
-        HIGH_SOVEREIGN("High King or High Queen");
+        STRANGER("mcacapitals.dynamic.rank.stranger"),
+        COMMONER("mcacapitals.dynamic.rank.commoner"),
+        LORD("mcacapitals.dynamic.rank.lord"),
+        DUKE("mcacapitals.dynamic.rank.duke"),
+        PRINCE("mcacapitals.dynamic.rank.prince"),
+        PRINCE_CONSORT("mcacapitals.dynamic.rank.prince_consort"),
+        SOVEREIGN("mcacapitals.dynamic.rank.sovereign"),
+        SOVEREIGN_CONSORT("mcacapitals.dynamic.rank.sovereign_consort"),
+        LORD_COMMANDER("mcacapitals.dynamic.rank.lord_commander"),
+        HAND("mcacapitals.dynamic.rank.hand"),
+        HIGH_SOVEREIGN("mcacapitals.dynamic.rank.high_sovereign");
 
-        private final String defaultDisplayTitle;
+        private final String translationKey;
 
-        PlayerRank(String defaultDisplayTitle) {
-            this.defaultDisplayTitle = defaultDisplayTitle;
+        PlayerRank(String translationKey) {
+            this.translationKey = translationKey;
         }
 
-        public String defaultDisplayTitle() {
-            return defaultDisplayTitle;
+        public Component defaultDisplayTitleComponent() {
+            return Component.translatable(translationKey);
         }
     }
 
@@ -162,14 +172,14 @@ public final class CapitalPlayerAuthorityResolver {
 
     public record ResolvedAuthority(
             PlayerRank rank,
-            String displayTitle,
+            Component displayTitle,
             Set<Permission> permissions,
             UUID capitalId
     ) {
         public static ResolvedAuthority stranger() {
             return new ResolvedAuthority(
                     PlayerRank.STRANGER,
-                    PlayerRank.STRANGER.defaultDisplayTitle(),
+                    PlayerRank.STRANGER.defaultDisplayTitleComponent(),
                     Set.of(),
                     null
             );

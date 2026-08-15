@@ -44,13 +44,22 @@ final class CapitalDiplomaticTruceService {
                 0L
         );
 
-        String entry = "The truce between "
-                + CapitalDiplomaticAgreementText.capitalName(level, first)
-                + " and "
-                + CapitalDiplomaticAgreementText.capitalName(level, second)
-                + " expired.";
-        CapitalChronicleService.addEntry(level, first, entry);
-        CapitalChronicleService.addEntry(level, second, entry);
+        String firstName = CapitalDiplomaticAgreementText.capitalName(level, first);
+        String secondName = CapitalDiplomaticAgreementText.capitalName(level, second);
+        CapitalChronicleService.addEvent(
+                level,
+                first,
+                CapitalChronicleEventId.TRUCE_EXPIRED,
+                firstName,
+                secondName
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                second,
+                CapitalChronicleEventId.TRUCE_EXPIRED,
+                firstName,
+                secondName
+        );
     }
 
     static void expireTruces(ServerLevel level) {

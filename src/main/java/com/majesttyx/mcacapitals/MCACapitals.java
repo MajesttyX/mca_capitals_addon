@@ -12,7 +12,7 @@ import com.majesttyx.mcacapitals.util.CapitalCampaignCommands;
 import com.majesttyx.mcacapitals.util.CapitalCharterCommands;
 import com.majesttyx.mcacapitals.util.CapitalDebugCommands;
 import com.majesttyx.mcacapitals.util.CapitalDiplomaticGiftCommands;
-import com.majesttyx.mcacapitals.util.CapitalDiplomacyCommands;
+import com.majesttyx.mcacapitals.util.CapitalDiplomaticAgreementCommands;
 import com.majesttyx.mcacapitals.util.CapitalDiplomaticResponseCommands;
 import com.majesttyx.mcacapitals.util.CapitalDiplomaticProposalResponseCommands;
 import com.majesttyx.mcacapitals.util.CapitalFoundingCommands;
@@ -52,7 +52,7 @@ public class MCACapitals implements ModInitializer {
             CapitalHouseFoundationCommands.register(dispatcher);
             CapitalDebugCommands.register(dispatcher);
             CapitalDiplomaticGiftCommands.register(dispatcher);
-            CapitalDiplomacyCommands.register(dispatcher);
+            CapitalDiplomaticAgreementCommands.register(dispatcher);
             CapitalDiplomaticResponseCommands.register(dispatcher);
             CapitalDiplomaticProposalResponseCommands.register(dispatcher);
             AbdicationPromptCommands.register(dispatcher);

@@ -359,48 +359,41 @@ public final class CapitalExileDiscoveryHandler {
                         capital.getCapitalId()
                 );
 
-        String discoveryLine =
-                targetName
-                        + " was discovered to be an Enemy of the Crown.";
-
-        String warrantLine =
+        Component warrantLine =
                 CapitalJusticeText
                         .arrestWarrantIssued(
                                 targetName
                         );
 
-        CapitalChronicleService
-                .addEntry(
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.ENEMY_DISCOVERED,
+                targetName
+        );
+
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.ARREST_WARRANT_ISSUED,
+                targetName
+        );
+
+        CapitalPlayerNotificationService
+                .notifyPlayersInCapital(
                         level,
                         capital,
-                        discoveryLine
+                        Component.translatable(
+                                "mcacapitals.justice.enemy_discovered.report",
+                                targetName
+                        )
                 );
 
-        CapitalChronicleService
-                .addEntry(
+        CapitalPlayerNotificationService
+                .notifyPlayersInCapital(
                         level,
                         capital,
                         warrantLine
-                );
-
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        capital,
-                        Component.literal(
-                                "Reports reach the Master of Laws: "
-                                        + targetName
-                                        + " has been discovered as an Enemy of the Crown."
-                        )
-                );
-
-        CapitalPlayerNotificationService
-                .notifyPlayersInCapital(
-                        level,
-                        capital,
-                        Component.literal(
-                                warrantLine
-                        )
                 );
 
         return true;

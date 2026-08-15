@@ -126,7 +126,7 @@ final class CapitalCampaignBattleService {
                     campaign,
                     attackingCapital,
                     defendingCapital,
-                    "The player who assembled this campaign no longer has authority to begin the battle."
+                    Component.translatable("mcacapitals.system.campaign.assembler_lost_authority")
             );
             return;
         }
@@ -152,7 +152,7 @@ final class CapitalCampaignBattleService {
                     campaign,
                     attackingCapital,
                     defendingCapital,
-                    "The assembled campaign force was lost before the battle could begin."
+                    Component.translatable("mcacapitals.system.campaign.force_lost_before_battle")
             );
             return;
         }
@@ -175,7 +175,7 @@ final class CapitalCampaignBattleService {
                     campaign,
                     attackingCapital,
                     defendingCapital,
-                    "The attack could not begin because the War state could not be established."
+                    Component.translatable("mcacapitals.system.campaign.war_state_not_established")
             );
             return;
         }
@@ -200,7 +200,10 @@ final class CapitalCampaignBattleService {
                     attackingCapital,
                     defendingCapital,
                     CapitalCampaignEndReason.PEACE_ACCEPTED,
-                    "The campaign ended when peace was accepted."
+                    CapitalChronicleEventId.CAMPAIGN_PEACE_ACCEPTED,
+                    Component.translatable("mcacapitals.system.campaign.peace_accepted_retreat"),
+                    CapitalDiplomaticAgreementText.capitalName(level, attackingCapital),
+                    CapitalDiplomaticAgreementText.capitalName(level, defendingCapital)
             );
             return;
         }
@@ -222,7 +225,10 @@ final class CapitalCampaignBattleService {
                     attackingCapital,
                     defendingCapital,
                     CapitalCampaignEndReason.DEFENDING_SOVEREIGN_DIED,
-                    "The campaign ended when the defending sovereign died."
+                    CapitalChronicleEventId.CAMPAIGN_SOVEREIGN_DEATH_RETREAT,
+                    Component.translatable("mcacapitals.system.campaign.sovereign_death_retreat"),
+                    CapitalDiplomaticAgreementText.capitalName(level, attackingCapital),
+                    CapitalDiplomaticAgreementText.capitalName(level, defendingCapital)
             );
             return;
         }
@@ -240,12 +246,12 @@ final class CapitalCampaignBattleService {
             notifyInitiatingPlayer(
                     level,
                     campaign,
-                    "The defending Crown has rallied. The campaign battle resumes."
+                    Component.translatable("mcacapitals.system.campaign.crown_rally_attacker")
             );
             CapitalPlayerNotificationService.notifyPlayersInCapital(
                     level,
                     defendingCapital,
-                    Component.literal("The defending Crown has rallied. The battle resumes.")
+                    Component.translatable("mcacapitals.system.campaign.crown_rally_defender")
             );
         }
 
@@ -293,24 +299,29 @@ final class CapitalCampaignBattleService {
         CapitalCampaignTargetingService.clearCampaignTargets(level, campaign);
 
         String defendingName = CapitalDiplomaticAgreementText.capitalName(level, defendingCapital);
-        String entry = "The field defenders of "
-                + defendingName
-                + " were defeated. The battle paused while the defending court prepared its answer.";
 
-        CapitalChronicleService.addEntry(level, attackingCapital, entry);
-        CapitalChronicleService.addEntry(level, defendingCapital, entry);
+        CapitalChronicleService.addEvent(
+                level,
+                attackingCapital,
+                CapitalChronicleEventId.FIELD_DEFENDERS_DEFEATED,
+                defendingName
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                defendingCapital,
+                CapitalChronicleEventId.FIELD_DEFENDERS_DEFEATED,
+                defendingName
+        );
 
         notifyInitiatingPlayer(
                 level,
                 campaign,
-                "The field defenders have fallen. The defending court will answer in 3 seconds."
+                Component.translatable("mcacapitals.system.campaign.field_defenders_fallen_attacker")
         );
         CapitalPlayerNotificationService.notifyPlayersInCapital(
                 level,
                 defendingCapital,
-                Component.literal(
-                        "The field defenders have fallen. The defending court is preparing its answer."
-                )
+                Component.translatable("mcacapitals.system.campaign.field_defenders_fallen_defender")
         );
     }
 
@@ -347,9 +358,9 @@ final class CapitalCampaignBattleService {
                     attackingCapital,
                     defendingCapital,
                     CapitalCampaignEndReason.DEFENDERS_SURRENDERED,
-                    "With no sovereign to continue the war, the court of "
-                            + defendingName
-                            + " surrendered after the capital's field defenders fell."
+                    CapitalChronicleEventId.CAMPAIGN_DEFENDERS_SURRENDERED_NO_SOVEREIGN,
+                    Component.translatable("mcacapitals.system.campaign.defenders_surrendered_no_sovereign", defendingName),
+                    defendingName
             );
             return;
         }
@@ -362,9 +373,9 @@ final class CapitalCampaignBattleService {
                     attackingCapital,
                     defendingCapital,
                     CapitalCampaignEndReason.DEFENDERS_SURRENDERED,
-                    "The sovereign of "
-                            + defendingName
-                            + " sued for peace after the capital's field defenders fell."
+                    CapitalChronicleEventId.CAMPAIGN_DEFENDERS_SUED_FOR_PEACE,
+                    Component.translatable("mcacapitals.system.campaign.defenders_sued_for_peace", defendingName),
+                    defendingName
             );
 
             if (campaign.getPhase() == CapitalCampaignPhase.RETREATING) {
@@ -382,14 +393,20 @@ final class CapitalCampaignBattleService {
         campaign.beginCrownRally(level.getGameTime(), level.getGameTime() + CROWN_RALLY_TICKS);
         CapitalCampaignDataAccess.get(level).setDirty();
 
-        String entry = "The sovereign of "
-                + defendingName
-                + " refused to sue for peace after the capital's field defenders fell; the campaign from "
-                + attackingName
-                + " continued against the Crown after a brief rally.";
-
-        CapitalChronicleService.addEntry(level, attackingCapital, entry);
-        CapitalChronicleService.addEntry(level, defendingCapital, entry);
+        CapitalChronicleService.addEvent(
+                level,
+                attackingCapital,
+                CapitalChronicleEventId.DEFENDING_SOVEREIGN_REFUSED_PEACE,
+                defendingName,
+                attackingName
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                defendingCapital,
+                CapitalChronicleEventId.DEFENDING_SOVEREIGN_REFUSED_PEACE,
+                defendingName,
+                attackingName
+        );
     }
 
     private static void beginVictoriousDepositionIfApplicable(
@@ -437,26 +454,36 @@ final class CapitalCampaignBattleService {
             CapitalRecord attackingCapital,
             CapitalRecord defendingCapital,
             CapitalCampaignEndReason reason,
-            String entry
+            CapitalChronicleEventId chronicleEventId,
+            Component notification,
+            Object... chronicleArguments
     ) {
         if (!CapitalCampaignService.beginRetreat(level, campaign.getCampaignId(), reason)) {
             return;
         }
 
         CapitalCampaignTargetingService.clearCampaignTargets(level, campaign);
-        CapitalChronicleService.addEntry(level, attackingCapital, entry);
-        CapitalChronicleService.addEntry(level, defendingCapital, entry);
+        CapitalChronicleService.addEvent(level, attackingCapital, chronicleEventId, chronicleArguments);
+        CapitalChronicleService.addEvent(level, defendingCapital, chronicleEventId, chronicleArguments);
 
-        notifyInitiatingPlayer(
-                level,
-                campaign,
-                entry + " Surviving attackers are returning home."
-        );
-        CapitalPlayerNotificationService.notifyPlayersInCapital(
-                level,
-                defendingCapital,
-                Component.literal(entry + " The surviving attackers are retreating.")
-        );
+        if (notification != null) {
+            notifyInitiatingPlayer(
+                    level,
+                    campaign,
+                    Component.translatable(
+                            "mcacapitals.system.campaign.retreat_reason_attacker",
+                            notification
+                    )
+            );
+            CapitalPlayerNotificationService.notifyPlayersInCapital(
+                    level,
+                    defendingCapital,
+                    Component.translatable(
+                            "mcacapitals.system.campaign.retreat_reason_defender",
+                            notification
+                    )
+            );
+        }
     }
 
     private static void finishRetreat(
@@ -468,17 +495,33 @@ final class CapitalCampaignBattleService {
         int returned = campaign.getReturnedAttackerIds().size();
         String attackingName = CapitalDiplomaticAgreementText.capitalName(level, attackingCapital);
         String defendingName = CapitalDiplomaticAgreementText.capitalName(level, defendingCapital);
-        String entry = "The campaign from "
-                + attackingName
-                + " against "
-                + defendingName
-                + " has ended. "
-                + returned
-                + " surviving attackers returned home.";
 
-        CapitalChronicleService.addEntry(level, attackingCapital, entry);
-        CapitalChronicleService.addEntry(level, defendingCapital, entry);
-        notifyInitiatingPlayer(level, campaign, entry);
+        CapitalChronicleService.addEvent(
+                level,
+                attackingCapital,
+                CapitalChronicleEventId.CAMPAIGN_ENDED_RETURNED,
+                attackingName,
+                defendingName,
+                returned
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                defendingCapital,
+                CapitalChronicleEventId.CAMPAIGN_ENDED_RETURNED,
+                attackingName,
+                defendingName,
+                returned
+        );
+        notifyInitiatingPlayer(
+                level,
+                campaign,
+                Component.translatable(
+                        "mcacapitals.system.campaign.ended_returned",
+                        attackingName,
+                        defendingName,
+                        returned
+                )
+        );
         CapitalCampaignService.completeCampaign(level, campaign.getCampaignId());
     }
 
@@ -489,14 +532,23 @@ final class CapitalCampaignBattleService {
             CapitalRecord defendingCapital
     ) {
         CapitalCampaignTargetingService.clearCampaignTargets(level, campaign);
-        String entry = "The campaign from "
-                + CapitalDiplomaticAgreementText.capitalName(level, attackingCapital)
-                + " against "
-                + CapitalDiplomaticAgreementText.capitalName(level, defendingCapital)
-                + " ended when all campaign attackers were defeated.";
+        String attackingName = CapitalDiplomaticAgreementText.capitalName(level, attackingCapital);
+        String defendingName = CapitalDiplomaticAgreementText.capitalName(level, defendingCapital);
 
-        CapitalChronicleService.addEntry(level, attackingCapital, entry);
-        CapitalChronicleService.addEntry(level, defendingCapital, entry);
+        CapitalChronicleService.addEvent(
+                level,
+                attackingCapital,
+                CapitalChronicleEventId.CAMPAIGN_ATTACKERS_DEFEATED,
+                attackingName,
+                defendingName
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                defendingCapital,
+                CapitalChronicleEventId.CAMPAIGN_ATTACKERS_DEFEATED,
+                attackingName,
+                defendingName
+        );
         campaign.finishWithoutRetreat(CapitalCampaignEndReason.ATTACKERS_DEFEATED);
         CapitalCampaignDataAccess.get(level).setDirty();
         CapitalCampaignService.completeCampaign(level, campaign.getCampaignId());
@@ -507,15 +559,27 @@ final class CapitalCampaignBattleService {
             CapitalCampaignRecord campaign,
             CapitalRecord attackingCapital,
             CapitalRecord defendingCapital,
-            String message
+            Component message
     ) {
         CapitalCampaignTargetingService.clearCampaignTargets(level, campaign);
-        String entry = message == null || message.isBlank()
-                ? "The planned military attack was invalidated."
+        Component entry = message == null
+                ? Component.translatable("mcacapitals.system.campaign.attack_invalidated")
                 : message;
 
-        CapitalChronicleService.addEntryWithoutHerald(attackingCapital, entry);
-        CapitalChronicleService.addEntryWithoutHerald(defendingCapital, entry);
+        CapitalChronicleService.addEventWithoutHerald(
+                level,
+                attackingCapital,
+                CapitalChronicleEventId.CAMPAIGN_PLANNED_ATTACK_INVALIDATED,
+                CapitalDiplomaticAgreementText.capitalName(level, attackingCapital),
+                CapitalDiplomaticAgreementText.capitalName(level, defendingCapital)
+        );
+        CapitalChronicleService.addEventWithoutHerald(
+                level,
+                defendingCapital,
+                CapitalChronicleEventId.CAMPAIGN_PLANNED_ATTACK_INVALIDATED,
+                CapitalDiplomaticAgreementText.capitalName(level, attackingCapital),
+                CapitalDiplomaticAgreementText.capitalName(level, defendingCapital)
+        );
         notifyInitiatingPlayer(level, campaign, entry);
         CapitalCampaignService.completeCampaign(level, campaign.getCampaignId());
     }
@@ -523,11 +587,10 @@ final class CapitalCampaignBattleService {
     private static void notifyInitiatingPlayer(
             ServerLevel level,
             CapitalCampaignRecord campaign,
-            String message
+            Component message
     ) {
         if (campaign.getInitiatingPlayerId() == null
-                || message == null
-                || message.isBlank()) {
+                || message == null) {
             return;
         }
 
@@ -535,7 +598,7 @@ final class CapitalCampaignBattleService {
                 campaign.getInitiatingPlayerId()
         );
         if (player != null) {
-            player.sendSystemMessage(Component.literal(message));
+            player.sendSystemMessage(message);
         }
     }
 

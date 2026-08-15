@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class CapitalNaturalDukedomService {
+
     private static final int BIG_HOUSES_PER_DUKE = 2;
     private static final int DAILY_CHANCE = 20;
 
@@ -47,15 +48,20 @@ public final class CapitalNaturalDukedomService {
 
         capital.setLastNaturalDukedomDay(currentDay);
 
-        int bigHouses = CapitalBuildingService.countBigHouses(level, capital);
-        int allowedNaturalDukes = bigHouses / BIG_HOUSES_PER_DUKE;
+        int bigHouses =
+                CapitalBuildingService.countBigHouses(level, capital);
+
+        int allowedNaturalDukes =
+                bigHouses / BIG_HOUSES_PER_DUKE;
 
         if (allowedNaturalDukes <= 0) {
             CapitalDataAccess.markDirty(level);
             return true;
         }
 
-        int currentNaturalDukes = countNaturalDukes(capital, residents);
+        int currentNaturalDukes =
+                countNaturalDukes(capital, residents);
+
         if (currentNaturalDukes >= allowedNaturalDukes) {
             CapitalDataAccess.markDirty(level);
             return true;
@@ -66,20 +72,31 @@ public final class CapitalNaturalDukedomService {
             return true;
         }
 
-        UUID candidate = selectCandidate(level, capital, residents);
+        UUID candidate =
+                selectCandidate(level, capital, residents);
+
         if (candidate == null) {
             CapitalDataAccess.markDirty(level);
             return true;
         }
 
-        boolean female = MCAIntegrationBridge.isFemale(level, candidate);
+        boolean female =
+                MCAIntegrationBridge.isFemale(level, candidate);
+
         capital.addDuke(candidate, female);
 
-        String name = CapitalNameService.resolveDisplayName(level, capital, candidate);
-        CapitalChronicleService.addEntry(
+        String name =
+                CapitalNameService.resolveDisplayName(
+                        level,
+                        capital,
+                        candidate
+                );
+
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                CapitalJusticeText.naturalDukedom(level, candidate, name)
+                CapitalChronicleEventId.NATURAL_DUKEDOM,
+                name
         );
 
         CapitalDataAccess.markDirty(level);
@@ -107,6 +124,7 @@ public final class CapitalNaturalDukedomService {
             Set<UUID> residents
     ) {
         Set<UUID> blocked = new HashSet<>();
+
         addIfPresent(blocked, capital.getSovereign());
         addIfPresent(blocked, capital.getConsort());
         addIfPresent(blocked, capital.getDowager());
@@ -116,7 +134,11 @@ public final class CapitalNaturalDukedomService {
         addIfPresent(blocked, capital.getHerald());
         addIfPresent(blocked, capital.getGrandMaester());
         addIfPresent(blocked, capital.getMasterOfLaws());
-        addIfPresent(blocked, getAmbassador(level, capital));
+
+        addIfPresent(
+                blocked,
+                CapitalAmbassadorService.getAmbassador(level, capital)
+        );
 
         blocked.addAll(capital.getRoyalChildren());
         blocked.addAll(capital.getDisinheritedRoyalChildren());
@@ -130,11 +152,16 @@ public final class CapitalNaturalDukedomService {
         for (UUID resident : residents) {
             if (resident == null
                     || blocked.contains(resident)
-                    || isAmbassador(level, resident)) {
+                    || CapitalAmbassadorService.isAmbassador(level, resident)) {
                 continue;
             }
 
-            int weight = naturalElevationWeight(level, capital, resident);
+            int weight = CapitalCrownJusticeService.naturalElevationWeight(
+                    level,
+                    capital,
+                    resident
+            );
+
             if (weight <= 0) {
                 continue;
             }
@@ -157,15 +184,10 @@ public final class CapitalNaturalDukedomService {
         }
 
         candidates.sort(Comparator.comparing(UUID::toString));
-        return candidates.get(level.random.nextInt(candidates.size()));
-    }
 
-    private static int naturalElevationWeight(ServerLevel level, CapitalRecord capital, UUID entityId) {
-        if (!isTrustedOfficeEligible(level, capital, entityId)) {
-            return 0;
-        }
-
-        return isRecognizedFriend(level, capital, entityId) ? 3 : 1;
+        return candidates.get(
+                level.random.nextInt(candidates.size())
+        );
     }
 
     private static boolean isRecognizedFriend(ServerLevel level, CapitalRecord capital, UUID entityId) {

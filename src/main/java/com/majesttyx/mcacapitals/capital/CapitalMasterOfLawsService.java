@@ -98,13 +98,12 @@ public final class CapitalMasterOfLawsService {
         String capitalName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
         if (recordReplacement && previous != null && !previous.equals(candidateId)) {
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    CapitalNameService.resolveDisplayName(level, capital, previous)
-                            + " was relieved of the office of Master of Laws of "
-                            + capitalName
-                            + "."
+                    CapitalChronicleEventId.MASTER_OF_LAWS_RELIEVED,
+                    CapitalNameService.resolveDisplayName(level, capital, previous),
+                    capitalName
             );
         }
 
@@ -120,13 +119,12 @@ public final class CapitalMasterOfLawsService {
         }
         sync(level, candidateId);
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                CapitalNameService.resolveDisplayName(level, capital, candidateId)
-                        + " was appointed Master of Laws of "
-                        + capitalName
-                        + "."
+                CapitalChronicleEventId.MASTER_OF_LAWS_APPOINTED,
+                CapitalNameService.resolveDisplayName(level, capital, candidateId),
+                capitalName
         );
     }
 

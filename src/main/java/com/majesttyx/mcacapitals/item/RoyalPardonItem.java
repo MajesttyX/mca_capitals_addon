@@ -6,7 +6,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -18,12 +17,12 @@ public class RoyalPardonItem extends Item {
 
     @Override
     public Component getName(ItemStack stack) {
-        return Component.literal("Royal Pardon");
+        return Component.translatable("mcacapitals.system.royal_pardon_item.royal_pardon");
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("Clears a warrant, detention, or execution mark.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Only a Sovereign, Hand, or Lord Commander may issue it.").withStyle(ChatFormatting.GRAY));
+    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        tooltipComponents.add(Component.translatable("mcacapitals.system.royal_pardon_item.clears_a_warrant_detention_or_execution_mark").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.royal_pardon_item.only_a_sovereign_or_hand_may_issue_it").withStyle(ChatFormatting.GRAY));
     }
 }

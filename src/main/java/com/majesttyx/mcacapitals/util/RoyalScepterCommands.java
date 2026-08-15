@@ -1,8 +1,12 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
+
 import com.majesttyx.mcacapitals.capital.CapitalAmbassadorService;
 import com.majesttyx.mcacapitals.capital.CapitalBuildingService;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
+import com.majesttyx.mcacapitals.capital.CapitalCommanderService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalHandService;
 import com.majesttyx.mcacapitals.capital.CapitalHeraldService;
@@ -10,6 +14,7 @@ import com.majesttyx.mcacapitals.capital.CapitalMaesterService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalMasterOfLawsService;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
+import com.majesttyx.mcacapitals.capital.CapitalRankConflictService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.capital.CapitalRoyalGuardService;
@@ -91,48 +96,89 @@ public final class RoyalScepterCommands {
         if (player == null || capital == null) {
             return false;
         }
+
         return player.hasPermissions(2)
                 || player.getUUID().equals(capital.getPlayerSovereignId())
                 || player.getUUID().equals(capital.getSovereign())
-                || PlayerCapitalTitleService.isHand(player.serverLevel(), capital, player.getUUID());
+                || PlayerCapitalTitleService.isHand(
+                player.serverLevel(),
+                capital,
+                player.getUUID()
+        );
     }
 
     private static String resolveName(ServerLevel level, UUID entityId) {
         if (entityId == null) {
             return "Unknown";
         }
+
         if (level.getServer() != null) {
-            ServerPlayer onlinePlayer = level.getServer().getPlayerList().getPlayer(entityId);
+            ServerPlayer onlinePlayer = level.getServer()
+                    .getPlayerList()
+                    .getPlayer(entityId);
+
             if (onlinePlayer != null) {
                 return onlinePlayer.getName().getString();
             }
         }
+
         if (MCAIntegrationBridge.getEntityByUuid(level, entityId) != null) {
-            return MCAIntegrationBridge.getEntityByUuid(level, entityId).getName().getString();
+            return MCAIntegrationBridge.getEntityByUuid(level, entityId)
+                    .getName()
+                    .getString();
         }
+
         return entityId.toString();
     }
 
-    private static boolean isPlayerFemaleById(ServerLevel level, UUID playerId) {
-        if (level == null || playerId == null || level.getServer() == null) {
+    private static boolean isPlayerFemaleById(
+            ServerLevel level,
+            UUID playerId
+    ) {
+        if (level == null
+                || playerId == null
+                || level.getServer() == null) {
             return false;
         }
-        ServerPlayer onlinePlayer = level.getServer().getPlayerList().getPlayer(playerId);
+
+        ServerPlayer onlinePlayer = level.getServer()
+                .getPlayerList()
+                .getPlayer(playerId);
+
         if (onlinePlayer == null) {
             return false;
         }
+
         return MCAIntegrationBridge.isPlayerFemale(level, onlinePlayer);
     }
 
-    private static String resolvePlayerCommanderName(ServerLevel level, CapitalRecord capital, UUID commanderId) {
+    private static String resolvePlayerCommanderName(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID commanderId
+    ) {
         String base = resolveName(level, commanderId);
-        NobleTitle title = PlayerCapitalTitleService.getGrantedTitle(level, capital, commanderId);
-        if (title == NobleTitle.DUKE || title == NobleTitle.DUCHESS) {
-            return (isPlayerFemaleById(level, commanderId) ? "Duchess " : "Duke ") + base;
+
+        NobleTitle title = PlayerCapitalTitleService.getGrantedTitle(
+                level,
+                capital,
+                commanderId
+        );
+
+        if (title == NobleTitle.DUKE
+                || title == NobleTitle.DUCHESS) {
+            return (isPlayerFemaleById(level, commanderId)
+                    ? "Duchess "
+                    : "Duke ") + base;
         }
-        if (title == NobleTitle.LORD || title == NobleTitle.LADY) {
-            return (isPlayerFemaleById(level, commanderId) ? "Lady " : "Lord ") + base;
+
+        if (title == NobleTitle.LORD
+                || title == NobleTitle.LADY) {
+            return (isPlayerFemaleById(level, commanderId)
+                    ? "Lady "
+                    : "Lord ") + base;
         }
+
         return base;
     }
 
@@ -144,22 +190,35 @@ public final class RoyalScepterCommands {
         }
     }
 
-    private static UUID parseUuid(CommandSourceStack source, String rawVillagerId) {
+    private static UUID parseUuid(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
         try {
             return UUID.fromString(rawVillagerId);
         } catch (IllegalArgumentException ex) {
-            source.sendFailure(Component.literal("Invalid UUID."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.invalid_uuid"));
             return null;
         }
     }
 
-    private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {
-        CapitalRecord capital = CapitalManager.getCapitalBySovereign(villagerId);
+    private static CapitalRecord resolveCapital(
+            ServerLevel level,
+            UUID villagerId
+    ) {
+        CapitalRecord capital =
+                CapitalManager.getCapitalBySovereign(villagerId);
+
         if (capital != null) {
             return capital;
         }
 
-        Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
+        Integer villageId =
+                MCAIntegrationBridge.getVillageIdForResident(
+                        level,
+                        villagerId
+                );
+
         if (villageId == null) {
             return null;
         }
@@ -167,335 +226,528 @@ public final class RoyalScepterCommands {
         return CapitalManager.getCapitalByVillageId(villageId);
     }
 
-    private static int appointHeir(CommandSourceStack source, String rawVillagerId) {
+    private static boolean rejectAmbassador(
+            CommandSourceStack source,
+            ServerLevel level,
+            UUID villagerId
+    ) {
+        if (!CapitalAmbassadorService.isAmbassador(level, villagerId)) {
+            return false;
+        }
+
+        source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.the_ambassador_cannot_hold_another_royal_or_court_appointment"));
+
+        return true;
+    }
+
+    private static int appointHeir(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
         ServerPlayer player = getPlayer(source);
+
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
         UUID villagerId = parseUuid(source, rawVillagerId);
+
         if (villagerId == null) {
             return 0;
         }
 
+        if (rejectAmbassador(source, level, villagerId)) {
+            return 0;
+        }
+
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal("Target is not an MCA villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
+
         if (capital == null) {
-            source.sendFailure(Component.literal("That villager is not part of a capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal("Only the sovereign or an operator may use the Royal Scepter here."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
         if (villagerId.equals(capital.getSovereign())) {
-            source.sendFailure(Component.literal("The sovereign is already on the throne."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.the_sovereign_is_already_on_the_throne"));
             return 0;
         }
 
         if (capital.isDisinheritedRoyalChild(villagerId)) {
-            source.sendFailure(Component.literal("A disinherited royal child cannot be named Heir Apparent."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.a_disinherited_royal_child_cannot_be_named_heir_apparent"));
             return 0;
         }
 
-        if (!MCAIntegrationBridge.hasPersistentFamilyNode(level, villagerId)
-                || MCAIntegrationBridge.isFamilyNodeDeceased(level, villagerId)) {
-            source.sendFailure(Component.literal("That villager is not eligible to be named Heir Apparent."));
+        if (!MCAIntegrationBridge.hasPersistentFamilyNode(
+                level,
+                villagerId
+        ) || MCAIntegrationBridge.isFamilyNodeDeceased(
+                level,
+                villagerId
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_be_named_heir_apparent"));
             return 0;
         }
 
-        if (villagerId.equals(capital.getHeir()) && capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
-            source.sendFailure(Component.literal(resolveName(level, villagerId) + " is already the named Heir Apparent."));
+        if (villagerId.equals(capital.getHeir())
+                && capital.getHeirMode()
+                == CapitalRecord.HeirMode.MANUAL) {
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_heir_apparent",
+                    resolveName(level, villagerId)
+            ));
             return 0;
         }
 
         capital.setHeir(villagerId);
-        capital.setHeirFemale(MCAIntegrationBridge.isFemale(level, villagerId));
+        capital.setHeirFemale(
+                MCAIntegrationBridge.isFemale(level, villagerId)
+        );
         capital.setHeirMode(CapitalRecord.HeirMode.MANUAL);
 
         CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
-        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
-        CapitalNameService.refreshCapitalNames(level, capital, residents);
+
+        CapitalHeraldService.refreshHeraldAfterStatusChange(
+                level,
+                capital,
+                residents
+        );
+
+        CapitalNameService.refreshCapitalNames(
+                level,
+                capital,
+                residents
+        );
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String name = resolveName(level, villagerId);
-        CapitalChronicleService.addEntry(level, capital,
-                name + " was named Heir Apparent of "
-                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
+
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.HEIR_APPARENT_NAMED, name, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
 
         return 1;
     }
 
-    private static int appointHand(CommandSourceStack source, String rawVillagerId) {
+    private static int appointHand(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
         ServerPlayer player = getPlayer(source);
+
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
         UUID villagerId = parseUuid(source, rawVillagerId);
+
         if (villagerId == null) {
             return 0;
         }
 
+        if (rejectAmbassador(source, level, villagerId)) {
+            return 0;
+        }
+
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal("Target is not an MCA villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
+
         if (capital == null) {
-            source.sendFailure(Component.literal("That villager is not part of a capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal("Only the sovereign or an operator may use the Royal Scepter here."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
-        if (!CapitalHandService.isEligibleHandCandidate(level, capital, villagerId, residents)) {
-            source.sendFailure(Component.literal("That villager is not eligible to serve as Hand of the Crown."));
+        if (!CapitalHandService.isEligibleHandCandidate(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_hand_of_the_crown"));
             return 0;
         }
 
         if (villagerId.equals(capital.getHand())) {
-            source.sendFailure(Component.literal(resolveName(level, villagerId) + " already holds the office of Hand of the Crown."));
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_hand",
+                    resolveName(level, villagerId)
+            ));
             return 0;
         }
 
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String villageName = MCAIntegrationBridge.getVillageName(
+                level,
+                capital.getVillageId()
+        );
+
         UUID previousHand = capital.getHand();
 
-        if (previousHand != null && !previousHand.equals(villagerId)) {
-            String formerName = resolveName(level, previousHand);
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    formerName + " was relieved of the office of "
-                            + (capital.isSovereignFemale() ? "Hand of the Queen" : "Hand of the King")
-                            + " of " + villageName + "."
-            );
+        if (previousHand != null
+                && !previousHand.equals(villagerId)) {
+            String formerName = CapitalChronicleIdentitySnapshot.name(level, capital, previousHand);
+
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.OFFICE_RELIEVED, formerName, CapitalChronicleIdentitySnapshot.handOffice(level, capital), villageName);
         }
 
         capital.setHand(villagerId);
-        capital.setHandFemale(MCAIntegrationBridge.isFemale(level, villagerId));
+        capital.setHandFemale(
+                MCAIntegrationBridge.isFemale(level, villagerId)
+        );
 
-        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
-        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalHeraldService.refreshHeraldAfterStatusChange(
+                level,
+                capital,
+                residents
+        );
+
+        CapitalNameService.refreshCapitalNames(
+                level,
+                capital,
+                residents
+        );
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String name = resolveName(level, villagerId);
-        String officeName = capital.isSovereignFemale() ? "Hand of the Queen" : "Hand of the King";
-        CapitalChronicleService.addEntry(level, capital,
-                name + " was appointed " + officeName + " of " + villageName + ".");
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
+
+        String officeName = capital.isSovereignFemale()
+                ? "Hand of the Queen"
+                : "Hand of the King";
+
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.HAND_APPOINTED, name, CapitalChronicleIdentitySnapshot.handOffice(level, capital), villageName);
 
         return 1;
     }
 
-    private static int appointGrandMaester(CommandSourceStack source, String rawVillagerId) {
+    private static int appointGrandMaester(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
         ServerPlayer player = getPlayer(source);
+
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
         UUID villagerId = parseUuid(source, rawVillagerId);
+
         if (villagerId == null) {
             return 0;
         }
 
+        if (rejectAmbassador(source, level, villagerId)) {
+            return 0;
+        }
+
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal("Target is not an MCA villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
+
         if (capital == null) {
-            source.sendFailure(Component.literal("That villager is not part of a capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal("Only the sovereign or an operator may use the Royal Scepter here."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
-        if (!CapitalMaesterService.isEligibleGrandMaesterCandidate(level, capital, villagerId, residents)) {
-            source.sendFailure(Component.literal("That villager is not eligible to serve as Grand Maester."));
+        if (!CapitalMaesterService.isEligibleGrandMaesterCandidate(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_grand_maester"));
             return 0;
         }
 
         if (villagerId.equals(capital.getGrandMaester())) {
-            source.sendFailure(Component.literal(resolveName(level, villagerId) + " already holds the office of Grand Maester."));
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_grand_maester",
+                    resolveName(level, villagerId)
+            ));
             return 0;
         }
 
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String villageName = MCAIntegrationBridge.getVillageName(
+                level,
+                capital.getVillageId()
+        );
+
         UUID previousGrandMaester = capital.getGrandMaester();
 
-        if (previousGrandMaester != null && !previousGrandMaester.equals(villagerId)) {
-            String formerName = resolveName(level, previousGrandMaester);
-            CapitalChronicleService.addEntry(level, capital,
-                    formerName + " was relieved of the office of Grand Maester of " + villageName + ".");
+        if (previousGrandMaester != null
+                && !previousGrandMaester.equals(villagerId)) {
+            String formerName = CapitalChronicleIdentitySnapshot.name(
+                    level,
+                    capital,
+                    previousGrandMaester
+            );
+
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.GRAND_MAESTER_RELIEVED, formerName, villageName);
         }
 
         capital.setGrandMaester(villagerId);
-        capital.setGrandMaesterFemale(MCAIntegrationBridge.isFemale(level, villagerId));
+        capital.setGrandMaesterFemale(
+                MCAIntegrationBridge.isFemale(level, villagerId)
+        );
 
-        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
-        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalHeraldService.refreshHeraldAfterStatusChange(
+                level,
+                capital,
+                residents
+        );
+
+        CapitalNameService.refreshCapitalNames(
+                level,
+                capital,
+                residents
+        );
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String name = resolveName(level, villagerId);
-        CapitalChronicleService.addEntry(level, capital,
-                name + " was appointed Grand Maester of " + villageName + ".");
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
+
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.GRAND_MAESTER_APPOINTED, name, villageName);
 
         return 1;
     }
 
-    private static int appointCommander(CommandSourceStack source, String rawVillagerId) {
+    private static int appointCommander(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
         ServerPlayer player = getPlayer(source);
+
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
         UUID villagerId = parseUuid(source, rawVillagerId);
+
         if (villagerId == null) {
+            return 0;
+        }
+
+        if (rejectAmbassador(source, level, villagerId)) {
             return 0;
         }
 
         if (!MCAIntegrationBridge.isMCAGuard(level, villagerId)) {
-            source.sendFailure(Component.literal("Only a guard or archer can be named Commander of the Army."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_guard_or_archer_can_be_named_commander_of_the_army"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
+
         if (capital == null) {
-            source.sendFailure(Component.literal("That villager is not part of a capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal("Only the sovereign or an operator may use the Royal Scepter here."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
         UUID previousVillagerCommander = capital.getCommander();
-        UUID previousPlayerCommander = PlayerCapitalTitleService.getCommanderHolder(level, capital);
+
+        UUID previousPlayerCommander =
+                PlayerCapitalTitleService.getCommanderHolder(
+                        level,
+                        capital
+                );
 
         if (villagerId.equals(previousVillagerCommander)) {
-            source.sendFailure(Component.literal(resolveName(level, villagerId) + " already holds the office of Commander of the Army."));
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_commander",
+                    resolveName(level, villagerId)
+            ));
             return 0;
         }
 
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String villageName = MCAIntegrationBridge.getVillageName(
+                level,
+                capital.getVillageId()
+        );
 
         if (previousPlayerCommander != null) {
-            String formerPlayerName = resolvePlayerCommanderName(level, capital, previousPlayerCommander);
-            PlayerCapitalTitleService.revokeCommander(level, capital, previousPlayerCommander);
-            CapitalChronicleService.addEntry(
+            String formerPlayerName = resolvePlayerCommanderName(
                     level,
                     capital,
-                    formerPlayerName + " was relieved of the office of Commander of the Army of " + villageName + "."
+                    previousPlayerCommander
             );
+
+            PlayerCapitalTitleService.revokeCommander(
+                    level,
+                    capital,
+                    previousPlayerCommander
+            );
+
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.COMMANDER_ARMY_RELIEVED, formerPlayerName, villageName);
         }
 
-        if (previousVillagerCommander != null && !previousVillagerCommander.equals(villagerId)) {
-            String formerVillagerName = resolveName(level, previousVillagerCommander);
-            CapitalChronicleService.addEntry(
+        if (previousVillagerCommander != null
+                && !previousVillagerCommander.equals(villagerId)) {
+            String formerVillagerName = CapitalChronicleIdentitySnapshot.name(
                     level,
                     capital,
-                    formerVillagerName + " was relieved of the office of Commander of the Army of " + villageName + "."
+                    previousVillagerCommander
             );
+
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.COMMANDER_ARMY_RELIEVED, formerVillagerName, villageName);
         }
 
         capital.setCommander(villagerId);
-        capital.setCommanderFemale(MCAIntegrationBridge.isFemale(level, villagerId));
+        capital.setCommanderFemale(
+                MCAIntegrationBridge.isFemale(level, villagerId)
+        );
 
-        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
-        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalHeraldService.refreshHeraldAfterStatusChange(
+                level,
+                capital,
+                residents
+        );
+
+        CapitalNameService.refreshCapitalNames(
+                level,
+                capital,
+                residents
+        );
+
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String name = resolveName(level, villagerId);
-        CapitalChronicleService.addEntry(level, capital,
-                name + " was appointed Commander of the Army of " + villageName + ".");
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
+
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.COMMANDER_ARMY_APPOINTED, name, villageName);
 
         return 1;
     }
 
-    private static int appointRoyalGuard(CommandSourceStack source, String rawVillagerId) {
+    private static int appointRoyalGuard(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
         ServerPlayer player = getPlayer(source);
+
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
         UUID villagerId = parseUuid(source, rawVillagerId);
+
         if (villagerId == null) {
             return 0;
         }
 
+        if (rejectAmbassador(source, level, villagerId)) {
+            return 0;
+        }
+
         CapitalRecord capital = resolveCapital(level, villagerId);
+
         if (capital == null) {
-            source.sendFailure(Component.literal("That villager is not part of a capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal("Only the sovereign or an operator may use the Royal Scepter here."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
             return 0;
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
-        if (!CapitalRoyalGuardService.appointRoyalGuard(level, capital, villagerId)) {
-            source.sendFailure(Component.literal("That villager is not eligible to join the royal guard."));
+        if (!CapitalRoyalGuardService.appointRoyalGuard(
+                level,
+                capital,
+                villagerId
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_join_the_royal_guard"));
             return 0;
         }
 
@@ -503,172 +755,274 @@ public final class RoyalScepterCommands {
         return 1;
     }
 
-    private static int appointDuke(CommandSourceStack source, String rawVillagerId) {
+    private static int appointDuke(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
         ServerPlayer player = getPlayer(source);
+
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
         UUID villagerId = parseUuid(source, rawVillagerId);
+
+        if (villagerId == null) {
+            return 0;
+        }
+
+        if (rejectAmbassador(source, level, villagerId)) {
+            return 0;
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
+            return 0;
+        }
+
+        CapitalRecord capital = resolveCapital(level, villagerId);
+
+        if (capital == null) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
+            return 0;
+        }
+
+        if (!canManageCapital(player, capital)) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_or_an_operator_may_use_the_royal_scepter_here"));
+            return 0;
+        }
+
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
+        if (!residents.contains(villagerId)) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
+            return 0;
+        }
+
+        if (!CapitalRankConflictService.canReceiveDirectNobleRank(
+                level,
+                capital,
+                villagerId
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_already_holds_a_rank_that_cannot_be_replaced_by_a_ducal"));
+            return 0;
+        }
+
+        capital.addDuke(
+                villagerId,
+                MCAIntegrationBridge.isFemale(level, villagerId)
+        );
+
+        CapitalHeraldService.refreshHeraldAfterStatusChange(
+                level,
+                capital,
+                residents
+        );
+
+        CapitalNameService.refreshCapitalNames(
+                level,
+                capital,
+                residents
+        );
+
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
+
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
+
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.DUCAL_ELEVATED, name, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+
+        return 1;
+    }
+
+    private static int appointMasterOfLaws(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
+        ServerPlayer player = getPlayer(source);
+
+        if (player == null) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
+            return 0;
+        }
+
+        ServerLevel level = player.serverLevel();
+        UUID villagerId = parseUuid(source, rawVillagerId);
+
         if (villagerId == null) {
             return 0;
         }
 
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal("Target is not an MCA villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
+
         if (capital == null) {
-            source.sendFailure(Component.literal("That villager is not part of a capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal("Only the sovereign or an operator may use the Royal Scepter here."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_authorized_hand_or_an_operator_may_use_the_royal_sc"));
             return 0;
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
-            return 0;
-        }
-
-        capital.addDuke(villagerId, MCAIntegrationBridge.isFemale(level, villagerId));
-
-        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
-        CapitalNameService.refreshCapitalNames(level, capital, residents);
-        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
-        CapitalDataAccess.markDirty(level);
-
-        String name = resolveName(level, villagerId);
-        CapitalChronicleService.addEntry(level, capital,
-                name + " was elevated to the ducal rank in " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
-
-        return 1;
-    }
-    private static int appointMasterOfLaws(CommandSourceStack source, String rawVillagerId) {
-        ServerPlayer player = getPlayer(source);
-        if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this."));
-            return 0;
-        }
-
-        ServerLevel level = player.serverLevel();
-        UUID villagerId = parseUuid(source, rawVillagerId);
-        if (villagerId == null) {
-            return 0;
-        }
-
-        if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal("Target is not an MCA villager."));
-            return 0;
-        }
-
-        CapitalRecord capital = resolveCapital(level, villagerId);
-        if (capital == null) {
-            source.sendFailure(Component.literal("That villager is not part of a capital."));
-            return 0;
-        }
-
-        if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal("Only the sovereign or an operator may use the Royal Scepter here."));
-            return 0;
-        }
-
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
         if (!CapitalBuildingService.hasPrison(level, capital)) {
-            source.sendFailure(Component.literal("A recognized Prison is required before appointing a Master of Laws."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.a_recognized_prison_is_required_before_appointing_a_master_of_laws"));
             return 0;
         }
 
         if (villagerId.equals(capital.getMasterOfLaws())) {
-            source.sendFailure(Component.literal(resolveName(level, villagerId) + " already holds the office of Master of Laws."));
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_master_of_laws",
+                    resolveName(level, villagerId)
+            ));
             return 0;
         }
 
-        if (!CapitalMasterOfLawsService.isEligibleCandidate(level, capital, villagerId, residents)) {
-            source.sendFailure(Component.literal("That villager is not eligible to serve as Master of Laws."));
+        if (!CapitalMasterOfLawsService.isEligibleCandidate(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_master_of_laws"));
             return 0;
         }
 
-        if (!CapitalMasterOfLawsService.appointMasterOfLaws(level, capital, villagerId, residents)) {
-            source.sendFailure(Component.literal("The Master of Laws appointment could not be completed."));
+        if (!CapitalMasterOfLawsService.appointMasterOfLaws(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.the_master_of_laws_appointment_could_not_be_completed"));
             return 0;
         }
 
         String name = resolveName(level, villagerId);
-        source.sendSuccess(() -> Component.literal(name + " was appointed Master of Laws."), false);
+
+        source.sendSuccess(
+                () -> Component.translatable(
+                        "mcacapitals.system.royal_scepter_commands.master_of_laws_appointed",
+                        name
+                ),
+                false
+        );
+
         return 1;
     }
 
-    private static int appointAmbassador(CommandSourceStack source, String rawVillagerId) {
+    private static int appointAmbassador(
+            CommandSourceStack source,
+            String rawVillagerId
+    ) {
         ServerPlayer player = getPlayer(source);
+
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_a_player_can_use_this"));
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
         UUID villagerId = parseUuid(source, rawVillagerId);
+
         if (villagerId == null) {
             return 0;
         }
 
         if (!MCAIntegrationBridge.isMCAVillager(level, villagerId)) {
-            source.sendFailure(Component.literal("Target is not an MCA villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.target_is_not_an_mca_villager"));
             return 0;
         }
 
         CapitalRecord capital = resolveCapital(level, villagerId);
+
         if (capital == null) {
-            source.sendFailure(Component.literal("That villager is not part of a capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_part_of_a_capital"));
             return 0;
         }
 
         if (!canManageCapital(player, capital)) {
-            source.sendFailure(Component.literal("Only the sovereign or an operator may use the Royal Scepter here."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.only_the_sovereign_authorized_hand_or_an_operator_may_use_the_royal_sc"));
             return 0;
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
+
         if (!residents.contains(villagerId)) {
-            source.sendFailure(Component.literal("That villager is not a resident of the capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_a_resident_of_the_capital"));
             return 0;
         }
 
         if (!CapitalBuildingService.hasAmbassadorBuildings(level, capital)) {
-            source.sendFailure(Component.literal("A recognized Inn and Storage are required before appointing an Ambassador."));
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.a_recognized_inn_and_storage_are_required_before_appointing_an_ambassa"));
             return 0;
         }
 
-        if (CapitalAmbassadorService.isAmbassador(level, capital, villagerId)) {
-            source.sendFailure(Component.literal(resolveName(level, villagerId) + " already holds the office of Ambassador."));
+        if (CapitalAmbassadorService.isAmbassador(
+                level,
+                capital,
+                villagerId
+        )) {
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.royal_scepter_commands.already_ambassador",
+                    resolveName(level, villagerId)
+            ));
             return 0;
         }
 
-        if (!CapitalAmbassadorService.isEligibleCandidate(level, capital, villagerId, residents)) {
-            source.sendFailure(Component.literal("That villager is not eligible to serve as Ambassador."));
+        if (!CapitalAmbassadorService.isEligibleCandidate(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_ambassador"));
             return 0;
         }
 
-        if (!CapitalAmbassadorService.appointAmbassador(level, capital, villagerId, residents)) {
-            source.sendFailure(Component.literal("The Ambassador appointment could not be completed."));
+        if (!CapitalAmbassadorService.appointAmbassador(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.the_ambassador_appointment_could_not_be_completed"));
             return 0;
         }
 
         String name = resolveName(level, villagerId);
-        source.sendSuccess(() -> Component.literal(name + " was appointed Ambassador."), false);
+
+        source.sendSuccess(
+                () -> Component.translatable(
+                        "mcacapitals.system.royal_scepter_commands.ambassador_appointed",
+                        name
+                ),
+                false
+        );
+
         return 1;
     }
-
 }

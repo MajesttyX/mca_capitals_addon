@@ -49,8 +49,8 @@ public class DecreeOfTheHouseItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("Used to revise the recorded surname or House name of the target.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Right-click to revise your own House name and House Words.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Shift-right-click a villager to edit their surname and House Words if applicable.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.decree_of_the_house_item.used_to_revise_the_recorded_surname_or_house_name_of_the_target").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.decree_of_the_house_item.right_click_to_revise_your_own_house_name_and_house_words").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.decree_of_the_house_item.shift_right_click_a_villager_to_edit_their_surname_and_house_words_if_applicable").withStyle(ChatFormatting.GRAY));
     }
 }

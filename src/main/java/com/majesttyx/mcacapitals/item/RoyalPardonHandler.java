@@ -1,5 +1,7 @@
 package com.majesttyx.mcacapitals.item;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
@@ -56,15 +58,15 @@ public final class RoyalPardonHandler {
         CapitalRecord capital = resolveCapital(level, targetId);
 
         if (capital == null || capital.getState() != CapitalState.ACTIVE) {
-            player.sendSystemMessage(Component.literal("This pardon has no lawful capital to answer to."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.royal_pardon_handler.this_pardon_has_no_lawful_capital_to_answer_to"));
             return;
         }
         if (!CapitalPlayerNotificationService.isPlayerWithinCapital(level, capital, player)) {
-            player.sendSystemMessage(Component.literal("A Royal Pardon must be issued within the capital's bounds."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.royal_pardon_handler.a_royal_pardon_must_be_issued_within_the_capital_s_bounds"));
             return;
         }
         if (!hasPardonAuthority(level, capital, player)) {
-            player.sendSystemMessage(Component.literal("Only the player Sovereign, or the player Hand serving an NPC Sovereign, may issue a Royal Pardon."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.royal_pardon_handler.only_the_player_sovereign_or_the_player_hand_serving_an_npc_sovereign"));
             return;
         }
 
@@ -80,8 +82,9 @@ public final class RoyalPardonHandler {
         );
         boolean hadExecutionMark = MCAExecutionBridge.isMarkedForExecution(level, targetId);
         if (!hadArrestWarrant && !hadDetention && !hadExecutionMark) {
-            player.sendSystemMessage(Component.literal(
-                    target.getName().getString() + " has no warrant, detention, or execution mark to pardon."
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.justice.royal_pardon.no_active_case",
+                    target.getName()
             ));
             return;
         }
@@ -98,7 +101,7 @@ public final class RoyalPardonHandler {
         );
         boolean clearedExecution = MCAExecutionBridge.clearExecutionMark(level, targetId);
         if (!clearedArrest && !clearedDetention && !clearedExecution) {
-            player.sendSystemMessage(Component.literal("The pardon could not be applied."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.royal_pardon_handler.the_pardon_could_not_be_applied"));
             return;
         }
 
@@ -114,15 +117,16 @@ public final class RoyalPardonHandler {
                 targetId,
                 currentDay(level)
         );
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                targetName + " was granted a Royal Pardon by " + playerName
-                        + ". The discovery remains part of the Crown's record."
+                CapitalChronicleEventId.ROYAL_PARDON,
+                targetName,
+                playerName
         );
         CapitalDataAccess.markDirty(level);
 
-        player.sendSystemMessage(Component.literal(targetName + " has been granted a Royal Pardon."));
+        player.sendSystemMessage(Component.translatable("mcacapitals.justice.royal_pardon.applied", targetName));
     }
 
     private static boolean hasPardonAuthority(ServerLevel level, CapitalRecord capital, ServerPlayer player) {

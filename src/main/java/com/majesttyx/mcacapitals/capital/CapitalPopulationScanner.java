@@ -260,10 +260,12 @@ public class CapitalPopulationScanner {
         if (!inserted) nearest.drop(charter, false);
 
         capital.setRoyalCharterIssued(true);
-        nearest.sendSystemMessage(Component.literal(
-                "The people of " + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
-                        + " seek a sovereign. A Royal Charter has been placed in your hands."
-        ));
+        nearest.sendSystemMessage(
+                Component.translatable(
+                        "mcacapitals.system.charter.population_seeks_sovereign",
+                        MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                )
+        );
         return true;
     }
 

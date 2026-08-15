@@ -2,12 +2,15 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.BetrothalSelectionClient;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 public class OpenBetrothalSelectionPacket {
+
+    private static final int MAX_CANDIDATES = 512;
 
     private final UUID capitalId;
     private final String villageName;
@@ -26,21 +29,10 @@ public class OpenBetrothalSelectionPacket {
         this.recommendationCandidates = new ArrayList<>(recommendationCandidates == null ? List.of() : recommendationCandidates);
     }
 
-    public UUID capitalId() {
-        return capitalId;
-    }
-
-    public String villageName() {
-        return villageName;
-    }
-
-    public List<Candidate> playerCandidates() {
-        return playerCandidates;
-    }
-
-    public List<Candidate> recommendationCandidates() {
-        return recommendationCandidates;
-    }
+    public UUID capitalId() { return capitalId; }
+    public String villageName() { return villageName; }
+    public List<Candidate> playerCandidates() { return playerCandidates; }
+    public List<Candidate> recommendationCandidates() { return recommendationCandidates; }
 
     public static void encode(OpenBetrothalSelectionPacket packet, FriendlyByteBuf buffer) {
         buffer.writeUUID(packet.capitalId);
@@ -52,53 +44,50 @@ public class OpenBetrothalSelectionPacket {
     public static OpenBetrothalSelectionPacket decode(FriendlyByteBuf buffer) {
         UUID capitalId = buffer.readUUID();
         String villageName = buffer.readUtf();
-        List<Candidate> playerCandidates = readCandidates(buffer);
-        List<Candidate> recommendationCandidates = readCandidates(buffer);
-
         return new OpenBetrothalSelectionPacket(
                 capitalId,
                 villageName,
-                playerCandidates,
-                recommendationCandidates
+                readCandidates(buffer),
+                readCandidates(buffer)
         );
     }
 
     public static void handle(OpenBetrothalSelectionPacket packet) {
-        BetrothalSelectionClient.open(packet);
+        if (packet != null) {
+            BetrothalSelectionClient.open(packet);
+        }
     }
 
     private static void writeCandidates(FriendlyByteBuf buffer, List<Candidate> candidates) {
         buffer.writeInt(candidates.size());
         for (Candidate candidate : candidates) {
             buffer.writeUUID(candidate.id);
-            buffer.writeUtf(candidate.name);
+            buffer.writeComponent(candidate.name);
         }
     }
 
     private static List<Candidate> readCandidates(FriendlyByteBuf buffer) {
         int size = buffer.readInt();
-        List<Candidate> candidates = new ArrayList<>();
+        if (size < 0 || size > MAX_CANDIDATES) {
+            throw new IllegalArgumentException("Invalid betrothal candidate count: " + size);
+        }
+        List<Candidate> candidates = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            candidates.add(new Candidate(buffer.readUUID(), buffer.readUtf()));
+            candidates.add(new Candidate(buffer.readUUID(), buffer.readComponent()));
         }
         return candidates;
     }
 
     public static class Candidate {
         private final UUID id;
-        private final String name;
+        private final Component name;
 
-        public Candidate(UUID id, String name) {
+        public Candidate(UUID id, Component name) {
             this.id = id;
-            this.name = name == null ? "" : name;
+            this.name = name == null ? Component.empty() : name;
         }
 
-        public UUID id() {
-            return id;
-        }
-
-        public String name() {
-            return name;
-        }
+        public UUID id() { return id; }
+        public Component name() { return name; }
     }
 }

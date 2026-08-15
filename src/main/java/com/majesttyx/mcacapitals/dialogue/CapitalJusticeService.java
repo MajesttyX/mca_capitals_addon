@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.dialogue;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalCrownStandingService;
@@ -14,7 +15,7 @@ import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalJusticeDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalPublicCrownStatus;
 import com.majesttyx.mcacapitals.network.ModNetwork;
-import com.majesttyx.mcacapitals.network.OpenAmbassadorCommunicationPacket;
+import com.majesttyx.mcacapitals.network.OpenAccusationSelectionPacket;
 import com.majesttyx.mcacapitals.util.CapitalJusticeText;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
@@ -31,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class CapitalJusticeService {
+
     private static final long ACCUSATION_COOLDOWN_DAYS = 2L;
 
     private CapitalJusticeService() {
@@ -40,48 +42,46 @@ public final class CapitalJusticeService {
         if (player == null || masterOfLawsEntity == null) {
             return false;
         }
+
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = resolveCapital(level, masterOfLawsEntity.getUUID());
         if (!isMasterOfLaws(capital, masterOfLawsEntity.getUUID())) {
-            player.sendSystemMessage(Component.literal("Only the Master of Laws may receive accusations against the Crown."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_justice_service.only_the_master_of_laws_may_receive_accusations_against_the_crown"));
             MCAIntegrationBridge.stopInteracting(masterOfLawsEntity);
             return true;
         }
+
         long remainingDays = getRemainingCooldownDays(level, capital, player.getUUID());
         if (remainingDays > 0L) {
-            player.sendSystemMessage(Component.literal(masterOfLawsEntity.getName().getString() + ": " + CapitalJusticeText.accusationCooldown()));
+            player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                    masterOfLawsEntity,
+                    CapitalJusticeText.accusationCooldown()
+            ));
             MCAIntegrationBridge.stopInteracting(masterOfLawsEntity);
             return true;
         }
 
-        List<OpenAmbassadorCommunicationPacket.Entry> entries = buildCandidates(level, capital).stream()
-                .map(candidate -> new OpenAmbassadorCommunicationPacket.Entry(
-                        candidate.name(),
-                        "Resident of " + capitalName(level, capital),
-                        "Bring this accusation before the Master of Laws.",
-                        "A false accusation carries a reputation penalty.",
-                        "Accuse " + candidate.name(),
-                        "/capitaljustice accuse " + capital.getCapitalId() + " " + candidate.id(),
-                        true,
-                        ""
-                ))
-                .toList();
-        if (entries.isEmpty()) {
-            player.sendSystemMessage(Component.literal(masterOfLawsEntity.getName().getString() + ": There is no one suitable to accuse at this time."));
+        List<OpenAccusationSelectionPacket.Candidate> candidates = buildCandidates(level, capital);
+        if (candidates.isEmpty()) {
+            player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                    masterOfLawsEntity,
+                    Component.translatable("mcacapitals.justice.accusation.no_candidates")
+            ));
             MCAIntegrationBridge.stopInteracting(masterOfLawsEntity);
             return true;
         }
 
-        player.sendSystemMessage(Component.literal(masterOfLawsEntity.getName().getString() + ": " + CapitalJusticeText.accusationIntro()));
-        ModNetwork.sendToPlayer(player, new OpenAmbassadorCommunicationPacket(
-                OpenAmbassadorCommunicationPacket.Mode.JUSTICE_CASES,
-                "Make an Accusation",
-                masterOfLawsEntity.getName().getString(),
-                "Choose the resident you accuse of acting against the Crown.",
-                "",
-                entries,
-                List.of()
+        player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                masterOfLawsEntity,
+                CapitalJusticeText.accusationIntro()
         ));
+
+        String villageName = capital.getVillageId() == null ? "" : MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        if (villageName == null) {
+            villageName = "";
+        }
+
+        ModNetwork.sendToPlayer(player, new OpenAccusationSelectionPacket(capital.getCapitalId(), villageName, candidates));
         MCAIntegrationBridge.stopInteracting(masterOfLawsEntity);
         return true;
     }
@@ -90,35 +90,46 @@ public final class CapitalJusticeService {
         if (player == null || capitalId == null || targetId == null) {
             return false;
         }
+
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = CapitalManager.getCapital(capitalId);
         if (capital == null || capital.getState() != CapitalState.ACTIVE) {
-            player.sendSystemMessage(Component.literal("That capital no longer exists."));
-            return false;
-        }
-        if (capital.getMasterOfLaws() == null) {
-            player.sendSystemMessage(Component.literal("This capital has no Master of Laws."));
-            return false;
-        }
-        Entity master = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, capital.getMasterOfLaws());
-        if (master == null || player.distanceToSqr(master) > 12.0D * 12.0D) {
-            player.sendSystemMessage(Component.literal("You must remain near the Master of Laws to make this accusation."));
-            return false;
-        }
-        if (!CapitalPlayerNotificationService.isPlayerWithinCapital(level, capital, player)) {
-            player.sendSystemMessage(Component.literal("You must be within the capital to make this accusation."));
-            return false;
-        }
-        if (getRemainingCooldownDays(level, capital, player.getUUID()) > 0L) {
-            player.sendSystemMessage(Component.literal(CapitalJusticeText.accusationCooldown()));
-            return false;
-        }
-        if (!isValidAccusationTarget(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("That person cannot be accused before the Master of Laws."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_justice_service.that_capital_no_longer_exists"));
             return false;
         }
 
-        CapitalJusticeDataAccess.setLastAccusationDay(level, capitalId, player.getUUID(), currentDay(level));
+        if (capital.getMasterOfLaws() == null) {
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_justice_service.this_capital_has_no_master_of_laws"));
+            return false;
+        }
+
+        Entity master = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, capital.getMasterOfLaws());
+        if (master == null || player.distanceToSqr(master) > 12.0D * 12.0D) {
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.system.capital_justice_service.you_must_remain_near_the_master_of_laws_to_make_this_accusation"
+            ));
+            return false;
+        }
+
+        if (!CapitalPlayerNotificationService.isPlayerWithinCapital(level, capital, player)) {
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_justice_service.you_must_be_within_the_capital_to_make_this_accusation"));
+            return false;
+        }
+
+        long remainingDays = getRemainingCooldownDays(level, capital, player.getUUID());
+        if (remainingDays > 0L) {
+            player.sendSystemMessage(CapitalJusticeText.accusationCooldown());
+            return false;
+        }
+
+        if (!isValidAccusationTarget(level, capital, targetId)) {
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_justice_service.that_person_cannot_be_accused_before_the_master_of_laws"));
+            return false;
+        }
+
+        long currentDay = currentDay(level);
+        CapitalJusticeDataAccess.setLastAccusationDay(level, capital.getCapitalId(), player.getUUID(), currentDay);
+
         CrownStanding standing = CapitalCrownStandingService.getStanding(level, capital, targetId);
         String targetName = CapitalNameService.resolveDisplayName(level, capital, targetId);
         String playerName = player.getName().getString();
@@ -126,25 +137,29 @@ public final class CapitalJusticeService {
         if (standing == CrownStanding.ENEMY_OF_CROWN) {
             rewardCorrectAccusation(player);
             CapitalCrownJusticeService.onCorrectAccusation(level, capital, targetId);
-            boolean newWarrant = CapitalJusticeDataAccess.issueArrestWarrant(level, capitalId, targetId);
-            String warrantLine = CapitalJusticeText.arrestWarrantIssued(targetName);
+
+            boolean newWarrant = CapitalJusticeDataAccess.issueArrestWarrant(level, capital.getCapitalId(), targetId);
+            Component warrantLine = CapitalJusticeText.arrestWarrantIssued(targetName);
+
             if (newWarrant) {
-                CapitalChronicleService.addEntry(level, capital, warrantLine);
-                player.sendSystemMessage(Component.literal(CapitalJusticeText.correctAccusation()));
-                player.sendSystemMessage(Component.literal(warrantLine));
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ARREST_WARRANT_ISSUED, targetName);
+                player.sendSystemMessage(CapitalJusticeText.correctAccusation());
+                player.sendSystemMessage(warrantLine);
             } else {
-                CapitalChronicleService.addEntry(level, capital, playerName + " renewed the accusation against " + targetName + ", who already stood under Arrest Warrant.");
-                player.sendSystemMessage(Component.literal(CapitalJusticeText.correctAccusation()));
-                player.sendSystemMessage(Component.literal(targetName + " already stands under Arrest Warrant."));
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ACCUSATION_RENEWED, playerName, targetName);
+                player.sendSystemMessage(CapitalJusticeText.correctAccusation());
+                player.sendSystemMessage(Component.translatable("mcacapitals.justice.arrest_warrant.already_active", targetName));
             }
+
             CapitalDataAccess.markDirty(level);
             return true;
         }
 
         applyWrongAccusationPenalties(level, capital, targetId, player);
-        CapitalChronicleService.addEntry(level, capital, playerName + " falsely accused " + targetName + " of being an enemy of the Crown.");
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.FALSE_ACCUSATION, playerName, targetName);
         CapitalDataAccess.markDirty(level);
-        player.sendSystemMessage(Component.literal(CapitalJusticeText.falseAccusation()));
+
+        player.sendSystemMessage(CapitalJusticeText.falseAccusation());
         return true;
     }
 
@@ -152,11 +167,13 @@ public final class CapitalJusticeService {
         if (masterOfLawsId == null) {
             return null;
         }
+
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital != null && masterOfLawsId.equals(capital.getMasterOfLaws())) {
                 return capital;
             }
         }
+
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, masterOfLawsId);
         return CapitalManager.getCapitalByVillageId(villageId);
     }
@@ -165,34 +182,56 @@ public final class CapitalJusticeService {
         return capital != null && villagerId != null && villagerId.equals(capital.getMasterOfLaws());
     }
 
-    private static List<Candidate> buildCandidates(ServerLevel level, CapitalRecord capital) {
+    private static List<OpenAccusationSelectionPacket.Candidate> buildCandidates(ServerLevel level, CapitalRecord capital) {
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        List<Candidate> candidates = new ArrayList<>();
+        List<OpenAccusationSelectionPacket.Candidate> candidates = new ArrayList<>();
+
         for (UUID resident : residents) {
-            if (isValidAccusationTarget(level, capital, resident)) {
-                candidates.add(new Candidate(resident, CapitalNameService.resolveDisplayName(level, capital, resident)));
+            if (!isValidAccusationTarget(level, capital, resident)) {
+                continue;
             }
+
+            candidates.add(new OpenAccusationSelectionPacket.Candidate(
+                    resident,
+                    CapitalNameService.resolveDisplayName(level, capital, resident)
+            ));
         }
-        candidates.sort(Comparator.comparing(Candidate::name, String.CASE_INSENSITIVE_ORDER));
+
+        candidates.sort(Comparator.comparing(OpenAccusationSelectionPacket.Candidate::name, String.CASE_INSENSITIVE_ORDER));
         return candidates;
     }
 
     private static boolean isValidAccusationTarget(ServerLevel level, CapitalRecord capital, UUID targetId) {
-        if (level == null || capital == null || targetId == null
-                || targetId.equals(capital.getMasterOfLaws())
-                || targetId.equals(capital.getSovereign())
-                || targetId.equals(capital.getPlayerSovereignId())) {
+        if (level == null || capital == null || targetId == null) {
             return false;
         }
-        CapitalPublicCrownStatus publicStatus = CapitalJusticeDataAccess.getPublicStatus(level, capital.getCapitalId(), targetId);
+
+        if (targetId.equals(capital.getMasterOfLaws())) {
+            return false;
+        }
+
+        if (targetId.equals(capital.getSovereign()) || targetId.equals(capital.getPlayerSovereignId())) {
+            return false;
+        }
+
+        CapitalPublicCrownStatus publicStatus = CapitalJusticeDataAccess.getPublicStatus(
+                level,
+                capital.getCapitalId(),
+                targetId
+        );
         if (publicStatus == CapitalPublicCrownStatus.DISCOVERED_ENEMY
                 || publicStatus == CapitalPublicCrownStatus.RESTORED_TO_PEACE) {
             return false;
         }
-        if (!MCAIntegrationBridge.isLoadedAndAlive(level, targetId)
-                || !MCAIntegrationBridge.isMCAVillager(level, targetId)) {
+
+        if (!MCAIntegrationBridge.isLoadedAndAlive(level, targetId)) {
             return false;
         }
+
+        if (!MCAIntegrationBridge.isMCAVillager(level, targetId)) {
+            return false;
+        }
+
         String ageState = MCAIntegrationBridge.getAgeState(level, targetId);
         return !"BABY".equalsIgnoreCase(ageState) && !"TODDLER".equalsIgnoreCase(ageState);
     }
@@ -211,6 +250,7 @@ public final class CapitalJusticeService {
     private static void applyWrongAccusationPenalties(ServerLevel level, CapitalRecord capital, UUID targetId, ServerPlayer player) {
         boolean recognizedFriend = CapitalCrownJusticeService.isRecognizedFriend(level, capital, targetId);
         MCAIntegrationBridge.adjustHearts(level, targetId, player.getUUID(), recognizedFriend ? -75 : -50);
+
         UUID sovereign = capital.getSovereign();
         if (sovereign != null && !sovereign.equals(targetId) && MCAIntegrationBridge.isMCAVillager(level, sovereign)) {
             MCAIntegrationBridge.adjustHearts(level, sovereign, player.getUUID(), recognizedFriend ? -50 : -30);
@@ -222,19 +262,16 @@ public final class CapitalJusticeService {
         if (lastDay == Long.MIN_VALUE) {
             return 0L;
         }
+
         long elapsed = currentDay(level) - lastDay;
-        return elapsed >= ACCUSATION_COOLDOWN_DAYS ? 0L : ACCUSATION_COOLDOWN_DAYS - elapsed;
+        if (elapsed >= ACCUSATION_COOLDOWN_DAYS) {
+            return 0L;
+        }
+
+        return ACCUSATION_COOLDOWN_DAYS - elapsed;
     }
 
     private static long currentDay(ServerLevel level) {
         return Math.max(1L, level.getDayTime() / 24000L + 1L);
-    }
-
-    private static String capitalName(ServerLevel level, CapitalRecord capital) {
-        String name = capital.getVillageId() == null ? "this capital" : MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        return name == null || name.isBlank() ? "this capital" : name;
-    }
-
-    private record Candidate(UUID id, String name) {
     }
 }

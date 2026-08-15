@@ -31,7 +31,7 @@ public class CapitalSuccessionService {
         UUID oldConsort = capital.getConsort();
         boolean oldConsortFemale = capital.isConsortFemale();
 
-        String deadName = resolveName(level, sovereign);
+        String deadName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
 
         Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
         Map<UUID, Boolean> oldRoyalChildFemale = new LinkedHashMap<>(capital.getRoyalChildFemale());
@@ -40,7 +40,7 @@ public class CapitalSuccessionService {
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         UUID successor = findSuccessor(level, capital, residents);
 
-        CapitalMourningService.startMourning(level, capital, deadName + " died.");
+        CapitalMourningService.startMourning(level, capital, deadName);
 
         if (successor == null) {
             capital.setSovereign(null);
@@ -56,19 +56,23 @@ public class CapitalSuccessionService {
                 capital.setDowager(oldConsort);
                 capital.setDowagerFemale(oldConsortFemale);
 
-                String dowagerName = resolveName(level, oldConsort);
+                String dowagerName = CapitalChronicleIdentitySnapshot.name(level, capital, oldConsort);
 
-                CapitalChronicleService.addEntry(
+                CapitalChronicleService.addEvent(
                         level,
                         capital,
-                        deadName + " died. " + dowagerName + " was left as surviving consort while the throne stood vacant."
+                        CapitalChronicleEventId.SOVEREIGN_DIED_CONSORT_SURVIVES,
+                        deadName,
+                        dowagerName,
+                        MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
                 );
             } else {
-                CapitalChronicleService.addEntry(
+                CapitalChronicleService.addEvent(
                         level,
                         capital,
-                        deadName + " died and no valid successor remained. "
-                                + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + " fell vacant."
+                        CapitalChronicleEventId.SOVEREIGN_DIED_NO_SUCCESSOR,
+                        deadName,
+                        MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
                 );
             }
 
@@ -152,21 +156,25 @@ public class CapitalSuccessionService {
 
         CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
 
-        String successorName = resolveName(level, successor);
+        String successorName = CapitalChronicleIdentitySnapshot.name(level, capital, successor);
 
         if (successorWasManualHeir) {
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    deadName + " died. " + successorName + ", previously named Heir Apparent, inherited the throne of "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                    CapitalChronicleEventId.SOVEREIGN_DIED_HEIR_INHERITED,
+                    deadName,
+                    successorName,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
             );
         } else {
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    deadName + " died. " + successorName + " inherited the throne of "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+                    CapitalChronicleEventId.SOVEREIGN_DIED_SUCCESSOR_INHERITED,
+                    deadName,
+                    successorName,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
             );
         }
 
@@ -410,13 +418,4 @@ public class CapitalSuccessionService {
                 && !MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId);
     }
 
-    private static String resolveName(ServerLevel level, UUID id) {
-        String recentDeathName = CapitalDeathTransitionService.getRecentDeathDisplayName(id);
-        if (recentDeathName != null && !recentDeathName.isBlank()) {
-            return recentDeathName;
-        }
-
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
-        return entity != null ? entity.getName().getString() : id.toString();
-    }
 }

@@ -22,8 +22,8 @@ public final class CapitalSuccessionDecreeService {
         UUID previousSovereign = capital.getSovereign();
         UUID previousPlayerSovereignId = capital.getPlayerSovereignId();
 
-        String previousName = resolveName(level, previousSovereign);
-        String targetName = resolveName(level, targetId);
+        String previousName = CapitalChronicleIdentitySnapshot.name(level, capital, previousSovereign);
+        String targetName = CapitalChronicleIdentitySnapshot.name(level, capital, targetId);
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
         CapitalSovereignAppointmentService.clearPlayerSovereignState(capital);
@@ -50,10 +50,13 @@ public final class CapitalSuccessionDecreeService {
             PlayerCapitalTitleService.clear(level, previousPlayerSovereignId, capital.getCapitalId());
         }
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                previousName + " peacefully transferred the crown of " + villageName + " to " + targetName + " by Succession Decree."
+                CapitalChronicleEventId.SUCCESSION_DECREE_TRANSFER,
+                previousName,
+                villageName,
+                targetName
         );
 
         CapitalManager.putCapital(capital);
@@ -71,7 +74,7 @@ public final class CapitalSuccessionDecreeService {
         UUID previousPlayerSovereignId = capital.getPlayerSovereignId();
         UUID targetId = targetPlayer.getUUID();
 
-        String previousName = resolveName(level, previousSovereign);
+        String previousName = CapitalChronicleIdentitySnapshot.name(level, capital, previousSovereign);
         String targetName = targetPlayer.getName().getString();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
@@ -108,10 +111,13 @@ public final class CapitalSuccessionDecreeService {
             PlayerCapitalTitleService.clear(level, targetId, capital.getCapitalId());
         }
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                previousName + " peacefully transferred the crown of " + villageName + " to " + targetName + " by Succession Decree."
+                CapitalChronicleEventId.SUCCESSION_DECREE_TRANSFER,
+                previousName,
+                villageName,
+                targetName
         );
 
         CapitalManager.putCapital(capital);

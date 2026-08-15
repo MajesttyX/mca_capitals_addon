@@ -20,6 +20,7 @@ public final class CapitalSovereignDeclarationPromptService {
     public static final String DECLINE_COMMAND = "mcacapitals_declare_capital_decline";
     public static final String DECLARE_COMMAND = "mcacapitals_declare_for_capital";
     public static final String QUESTION_ID = "mcacapitals_declaration_prompt";
+    private static final String QUESTION_TEXT_KEY = "dialogue.mcacapitals_declaration_prompt.question";
 
     private CapitalSovereignDeclarationPromptService() {
     }
@@ -59,15 +60,15 @@ public final class CapitalSovereignDeclarationPromptService {
             return;
         }
 
-        player.sendSystemMessage(Component.literal(
-                villager.getName().getString()
-                        + ": Before we continue, will you declare for "
-                        + CapitalDiplomaticAgreementText.capitalName(
-                        player.serverLevel(),
-                        capital
+        player.sendSystemMessage(
+                Component.translatable(
+                        QUESTION_TEXT_KEY,
+                        CapitalDiplomaticAgreementText.capitalName(
+                                player.serverLevel(),
+                                capital
+                        )
                 )
-                        + "?"
-        ));
+        );
 
         // MCA 7.6.x only exposes the Question-based response constructor.
         // Clone the two declaration answers without constraints so the 1.21.1
@@ -106,7 +107,7 @@ public final class CapitalSovereignDeclarationPromptService {
 
             PlayerCapitalAllegianceService.DeclarationResult result =
                     PlayerCapitalAllegianceService.declare(player, capital);
-            player.sendSystemMessage(Component.literal(result.message()));
+            player.sendSystemMessage(result.message());
             continueNormalConversation(player, villager);
             return true;
         }
@@ -128,7 +129,7 @@ public final class CapitalSovereignDeclarationPromptService {
 
             PlayerCapitalAllegianceService.DeclarationResult result =
                     PlayerCapitalAllegianceService.declare(player, capital);
-            player.sendSystemMessage(Component.literal(result.message()));
+            player.sendSystemMessage(result.message());
             MCAIntegrationBridge.stopInteracting(villager);
             return true;
         }

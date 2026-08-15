@@ -45,7 +45,7 @@ public class CapitalChronicleItem extends Item {
 
         CapitalRecord capital = resolveCapital(serverPlayer, heldStack);
         if (capital == null) {
-            serverPlayer.sendSystemMessage(Component.literal("No capital chronicle can be found from here."));
+            serverPlayer.sendSystemMessage(Component.translatable("mcacapitals.system.capital_chronicle_item.no_capital_chronicle_can_be_found_from_here"));
             return InteractionResultHolder.fail(heldStack);
         }
 

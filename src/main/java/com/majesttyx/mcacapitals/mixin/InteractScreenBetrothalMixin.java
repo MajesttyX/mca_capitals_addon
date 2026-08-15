@@ -115,7 +115,7 @@ public abstract class InteractScreenBetrothalMixin {
 
             graphics.renderTooltip(
                     minecraft.font,
-                    Component.literal("Betrothed to " + data.partnerName() + " by Royal Decree"),
+                    Component.translatable("mcacapitals.system.interact_screen_betrothal_mixin.betrothed_by_royal_decree", data.partnerName()),
                     MCACAPITALS_SLOT_X + MCACAPITALS_TOOLTIP_SIZE + 4,
                     MCACAPITALS_SLOT_Y + 4
             );

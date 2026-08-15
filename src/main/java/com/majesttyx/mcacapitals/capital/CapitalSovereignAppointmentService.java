@@ -37,13 +37,16 @@ final class CapitalSovereignAppointmentService {
 
         if (!villagerId.equals(previous)) {
             String title = female ? "Queen" : "King";
-            String name = MCAIntegrationBridge.getEntityByUuid(level, villagerId) != null
-                    ? MCAIntegrationBridge.getEntityByUuid(level, villagerId).getName().getString()
-                    : villagerId.toString();
+            String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
-            CapitalChronicleService.addEntry(level, capital,
-                    name + " was acclaimed as " + title + " of "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.SOVEREIGN_ACCLAIMED,
+                    name,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, villagerId),
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+            );
         }
 
         CapitalManager.putCapital(capital);
@@ -89,11 +92,16 @@ final class CapitalSovereignAppointmentService {
 
         if (!playerId.equals(previous)) {
             String title = female ? "Queen" : "King";
-            String name = CapitalFoundationInternal.resolvePlayerName(level, playerId);
+            String name = CapitalChronicleIdentitySnapshot.name(level, capital, playerId);
 
-            CapitalChronicleService.addEntry(level, capital,
-                    name + " claimed the throne as " + title + " of "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.THRONE_CLAIMED,
+                    name,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, playerId),
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+            );
         }
 
         CapitalManager.putCapital(capital);

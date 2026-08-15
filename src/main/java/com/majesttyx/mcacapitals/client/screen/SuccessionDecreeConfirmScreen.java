@@ -4,13 +4,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.UUID;
 
-public class SuccessionDecreeConfirmScreen extends Screen {
+public class SuccessionDecreeConfirmScreen extends CapitalNoBlurScreen {
 
     private final UUID capitalId;
     private final String capitalName;
@@ -18,11 +17,11 @@ public class SuccessionDecreeConfirmScreen extends Screen {
     private final String targetName;
 
     public SuccessionDecreeConfirmScreen(UUID capitalId, String capitalName, UUID targetId, String targetName) {
-        super(Component.literal("Succession Decree"));
+        super(Component.translatable("mcacapitals.system.succession_decree_confirm_screen.succession_decree"));
         this.capitalId = capitalId;
-        this.capitalName = capitalName == null || capitalName.isBlank() ? "Unknown Capital" : capitalName;
+        this.capitalName = capitalName == null ? "" : capitalName.trim();
         this.targetId = targetId;
-        this.targetName = targetName == null || targetName.isBlank() ? "Unnamed" : targetName;
+        this.targetName = targetName == null ? "" : targetName.trim();
     }
 
     @Override
@@ -35,13 +34,13 @@ public class SuccessionDecreeConfirmScreen extends Screen {
         int buttonY = this.height / 2 + 44;
 
         addRenderableWidget(
-                Button.builder(Component.literal("Yes"), button -> confirm())
+                Button.builder(Component.translatable("mcacapitals.system.succession_decree_confirm_screen.yes"), button -> confirm())
                         .bounds(centerX - 88, buttonY, buttonWidth, buttonHeight)
                         .build()
         );
 
         addRenderableWidget(
-                Button.builder(Component.literal("No"), button -> onClose())
+                Button.builder(Component.translatable("mcacapitals.system.succession_decree_confirm_screen.no"), button -> onClose())
                         .bounds(centerX + 8, buttonY, buttonWidth, buttonHeight)
                         .build()
         );
@@ -57,16 +56,18 @@ public class SuccessionDecreeConfirmScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics);
-
         int centerX = this.width / 2;
         int top = this.height / 2 - 58;
 
-        guiGraphics.drawCenteredString(this.font, "Succession Decree", centerX, top, 0xFFFFFF);
+        guiGraphics.drawCenteredString(this.font, Component.translatable("mcacapitals.system.succession_decree_confirm_screen.succession_decree"), centerX, top, 0xFFFFFF);
 
         drawWrappedCentered(
                 guiGraphics,
-                Component.literal("Do you wish to transfer the crown of " + capitalName + " to " + targetName + "?"),
+                Component.translatable(
+                        "mcacapitals.system.succession_decree_confirm_screen.transfer_prompt",
+                        capitalNameComponent(),
+                        targetNameComponent()
+                ),
                 centerX,
                 top + 28,
                 260,
@@ -74,6 +75,26 @@ public class SuccessionDecreeConfirmScreen extends Screen {
         );
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
+    }
+
+    private Component capitalNameComponent() {
+        if (capitalName.isBlank() || "Unknown Capital".equals(capitalName)) {
+            return Component.translatable("mcacapitals.system.common.unknown_capital");
+        }
+        if ("Unknown Village".equals(capitalName)) {
+            return Component.translatable("mcacapitals.system.common.unknown_village");
+        }
+        return Component.literal(capitalName);
+    }
+
+    private Component targetNameComponent() {
+        if (targetName.isBlank() || "Unnamed".equals(targetName)) {
+            return Component.translatable("mcacapitals.system.common.unnamed");
+        }
+        if ("Unknown".equals(targetName)) {
+            return Component.translatable("mcacapitals.system.common.unknown");
+        }
+        return Component.literal(targetName);
     }
 
     private void drawWrappedCentered(GuiGraphics guiGraphics, Component text, int centerX, int startY, int maxWidth, int color) {

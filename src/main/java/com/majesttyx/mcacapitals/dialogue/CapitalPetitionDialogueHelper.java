@@ -14,29 +14,72 @@ final class CapitalPetitionDialogueHelper {
     private CapitalPetitionDialogueHelper() {
     }
 
-    static void sendCapitalDialogue(ServerPlayer player, ServerLevel level, CapitalRecord capital, CapitalDialogueKey key, Object... args) {
-        Entity speaker = resolveCapitalSpeakerEntity(level, capital);
-        RandomSource random = level != null ? level.random : RandomSource.create();
-        String line = CapitalDialogueLibrary.getRandomLine(key, random, args);
-
-        if (speaker != null) {
-            String spokenLine = CapitalDialogueSpeaker.formatVillagerSpeech(speaker, line);
-            MCACapitals.LOGGER.info("[MCACapitals] Petition response: {}", spokenLine);
-            player.sendSystemMessage(Component.literal(spokenLine));
+    static void sendCapitalDialogue(
+            ServerPlayer player,
+            ServerLevel level,
+            CapitalRecord capital,
+            CapitalDialogueKey key,
+            Object... args
+    ) {
+        if (player == null) {
             return;
         }
 
-        MCACapitals.LOGGER.info("[MCACapitals] Petition response: {}", line);
-        player.sendSystemMessage(Component.literal(line));
+        Entity speaker = resolveCapitalSpeakerEntity(level, capital);
+        if (speaker == null) {
+            MCACapitals.LOGGER.warn(
+                    "[MCACapitals] Petition response '{}' had no loaded sovereign speaker",
+                    key
+            );
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.petition.speaker_unavailable"));
+            return;
+        }
+
+        RandomSource random = level != null ? level.random : RandomSource.create();
+        Component line = CapitalDialogueLibrary.getRandomLine(speaker, key, random, args);
+        if (line == null) {
+            MCACapitals.LOGGER.warn(
+                    "[MCACapitals] Petition response '{}' was skipped because no supported personality dialogue could be resolved",
+                    key
+            );
+            return;
+        }
+
+        MCACapitals.LOGGER.info("[MCACapitals] Petition response key={}", key);
+        player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(speaker, line));
     }
 
-    static void sendDialogueKeyAndClose(ServerPlayer player, Entity villagerEntity, CapitalDialogueKey key, Object... args) {
-        String line = CapitalDialogueLibrary.getRandomLine(
+    static void sendDialogueKeyAndClose(
+            ServerPlayer player,
+            Entity villagerEntity,
+            CapitalDialogueKey key,
+            Object... args
+    ) {
+        if (player == null) {
+            tryStopInteracting(villagerEntity);
+            return;
+        }
+
+        Component line = CapitalDialogueLibrary.getRandomLine(
+                villagerEntity,
                 key,
-                villagerEntity != null && villagerEntity.level() != null ? villagerEntity.level().random : null,
+                villagerEntity != null && villagerEntity.level() != null
+                        ? villagerEntity.level().random
+                        : null,
                 args
         );
-        sendDialogueLineAndClose(player, villagerEntity, line);
+
+        if (line != null) {
+            MCACapitals.LOGGER.info("[MCACapitals] Petition response key={}", key);
+            player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(villagerEntity, line));
+        } else {
+            MCACapitals.LOGGER.warn(
+                    "[MCACapitals] Petition response '{}' was skipped because no supported personality dialogue could be resolved",
+                    key
+            );
+        }
+
+        tryStopInteracting(villagerEntity);
     }
 
     private static Entity resolveCapitalSpeakerEntity(ServerLevel level, CapitalRecord capital) {
@@ -44,13 +87,6 @@ final class CapitalPetitionDialogueHelper {
             return null;
         }
         return MCAIntegrationBridge.getEntityByUuid(level, capital.getSovereign());
-    }
-
-    private static void sendDialogueLineAndClose(ServerPlayer player, Entity villagerEntity, String line) {
-        String spokenLine = CapitalDialogueSpeaker.formatVillagerSpeech(villagerEntity, line);
-        MCACapitals.LOGGER.info("[MCACapitals] Petition response: {}", spokenLine);
-        player.sendSystemMessage(Component.literal(spokenLine));
-        tryStopInteracting(villagerEntity);
     }
 
     private static void tryStopInteracting(Entity villagerEntity) {

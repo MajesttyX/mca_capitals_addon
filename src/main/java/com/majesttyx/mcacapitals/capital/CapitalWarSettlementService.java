@@ -16,10 +16,13 @@ import java.util.List;
 
 public final class CapitalWarSettlementService {
 
-    private static final long TRUCE_TICKS = 48_000L;
+    private static final long TRUCE_TICKS = 48000L;
     private static final long WINNER_RECOVERY_DAYS = 3L;
     private static final long LOSER_RECOVERY_DAYS = 5L;
     private static final long UNJUST_AGGRESSOR_LOSS_RECOVERY_DAYS = 7L;
+    private static final int NEGOTIATED_PEACE_SCORE = -50;
+    private static final int ATTACKER_VICTORY_SCORE = -60;
+    private static final int DEFENDER_VICTORY_SCORE = -70;
 
     private CapitalWarSettlementService() {
     }
@@ -30,31 +33,42 @@ public final class CapitalWarSettlementService {
     ) {
         if (level == null
                 || campaign == null
-                || campaign.getEndReason() == CapitalCampaignEndReason.NONE
+                || campaign.getEndReason()
+                == CapitalCampaignEndReason.NONE
                 || campaign.getEndReason()
                 == CapitalCampaignEndReason.INVALIDATED) {
             return;
         }
 
-        Outcome outcome = outcome(campaign.getEndReason());
+        Outcome outcome = outcome(
+                campaign.getEndReason()
+        );
+
         if (outcome == Outcome.NEGOTIATED) {
-            establishSettlementState(level, campaign, -50);
+            establishSettlementState(
+                    level,
+                    campaign,
+                    NEGOTIATED_PEACE_SCORE
+            );
+
             CapitalWarDataAccess.setCampaignRecovery(
                     level,
                     campaign.getAttackingCapitalId(),
                     WINNER_RECOVERY_DAYS
             );
+
             CapitalWarDataAccess.setCampaignRecovery(
                     level,
                     campaign.getDefendingCapitalId(),
                     WINNER_RECOVERY_DAYS
             );
+
             recordSettlement(
                     level,
                     campaign,
                     null,
                     null,
-                    "The war ended by negotiated peace. Neither capital achieved its war goal."
+                    CapitalChronicleEventId.WAR_SETTLEMENT_NEGOTIATED
             );
             return;
         }
@@ -62,61 +76,82 @@ public final class CapitalWarSettlementService {
         CapitalRecord attacker = CapitalManager.getCapital(
                 campaign.getAttackingCapitalId()
         );
+
         CapitalRecord defender = CapitalManager.getCapital(
                 campaign.getDefendingCapitalId()
         );
+
         if (attacker == null || defender == null) {
             return;
         }
 
-        CapitalRecord winner = outcome == Outcome.ATTACKER_VICTORY
-                ? attacker
-                : defender;
-        CapitalRecord loser = outcome == Outcome.ATTACKER_VICTORY
-                ? defender
-                : attacker;
+        CapitalRecord winner =
+                outcome == Outcome.ATTACKER_VICTORY
+                        ? attacker
+                        : defender;
 
-        boolean attackerWon = outcome == Outcome.ATTACKER_VICTORY;
-        boolean unjust = campaign.getWarCause() == CapitalWarCause.UNJUST;
+        CapitalRecord loser =
+                outcome == Outcome.ATTACKER_VICTORY
+                        ? defender
+                        : attacker;
+
+        boolean attackerWon =
+                outcome == Outcome.ATTACKER_VICTORY;
+
+        boolean unjust =
+                campaign.getWarCause()
+                        == CapitalWarCause.UNJUST;
+
         boolean reparationsDue =
-                campaign.getWarGoal() == CapitalWarGoal.PUNITIVE
+                campaign.getWarGoal()
+                == CapitalWarGoal.PUNITIVE
                         && (attackerWon
                         || unjust
                         && campaign.getEndReason()
-                        != CapitalCampaignEndReason.COMMANDER_ORDERED_RETREAT);
+                        != CapitalCampaignEndReason
+                        .COMMANDER_ORDERED_RETREAT);
 
         CapitalDiplomaticStorageService.ReparationsResult reparations =
                 reparationsDue
-                        ? CapitalDiplomaticStorageService.transferReparations(
-                        level,
-                        loser,
-                        winner,
-                        campaign.getCampaignId().getMostSignificantBits()
-                )
-                        : new CapitalDiplomaticStorageService.ReparationsResult(
-                        false,
-                        List.of()
-                );
+                        ? CapitalDiplomaticStorageService
+                        .transferReparations(
+                                level,
+                                loser,
+                                winner,
+                                campaign.getCampaignId()
+                                        .getMostSignificantBits()
+                        )
+                        : new CapitalDiplomaticStorageService
+                        .ReparationsResult(
+                                false,
+                                List.of()
+                        );
 
         boolean deposition = attackerWon
-                && campaign.getWarGoal() == CapitalWarGoal.DEPOSITION;
+                && campaign.getWarGoal()
+                == CapitalWarGoal.DEPOSITION;
+
         boolean victoriousClaimantAlreadySeized =
                 campaign.getInitiatingPlayerId() != null
                         && defender.isPlayerSovereign()
-                        && campaign.getInitiatingPlayerId().equals(
-                        defender.getPlayerSovereignId()
-                );
+                        && campaign.getInitiatingPlayerId()
+                        .equals(
+                                defender.getPlayerSovereignId()
+                        );
+
         boolean depositionStartedNow = false;
 
         if (deposition
                 && defender.getSovereign() != null
                 && campaign.getEndReason()
-                != CapitalCampaignEndReason.DEFENDING_SOVEREIGN_DIED
+                != CapitalCampaignEndReason
+                .DEFENDING_SOVEREIGN_DIED
                 && !victoriousClaimantAlreadySeized
-                && !CapitalWartimeSuccessionService.isInInterregnum(
-                level,
-                defender.getCapitalId()
-        )) {
+                && !CapitalWartimeSuccessionService
+                .isInInterregnum(
+                        level,
+                        defender.getCapitalId()
+                )) {
             depositionStartedNow =
                     CapitalWartimeSuccessionService
                             .beginDepositionInterregnum(
@@ -130,7 +165,9 @@ public final class CapitalWarSettlementService {
         establishSettlementState(
                 level,
                 campaign,
-                attackerWon ? -60 : -70
+                attackerWon
+                        ? ATTACKER_VICTORY_SCORE
+                        : DEFENDER_VICTORY_SCORE
         );
 
         if (reparations.successful()) {
@@ -139,7 +176,7 @@ public final class CapitalWarSettlementService {
                     winner.getCapitalId(),
                     loser.getCapitalId(),
                     10,
-                    "Valid reparations paid",
+                    "mcacapitals.relationship_reason.valid_reparations_paid",
                     loser.getCapitalId()
             );
         }
@@ -149,6 +186,7 @@ public final class CapitalWarSettlementService {
                 winner.getCapitalId(),
                 WINNER_RECOVERY_DAYS
         );
+
         CapitalWarDataAccess.setCampaignRecovery(
                 level,
                 loser.getCapitalId(),
@@ -164,6 +202,7 @@ public final class CapitalWarSettlementService {
                 CapitalWarCause.PREVIOUS_AGGRESSION,
                 10L
         );
+
         if (campaign.getWarCause().isJustified()) {
             CapitalWarDataAccess.consumeGrievance(
                     level,
@@ -172,21 +211,41 @@ public final class CapitalWarSettlementService {
             );
         }
 
-        String settlement = buildSettlementText(
-                level,
-                campaign,
-                winner,
-                loser,
-                reparations,
-                reparationsDue,
-                depositionStartedNow
-        );
+        String winnerName = CapitalDiplomaticAgreementText.capitalName(level, winner);
+        String loserName = CapitalDiplomaticAgreementText.capitalName(level, loser);
+        Object depositionClause = depositionStartedNow
+                ? CapitalChronicleService.translatable("mcacapitals.chronicle.settlement.deposition")
+                : CapitalChronicleService.literal("");
+        Object reparationsClause = reparations.successful()
+                ? CapitalChronicleService.translatable("mcacapitals.chronicle.settlement.reparations_transferred")
+                : reparationsDue
+                ? CapitalChronicleService.translatable("mcacapitals.chronicle.settlement.reparations_unavailable")
+                : CapitalChronicleService.literal("");
+        Object reparationsItems = reparations.successful()
+                ? CapitalChronicleService.itemList(reparations.transferredItems())
+                : CapitalChronicleService.literal("");
+        Object unjustClause = campaign.getWarCause() == CapitalWarCause.UNJUST
+                ? CapitalChronicleService.translatable("mcacapitals.chronicle.settlement.unjust_war")
+                : CapitalChronicleService.literal("");
+
         recordSettlement(
                 level,
                 campaign,
                 attacker,
                 defender,
-                settlement
+                CapitalChronicleEventId.WAR_SETTLEMENT,
+                winnerName,
+                loserName,
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.war_goal." + campaign.getWarGoal().getSerializedName()
+                ),
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.war_cause." + campaign.getWarCause().getSerializedName()
+                ),
+                depositionClause,
+                reparationsClause,
+                reparationsItems,
+                unjustClause
         );
     }
 
@@ -200,6 +259,7 @@ public final class CapitalWarSettlementService {
                 campaign.getAttackingCapitalId(),
                 campaign.getDefendingCapitalId()
         );
+
         CapitalDiplomacyDataAccess.setDiplomaticState(
                 level,
                 campaign.getAttackingCapitalId(),
@@ -208,87 +268,21 @@ public final class CapitalWarSettlementService {
                 level.getGameTime() + TRUCE_TICKS
         );
 
-        int current = CapitalDiplomacyDataAccess.getRelationshipScore(
-                level,
-                campaign.getAttackingCapitalId(),
-                campaign.getDefendingCapitalId()
-        );
+        int current =
+                CapitalDiplomacyDataAccess.getRelationshipScore(
+                        level,
+                        campaign.getAttackingCapitalId(),
+                        campaign.getDefendingCapitalId()
+                );
+
         CapitalDiplomacyDataAccess.adjustRelationship(
                 level,
                 campaign.getAttackingCapitalId(),
                 campaign.getDefendingCapitalId(),
                 finalScore - current,
-                "Post-war settlement",
+                "mcacapitals.relationship_reason.post_war_settlement",
                 campaign.getAttackingCapitalId()
         );
-    }
-
-    private static String buildSettlementText(
-            ServerLevel level,
-            CapitalCampaignRecord campaign,
-            CapitalRecord winner,
-            CapitalRecord loser,
-            CapitalDiplomaticStorageService.ReparationsResult reparations,
-            boolean reparationsDue,
-            boolean depositionStartedNow
-    ) {
-        String winnerName = CapitalDiplomaticAgreementText.capitalName(
-                level,
-                winner
-        );
-        String loserName = CapitalDiplomaticAgreementText.capitalName(
-                level,
-                loser
-        );
-        StringBuilder text = new StringBuilder()
-                .append(winnerName)
-                .append(" defeated ")
-                .append(loserName)
-                .append(" in a ")
-                .append(campaign.getWarGoal().getDisplayName())
-                .append(" fought for ")
-                .append(campaign.getWarCause().getDisplayName())
-                .append(". A two-day truce began.");
-
-        if (depositionStartedNow) {
-            text.append(
-                    " The defending sovereign was removed and an interregnum began."
-            );
-        }
-
-        if (reparations.successful()) {
-            text.append(" Reparations transferred: ")
-                    .append(describeItems(reparations.transferredItems()))
-                    .append(".");
-        } else if (reparationsDue) {
-            text.append(
-                    " No eligible goods were available for reparations."
-            );
-        }
-
-        if (campaign.getWarCause() == CapitalWarCause.UNJUST) {
-            text.append(
-                    " The aggressor remains recorded as having begun an unjust war."
-            );
-        }
-
-        return text.toString();
-    }
-
-    private static String describeItems(List<ItemStack> items) {
-        List<String> descriptions = new ArrayList<>();
-        for (ItemStack stack : items) {
-            if (stack != null && !stack.isEmpty()) {
-                descriptions.add(
-                        stack.getCount()
-                                + " "
-                                + stack.getHoverName().getString()
-                );
-            }
-        }
-        return descriptions.isEmpty()
-                ? "none"
-                : String.join(", ", descriptions);
     }
 
     private static void recordSettlement(
@@ -296,55 +290,84 @@ public final class CapitalWarSettlementService {
             CapitalCampaignRecord campaign,
             CapitalRecord attacker,
             CapitalRecord defender,
-            String settlement
+            CapitalChronicleEventId eventId,
+            Object... arguments
     ) {
-        CapitalRecord resolvedAttacker = attacker == null
-                ? CapitalManager.getCapital(
-                campaign.getAttackingCapitalId()
-        )
-                : attacker;
-        CapitalRecord resolvedDefender = defender == null
-                ? CapitalManager.getCapital(
-                campaign.getDefendingCapitalId()
-        )
-                : defender;
+        CapitalRecord resolvedAttacker =
+                attacker == null
+                        ? CapitalManager.getCapital(
+                        campaign.getAttackingCapitalId()
+                )
+                        : attacker;
+
+        CapitalRecord resolvedDefender =
+                defender == null
+                        ? CapitalManager.getCapital(
+                        campaign.getDefendingCapitalId()
+                )
+                        : defender;
+
+        Component notification = renderEvent(eventId, arguments);
 
         if (resolvedAttacker != null) {
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     resolvedAttacker,
-                    settlement
+                    eventId,
+                    arguments
             );
             CapitalPlayerNotificationService.notifyPlayersInCapital(
                     level,
                     resolvedAttacker,
-                    Component.literal(settlement)
+                    notification
             );
         }
+
         if (resolvedDefender != null
                 && resolvedDefender != resolvedAttacker) {
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     resolvedDefender,
-                    settlement
+                    eventId,
+                    arguments
             );
             CapitalPlayerNotificationService.notifyPlayersInCapital(
                     level,
                     resolvedDefender,
-                    Component.literal(settlement)
+                    notification
             );
         }
     }
 
-    private static Outcome outcome(CapitalCampaignEndReason reason) {
+    private static Component renderEvent(
+            CapitalChronicleEventId eventId,
+            Object... arguments
+    ) {
+        Object[] rendered = new Object[arguments == null ? 0 : arguments.length];
+        for (int index = 0; index < rendered.length; index++) {
+            Object argument = arguments[index];
+            rendered[index] = argument instanceof CapitalChronicleEntry.Argument semantic
+                    ? semantic.component()
+                    : Component.literal(argument == null ? "" : String.valueOf(argument));
+        }
+        return Component.translatable(eventId.chronicleKey(), rendered);
+    }
+
+    private static Outcome outcome(
+            CapitalCampaignEndReason reason
+    ) {
         return switch (reason) {
             case DEFENDING_SOVEREIGN_DIED,
-                 DEFENDERS_SURRENDERED -> Outcome.ATTACKER_VICTORY;
+                 DEFENDERS_SURRENDERED ->
+                    Outcome.ATTACKER_VICTORY;
             case ATTACKING_SOVEREIGN_DIED,
                  ATTACKERS_DEFEATED,
-                 COMMANDER_ORDERED_RETREAT -> Outcome.DEFENDER_VICTORY;
-            case PEACE_ACCEPTED -> Outcome.NEGOTIATED;
-            case NONE, INVALIDATED -> Outcome.NEGOTIATED;
+                 COMMANDER_ORDERED_RETREAT ->
+                    Outcome.DEFENDER_VICTORY;
+            case PEACE_ACCEPTED ->
+                    Outcome.NEGOTIATED;
+            case NONE, INVALIDATED ->
+                    Outcome.NEGOTIATED;
         };
     }
 

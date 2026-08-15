@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CapitalNameService {
+
     private static final String[] KNOWN_TITLES = new String[] {
             "Deposed Queen",
             "Deposed King",
@@ -111,10 +112,13 @@ public class CapitalNameService {
                     : entity.getName().getString();
 
             String baseName = normalizeBaseName(currentName);
-            String finalName = buildDisplayName(level, entityId, baseName);
+            Component finalName = buildDisplayNameComponent(level, entityId, baseName);
+            Component currentComponent = entity.getCustomName() != null
+                    ? entity.getCustomName()
+                    : entity.getName();
 
-            if (!currentName.equals(finalName)) {
-                entity.setCustomName(Component.literal(finalName));
+            if (!currentComponent.equals(finalName)) {
+                entity.setCustomName(finalName);
                 entity.setCustomNameVisible(true);
             }
         }
@@ -143,18 +147,57 @@ public class CapitalNameService {
         return normalizeBaseName(currentName);
     }
 
-    private static String buildDisplayName(ServerLevel level, UUID entityId, String baseName) {
-        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, entityId);
-        if (title == null || title.isBlank() || "Commoner".equals(title) || "None".equals(title)) {
-            return baseName;
+    public static Component resolveDisplayNameComponent(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (level == null || entityId == null) {
+            return Component.translatable("mcacapitals.system.common.unknown");
+        }
+
+        Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
+        if (entity == null) {
+            if (capital != null && capital.getVillageId() != null) {
+                String savedName = MCAIntegrationBridge.getVillageResidentNames(level, capital.getVillageId()).get(entityId);
+                if (savedName != null && !savedName.isBlank()) {
+                    return Component.literal(normalizeBaseName(savedName));
+                }
+            }
+            return Component.literal(entityId.toString());
+        }
+
+        String currentName = entity.getCustomName() != null
+                ? entity.getCustomName().getString()
+                : entity.getName().getString();
+
+        if (currentName == null || currentName.isBlank()) {
+            return Component.translatable("mcacapitals.system.common.unnamed");
+        }
+
+        return Component.literal(normalizeBaseName(currentName));
+    }
+
+    private static Component buildDisplayNameComponent(ServerLevel level, UUID entityId, String baseName) {
+        CapitalTitleResolver.ResolvedTitleId titleId =
+                CapitalTitleResolver.getResolvedTitleIdForEntity(level, entityId);
+
+        if (titleId == CapitalTitleResolver.ResolvedTitleId.COMMONER
+                || titleId == CapitalTitleResolver.ResolvedTitleId.NONE) {
+            return Component.literal(baseName);
         }
 
         CapitalRecord royalGuardCapital = findRoyalGuardCapital(entityId);
-        if (royalGuardCapital != null && ("Sir".equals(title) || "Dame".equals(title))) {
-            return CapitalRoyalGuardService.buildRoyalGuardDisplayName(level, royalGuardCapital, entityId);
+        if (royalGuardCapital != null
+                && titleId == CapitalTitleResolver.ResolvedTitleId.ROYAL_GUARD) {
+            return CapitalRoyalGuardService.buildRoyalGuardDisplayNameComponent(
+                    level,
+                    royalGuardCapital,
+                    entityId
+            );
         }
 
-        return title + " " + baseName;
+        return Component.translatable(
+                "mcacapitals.dynamic.name.titled",
+                CapitalTitleResolver.getDisplayTitleComponentForEntity(level, entityId),
+                Component.literal(baseName)
+        );
     }
 
     private static CapitalRecord findRoyalGuardCapital(UUID entityId) {
@@ -171,7 +214,7 @@ public class CapitalNameService {
         return null;
     }
 
-    private static String normalizeBaseName(String name) {
+    static String normalizeBaseName(String name) {
         if (name == null || name.isBlank()) {
             return "Unnamed";
         }

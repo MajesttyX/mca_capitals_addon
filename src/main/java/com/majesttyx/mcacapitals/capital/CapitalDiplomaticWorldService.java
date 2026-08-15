@@ -4,6 +4,7 @@ import com.majesttyx.mcacapitals.data.CapitalAgreementDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.DiplomaticProposal;
 import com.majesttyx.mcacapitals.data.DiplomaticProposalType;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.ArrayList;
@@ -117,24 +118,24 @@ final class CapitalDiplomaticWorldService {
         if (state == CapitalDiplomaticState.TRUCE) {
             if (score != 0 && roll < 20) {
                 adjustment = score > 0 ? -1 : 1;
-                reason = "Truce eased wartime hostility";
+                reason = "mcacapitals.relationship_reason.truce_eased_wartime_hostility";
             }
         } else if (state == CapitalDiplomaticState.ALLIANCE) {
             if (roll < 25) {
                 adjustment = 1;
-                reason = "Alliance strengthened relations";
+                reason = "mcacapitals.relationship_reason.alliance_strengthened_relations";
             } else if (roll < 27) {
                 adjustment = -1;
-                reason = "Minor tension within the alliance";
+                reason = "mcacapitals.relationship_reason.minor_alliance_tension";
             }
         } else if (state
                 == CapitalDiplomaticState.NON_AGGRESSION_PACT) {
             if (roll < 15) {
                 adjustment = 1;
-                reason = "Non-Aggression Pact strengthened relations";
+                reason = "mcacapitals.relationship_reason.nap_strengthened_relations";
             } else if (roll < 18) {
                 adjustment = -1;
-                reason = "Minor diplomatic friction";
+                reason = "mcacapitals.relationship_reason.minor_diplomatic_friction";
             }
         } else {
             CapitalRelationshipBand band =
@@ -144,28 +145,28 @@ final class CapitalDiplomaticWorldService {
                 case EXCELLENT, FRIENDLY, CORDIAL -> {
                     if (roll < 10) {
                         adjustment = 1;
-                        reason = "Friendly relations gradually improved";
+                        reason = "mcacapitals.relationship_reason.friendly_relations_improved";
                     } else if (roll < 15) {
                         adjustment = -1;
-                        reason = "Routine diplomatic friction";
+                        reason = "mcacapitals.relationship_reason.routine_diplomatic_friction";
                     }
                 }
                 case NEUTRAL -> {
                     if (roll < 5) {
                         adjustment = 1;
-                        reason = "Routine contact improved relations";
+                        reason = "mcacapitals.relationship_reason.routine_contact_improved";
                     } else if (roll < 10) {
                         adjustment = -1;
-                        reason = "Routine contact strained relations";
+                        reason = "mcacapitals.relationship_reason.routine_contact_strained";
                     }
                 }
                 case STRAINED, HOSTILE, BITTER_ENEMIES -> {
                     if (roll < 5) {
                         adjustment = 1;
-                        reason = "Hostilities briefly eased";
+                        reason = "mcacapitals.relationship_reason.hostilities_briefly_eased";
                     } else if (roll < 15) {
                         adjustment = -1;
-                        reason = "Hostile relations continued to worsen";
+                        reason = "mcacapitals.relationship_reason.hostile_relations_worsened";
                     }
                 }
             }
@@ -313,23 +314,23 @@ final class CapitalDiplomaticWorldService {
                 .sendNotice(
                         level,
                         recipient,
-                        "Relations Deteriorating",
-                        CapitalDiplomaticAgreementText
-                                .capitalName(level, source)
-                                + " warns that relations with "
-                                + CapitalDiplomaticAgreementText
-                                .capitalName(level, target)
-                                + " have become hostile."
+                        Component.translatable(
+                                "mcacapitals.diplomacy.relations.deteriorating_title"
+                        ),
+                        Component.translatable(
+                                "mcacapitals.diplomacy.relations.deteriorating_message",
+                                CapitalDiplomaticAgreementText.capitalName(
+                                        level,
+                                        source
+                                ),
+                                CapitalDiplomaticAgreementText.capitalName(
+                                        level,
+                                        target
+                                )
+                        )
                 );
 
-        CapitalChronicleService.addEntry(
-                level,
-                source,
-                "A warning about deteriorating relations was sent to "
-                        + CapitalDiplomaticAgreementText
-                        .capitalName(level, target)
-                        + "."
-        );
+        CapitalChronicleService.addEvent(level, source, CapitalChronicleEventId.RELATIONS_WARNING_SENT, CapitalDiplomaticAgreementText.capitalName(level, target));
 
         return true;
     }
@@ -387,7 +388,7 @@ final class CapitalDiplomaticWorldService {
                     continue;
                 }
 
-                String failure =
+                Component failure =
                         CapitalDiplomaticAgreementValidation
                                 .validateProposal(
                                         level,
@@ -477,18 +478,7 @@ final class CapitalDiplomaticWorldService {
                 proposal
         );
 
-        CapitalChronicleService.addEntry(
-                level,
-                source,
-                CapitalDiplomaticAgreementText
-                        .capitalizedWithIndefiniteArticle(
-                                type.getDisplayName()
-                        )
-                        + " was proposed to "
-                        + CapitalDiplomaticAgreementText
-                        .capitalName(level, target)
-                        + "."
-        );
+        CapitalChronicleService.addEvent(level, source, CapitalChronicleEventId.DIPLOMATIC_AGREEMENT_PROPOSED, CapitalChronicleService.translatable("mcacapitals.chronicle.agreement_type." + type.getSerializedName()), CapitalDiplomaticAgreementText.capitalName(level, target));
 
         UUID targetPlayerId =
                 CapitalDiplomaticAuthorityService

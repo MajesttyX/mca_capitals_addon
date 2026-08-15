@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
@@ -46,7 +47,7 @@ final class CapitalCampaignDeploymentService {
     ) {
         Village defendingVillage = CapitalCampaignEligibilityService.getVillage(level, defendingCapital);
         if (defendingVillage == null) {
-            return DeploymentResult.invalid("The defending capital's MCA village is unavailable.");
+            return DeploymentResult.invalid(Component.translatable("mcacapitals.system.campaign.defending_village_unavailable"));
         }
 
         if (anchor == null
@@ -55,13 +56,13 @@ final class CapitalCampaignDeploymentService {
                 || anchor.isSpectator()
                 || !defendingVillage.isWithinBorder(anchor)) {
             return DeploymentResult.waiting(
-                    "Remain inside the defending capital while the force deploys."
+                    Component.translatable("mcacapitals.system.campaign.remain_inside_defending_capital")
             );
         }
 
         if (assembledAttackers == null || assembledAttackers.isEmpty()) {
             return DeploymentResult.invalid(
-                    "No campaign attackers remained available for deployment."
+                    Component.translatable("mcacapitals.system.campaign.no_attackers_for_deployment")
             );
         }
 
@@ -72,7 +73,7 @@ final class CapitalCampaignDeploymentService {
 
         if (availableAttackers.isEmpty()) {
             return DeploymentResult.invalid(
-                    "No campaign attackers remained available for deployment."
+                    Component.translatable("mcacapitals.system.campaign.no_attackers_for_deployment")
             );
         }
 
@@ -86,7 +87,7 @@ final class CapitalCampaignDeploymentService {
 
         if (positions.size() < availableAttackers.size()) {
             return DeploymentResult.waiting(
-                    "Move to a clearer outdoor area inside the defending capital so the full campaign force can form around you."
+                    Component.translatable("mcacapitals.system.campaign.move_to_clearer_area")
             );
         }
 
@@ -108,7 +109,7 @@ final class CapitalCampaignDeploymentService {
 
         if (deployedAttackers.size() != availableAttackers.size()) {
             return DeploymentResult.invalid(
-                    "The complete assembled campaign force could not be deployed."
+                    Component.translatable("mcacapitals.system.campaign.deployment_incomplete")
             );
         }
 
@@ -128,17 +129,24 @@ final class CapitalCampaignDeploymentService {
 
         String attackingName = CapitalDiplomaticAgreementText.capitalName(level, attackingCapital);
         String defendingName = CapitalDiplomaticAgreementText.capitalName(level, defendingCapital);
-        String entry = deployedAttackers.size()
-                + " campaign attackers from "
-                + attackingName
-                + " formed inside "
-                + defendingName
-                + " to face "
-                + defenders.size()
-                + " field defenders. Prepare for battle!";
-
-        CapitalChronicleService.addEntry(level, attackingCapital, entry);
-        CapitalChronicleService.addEntry(level, defendingCapital, entry);
+        CapitalChronicleService.addEvent(
+                level,
+                attackingCapital,
+                CapitalChronicleEventId.CAMPAIGN_DEPLOYED,
+                deployedAttackers.size(),
+                attackingName,
+                defendingName,
+                defenders.size()
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                defendingCapital,
+                CapitalChronicleEventId.CAMPAIGN_DEPLOYED,
+                deployedAttackers.size(),
+                attackingName,
+                defendingName,
+                defenders.size()
+        );
 
         return DeploymentResult.success();
     }
@@ -295,17 +303,17 @@ final class CapitalCampaignDeploymentService {
     record DeploymentResult(
             boolean deployed,
             boolean invalid,
-            String failureMessage
+            Component failureMessage
     ) {
         static DeploymentResult success() {
             return new DeploymentResult(true, false, null);
         }
 
-        static DeploymentResult waiting(String message) {
+        static DeploymentResult waiting(Component message) {
             return new DeploymentResult(false, false, message);
         }
 
-        static DeploymentResult invalid(String message) {
+        static DeploymentResult invalid(Component message) {
             return new DeploymentResult(false, true, message);
         }
     }

@@ -70,14 +70,15 @@ public final class CapitalDeathTransitionService {
             if (deathRole != RoyalDeathRole.NONE) {
                 String displayName = resolveDeathDisplayName(level, capital, deadId, deadEntity);
 
-                CapitalChronicleService.addEntry(
+                CapitalChronicleService.addEvent(
                         level,
                         capital,
-                        displayName + " died."
+                        CapitalChronicleEventId.ROYAL_FAMILY_MEMBER_DIED,
+                        displayName
                 );
 
                 if (deathRole.triggersMourning()) {
-                    CapitalMourningService.startMourning(level, capital, displayName + " died.");
+                    CapitalMourningService.startMourning(level, capital, displayName);
                 }
 
                 if (deathRole == RoyalDeathRole.CONSORT) {

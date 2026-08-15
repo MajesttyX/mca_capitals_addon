@@ -1,33 +1,18 @@
 package com.majesttyx.mcacapitals.dialogue;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventType;
+import net.minecraft.network.chat.Component;
+
 final class CapitalDialogueEventModels {
 
     private CapitalDialogueEventModels() {
     }
 
-    enum EventType {
-        NONE,
-        HEIR_APPARENT_NAMED,
-        CROWN_CHILD_BORN,
-        CAPITAL_FOUNDED,
-        ROYAL_MARRIAGE,
-        SOVEREIGN_DEATH,
-        THRONE_SEIZED,
-        DISINHERITED,
-        LEGITIMIZED,
-        ABDICATION,
-        NEW_DUKE_OR_DUCHESS,
-        LORD_COMMANDER_APPOINTED,
-        HAND_APPOINTED,
-        GRAND_MAESTER_APPOINTED,
-        ROYAL_GUARD_APPOINTED,
-        PEACEFUL_TRANSFER,
-        ROYAL_BIRTH,
-        COURT_HERALD_APPOINTED,
-        MOURNING_ENDED,
-        GENERIC_NOTABLE
-    }
-
-    record ChronicleEvent(long day, String text, EventType type) {
+    record ChronicleEvent(
+            long day,
+            Component text,
+            CapitalChronicleEventType type,
+            boolean semantic
+    ) {
     }
 }

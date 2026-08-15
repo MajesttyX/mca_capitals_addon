@@ -1,5 +1,8 @@
 package com.majesttyx.mcacapitals.item;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalFoundationService;
@@ -74,30 +77,30 @@ public class LegitimizationDecreeHandler {
         UUID targetId = livingTarget.getUUID();
 
         if (!MCAIntegrationBridge.isMCAVillager(level, targetId)) {
-            player.sendSystemMessage(Component.literal("Legitimization may only be granted to an MCA villager."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.legitimization_decree_handler.legitimization_may_only_be_granted_to_an_mca_villager"));
             return InteractionResult.FAIL;
         }
 
         CapitalRecord capital = resolveCapital(level, targetId);
         if (capital == null) {
-            player.sendSystemMessage(Component.literal("That villager has no claim tied to any capital."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.legitimization_decree_handler.that_villager_has_no_claim_tied_to_any_capital"));
             return InteractionResult.FAIL;
         }
 
         if (capital.getSovereign() == null) {
-            player.sendSystemMessage(Component.literal("That capital has no sovereign to grant legitimacy."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.legitimization_decree_handler.that_capital_has_no_sovereign_to_grant_legitimacy"));
             return InteractionResult.FAIL;
         }
 
         if (targetId.equals(capital.getSovereign())
                 || targetId.equals(capital.getConsort())
                 || targetId.equals(capital.getDowager())) {
-            player.sendSystemMessage(Component.literal("That title cannot be granted through legitimization."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.legitimization_decree_handler.that_title_cannot_be_granted_through_legitimization"));
             return InteractionResult.FAIL;
         }
 
         if (!isEligibleDynasticChild(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("That villager is not recognized as a child of this dynasty."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.legitimization_decree_handler.that_villager_is_not_recognized_as_a_child_of_this_dynasty"));
             return InteractionResult.FAIL;
         }
 
@@ -113,14 +116,25 @@ public class LegitimizationDecreeHandler {
         CapitalDataAccess.markDirty(level);
 
         String displayName = stripKnownTitles(livingTarget.getName().getString());
-        String title = female ? "Princess" : "Prince";
+        Component title = Component.translatable(
+                female
+                        ? "mcacapitals.dynamic.title.royal_child.female"
+                        : "mcacapitals.dynamic.title.royal_child.male"
+        );
 
-        CapitalChronicleService.addEntry(level, capital,
-                displayName + " was legitimized and recognized as " + title + " of "
-                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.LEGITIMIZED,
+                displayName,
+                CapitalChronicleIdentitySnapshot.title(level, capital, targetId),
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+        );
 
-        player.sendSystemMessage(Component.literal(
-                displayName + " has been legitimized and recognized as " + title + "."
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.system.legitimization_decree_handler.success",
+                displayNameComponent(displayName),
+                title
         ));
 
         return InteractionResult.SUCCESS;
@@ -161,6 +175,13 @@ public class LegitimizationDecreeHandler {
         }
 
         return capital.getDowager() != null && MCAIntegrationBridge.isChildOf(level, targetId, capital.getDowager());
+    }
+
+    private static Component displayNameComponent(String displayName) {
+        if (displayName == null || displayName.isBlank() || "Unnamed".equals(displayName)) {
+            return Component.translatable("mcacapitals.system.common.unnamed");
+        }
+        return Component.literal(displayName);
     }
 
     private static String stripKnownTitles(String name) {

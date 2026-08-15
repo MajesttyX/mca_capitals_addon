@@ -23,7 +23,7 @@ public final class CapitalAmbassadorUrgentMatterHandler {
             return InteractionResult.PASS;
         }
 
-        return CapitalAmbassadorUrgentMatterService.openIfNeeded(
+        return CapitalAmbassadorUrgentMatterService.openIfPresent(
                 serverPlayer,
                 target
         )

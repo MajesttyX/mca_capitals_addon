@@ -77,6 +77,30 @@ final class CapitalMaesterSelection {
     }
 
     static boolean isValidGrandMaester(ServerLevel level, CapitalRecord capital, UUID villagerId, Set<UUID> residents) {
-        return isMaester(level, capital, villagerId, residents);
+        if (level == null || capital == null || villagerId == null) {
+            return false;
+        }
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(level, villagerId, residents)) {
+            return false;
+        }
+        if (villagerId.equals(capital.getSovereign())
+                || villagerId.equals(capital.getConsort())
+                || villagerId.equals(capital.getDowager())
+                || villagerId.equals(capital.getHeir())
+                || villagerId.equals(capital.getCommander())
+                || villagerId.equals(capital.getHand())
+                || capital.isRoyalChild(villagerId)
+                || capital.isLegitimizedRoyalChild(villagerId)
+                || capital.isPrinceConsort(villagerId)
+                || capital.isDowagerPrince(villagerId)
+                || capital.isDuke(villagerId)
+                || capital.isMarriageDuke(villagerId)
+                || capital.isDowagerDuke(villagerId)) {
+            return false;
+        }
+        if (!CapitalRoleValidation.isCurrentlyLoaded(level, villagerId)) {
+            return true;
+        }
+        return MCAIntegrationBridge.isMasterClericVillager(level, villagerId);
     }
 }

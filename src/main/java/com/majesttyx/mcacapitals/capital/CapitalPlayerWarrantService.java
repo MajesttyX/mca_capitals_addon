@@ -39,10 +39,9 @@ public final class CapitalPlayerWarrantService {
                 LEAVE_ORDER_TICKS,
                 caseKey
         );
-        player.sendSystemMessage(Component.literal(
-                "The court of "
-                        + CapitalDiplomaticAgreementText.capitalName(level, issuingCapital)
-                        + " has ordered you to leave. You have two real-time minutes to depart its bounds."
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.justice.player_warrant.leave_order",
+                CapitalDiplomaticAgreementText.capitalName(level, issuingCapital)
         ));
     }
 
@@ -68,8 +67,9 @@ public final class CapitalPlayerWarrantService {
         }
 
         if (countEmeralds(player) < WARRANT_FINE_EMERALDS) {
-            player.sendSystemMessage(Component.literal(
-                    "You need exactly 16 emerald items to pay this warrant fine. Emerald blocks are not accepted."
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.justice.player_warrant.fine_required",
+                    WARRANT_FINE_EMERALDS
             ));
             return 0;
         }
@@ -80,13 +80,13 @@ public final class CapitalPlayerWarrantService {
                 issuingCapital.getCapitalId()
         );
         player.getInventory().setChanged();
-        player.sendSystemMessage(Component.literal(
-                "You paid 16 emeralds. The warrant issued by "
-                        + CapitalDiplomaticAgreementText.capitalName(
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.justice.player_warrant.fine_paid",
+                WARRANT_FINE_EMERALDS,
+                CapitalDiplomaticAgreementText.capitalName(
                         player.serverLevel(),
                         issuingCapital
                 )
-                        + " has been cleared."
         ));
         return 1;
     }
@@ -105,8 +105,8 @@ public final class CapitalPlayerWarrantService {
                 ? prisonCenters.get(0)
                 : MCAIntegrationBridge.getVillageCenter(level, issuingCapital.getVillageId());
         if (holdingCenter == null) {
-            player.sendSystemMessage(Component.literal(
-                    "This Capital has no available legal holding location."
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.justice.player_warrant.no_holding_location"
             ));
             return 0;
         }
@@ -121,12 +121,11 @@ public final class CapitalPlayerWarrantService {
                 issuingCapital.getCapitalId(),
                 SENTENCE_TICKS
         );
-        player.sendSystemMessage(Component.literal(
-                "You surrendered to "
-                        + CapitalDiplomaticAgreementText.capitalName(level, issuingCapital)
-                        + (recognizedPrison
-                        ? ". Remain within its recognized Prison for five real-time minutes to complete the sentence."
-                        : ". Remain within the court holding location for five real-time minutes to complete the sentence.")
+        player.sendSystemMessage(Component.translatable(
+                recognizedPrison
+                        ? "mcacapitals.justice.player_warrant.surrendered"
+                        : "mcacapitals.justice.player_warrant.surrendered_holding",
+                CapitalDiplomaticAgreementText.capitalName(level, issuingCapital)
         ));
         return 1;
     }
@@ -169,8 +168,8 @@ public final class CapitalPlayerWarrantService {
                 issuingCapital.getCapitalId()
         )) {
             if (player != null) {
-                player.sendSystemMessage(Component.literal(
-                        "This Capital has no active warrant for you."
+                player.sendSystemMessage(Component.translatable(
+                        "mcacapitals.system.capital_player_warrant_service.this_capital_has_no_active_warrant_for_you"
                 ));
             }
             return false;

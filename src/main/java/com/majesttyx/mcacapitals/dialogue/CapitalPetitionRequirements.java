@@ -1,13 +1,16 @@
 package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.capital.CapitalManager;
+import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalRoyalGuardService;
 import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.network.OpenBetrothalSelectionPacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -102,11 +105,11 @@ final class CapitalPetitionRequirements {
 
             result.add(new OpenBetrothalSelectionPacket.Candidate(
                     residentId,
-                    buildBetrothalCandidateName(level, capital, residentId)
+                    buildBetrothalCandidateNameComponent(level, capital, residentId)
             ));
         }
 
-        result.sort(Comparator.comparing(OpenBetrothalSelectionPacket.Candidate::name, String.CASE_INSENSITIVE_ORDER));
+        result.sort(Comparator.comparing(candidate -> candidate.name().getString(), String.CASE_INSENSITIVE_ORDER));
         return result;
     }
 
@@ -125,11 +128,11 @@ final class CapitalPetitionRequirements {
 
             result.add(new OpenBetrothalSelectionPacket.Candidate(
                     residentId,
-                    buildBetrothalCandidateName(level, capital, residentId)
+                    buildBetrothalCandidateNameComponent(level, capital, residentId)
             ));
         }
 
-        result.sort(Comparator.comparing(OpenBetrothalSelectionPacket.Candidate::name, String.CASE_INSENSITIVE_ORDER));
+        result.sort(Comparator.comparing(candidate -> candidate.name().getString(), String.CASE_INSENSITIVE_ORDER));
         return result;
     }
 
@@ -153,14 +156,11 @@ final class CapitalPetitionRequirements {
             return false;
         }
 
-        String title = CapitalTitleResolver.getDisplayTitle(level, capital, entityId);
-        return "Lord".equals(title)
-                || "Lady".equals(title)
-                || "Duke".equals(title)
-                || "Duchess".equals(title)
-                || "Prince".equals(title)
-                || "Princess".equals(title)
-                || "Heir Apparent".equals(title);
+        CapitalTitleResolver.ResolvedTitleId titleId = CapitalTitleResolver.getResolvedTitleId(level, capital, entityId);
+        return titleId == CapitalTitleResolver.ResolvedTitleId.LORD
+                || titleId == CapitalTitleResolver.ResolvedTitleId.DUKE
+                || titleId == CapitalTitleResolver.ResolvedTitleId.ROYAL_CHILD
+                || titleId == CapitalTitleResolver.ResolvedTitleId.HEIR_APPARENT;
     }
 
     static boolean isRecommendedBetrothalCandidate(ServerLevel level, CapitalRecord capital, UUID entityId) {
@@ -175,19 +175,23 @@ final class CapitalPetitionRequirements {
         return !entityId.equals(capital.getSovereign());
     }
 
-    static String buildBetrothalCandidateName(ServerLevel level, CapitalRecord capital, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        String baseName = entity != null ? entity.getName().getString() : entityId.toString();
-        String displayTitle = CapitalTitleResolver.getDisplayTitle(level, capital, entityId);
+    static Component buildBetrothalCandidateNameComponent(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        Component baseName = CapitalNameService.resolveDisplayNameComponent(level, capital, entityId);
+        CapitalTitleResolver.ResolvedTitleId titleId = CapitalTitleResolver.getResolvedTitleId(level, capital, entityId);
 
-        if (displayTitle == null || displayTitle.isBlank() || "Commoner".equals(displayTitle) || "None".equals(displayTitle)) {
+        if (titleId == CapitalTitleResolver.ResolvedTitleId.COMMONER
+                || titleId == CapitalTitleResolver.ResolvedTitleId.NONE) {
             return baseName;
         }
 
-        if (baseName.startsWith(displayTitle + " ")) {
-            return baseName;
+        if (titleId == CapitalTitleResolver.ResolvedTitleId.ROYAL_GUARD) {
+            return CapitalRoyalGuardService.buildRoyalGuardDisplayNameComponent(level, capital, entityId);
         }
 
-        return displayTitle + " " + baseName;
+        return Component.translatable(
+                "mcacapitals.dynamic.name.titled",
+                CapitalTitleResolver.getDisplayTitleComponent(level, capital, entityId),
+                baseName
+        );
     }
 }

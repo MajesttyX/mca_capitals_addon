@@ -37,18 +37,24 @@ final class CapitalInterregnumSuccessionResolver {
 
         UUID deceasedSovereign =
                 interregnum.getDeceasedSovereignId();
+
         UUID oldConsort = capital.getConsort();
         boolean oldConsortFemale = capital.isConsortFemale();
+
         Set<UUID> oldRoyalChildren =
                 new LinkedHashSet<>(capital.getRoyalChildren());
+
         Map<UUID, Boolean> oldRoyalChildFemale =
                 new LinkedHashMap<>(capital.getRoyalChildFemale());
+
         List<UUID> oldSuccessionOrder =
                 new ArrayList<>(capital.getRoyalSuccessionOrder());
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(
-                level,
-                capital.getCapitalId()
-        );
+
+        Set<UUID> residents =
+                CapitalResidentScanner.scanResidents(
+                        level,
+                        capital.getCapitalId()
+                );
 
         UUID successor = findSuccessor(
                 level,
@@ -69,6 +75,7 @@ final class CapitalInterregnumSuccessionResolver {
                     oldRoyalChildFemale,
                     oldSuccessionOrder
             );
+
             return true;
         }
 
@@ -85,6 +92,7 @@ final class CapitalInterregnumSuccessionResolver {
                 oldSuccessionOrder,
                 residents
         );
+
         return true;
     }
 
@@ -114,26 +122,26 @@ final class CapitalInterregnumSuccessionResolver {
                 interregnum
         );
 
-        if (isValidRelationshipPerson(level, oldConsort)) {
+        if (isValidRelationshipPerson(
+                level,
+                oldConsort
+        )) {
             capital.setDowager(oldConsort);
             capital.setDowagerFemale(oldConsortFemale);
-            CapitalChronicleService.addEntry(
+
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    "The wartime interregnum ended without a valid successor. "
-                            + resolveName(level, oldConsort)
-                            + " remained as surviving consort while the throne stood vacant."
+                    CapitalChronicleEventId.WARTIME_INTERREGNUM_NO_SUCCESSOR_CONSORT,
+                    resolveName(level, oldConsort),
+                    CapitalDiplomaticAgreementText.capitalName(level, capital)
             );
         } else {
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    "The wartime interregnum ended without a valid successor. "
-                            + CapitalDiplomaticAgreementText.capitalName(
-                            level,
-                            capital
-                    )
-                            + " fell vacant."
+                    CapitalChronicleEventId.WARTIME_INTERREGNUM_NO_SUCCESSOR,
+                    CapitalDiplomaticAgreementText.capitalName(level, capital)
             );
         }
 
@@ -144,12 +152,14 @@ final class CapitalInterregnumSuccessionResolver {
                 oldRoyalChildren,
                 oldRoyalChildFemale
         );
+
         rebuildSuccessionOrder(
                 capital,
                 deceasedSovereign,
                 null,
                 oldSuccessionOrder
         );
+
         finish(level, capital);
     }
 
@@ -173,10 +183,16 @@ final class CapitalInterregnumSuccessionResolver {
 
         capital.setSovereign(successor);
         capital.setSovereignFemale(
-                MCAIntegrationBridge.isFemale(level, successor)
+                MCAIntegrationBridge.isFemale(
+                        level,
+                        successor
+                )
         );
 
-        if (isValidRelationshipPerson(level, oldConsort)
+        if (isValidRelationshipPerson(
+                level,
+                oldConsort
+        )
                 && !oldConsort.equals(successor)) {
             capital.setDowager(oldConsort);
             capital.setDowagerFemale(oldConsortFemale);
@@ -191,7 +207,11 @@ final class CapitalInterregnumSuccessionResolver {
                 capital,
                 interregnum
         );
-        CapitalFoundationService.refreshCourt(level, capital);
+
+        CapitalFoundationService.refreshCourt(
+                level,
+                capital
+        );
 
         restoreRoyalChildren(
                 capital,
@@ -200,6 +220,7 @@ final class CapitalInterregnumSuccessionResolver {
                 oldRoyalChildren,
                 oldRoyalChildFemale
         );
+
         rebuildSuccessionOrder(
                 capital,
                 deceasedSovereign,
@@ -213,7 +234,9 @@ final class CapitalInterregnumSuccessionResolver {
                 residents,
                 interregnum
         );
+
         capital.setHeir(nextHeir);
+
         if (nextHeir != null) {
             capital.setHeirFemale(
                     capital.getRoyalChildren().contains(nextHeir)
@@ -223,32 +246,36 @@ final class CapitalInterregnumSuccessionResolver {
                             nextHeir
                     )
             );
-            capital.setHeirMode(CapitalRecord.HeirMode.DYNASTIC);
+
+            capital.setHeirMode(
+                    CapitalRecord.HeirMode.DYNASTIC
+            );
         } else {
             capital.setHeirFemale(false);
             capital.setHeirMode(CapitalRecord.HeirMode.NONE);
         }
 
-        String successorName = resolveName(level, successor);
-        String capitalName = CapitalDiplomaticAgreementText.capitalName(
+        String successorName = resolveName(
                 level,
-                capital
+                successor
         );
-        CapitalChronicleService.addEntry(
+
+        String capitalName =
+                CapitalDiplomaticAgreementText.capitalName(
+                        level,
+                        capital
+                );
+
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
                 successorWasManualHeir
-                        ? "The wartime interregnum ended. "
-                        + successorName
-                        + ", previously named Heir Apparent, inherited the throne of "
-                        + capitalName
-                        + "."
-                        : "The wartime interregnum ended. "
-                        + successorName
-                        + " inherited the throne of "
-                        + capitalName
-                        + "."
+                        ? CapitalChronicleEventId.WARTIME_INTERREGNUM_HEIR_INHERITED
+                        : CapitalChronicleEventId.WARTIME_INTERREGNUM_SUCCESSOR_INHERITED,
+                successorName,
+                capitalName
         );
+
         finish(level, capital);
     }
 
@@ -259,6 +286,7 @@ final class CapitalInterregnumSuccessionResolver {
             CapitalInterregnumRecord interregnum
     ) {
         UUID heir = capital.getHeir();
+
         if (isValidSuccessionHeir(
                 level,
                 capital,
@@ -268,106 +296,8 @@ final class CapitalInterregnumSuccessionResolver {
             return heir;
         }
 
-        UUID candidate = firstValid(
-                level,
-                capital,
-                orderedRoyalSuccessors(capital),
-                residents,
-                interregnum,
-                true
-        );
-        if (candidate != null) {
-            return candidate;
-        }
-        candidate = firstValid(
-                level,
-                capital,
-                orderedRoyalSuccessors(capital),
-                residents,
-                interregnum,
-                false
-        );
-        if (candidate != null) {
-            return candidate;
-        }
-
-        candidate = firstValid(
-                level,
-                capital,
-                capital.getDukes(),
-                residents,
-                interregnum,
-                true
-        );
-        if (candidate != null) {
-            return candidate;
-        }
-        candidate = firstValid(
-                level,
-                capital,
-                capital.getDukes(),
-                residents,
-                interregnum,
-                false
-        );
-        if (candidate != null) {
-            return candidate;
-        }
-
-        candidate = firstValid(
-                level,
-                capital,
-                capital.getLords(),
-                residents,
-                interregnum,
-                true
-        );
-        if (candidate != null) {
-            return candidate;
-        }
-        candidate = firstValid(
-                level,
-                capital,
-                capital.getLords(),
-                residents,
-                interregnum,
-                false
-        );
-        if (candidate != null) {
-            return candidate;
-        }
-
-        candidate = firstValid(
-                level,
-                capital,
-                capital.getKnights(),
-                residents,
-                interregnum,
-                true
-        );
-        if (candidate != null) {
-            return candidate;
-        }
-        return firstValid(
-                level,
-                capital,
-                capital.getKnights(),
-                residents,
-                interregnum,
-                false
-        );
-    }
-
-    private static UUID firstValid(
-            ServerLevel level,
-            CapitalRecord capital,
-            Iterable<UUID> candidates,
-            Set<UUID> residents,
-            CapitalInterregnumRecord interregnum,
-            boolean mustBeResident
-    ) {
-        for (UUID id : candidates) {
-            if ((!mustBeResident || residents.contains(id))
+        for (UUID id : orderedRoyalSuccessors(capital)) {
+            if (residents.contains(id)
                     && isValidSuccessionCandidate(
                     level,
                     capital,
@@ -377,6 +307,87 @@ final class CapitalInterregnumSuccessionResolver {
                 return id;
             }
         }
+
+        for (UUID id : orderedRoyalSuccessors(capital)) {
+            if (isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
+                return id;
+            }
+        }
+
+        for (UUID id : capital.getDukes()) {
+            if (residents.contains(id)
+                    && isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
+                return id;
+            }
+        }
+
+        for (UUID id : capital.getDukes()) {
+            if (isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
+                return id;
+            }
+        }
+
+        for (UUID id : capital.getLords()) {
+            if (residents.contains(id)
+                    && isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
+                return id;
+            }
+        }
+
+        for (UUID id : capital.getLords()) {
+            if (isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
+                return id;
+            }
+        }
+
+        for (UUID id : capital.getKnights()) {
+            if (residents.contains(id)
+                    && isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
+                return id;
+            }
+        }
+
+        for (UUID id : capital.getKnights()) {
+            if (isValidSuccessionCandidate(
+                    level,
+                    capital,
+                    id,
+                    interregnum
+            )) {
+                return id;
+            }
+        }
+
         return null;
     }
 
@@ -392,6 +403,7 @@ final class CapitalInterregnumSuccessionResolver {
                     || capital.isDisinheritedRoyalChild(id)) {
                 continue;
             }
+
             if (residents.contains(id)
                     && isValidSuccessionCandidate(
                     level,
@@ -409,6 +421,7 @@ final class CapitalInterregnumSuccessionResolver {
                     || capital.isDisinheritedRoyalChild(id)) {
                 continue;
             }
+
             if (isValidSuccessionCandidate(
                     level,
                     capital,
@@ -418,6 +431,7 @@ final class CapitalInterregnumSuccessionResolver {
                 return id;
             }
         }
+
         return null;
     }
 
@@ -435,9 +449,12 @@ final class CapitalInterregnumSuccessionResolver {
             if (royalChild == null
                     || royalChild.equals(deceasedSovereign)
                     || royalChild.equals(successor)
-                    || capital.isDisinheritedRoyalChild(royalChild)) {
+                    || capital.isDisinheritedRoyalChild(
+                    royalChild
+            )) {
                 continue;
             }
+
             capital.addRoyalChild(
                     royalChild,
                     oldRoyalChildFemale.getOrDefault(
@@ -460,9 +477,11 @@ final class CapitalInterregnumSuccessionResolver {
             if (childId == null
                     || childId.equals(deceasedSovereign)
                     || childId.equals(successor)
-                    || !capital.getRoyalChildren().contains(childId)) {
+                    || !capital.getRoyalChildren()
+                    .contains(childId)) {
                 continue;
             }
+
             capital.getRoyalSuccessionOrder().add(childId);
         }
 
@@ -470,9 +489,8 @@ final class CapitalInterregnumSuccessionResolver {
             if (childId != null
                     && !childId.equals(deceasedSovereign)
                     && !childId.equals(successor)
-                    && !capital.getRoyalSuccessionOrder().contains(
-                    childId
-            )) {
+                    && !capital.getRoyalSuccessionOrder()
+                    .contains(childId)) {
                 capital.getRoyalSuccessionOrder().add(childId);
             }
         }
@@ -481,19 +499,24 @@ final class CapitalInterregnumSuccessionResolver {
     private static List<UUID> orderedRoyalSuccessors(
             CapitalRecord capital
     ) {
-        LinkedHashSet<UUID> ordered = new LinkedHashSet<>();
-        for (UUID id : capital.getRoyalSuccessionOrder()) {
+        LinkedHashSet<UUID> ordered =
+                new LinkedHashSet<>();
+
+        for (UUID id :
+                capital.getRoyalSuccessionOrder()) {
             if (id != null
                     && !capital.isDisinheritedRoyalChild(id)) {
                 ordered.add(id);
             }
         }
+
         for (UUID id : capital.getRoyalChildren()) {
             if (id != null
                     && !capital.isDisinheritedRoyalChild(id)) {
                 ordered.add(id);
             }
         }
+
         return new ArrayList<>(ordered);
     }
 
@@ -508,7 +531,8 @@ final class CapitalInterregnumSuccessionResolver {
             return false;
         }
 
-        if (capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
+        if (capital.getHeirMode()
+                == CapitalRecord.HeirMode.MANUAL) {
             return isValidSuccessionCandidate(
                     level,
                     capital,
@@ -541,14 +565,16 @@ final class CapitalInterregnumSuccessionResolver {
                 || !entityId.equals(
                 interregnum.getDeceasedSovereignId()
         ))
-                && MCAIntegrationBridge.hasPersistentFamilyNode(
-                level,
-                entityId
-        )
-                && !MCAIntegrationBridge.isFamilyNodeDeceased(
-                level,
-                entityId
-        );
+                && MCAIntegrationBridge
+                .hasPersistentFamilyNode(
+                        level,
+                        entityId
+                )
+                && !MCAIntegrationBridge
+                .isFamilyNodeDeceased(
+                        level,
+                        entityId
+                );
     }
 
     private static boolean isValidRelationshipPerson(
@@ -558,21 +584,28 @@ final class CapitalInterregnumSuccessionResolver {
         if (entityId == null) {
             return false;
         }
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(
-                level,
-                entityId
-        );
+
+        Entity entity = MCAIntegrationBridge
+                .getEntityByUuid(
+                        level,
+                        entityId
+                );
+
         if (entity != null) {
-            return entity.isAlive() && !entity.isRemoved();
+            return entity.isAlive()
+                    && !entity.isRemoved();
         }
-        return MCAIntegrationBridge.hasPersistentFamilyNode(
-                level,
-                entityId
-        )
-                && !MCAIntegrationBridge.isFamilyNodeDeceased(
-                level,
-                entityId
-        );
+
+        return MCAIntegrationBridge
+                .hasPersistentFamilyNode(
+                        level,
+                        entityId
+                )
+                && !MCAIntegrationBridge
+                .isFamilyNodeDeceased(
+                        level,
+                        entityId
+                );
     }
 
     private static void clearDeadPlayerSovereignState(
@@ -583,10 +616,12 @@ final class CapitalInterregnumSuccessionResolver {
         if (!interregnum.wasPlayerSovereign()) {
             return;
         }
-        CapitalSovereignAppointmentService.clearPlayerSovereignState(
-                capital
-        );
-        if (interregnum.getFormerPlayerSovereignId() != null
+
+        CapitalSovereignAppointmentService
+                .clearPlayerSovereignState(capital);
+
+        if (interregnum.getFormerPlayerSovereignId()
+                != null
                 && capital.getCapitalId() != null) {
             PlayerCapitalTitleService.clear(
                     level,
@@ -600,10 +635,12 @@ final class CapitalInterregnumSuccessionResolver {
             ServerLevel level,
             UUID entityId
     ) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(
-                level,
-                entityId
-        );
+        Entity entity = MCAIntegrationBridge
+                .getEntityByUuid(
+                        level,
+                        entityId
+                );
+
         return entity == null
                 ? entityId.toString()
                 : entity.getName().getString();
@@ -613,8 +650,13 @@ final class CapitalInterregnumSuccessionResolver {
             ServerLevel level,
             CapitalRecord capital
     ) {
-        CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
-        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalRoyalHouseholdService
+                .refreshDynasticHousehold(capital);
+
+        CapitalCourtWatcher.clearFingerprint(
+                capital.getCapitalId()
+        );
+
         CapitalDataAccess.markDirty(level);
     }
 }

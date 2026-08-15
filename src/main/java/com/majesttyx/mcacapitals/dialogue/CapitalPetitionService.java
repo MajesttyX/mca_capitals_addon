@@ -169,8 +169,9 @@ public final class CapitalPetitionService {
             player.drop(decree, false);
         }
 
-        player.sendSystemMessage(Component.literal(
-                villagerEntity.getName().getString() + ": The records of a House are not changed lightly. Take this Decree and use it carefully."
+        player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                villagerEntity,
+                Component.translatable("mcacapitals.petition.decree_house.granted")
         ));
     }
 
@@ -193,13 +194,19 @@ public final class CapitalPetitionService {
         CapitalRecord capital = resolveCapital(level, villagerId);
 
         if (capital == null || capital.getState() != CapitalState.ACTIVE || !canGrantRoyalPardon(capital, villagerId)) {
-            player.sendSystemMessage(Component.literal(villagerEntity.getName().getString() + ": " + CapitalJusticeText.royalPardonNoAuthority(level, villagerId)));
+            player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                    villagerEntity,
+                    CapitalJusticeText.royalPardonNoAuthority(level, villagerId)
+            ));
             return;
         }
 
         int hearts = MCAIntegrationBridge.getHeartsWithPlayer(level, villagerId, player.getUUID());
         if (hearts < ROYAL_PARDON_MIN_HEARTS) {
-            player.sendSystemMessage(Component.literal(villagerEntity.getName().getString() + ": " + CapitalJusticeText.royalPardonRefusedTrust(level, villagerId)));
+            player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                    villagerEntity,
+                    CapitalJusticeText.royalPardonRefusedTrust(level, villagerId)
+            ));
             return;
         }
 
@@ -209,7 +216,10 @@ public final class CapitalPetitionService {
             player.drop(pardon, false);
         }
 
-        player.sendSystemMessage(Component.literal(villagerEntity.getName().getString() + ": " + CapitalJusticeText.royalPardonGrantLine(level, capital, villagerId)));
+        player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                villagerEntity,
+                CapitalJusticeText.royalPardonGrantLine(level, capital, villagerId)
+        ));
     }
 
     private static boolean canGrantRoyalPardon(CapitalRecord capital, UUID villagerId) {

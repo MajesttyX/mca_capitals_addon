@@ -51,9 +51,8 @@ public final class CapitalCampaignService {
                 );
 
         if (!audience.valid()) {
-            player.sendSystemMessage(Component.literal(
-                    audience.failureMessage()
-            ));
+            player.sendSystemMessage(audience.failureMessage());
+
             return 0;
         }
 
@@ -62,14 +61,16 @@ public final class CapitalCampaignService {
         CapitalRecord defendingCapital =
                 CapitalManager.getCapital(defendingCapitalId);
 
-        String targetFailure =
-                CapitalDiplomaticAgreementValidation.validateTarget(
-                        attackingCapital,
-                        defendingCapital
-                );
+        Component targetFailure =
+                CapitalDiplomaticAgreementValidation
+                        .validateTarget(
+                                attackingCapital,
+                                defendingCapital
+                        );
 
         if (targetFailure != null) {
-            player.sendSystemMessage(Component.literal(targetFailure));
+            player.sendSystemMessage(targetFailure);
+
             return 0;
         }
 
@@ -82,9 +83,8 @@ public final class CapitalCampaignService {
         );
 
         if (!result.successful()) {
-            player.sendSystemMessage(Component.literal(
-                    result.failureMessage()
-            ));
+            player.sendSystemMessage(result.failureMessage());
+
             return 0;
         }
 
@@ -94,20 +94,19 @@ public final class CapitalCampaignService {
                         defendingCapital
                 );
 
-        player.sendSystemMessage(Component.literal(
-                "The "
-                        + result.campaign().getWarGoal().getDisplayName()
-                        + " against "
-                        + targetName
-                        + " has been planned for "
-                        + result.campaign().getWarCause().getDisplayName()
-                        + ". Enter that capital yourself to begin a 20-second assembly. "
-                        + "The campaign will attempt to gather "
-                        + result.campaign().getTargetAttackerCount()
-                        + " Guards and Archers, up to the maximum of "
-                        + CapitalCampaignRecord.MAX_ATTACKERS
-                        + ", before the force deploys."
-        ));
+        player.sendSystemMessage(
+                Component.translatable(
+                        "mcacapitals.system.campaign.planned",
+                        Component.translatable(
+                                "mcacapitals.chronicle.war_goal."
+                                        + result.campaign().getWarGoal().getSerializedName()
+                        ),
+                        Component.literal(targetName),
+                        result.campaign().getWarCause().getDisplayComponent(),
+                        result.campaign().getTargetAttackerCount(),
+                        CapitalCampaignRecord.MAX_ATTACKERS
+                )
+        );
 
         return 1;
     }
@@ -154,12 +153,8 @@ public final class CapitalCampaignService {
             UUID initiatingPlayerId,
             CapitalWarGoal warGoal
     ) {
-        String recoveryFailure =
-                CapitalWarPlanningService.validateRecovery(
-                        level,
-                        attackingCapital
-                );
-
+        Component recoveryFailure = CapitalWarPlanningService
+                .validateRecovery(level, attackingCapital);
         if (recoveryFailure != null) {
             return CampaignCreationResult.failure(recoveryFailure);
         }
@@ -198,7 +193,7 @@ public final class CapitalCampaignService {
 
         if (!CapitalCampaignDataAccess.addCampaign(level, campaign)) {
             return CampaignCreationResult.failure(
-                    "The campaign could not be recorded."
+                    Component.translatable("mcacapitals.war.validation.reservation_failed")
             );
         }
 
@@ -212,18 +207,29 @@ public final class CapitalCampaignService {
                         level,
                         defendingCapital
                 );
-        String entry =
-                attackingName
-                        + " planned a "
-                        + campaign.getWarGoal().getDisplayName()
-                        + " against "
-                        + defendingName
-                        + " for "
-                        + campaign.getWarCause().getDisplayName()
-                        + ".";
 
-        CapitalChronicleService.addEntry(level, attackingCapital, entry);
-        CapitalChronicleService.addEntry(level, defendingCapital, entry);
+        Object attackingChronicleName = attackingName == null || attackingName.isBlank()
+                ? CapitalChronicleService.translatable("mcacapitals.chronicle.fallback.attacking_capital")
+                : attackingName;
+        Object defendingChronicleName = defendingName == null || defendingName.isBlank()
+                ? CapitalChronicleService.translatable("mcacapitals.chronicle.fallback.defending_capital")
+                : defendingName;
+
+        CapitalChronicleService.addEvent(
+                level,
+                attackingCapital,
+                CapitalChronicleEventId.CAMPAIGN_PLANNED,
+                attackingChronicleName,
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.war_goal." + campaign.getWarGoal().getSerializedName()
+                ),
+                defendingChronicleName,
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.war_cause." + campaign.getWarCause().getSerializedName()
+                ),
+                campaign.getTargetAttackerCount(),
+                CapitalCampaignRecord.MAX_ATTACKERS
+        );
 
         return CampaignCreationResult.success(campaign);
     }
@@ -420,7 +426,7 @@ public final class CapitalCampaignService {
     public record CampaignCreationResult(
             boolean successful,
             CapitalCampaignRecord campaign,
-            String failureMessage
+            Component failureMessage
     ) {
         static CampaignCreationResult success(
                 CapitalCampaignRecord campaign
@@ -432,7 +438,9 @@ public final class CapitalCampaignService {
             );
         }
 
-        static CampaignCreationResult failure(String message) {
+        static CampaignCreationResult failure(
+                Component message
+        ) {
             return new CampaignCreationResult(
                     false,
                     null,

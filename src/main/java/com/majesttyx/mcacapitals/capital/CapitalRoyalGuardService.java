@@ -91,12 +91,14 @@ public class CapitalRoyalGuardService {
         boolean changed = false;
 
         for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
-            String guardName = buildRoyalGuardHistoryName(level, guardId);
+            String guardName = CapitalChronicleIdentitySnapshot.name(level, capital, guardId);
             capital.removeRoyalGuard(guardId);
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    guardName + " was released from the royal guard of " + villageName + " after the transfer of power."
+                    CapitalChronicleEventId.ROYAL_GUARD_RELEASED_TRANSFER,
+                    guardName,
+                    villageName
             );
             changed = true;
         }
@@ -135,11 +137,16 @@ public class CapitalRoyalGuardService {
         capital.addRoyalGuard(villagerId, MCAIntegrationBridge.isFemale(level, villagerId), capital.getRoyalGuardLiege());
         capital.setRoyalGuardDutyMode(villagerId, CapitalRecord.GuardDutyMode.FOLLOW_SOVEREIGN);
 
-        String guardName = buildRoyalGuardDisplayName(level, capital, villagerId);
+        String guardName = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
-        CapitalChronicleService.addEntry(level, capital,
-                guardName + " was named to the royal guard of " + villageName + ".");
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.ROYAL_GUARD_APPOINTED,
+                guardName,
+                villageName
+        );
 
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
@@ -203,24 +210,34 @@ public class CapitalRoyalGuardService {
 
     private static void recordDisgrace(ServerLevel level, CapitalRecord capital, UUID guardId) {
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        String name = buildRoyalGuardHistoryName(level, guardId);
-        CapitalChronicleService.addEntry(
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, guardId);
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                name + " was disgraced after failing to preserve the reign of " + villageName + "."
+                CapitalChronicleEventId.ROYAL_GUARD_DISGRACED,
+                name,
+                villageName
         );
     }
 
     public static String buildRoyalGuardDisplayName(ServerLevel level, CapitalRecord capital, UUID guardId) {
-        String title = MCAIntegrationBridge.isFemale(level, guardId) ? "Dame" : "Sir";
-        String baseName = resolveBaseName(level, guardId);
-        return title + " " + baseName + " of the " + (capital.isSovereignFemale() ? "Queensguard" : "Kingsguard");
+        return buildRoyalGuardDisplayNameComponent(level, capital, guardId).getString();
     }
 
-    private static String buildRoyalGuardHistoryName(ServerLevel level, UUID guardId) {
-        String title = MCAIntegrationBridge.isFemale(level, guardId) ? "Dame" : "Sir";
-        String baseName = resolveBaseName(level, guardId);
-        return title + " " + baseName;
+    public static Component buildRoyalGuardDisplayNameComponent(ServerLevel level, CapitalRecord capital, UUID guardId) {
+        Component title = Component.translatable(
+                MCAIntegrationBridge.isFemale(level, guardId)
+                        ? "mcacapitals.dynamic.title.knight.female"
+                        : "mcacapitals.dynamic.title.knight.male"
+        );
+        Component baseName = Component.literal(resolveBaseName(level, guardId));
+        return Component.translatable(
+                capital.isSovereignFemale()
+                        ? "mcacapitals.dynamic.name.royal_guard.queensguard"
+                        : "mcacapitals.dynamic.name.royal_guard.kingsguard",
+                title,
+                baseName
+        );
     }
 
     private static String resolveBaseName(ServerLevel level, UUID entityId) {
@@ -330,9 +347,9 @@ public class CapitalRoyalGuardService {
         capital.setLastRoyalGuardPromptDay(currentDay);
         CapitalDataAccess.markDirty(level);
 
-        sovereign.sendSystemMessage(Component.literal(
-                "Your capital can appoint up to " + MAX_ROYAL_GUARDS + " royal guards. "
-                        + "Use /capitaltest court or the Royal Scepter to appoint an eligible guard."
+        sovereign.sendSystemMessage(Component.translatable(
+                "mcacapitals.system.royal_guard.appointment_available",
+                MAX_ROYAL_GUARDS
         ));
     }
 

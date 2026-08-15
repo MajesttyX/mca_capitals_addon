@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.data.PendingVillagerBetrothalAccess;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -14,64 +15,66 @@ final class MCARelationshipOps {
 
     static MCARelationshipBridge.BetrothalResult promise(ServerPlayer player, Entity villagerEntity) {
         if (player == null || villagerEntity == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("That betrothal could not be arranged.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_betrothal_could_not_be_arranged"));
         }
 
         if (!MCAIntegrationBridge.isMCAVillagerEntity(villagerEntity)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Only an MCA noble may be chosen for betrothal.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.only_an_mca_noble_may_be_chosen_for_betrothal"));
         }
 
         if (!MCAIntegrationBridge.isTeenOrAdultVillager(player.serverLevel(), villagerEntity.getUUID())) {
-            return MCARelationshipBridge.BetrothalResult.failure("Only a teen or adult noble may be chosen for betrothal.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.only_a_teen_or_adult_noble_may_be_chosen_for_betrothal"));
         }
 
         Object playerData = MCARelationshipReflection.getPlayerSaveData(player);
         if (playerData == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("The realm could not consult MCA's courtship records.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.the_realm_could_not_consult_mcas_courtship_records"));
         }
 
         Object relationships = MCAReflectionHelper.invoke(villagerEntity, "getRelationships");
         if (relationships == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("That villager's relationship state could not be read.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_villagers_relationship_state_could_not_be_read"));
         }
 
-        if (MCARelationshipReflection.booleanCall(relationships, "isMarriedTo", player)) {
-            return MCARelationshipBridge.BetrothalResult.failure("That noble is already married to you.");
+        UUID playerId = player.getUUID();
+
+        if (MCARelationshipReflection.booleanCall(relationships, "isMarriedTo", playerId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_noble_is_already_married_to_you"));
         }
 
         if (MCARelationshipReflection.booleanCall(relationships, "isMarried")) {
-            return MCARelationshipBridge.BetrothalResult.failure("That noble is already married.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_noble_is_already_married"));
         }
 
-        if (MCARelationshipReflection.booleanCall(relationships, "isEngagedWith", player)) {
-            return MCARelationshipBridge.BetrothalResult.failure("That noble is already engaged to you.");
+        if (MCARelationshipReflection.booleanCall(relationships, "isEngagedWith", playerId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_noble_is_already_engaged_to_you"));
         }
 
-        if (MCARelationshipReflection.booleanCall(relationships, "isPromisedTo", player)) {
-            return MCARelationshipBridge.BetrothalResult.failure("That noble is already betrothed to you.");
+        if (MCARelationshipReflection.booleanCall(relationships, "isPromisedTo", playerId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_noble_is_already_betrothed_to_you"));
         }
 
         if (MCARelationshipReflection.booleanCall(relationships, "isEngaged")) {
-            return MCARelationshipBridge.BetrothalResult.failure("That noble is already engaged.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_noble_is_already_engaged"));
         }
 
         if (MCARelationshipReflection.booleanCall(relationships, "isPromised")) {
-            return MCARelationshipBridge.BetrothalResult.failure("That noble is already promised elsewhere.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_noble_is_already_promised_elsewhere"));
         }
 
         if (MCARelationshipReflection.booleanCall(playerData, "isMarried")) {
-            return MCARelationshipBridge.BetrothalResult.failure("You are already married.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.you_are_already_married"));
         }
 
         int heartsRequired = MCARelationshipReflection.getBouquetHeartsRequirement();
-        int hearts = MCAIntegrationBridge.getHeartsWithPlayer(player.serverLevel(), villagerEntity.getUUID(), player.getUUID());
+        int hearts = MCAIntegrationBridge.getHeartsWithPlayer(player.serverLevel(), villagerEntity.getUUID(), playerId);
         if (hearts < heartsRequired) {
-            return MCARelationshipBridge.BetrothalResult.failure("That noble does not yet return your affection strongly enough.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_noble_does_not_yet_return_your_affection_strongly_enough"));
         }
 
         Object attracted = MCARelationshipReflection.invokeCompatible(villagerEntity, "canBeAttractedTo", playerData);
         if (attracted instanceof Boolean b && !b) {
-            return MCARelationshipBridge.BetrothalResult.failure("That noble would not accept such a match.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_noble_would_not_accept_such_a_match"));
         }
 
         MCARelationshipReflection.invokeCompatible(playerData, "promise", villagerEntity);
@@ -87,68 +90,71 @@ final class MCARelationshipOps {
 
     static MCARelationshipBridge.BetrothalResult promiseVillagerToVillager(Entity firstVillager, Entity secondVillager) {
         if (firstVillager == null || secondVillager == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("That betrothal recommendation could not be arranged.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_betrothal_recommendation_could_not_be_arranged"));
         }
 
         if (!MCAIntegrationBridge.isMCAVillagerEntity(firstVillager) || !MCAIntegrationBridge.isMCAVillagerEntity(secondVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Only MCA villagers may be joined by recommendation.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.only_mca_villagers_may_be_joined_by_recommendation"));
         }
 
-        if (firstVillager.getUUID().equals(secondVillager.getUUID())) {
-            return MCARelationshipBridge.BetrothalResult.failure("A villager cannot be recommended for betrothal to themself.");
+        UUID firstId = firstVillager.getUUID();
+        UUID secondId = secondVillager.getUUID();
+
+        if (firstId.equals(secondId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.a_villager_cannot_be_recommended_for_betrothal_to_themself"));
         }
 
         ServerLevel level = resolveServerLevel(firstVillager, secondVillager);
         if (level == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("The world context for that betrothal could not be resolved.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.the_world_context_for_that_betrothal_could_not_be_resolved"));
         }
 
         Object firstRelationships = MCAReflectionHelper.invoke(firstVillager, "getRelationships");
         Object secondRelationships = MCAReflectionHelper.invoke(secondVillager, "getRelationships");
 
         if (firstRelationships == null || secondRelationships == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of the villagers' relationship records could not be read.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_the_villagers_relationship_records_could_not_be_read"));
         }
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
-                || MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are already married to one another.");
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondId)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_already_married_to_one_another"));
         }
 
         if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarried") || MCARelationshipReflection.booleanCall(secondRelationships, "isMarried")) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already married.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_those_villagers_is_already_married"));
         }
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isEngagedWith", secondVillager)
-                || MCARelationshipReflection.booleanCall(secondRelationships, "isEngagedWith", firstVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are already engaged to one another.");
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isEngagedWith", secondId)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isEngagedWith", firstId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_already_engaged_to_one_another"));
         }
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isPromisedTo", secondVillager)
-                || MCARelationshipReflection.booleanCall(secondRelationships, "isPromisedTo", firstVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are already betrothed to one another.");
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isPromisedTo", secondId)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isPromisedTo", firstId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_already_betrothed_to_one_another"));
         }
 
         if (MCARelationshipReflection.booleanCall(firstRelationships, "isEngaged") || MCARelationshipReflection.booleanCall(secondRelationships, "isEngaged")) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already engaged.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_those_villagers_is_already_engaged"));
         }
 
         if (MCARelationshipReflection.booleanCall(firstRelationships, "isPromised") || MCARelationshipReflection.booleanCall(secondRelationships, "isPromised")) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already promised elsewhere.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_those_villagers_is_already_promised_elsewhere"));
         }
 
         if (areRelatives(level, firstRelationships, firstVillager, secondRelationships, secondVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are related and cannot be joined by betrothal.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_related_and_cannot_be_joined_by_betrothal"));
         }
 
         Object firstAttracted = MCARelationshipReflection.invokeCompatible(firstVillager, "canBeAttractedTo", secondVillager);
         if (firstAttracted instanceof Boolean b && !b) {
-            return MCARelationshipBridge.BetrothalResult.failure("The first villager would not accept such a match.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.the_first_villager_would_not_accept_such_a_match"));
         }
 
         Object secondAttracted = MCARelationshipReflection.invokeCompatible(secondVillager, "canBeAttractedTo", firstVillager);
         if (secondAttracted instanceof Boolean b && !b) {
-            return MCARelationshipBridge.BetrothalResult.failure("The second villager would not accept such a match.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.the_second_villager_would_not_accept_such_a_match"));
         }
 
         MCARelationshipReflection.invokeCompatible(firstRelationships, "promise", secondVillager);
@@ -168,69 +174,72 @@ final class MCARelationshipOps {
     }
 
     static MCARelationshipBridge.BetrothalResult promiseVillagerToVillagerByDecree(Entity firstVillager, Entity secondVillager) {
-        return MCARelationshipBridge.BetrothalResult.failure("Villager decree betrothals now use pending betrothal data instead of MCA promise state.");
+        return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.villager_decree_betrothals_now_use_pending_betrothal_data_instead_of_mca_promise_state"));
     }
 
     static MCARelationshipBridge.BetrothalResult validatePendingVillagerBetrothal(ServerLevel level, Entity firstVillager, Entity secondVillager) {
         if (level == null || firstVillager == null || secondVillager == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("That betrothal decree could not be carried out.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_betrothal_decree_could_not_be_carried_out"));
         }
 
         if (!MCAIntegrationBridge.isMCAVillagerEntity(firstVillager) || !MCAIntegrationBridge.isMCAVillagerEntity(secondVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Only MCA villagers may be joined by betrothal decree.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.only_mca_villagers_may_be_joined_by_betrothal_decree"));
         }
 
-        if (firstVillager.getUUID().equals(secondVillager.getUUID())) {
-            return MCARelationshipBridge.BetrothalResult.failure("A villager cannot be betrothed to themself.");
+        UUID firstId = firstVillager.getUUID();
+        UUID secondId = secondVillager.getUUID();
+
+        if (firstId.equals(secondId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.a_villager_cannot_be_betrothed_to_themself"));
         }
 
-        if (PendingVillagerBetrothalAccess.hasPendingBetrothal(level, firstVillager.getUUID())) {
-            return MCARelationshipBridge.BetrothalResult.failure("The first villager is already betrothed elsewhere.");
+        if (PendingVillagerBetrothalAccess.hasPendingBetrothal(level, firstId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.the_first_villager_is_already_betrothed_elsewhere"));
         }
 
-        if (PendingVillagerBetrothalAccess.hasPendingBetrothal(level, secondVillager.getUUID())) {
-            return MCARelationshipBridge.BetrothalResult.failure("The second villager is already betrothed elsewhere.");
+        if (PendingVillagerBetrothalAccess.hasPendingBetrothal(level, secondId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.the_second_villager_is_already_betrothed_elsewhere"));
         }
 
         Object firstRelationships = MCAReflectionHelper.invoke(firstVillager, "getRelationships");
         Object secondRelationships = MCAReflectionHelper.invoke(secondVillager, "getRelationships");
 
         if (firstRelationships == null || secondRelationships == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of the villagers' relationship records could not be read.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_the_villagers_relationship_records_could_not_be_read"));
         }
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
-                || MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are already married to one another.");
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondId)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_already_married_to_one_another"));
         }
 
         if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarried")
                 || MCARelationshipReflection.booleanCall(secondRelationships, "isMarried")) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already married.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_those_villagers_is_already_married"));
         }
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isEngagedWith", secondVillager)
-                || MCARelationshipReflection.booleanCall(secondRelationships, "isEngagedWith", firstVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are already engaged to one another.");
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isEngagedWith", secondId)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isEngagedWith", firstId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_already_engaged_to_one_another"));
         }
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isPromisedTo", secondVillager)
-                || MCARelationshipReflection.booleanCall(secondRelationships, "isPromisedTo", firstVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are already betrothed to one another.");
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isPromisedTo", secondId)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isPromisedTo", firstId)) {
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_already_betrothed_to_one_another"));
         }
 
         if (MCARelationshipReflection.booleanCall(firstRelationships, "isEngaged")
                 || MCARelationshipReflection.booleanCall(secondRelationships, "isEngaged")) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already engaged.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_those_villagers_is_already_engaged"));
         }
 
         if (MCARelationshipReflection.booleanCall(firstRelationships, "isPromised")
                 || MCARelationshipReflection.booleanCall(secondRelationships, "isPromised")) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already promised elsewhere.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_those_villagers_is_already_promised_elsewhere"));
         }
 
         if (areRelatives(level, firstRelationships, firstVillager, secondRelationships, secondVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are related and cannot be joined by betrothal decree.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_related_and_cannot_be_joined_by_betrothal_decree"));
         }
 
         return MCARelationshipBridge.BetrothalResult.ok();
@@ -245,118 +254,131 @@ final class MCARelationshipOps {
             return false;
         }
 
+        UUID firstId = firstVillager.getUUID();
+        UUID secondId = secondVillager.getUUID();
+
         Object firstRelationships = MCAReflectionHelper.invoke(firstVillager, "getRelationships");
         Object secondRelationships = MCAReflectionHelper.invoke(secondVillager, "getRelationships");
         if (firstRelationships == null || secondRelationships == null) {
             return false;
         }
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
-                || MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondId)
+                || MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstId)) {
             return false;
         }
 
-        return (MCARelationshipReflection.booleanCall(firstRelationships, "isPromisedTo", secondVillager)
-                && MCARelationshipReflection.booleanCall(secondRelationships, "isPromisedTo", firstVillager))
-                || (MCARelationshipReflection.booleanCall(firstRelationships, "isEngagedWith", secondVillager)
-                && MCARelationshipReflection.booleanCall(secondRelationships, "isEngagedWith", firstVillager));
+        return (MCARelationshipReflection.booleanCall(firstRelationships, "isPromisedTo", secondId)
+                && MCARelationshipReflection.booleanCall(secondRelationships, "isPromisedTo", firstId))
+                || (MCARelationshipReflection.booleanCall(firstRelationships, "isEngagedWith", secondId)
+                && MCARelationshipReflection.booleanCall(secondRelationships, "isEngagedWith", firstId));
     }
 
     static MCARelationshipBridge.BetrothalResult marryVillagerToVillager(Entity firstVillager, Entity secondVillager) {
         if (firstVillager == null || secondVillager == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("That marriage could not be arranged.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_marriage_could_not_be_arranged"));
         }
 
         if (!MCAIntegrationBridge.isMCAVillagerEntity(firstVillager) || !MCAIntegrationBridge.isMCAVillagerEntity(secondVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Only MCA villagers may be married by this bridge.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.only_mca_villagers_may_be_married_by_this_bridge"));
         }
 
         if (!areVillagersBetrothedToEachOther(firstVillager, secondVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are not currently betrothed to one another.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_not_currently_betrothed_to_one_another"));
         }
+
+        UUID firstId = firstVillager.getUUID();
+        UUID secondId = secondVillager.getUUID();
 
         Object firstRelationships = MCAReflectionHelper.invoke(firstVillager, "getRelationships");
         Object secondRelationships = MCAReflectionHelper.invoke(secondVillager, "getRelationships");
         if (firstRelationships == null || secondRelationships == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of the villagers' relationship records could not be read.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_the_villagers_relationship_records_could_not_be_read"));
         }
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
-                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondId)
+                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstId)) {
             return MCARelationshipBridge.BetrothalResult.ok();
         }
 
         tryRelationshipStep(firstRelationships, firstVillager, secondVillager, "engage");
         tryRelationshipStep(secondRelationships, secondVillager, firstVillager, "engage");
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
-                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondId)
+                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstId)) {
             return MCARelationshipBridge.BetrothalResult.ok();
         }
 
         tryRelationshipStep(firstRelationships, firstVillager, secondVillager, "marry");
         tryRelationshipStep(secondRelationships, secondVillager, firstVillager, "marry");
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
-                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondId)
+                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstId)) {
             return MCARelationshipBridge.BetrothalResult.ok();
         }
 
-        return MCARelationshipBridge.BetrothalResult.failure("Those villagers could not yet be advanced from betrothal to marriage.");
+        return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_could_not_yet_be_advanced_from_betrothal_to_marriage"));
     }
 
     static MCARelationshipBridge.BetrothalResult marryVillagerToVillagerDirect(Entity firstVillager, Entity secondVillager) {
         if (firstVillager == null || secondVillager == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("That marriage could not be arranged.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.that_marriage_could_not_be_arranged"));
         }
 
         if (!MCAIntegrationBridge.isMCAVillagerEntity(firstVillager) || !MCAIntegrationBridge.isMCAVillagerEntity(secondVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Only MCA villagers may be married by this bridge.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.only_mca_villagers_may_be_married_by_this_bridge"));
         }
 
         ServerLevel level = resolveServerLevel(firstVillager, secondVillager);
         if (level == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("The world context for that marriage could not be resolved.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.the_world_context_for_that_marriage_could_not_be_resolved"));
         }
 
         if (!"ADULT".equalsIgnoreCase(MCAIntegrationBridge.getAgeState(level, firstVillager.getUUID()))
                 || !"ADULT".equalsIgnoreCase(MCAIntegrationBridge.getAgeState(level, secondVillager.getUUID()))) {
-            return MCARelationshipBridge.BetrothalResult.failure("Both villagers must be adults before the marriage may proceed.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.both_villagers_must_be_adults_before_the_marriage_may_proceed"));
         }
+
+        UUID firstId = firstVillager.getUUID();
+        UUID secondId = secondVillager.getUUID();
 
         Object firstRelationships = MCAReflectionHelper.invoke(firstVillager, "getRelationships");
         Object secondRelationships = MCAReflectionHelper.invoke(secondVillager, "getRelationships");
         if (firstRelationships == null || secondRelationships == null) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of the villagers' relationship records could not be read.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_the_villagers_relationship_records_could_not_be_read"));
         }
 
         if (areRelatives(level, firstRelationships, firstVillager, secondRelationships, secondVillager)) {
-            return MCARelationshipBridge.BetrothalResult.failure("Those villagers are related and cannot be married.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_are_related_and_cannot_be_married"));
         }
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
-                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondId)
+                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstId)) {
             return MCARelationshipBridge.BetrothalResult.ok();
         }
 
         if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarried")
                 || MCARelationshipReflection.booleanCall(secondRelationships, "isMarried")) {
-            return MCARelationshipBridge.BetrothalResult.failure("One of those villagers is already married.");
+            return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.one_of_those_villagers_is_already_married"));
         }
 
         tryRelationshipStep(firstRelationships, firstVillager, secondVillager, "marry");
         tryRelationshipStep(secondRelationships, secondVillager, firstVillager, "marry");
 
-        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondVillager)
-                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstVillager)) {
+        if (MCARelationshipReflection.booleanCall(firstRelationships, "isMarriedTo", secondId)
+                && MCARelationshipReflection.booleanCall(secondRelationships, "isMarriedTo", firstId)) {
             return MCARelationshipBridge.BetrothalResult.ok();
         }
 
-        return MCARelationshipBridge.BetrothalResult.failure("Those villagers could not be advanced into marriage.");
+        return MCARelationshipBridge.BetrothalResult.failure(Component.translatable("mcacapitals.system.mca_relationship.those_villagers_could_not_be_advanced_into_marriage"));
     }
 
     static boolean isActuallyMarried(ServerPlayer player, Entity villagerEntity) {
         if (player == null || villagerEntity == null) {
+            return false;
+        }
+
+        if (!MCAIntegrationBridge.isMCAVillagerEntity(villagerEntity)) {
             return false;
         }
 
@@ -374,7 +396,7 @@ final class MCARelationshipOps {
             return false;
         }
 
-        return MCARelationshipReflection.booleanCall(relationships, "isMarriedTo", player);
+        return MCARelationshipReflection.booleanCall(relationships, "isMarriedTo", player.getUUID());
     }
 
     static boolean isActuallyMarriedToPlayer(ServerPlayer player, UUID villagerId) {

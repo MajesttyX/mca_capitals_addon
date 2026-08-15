@@ -50,12 +50,11 @@ public class CapitalCommanderService {
                 capital.setCommanderFemale(MCAIntegrationBridge.isFemale(level, newCommander));
 
                 String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-                String commanderName = resolveDisplayName(level, capital, newCommander);
+                String commanderName = CapitalChronicleIdentitySnapshot.name(level, capital, newCommander);
 
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        commanderName + " was appointed Commander of the Royal Guard of " + villageName + "."
+                CapitalChronicleService.addEvent(
+                        level, capital, CapitalChronicleEventId.ROYAL_GUARD_COMMANDER_APPOINTED,
+                        commanderName, villageName
                 );
 
                 changed = true;
@@ -63,11 +62,9 @@ public class CapitalCommanderService {
         }
 
         if (previousCommander != null && capital.getCommander() == null && playerCommander == null) {
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    "The office of Commander of the Royal Guard stands vacant in "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
+            CapitalChronicleService.addEvent(
+                    level, capital, CapitalChronicleEventId.ROYAL_GUARD_COMMANDER_VACANT,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
             );
         }
 
@@ -107,24 +104,22 @@ public class CapitalCommanderService {
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
         if (capital.getCommander() != null && !capital.getCommander().equals(player.getUUID())) {
-            String formerName = resolveDisplayName(level, capital, capital.getCommander());
+            String formerName = CapitalChronicleIdentitySnapshot.name(level, capital, capital.getCommander());
             capital.setCommander(null);
             capital.setCommanderFemale(false);
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    formerName + " was relieved of the office of Commander of the Royal Guard of " + villageName + "."
+            CapitalChronicleService.addEvent(
+                    level, capital, CapitalChronicleEventId.ROYAL_GUARD_COMMANDER_RELIEVED,
+                    formerName, villageName
             );
         }
 
         PlayerCapitalTitleService.revokeCommanderForCapital(level, capital);
         PlayerCapitalTitleService.grantCommander(level, capital, player.getUUID());
 
-        String commanderName = resolveDisplayName(level, capital, player.getUUID());
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                commanderName + " was appointed Commander of the Royal Guard of " + villageName + "."
+        String commanderName = CapitalChronicleIdentitySnapshot.name(level, capital, player.getUUID());
+        CapitalChronicleService.addEvent(
+                level, capital, CapitalChronicleEventId.ROYAL_GUARD_COMMANDER_APPOINTED,
+                commanderName, villageName
         );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
@@ -149,7 +144,11 @@ public class CapitalCommanderService {
     }
 
     private static void broadcastCommanderAppointment(ServerLevel level, CapitalRecord capital, String villageName, String commanderName) {
-        String message = commanderName + " has been appointed Commander of the Royal Guard of " + villageName + ".";
+        Component message = Component.translatable(
+                "mcacapitals.system.commander.appointed_broadcast",
+                commanderName,
+                villageName
+        );
 
         Integer villageId = capital.getVillageId();
         if (villageId == null) {
@@ -159,7 +158,7 @@ public class CapitalCommanderService {
         for (ServerPlayer serverPlayer : level.getServer().getPlayerList().getPlayers()) {
             Integer playerVillage = MCAIntegrationBridge.getVillageIdForResident(level, serverPlayer.getUUID());
             if (playerVillage != null && playerVillage.equals(villageId)) {
-                serverPlayer.sendSystemMessage(Component.literal(message));
+                serverPlayer.sendSystemMessage(message);
             }
         }
     }

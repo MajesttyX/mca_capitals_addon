@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.capital;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 public final class CapitalDiplomaticDelayService {
@@ -25,7 +26,9 @@ public final class CapitalDiplomaticDelayService {
         return level != null && level.getGameTime() >= Math.max(0L, availableAt);
     }
 
-    public static String dispatchMessage() {
-        return "The message has been dispatched. A reply may take some time.";
+    public static Component dispatchMessage() {
+        return Component.translatable(
+                "mcacapitals.diplomacy.correspondence.dispatched"
+        );
     }
 }

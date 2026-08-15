@@ -1,9 +1,13 @@
 package com.majesttyx.mcacapitals.dialogue;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventType;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalState;
+import com.majesttyx.mcacapitals.capital.CapitalTitleOfficeIdentityResolver;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -121,7 +125,7 @@ public class CapitalDialogueService {
         return rankDialogueBucketFor(level, capital, villagerEntity.getUUID());
     }
 
-    public static String maybeFormatMcaPhraseLine(ServerPlayer player, Entity villagerEntity, String phraseKey) {
+    public static Component maybeFormatMcaPhraseLine(ServerPlayer player, Entity villagerEntity, String phraseKey) {
         if (player == null || villagerEntity == null || phraseKey == null || phraseKey.isBlank()) {
             return null;
         }
@@ -146,7 +150,7 @@ public class CapitalDialogueService {
             return null;
         }
 
-        return CapitalDialogueRuntime.formatManagedRuntimeLine(
+        return CapitalDialogueRuntime.formatManagedRuntimeComponent(
                 CapitalDialogueRuntime.runtimeKeyForBucket(bucket),
                 player,
                 villagerEntity,
@@ -154,25 +158,6 @@ public class CapitalDialogueService {
                 capital
         );
     }
-
-    public static String formatCapitalIdleEveningChatter(ServerPlayer player, Entity villagerEntity, CapitalRecord capital) {
-        if (player == null || villagerEntity == null || capital == null) {
-            return null;
-        }
-
-        if (!MCAIntegrationBridge.isMCAVillagerEntity(villagerEntity)) {
-            return null;
-        }
-
-        return CapitalDialogueRuntime.formatManagedRuntimeLine(
-                CapitalDialogueRuntime.runtimeKeyForBucket(CapitalDialogueRuntime.MCA_CAPITAL_IDLE_EVENING_CHATTER),
-                player,
-                villagerEntity,
-                player.serverLevel(),
-                capital
-        );
-    }
-
     private static Map<String, String> buildMcaPhraseBuckets() {
         Map<String, String> buckets = new HashMap<>();
 
@@ -274,16 +259,16 @@ public class CapitalDialogueService {
                 weight += 3;
             }
 
-            if (event.type() == CapitalDialogueEventModels.EventType.SOVEREIGN_DEATH
-                    || event.type() == CapitalDialogueEventModels.EventType.THRONE_SEIZED
-                    || event.type() == CapitalDialogueEventModels.EventType.ABDICATION
-                    || event.type() == CapitalDialogueEventModels.EventType.PEACEFUL_TRANSFER) {
+            if (event.type() == CapitalChronicleEventType.SOVEREIGN_DEATH
+                    || event.type() == CapitalChronicleEventType.THRONE_SEIZED
+                    || event.type() == CapitalChronicleEventType.ABDICATION
+                    || event.type() == CapitalChronicleEventType.PEACEFUL_TRANSFER) {
                 weight += 2;
             }
 
-            if (event.type() == CapitalDialogueEventModels.EventType.ROYAL_MARRIAGE
-                    || event.type() == CapitalDialogueEventModels.EventType.ROYAL_BIRTH
-                    || event.type() == CapitalDialogueEventModels.EventType.COURT_HERALD_APPOINTED) {
+            if (event.type() == CapitalChronicleEventType.ROYAL_MARRIAGE
+                    || event.type() == CapitalChronicleEventType.ROYAL_BIRTH
+                    || event.type() == CapitalChronicleEventType.COURT_HERALD_APPOINTED) {
                 weight += 1;
             }
 
@@ -298,7 +283,10 @@ public class CapitalDialogueService {
             totalWeight += weight;
         }
 
-        int roll = Math.floorMod((villagerId.toString() + ":" + currentDay + ":eventPick").hashCode(), totalWeight);
+        int roll = Math.floorMod(
+                (villagerId.toString() + ":" + currentDay + ":eventPick").hashCode(),
+                totalWeight
+        );
 
         int cursor = 0;
         for (int i = 0; i < pool.size(); i++) {
@@ -324,25 +312,28 @@ public class CapitalDialogueService {
             ServerLevel level,
             UUID villagerId,
             long eventDay,
-            CapitalDialogueEventModels.EventType type
+            CapitalChronicleEventType type
     ) {
         long currentDay = Math.max(1L, level.getDayTime() / 24000L + 1L);
         long age = Math.max(0L, currentDay - eventDay);
 
         int chance = age <= CapitalDialogueChronicleLogic.VERY_RECENT_DAYS ? 45 : 20;
 
-        if (type == CapitalDialogueEventModels.EventType.SOVEREIGN_DEATH
-                || type == CapitalDialogueEventModels.EventType.THRONE_SEIZED
-                || type == CapitalDialogueEventModels.EventType.ABDICATION
-                || type == CapitalDialogueEventModels.EventType.PEACEFUL_TRANSFER) {
+        if (type == CapitalChronicleEventType.SOVEREIGN_DEATH
+                || type == CapitalChronicleEventType.THRONE_SEIZED
+                || type == CapitalChronicleEventType.ABDICATION
+                || type == CapitalChronicleEventType.PEACEFUL_TRANSFER) {
             chance += 10;
         }
 
-        int roll = Math.floorMod((villagerId.toString() + ":" + currentDay + ":" + type.name()).hashCode(), 100);
+        int roll = Math.floorMod(
+                (villagerId.toString() + ":" + currentDay + ":" + type.name()).hashCode(),
+                100
+        );
         return roll < chance;
     }
 
-    private static String dialogueBucketFor(CapitalDialogueEventModels.EventType type) {
+    private static String dialogueBucketFor(CapitalChronicleEventType type) {
         return switch (type) {
             case HEIR_APPARENT_NAMED -> CapitalDialogueRuntime.NEWS_HEIR_APPARENT_NAMED;
             case CROWN_CHILD_BORN -> CapitalDialogueRuntime.NEWS_CROWN_CHILD_BORN;
@@ -371,74 +362,26 @@ public class CapitalDialogueService {
             return null;
         }
 
-        String title = CapitalTitleResolver.getDisplayTitle(level, capital, villagerId);
-
-        if ("High King".equals(title)
-                || "High Queen".equals(title)
-                || "King".equals(title)
-                || "Queen".equals(title)) {
-            return CapitalDialogueRuntime.RANK_SOVEREIGN;
-        }
-
-        if ("Crown Prince".equals(title)
-                || "Crown Princess".equals(title)
-                || "Heir Apparent".equals(title)) {
-            return CapitalDialogueRuntime.RANK_HEIR;
-        }
-
-        if ("Hand of the King".equals(title)
-                || "Hand of the Queen".equals(title)) {
-            return CapitalDialogueRuntime.RANK_HAND;
-        }
-
-        if ("Grand Maester".equals(title)) {
-            return CapitalDialogueRuntime.RANK_GRAND_MAESTER;
-        }
-
-        if ("Lord Commander".equals(title)) {
-            return CapitalDialogueRuntime.RANK_LORD_COMMANDER;
-        }
-
-        if ("Duke".equals(title) || "Duchess".equals(title)) {
-            return CapitalDialogueRuntime.RANK_DUKE_OR_DUCHESS;
-        }
-
-        if ("Lord".equals(title) || "Lady".equals(title)) {
-            return CapitalDialogueRuntime.RANK_LORD_OR_LADY;
-        }
-
-        if ("Queen Consort".equals(title)
-                || "King Consort".equals(title)
-                || "Princess Consort".equals(title)
-                || "Prince Consort".equals(title)) {
-            return CapitalDialogueRuntime.RANK_ROYAL_CONSORT;
-        }
-
-        if ("Dowager Queen".equals(title)
-                || "Dowager King".equals(title)
-                || "Dowager Princess".equals(title)
-                || "Dowager Prince".equals(title)) {
-            return CapitalDialogueRuntime.RANK_ROYAL_DOWAGER;
-        }
-
-        if ("Prince".equals(title) || "Princess".equals(title)) {
-            return CapitalDialogueRuntime.RANK_ROYAL_CHILD;
-        }
-
-        if ("Sir".equals(title) || "Dame".equals(title)) {
-            return CapitalDialogueRuntime.RANK_KNIGHT;
-        }
-
-        if ("Commoner".equals(title)) {
-            return CapitalDialogueRuntime.RANK_COMMONER;
-        }
-
-        return null;
+        return switch (CapitalTitleOfficeIdentityResolver.resolveDialogueRank(level, capital, villagerId)) {
+            case SOVEREIGN -> CapitalDialogueRuntime.RANK_SOVEREIGN;
+            case HEIR -> CapitalDialogueRuntime.RANK_HEIR;
+            case HAND -> CapitalDialogueRuntime.RANK_HAND;
+            case GRAND_MAESTER -> CapitalDialogueRuntime.RANK_GRAND_MAESTER;
+            case LORD_COMMANDER -> CapitalDialogueRuntime.RANK_LORD_COMMANDER;
+            case DUKE_OR_DUCHESS -> CapitalDialogueRuntime.RANK_DUKE_OR_DUCHESS;
+            case LORD_OR_LADY -> CapitalDialogueRuntime.RANK_LORD_OR_LADY;
+            case ROYAL_CONSORT -> CapitalDialogueRuntime.RANK_ROYAL_CONSORT;
+            case ROYAL_DOWAGER -> CapitalDialogueRuntime.RANK_ROYAL_DOWAGER;
+            case ROYAL_CHILD -> CapitalDialogueRuntime.RANK_ROYAL_CHILD;
+            case KNIGHT -> CapitalDialogueRuntime.RANK_KNIGHT;
+            case COMMONER -> CapitalDialogueRuntime.RANK_COMMONER;
+            case OTHER -> null;
+        };
     }
 
     private static final class VillagerNewsState {
         private long lastNewsSpokenTick = Long.MIN_VALUE;
-        private CapitalDialogueEventModels.EventType lastEventType = null;
+        private CapitalChronicleEventType lastEventType = null;
         private long lastEventDay = Long.MIN_VALUE;
     }
 }
