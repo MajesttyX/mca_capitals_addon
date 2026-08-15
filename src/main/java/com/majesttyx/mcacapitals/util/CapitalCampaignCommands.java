@@ -89,13 +89,13 @@ public final class CapitalCampaignCommands {
         UUID ambassadorId = parseUuid(
                 source,
                 rawAmbassadorId,
-                "The Ambassador ID is invalid."
+                "mcacapitals.system.command_validation.invalid_ambassador_id"
         );
 
         UUID targetCapitalId = parseUuid(
                 source,
                 rawTargetCapitalId,
-                "The target capital ID is invalid."
+                "mcacapitals.system.command_validation.invalid_target_capital_id"
         );
 
         CapitalWarGoal warGoal = parseWarGoal(
@@ -182,7 +182,7 @@ public final class CapitalCampaignCommands {
         }
 
         source.sendFailure(
-                Component.literal("The war goal must be punitive or deposition.")
+                Component.translatable("mcacapitals.system.capital_campaign_commands.the_war_goal_must_be_punitive_or_deposition")
         );
         return null;
     }
@@ -196,7 +196,7 @@ public final class CapitalCampaignCommands {
             return UUID.fromString(rawValue);
         } catch (IllegalArgumentException ignored) {
             source.sendFailure(
-                    Component.literal(failureMessage)
+                    Component.translatable(failureMessage)
             );
 
             return null;
@@ -210,9 +210,7 @@ public final class CapitalCampaignCommands {
             return source.getPlayerOrException();
         } catch (Exception ignored) {
             source.sendFailure(
-                    Component.literal(
-                            "Only a player sovereign may launch a military campaign."
-                    )
+                    Component.translatable("mcacapitals.system.capital_campaign_commands.only_a_player_sovereign_may_launch_a_military_campaign")
             );
 
             return null;

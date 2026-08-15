@@ -1,6 +1,9 @@
 package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.MCACapitals;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEntry;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalFoundationService;
@@ -36,9 +39,15 @@ final class CapitalPetitionOutcomes {
             formerSovereignId = interregnum.getDeceasedSovereignId();
         }
 
-        String formerSovereignName = formerSovereignId == null
-                ? "the vacant throne"
-                : resolveLoadedName(level, formerSovereignId);
+        Object formerSovereignName = formerSovereignId == null
+                ? CapitalChronicleService.translatable("mcacapitals.chronicle.identity.vacant_throne")
+                : CapitalChronicleIdentitySnapshot.name(level, capital, formerSovereignId);
+        CapitalChronicleEntry.Argument formerSovereignTitle = formerSovereignId == null
+                ? CapitalChronicleService.translatable("mcacapitals.dynamic.title.none")
+                : CapitalChronicleIdentitySnapshot.title(level, capital, formerSovereignId);
+        CapitalChronicleEntry.Argument formerSovereignStyle = formerSovereignId == null
+                ? CapitalChronicleService.translatable("mcacapitals.dynamic.title.none")
+                : CapitalChronicleIdentitySnapshot.style(level, capital, formerSovereignId);
         String playerName = player.getName().getString();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
         boolean female = MCAIntegrationBridge.isPlayerFemale(level, player);
@@ -65,22 +74,31 @@ final class CapitalPetitionOutcomes {
 
         applyHeartsPenaltyToFamily(level, formerRoyalFamily, player.getUUID(), -200);
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                interregnum != null
-                        && interregnum.mayVictoriousPlayerSeize(player.getUUID())
-                        ? playerName
-                        + " seized the vacant throne of "
-                        + villageName
-                        + " after winning the War of Deposition."
-                        : playerName
-                        + " seized the throne of "
-                        + villageName
-                        + " from "
-                        + formerSovereignName
-                        + " by force."
-        );
+        if (interregnum != null
+                && interregnum.mayVictoriousPlayerSeize(player.getUUID())) {
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.THRONE_SEIZED_VACANT_DEPOSITION,
+                    playerName,
+                    villageName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, player.getUUID()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
+            );
+        } else {
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.THRONE_SEIZED_BY_FORCE,
+                    playerName,
+                    villageName,
+                    formerSovereignName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, player.getUUID()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID()),
+                    formerSovereignTitle,
+                    formerSovereignStyle
+            );
+        }
 
         CapitalWartimeSuccessionService.clear(
                 level,
@@ -102,7 +120,11 @@ final class CapitalPetitionOutcomes {
     }
 
     static void peacefulTransferByPetition(ServerLevel level, CapitalRecord capital, ServerPlayer player, UUID formerSovereignId) {
-        String formerSovereignName = resolveLoadedName(level, formerSovereignId);
+        String formerSovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, formerSovereignId);
+        CapitalChronicleEntry.Argument formerSovereignTitle =
+                CapitalChronicleIdentitySnapshot.title(level, capital, formerSovereignId);
+        CapitalChronicleEntry.Argument formerSovereignStyle =
+                CapitalChronicleIdentitySnapshot.style(level, capital, formerSovereignId);
         String playerName = player.getName().getString();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
         boolean female = MCAIntegrationBridge.isPlayerFemale(level, player);
@@ -121,11 +143,17 @@ final class CapitalPetitionOutcomes {
         capital.setState(CapitalState.ACTIVE);
         CapitalRoyalHouseholdService.beginNewRegime(capital);
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                formerSovereignName + " accepted the petition of " + playerName
-                        + ", and the throne of " + villageName + " passed peacefully into new hands."
+                CapitalChronicleEventId.PETITION_PEACEFUL_TRANSFER,
+                formerSovereignName,
+                playerName,
+                villageName,
+                formerSovereignTitle,
+                formerSovereignStyle,
+                CapitalChronicleIdentitySnapshot.title(level, capital, player.getUUID()),
+                CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
         );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());

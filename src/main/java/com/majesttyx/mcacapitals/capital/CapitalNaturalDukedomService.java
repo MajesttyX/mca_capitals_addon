@@ -88,14 +88,13 @@ public final class CapitalNaturalDukedomService {
                         candidate
                 );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                CapitalJusticeText.naturalDukedom(
-                        level,
-                        candidate,
-                        name
-                )
+                CapitalChronicleEventId.NATURAL_DUKEDOM,
+                name,
+                CapitalChronicleIdentitySnapshot.title(level, capital, candidate),
+                CapitalChronicleIdentitySnapshot.style(level, capital, candidate)
         );
 
         CapitalDataAccess.markDirty(level);

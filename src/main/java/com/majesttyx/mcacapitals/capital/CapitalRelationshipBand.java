@@ -1,22 +1,23 @@
 package com.majesttyx.mcacapitals.capital;
 
+import net.minecraft.network.chat.Component;
+
+import java.util.Locale;
+
 public enum CapitalRelationshipBand {
-    EXCELLENT("Excellent"),
-    FRIENDLY("Friendly"),
-    CORDIAL("Cordial"),
-    NEUTRAL("Neutral"),
-    STRAINED("Strained"),
-    HOSTILE("Hostile"),
-    BITTER_ENEMIES("Bitter Enemies");
+    EXCELLENT,
+    FRIENDLY,
+    CORDIAL,
+    NEUTRAL,
+    STRAINED,
+    HOSTILE,
+    BITTER_ENEMIES;
 
-    private final String displayName;
-
-    CapitalRelationshipBand(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-        return displayName;
+    public Component getDisplayComponent() {
+        return Component.translatable(
+                "mcacapitals.diplomacy.relationship_band."
+                        + name().toLowerCase(Locale.ROOT)
+        );
     }
 
     public static CapitalRelationshipBand fromScore(int score) {

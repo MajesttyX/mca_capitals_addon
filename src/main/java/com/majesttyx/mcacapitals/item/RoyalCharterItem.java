@@ -49,8 +49,8 @@ public class RoyalCharterItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("Used to found a monarchy in an eligible village.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Right-click to choose the first sovereign.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.royal_charter_item.used_to_found_a_monarchy_in_an_eligible_village").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.royal_charter_item.right_click_to_choose_the_first_sovereign").withStyle(ChatFormatting.GRAY));
     }
 
     private static void openCharterFlow(ServerLevel level, ServerPlayer player, ItemStack stack) {
@@ -116,7 +116,10 @@ public class RoyalCharterItem extends Item {
         ListTag candidates = new ListTag();
         MCAIntegrationBridge.getVillageResidentNames(level, capital.getVillageId()).entrySet().stream()
                 .sorted(Comparator
-                        .comparing((Map.Entry<UUID, String> entry) -> resolveCandidateName(level, entry.getKey(), entry.getValue()), String.CASE_INSENSITIVE_ORDER)
+                        .comparing(
+                                (Map.Entry<UUID, String> entry) -> resolveCandidateName(level, entry.getKey(), entry.getValue()),
+                                String.CASE_INSENSITIVE_ORDER
+                        )
                         .thenComparing(entry -> entry.getKey().toString()))
                 .forEach(entry -> addCandidate(
                         candidates,

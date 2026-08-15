@@ -72,7 +72,7 @@ public class CapitalHouseCommands {
     private static int setAndOpen(CommandSourceStack source, String rawCapitalId, String rawMode, String rawHouseName) {
         ServerPlayer player = getPlayer(source);
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can establish a House from a Royal Charter."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.only_a_player_can_establish_a_house_from_a_royal_charter"));
             return 0;
         }
 
@@ -83,7 +83,7 @@ public class CapitalHouseCommands {
         }
 
         if (!hasMatchingHeldCharter(player, capitalId)) {
-            source.sendFailure(Component.literal("You must be holding the matching Royal Charter."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.you_must_be_holding_the_matching_royal_charter"));
             return 0;
         }
 
@@ -94,22 +94,28 @@ public class CapitalHouseCommands {
 
         PlayerHouseInheritanceMode mode = PlayerHouseService.parseMode(rawMode);
         if (mode == null) {
-            source.sendFailure(Component.literal("Invalid inheritance mode."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.invalid_inheritance_mode"));
             return 0;
         }
 
         String houseName = PlayerHouseService.normalizeHouseName(rawHouseName);
         if (!PlayerHouseService.isValidHouseName(houseName)) {
-            source.sendFailure(Component.literal("Invalid House name. Use 2-20 letters, spaces, hyphens, or apostrophes."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.invalid_house_name_use_2_20_letters_spaces_hyphens_or_apostrophes"));
             return 0;
         }
 
         if (!PlayerHouseService.setHouse(level, player, capitalId, houseName, mode)) {
-            source.sendFailure(Component.literal("Could not establish player House."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.could_not_establish_player_house"));
             return 0;
         }
 
-        source.sendSuccess(() -> Component.literal("Established House " + houseName + "."), false);
+        source.sendSuccess(
+                () -> Component.translatable(
+                        "mcacapitals.system.capital_house_commands.house_established",
+                        houseName
+                ),
+                false
+        );
         ModNetwork.sendToPlayer(player, new OpenRoyalCharterDecisionPacket());
         return 1;
     }
@@ -117,7 +123,7 @@ public class CapitalHouseCommands {
     private static int showSelf(CommandSourceStack source) {
         ServerPlayer player = getPlayer(source);
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this command without a UUID."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.only_a_player_can_use_this_command_without_a_uuid"));
             return 0;
         }
 
@@ -138,7 +144,7 @@ public class CapitalHouseCommands {
     private static int debugSetSelf(CommandSourceStack source, String rawCapitalId, String rawMode, String rawHouseName) {
         ServerPlayer player = getPlayer(source);
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this command without a UUID."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.only_a_player_can_use_this_command_without_a_uuid"));
             return 0;
         }
 
@@ -149,18 +155,18 @@ public class CapitalHouseCommands {
 
         PlayerHouseInheritanceMode mode = PlayerHouseService.parseMode(rawMode);
         if (mode == null) {
-            source.sendFailure(Component.literal("Invalid inheritance mode."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.invalid_inheritance_mode"));
             return 0;
         }
 
         String houseName = PlayerHouseService.normalizeHouseName(rawHouseName);
         if (!PlayerHouseService.isValidHouseName(houseName)) {
-            source.sendFailure(Component.literal("Invalid House name. Use 2-20 letters, spaces, hyphens, or apostrophes."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.invalid_house_name_use_2_20_letters_spaces_hyphens_or_apostrophes"));
             return 0;
         }
 
         if (!PlayerHouseService.setHouse(source.getLevel(), player, capitalId, houseName, mode)) {
-            source.sendFailure(Component.literal("Could not set player House."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.could_not_set_player_house"));
             return 0;
         }
 
@@ -172,7 +178,7 @@ public class CapitalHouseCommands {
     private static int clearSelf(CommandSourceStack source) {
         ServerPlayer player = getPlayer(source);
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this command without a UUID."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_commands.only_a_player_can_use_this_command_without_a_uuid"));
             return 0;
         }
 
@@ -217,7 +223,10 @@ public class CapitalHouseCommands {
     private static UUID parseUuid(CommandSourceStack source, String value) {
         UUID uuid = parseUuidSilently(value);
         if (uuid == null) {
-            source.sendFailure(Component.literal("Invalid UUID: " + value));
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.command_validation.invalid_uuid_value",
+                    value
+            ));
         }
         return uuid;
     }

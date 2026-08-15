@@ -115,7 +115,7 @@ public final class CapitalOathsCommands {
 
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
 
@@ -133,13 +133,13 @@ public final class CapitalOathsCommands {
 
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
 
         Map<UUID, CrownStanding> standings = capital.getCrownStandings();
         if (standings.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No Crown standings are currently stored for this capital."), false);
+            source.sendSuccess(() -> Component.translatable("mcacapitals.system.capital_oaths_commands.no_crown_standings_are_currently_stored_for_this_capital"), false);
             return 1;
         }
 
@@ -162,7 +162,7 @@ public final class CapitalOathsCommands {
 
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
 
@@ -182,7 +182,7 @@ public final class CapitalOathsCommands {
 
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
 
@@ -202,7 +202,7 @@ public final class CapitalOathsCommands {
 
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
 
@@ -222,7 +222,7 @@ public final class CapitalOathsCommands {
 
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
 
@@ -246,7 +246,7 @@ public final class CapitalOathsCommands {
 
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
 
@@ -256,7 +256,7 @@ public final class CapitalOathsCommands {
         com.majesttyx.mcacapitals.data.CapitalDataAccess.markDirty(context.level());
         sync(context.level(), previous);
 
-        source.sendSuccess(() -> Component.literal("Cleared Master of Laws."), false);
+        source.sendSuccess(() -> Component.translatable("mcacapitals.system.capital_oaths_commands.cleared_master_of_laws"), false);
         return 1;
     }
 
@@ -268,7 +268,7 @@ public final class CapitalOathsCommands {
 
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
 
@@ -286,7 +286,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
         CapitalJusticeDataAccess.issueArrestWarrant(context.level(), capital.getCapitalId(), context.targetId());
@@ -302,7 +302,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
         boolean changed = CapitalJusticeDataAccess.clearArrestWarrant(context.level(), capital.getCapitalId(), context.targetId());
@@ -318,7 +318,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
         CapitalJusticeDataAccess.get(context.level()).clearArrestWarrant(capital.getCapitalId(), context.targetId());
@@ -335,12 +335,12 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
         Set<UUID> warrants = CapitalJusticeDataAccess.getArrestWarrants(context.level(), capital.getCapitalId());
         if (warrants.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No active Arrest Warrants."), false);
+            source.sendSuccess(() -> Component.translatable("mcacapitals.system.capital_oaths_commands.no_active_arrest_warrants"), false);
             return 1;
         }
         for (UUID id : warrants) {
@@ -358,7 +358,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
         if (!CapitalJusticeDataAccess.hasArrestWarrant(context.level(), capital.getCapitalId(), context.targetId())) {
@@ -381,7 +381,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
         boolean changed = CapitalJusticeDataAccess.clearDetainedPrisoner(context.level(), capital.getCapitalId(), context.targetId());
@@ -397,12 +397,12 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
         Set<UUID> detained = CapitalJusticeDataAccess.getDetainedPrisoners(context.level(), capital.getCapitalId());
         if (detained.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No detained prisoners."), false);
+            source.sendSuccess(() -> Component.translatable("mcacapitals.system.capital_oaths_commands.no_detained_prisoners"), false);
             return 1;
         }
         for (UUID id : detained) {
@@ -453,7 +453,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
         CapitalJusticeDataAccess.markDiscoveredExile(context.level(), capital.getCapitalId(), context.targetId());
@@ -469,7 +469,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
         boolean changed = CapitalJusticeDataAccess.clearDiscoveredExile(context.level(), capital.getCapitalId(), context.targetId());
@@ -485,12 +485,12 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
         Set<UUID> exiles = CapitalJusticeDataAccess.getDiscoveredExiles(context.level(), capital.getCapitalId());
         if (exiles.isEmpty()) {
-            source.sendSuccess(() -> Component.literal("No discovered exiles."), false);
+            source.sendSuccess(() -> Component.translatable("mcacapitals.system.capital_oaths_commands.no_discovered_exiles"), false);
             return 1;
         }
         for (UUID id : exiles) {
@@ -507,7 +507,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
         long lastDay = CapitalJusticeDataAccess.getLastAccusationDay(context.level(), capital.getCapitalId(), context.player().getUUID());
@@ -523,11 +523,11 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
         CapitalJusticeDataAccess.setLastAccusationDay(context.level(), capital.getCapitalId(), context.player().getUUID(), Long.MIN_VALUE);
-        source.sendSuccess(() -> Component.literal("Cleared accusation cooldown for this player in this capital."), false);
+        source.sendSuccess(() -> Component.translatable("mcacapitals.system.capital_oaths_commands.cleared_accusation_cooldown_for_this_player_in_this_capital"), false);
         return 1;
     }
 
@@ -538,7 +538,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
         int bigHouses = CapitalBuildingService.countBigHouses(context.level(), capital);
@@ -557,7 +557,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
         Set<UUID> residents = CapitalResidentScanner.scanResidents(context.level(), capital.getCapitalId());
@@ -574,12 +574,12 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForPlayer(context.level(), context.player());
         if (capital == null) {
-            source.sendFailure(Component.literal("No current capital found."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_current_capital_found"));
             return 0;
         }
         capital.setLastNaturalDukedomDay(Long.MIN_VALUE);
         com.majesttyx.mcacapitals.data.CapitalDataAccess.markDirty(context.level());
-        source.sendSuccess(() -> Component.literal("Reset natural dukedom day for this capital."), false);
+        source.sendSuccess(() -> Component.translatable("mcacapitals.system.capital_oaths_commands.reset_natural_dukedom_day_for_this_capital"), false);
         return 1;
     }
 
@@ -590,7 +590,7 @@ public final class CapitalOathsCommands {
         }
         CapitalRecord capital = resolveCapitalForTargetOrPlayer(context.level(), context.player(), context.target());
         if (capital == null) {
-            source.sendFailure(Component.literal("No capital found for that villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.no_capital_found_for_that_villager"));
             return 0;
         }
         boolean female = MCAIntegrationBridge.isFemale(context.level(), context.targetId());
@@ -607,7 +607,7 @@ public final class CapitalOathsCommands {
         try {
             player = source.getPlayerOrException();
         } catch (Exception ex) {
-            source.sendFailure(Component.literal("Only players can run this command."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.only_players_can_run_this_command"));
             return null;
         }
         return new CommandContext(source.getLevel(), player, null, null);
@@ -620,11 +620,11 @@ public final class CapitalOathsCommands {
         }
         Entity target = EntityLookTargetHelper.getLookedAtEntity(context.player(), LOOK_TARGET_REACH);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at an MCA villager first."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.look_at_an_mca_villager_first"));
             return null;
         }
         if (!MCAIntegrationBridge.isMCAVillagerEntity(target)) {
-            source.sendFailure(Component.literal("Target is not an MCA villager."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_oaths_commands.target_is_not_an_mca_villager"));
             return null;
         }
         return new CommandContext(context.level(), context.player(), target, target.getUUID());

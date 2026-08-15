@@ -27,30 +27,41 @@ public class CapitalRoyalGuardCommands {
                         .then(Commands.literal("list")
                                 .executes(ctx -> {
                                     if (!(ctx.getSource().getEntity() instanceof ServerPlayer player)) {
-                                        ctx.getSource().sendFailure(Component.literal("Only a player can use this."));
+                                        ctx.getSource().sendFailure(Component.translatable("mcacapitals.system.capital_royal_guard_commands.only_a_player_can_use_this"));
                                         return 0;
                                     }
 
                                     CapitalRecord capital = CapitalManager.getCapitalBySovereign(player.getUUID());
 
                                     if (capital == null) {
-                                        ctx.getSource().sendFailure(Component.literal("You are not the sovereign of a capital."));
+                                        ctx.getSource().sendFailure(Component.translatable("mcacapitals.system.capital_royal_guard_commands.you_are_not_the_sovereign_of_a_capital"));
                                         return 0;
                                     }
 
                                     Set<UUID> residents = CapitalResidentScanner.scanResidents(player.serverLevel(), capital.getCapitalId());
                                     List<UUID> candidates = CapitalRoyalGuardService.getValidCandidates(player.serverLevel(), capital, residents);
                                     if (candidates.isEmpty()) {
-                                        ctx.getSource().sendFailure(Component.literal("No valid royal guard candidates were found."));
+                                        ctx.getSource().sendFailure(Component.translatable("mcacapitals.system.capital_royal_guard_commands.no_valid_royal_guard_candidates_were_found"));
                                         return 0;
                                     }
 
                                     for (UUID candidate : candidates) {
-                                        ctx.getSource().sendSuccess(() -> Component.literal(
-                                                "- " + CapitalRoyalGuardService.buildRoyalGuardDisplayName(player.serverLevel(), capital, candidate)
-                                                        + " [" + candidate + "] profession="
-                                                        + MCAIntegrationBridge.describeProfession(player.serverLevel(), candidate)
-                                        ), false);
+                                        ctx.getSource().sendSuccess(
+                                                () -> Component.translatable(
+                                                        "mcacapitals.system.capital_royal_guard_commands.candidate_line",
+                                                        CapitalRoyalGuardService.buildRoyalGuardDisplayNameComponent(
+                                                                player.serverLevel(),
+                                                                capital,
+                                                                candidate
+                                                        ),
+                                                        candidate.toString(),
+                                                        MCAIntegrationBridge.describeProfession(
+                                                                player.serverLevel(),
+                                                                candidate
+                                                        )
+                                                ),
+                                                false
+                                        );
                                     }
                                     return 1;
                                 }))
@@ -58,14 +69,14 @@ public class CapitalRoyalGuardCommands {
                                 .then(Commands.argument("villagerId", StringArgumentType.word())
                                         .executes(ctx -> {
                                             if (!(ctx.getSource().getEntity() instanceof ServerPlayer player)) {
-                                                ctx.getSource().sendFailure(Component.literal("Only a player can use this."));
+                                                ctx.getSource().sendFailure(Component.translatable("mcacapitals.system.capital_royal_guard_commands.only_a_player_can_use_this"));
                                                 return 0;
                                             }
 
                                             CapitalRecord capital = CapitalManager.getCapitalBySovereign(player.getUUID());
 
                                             if (capital == null) {
-                                                ctx.getSource().sendFailure(Component.literal("You are not the sovereign of a capital."));
+                                                ctx.getSource().sendFailure(Component.translatable("mcacapitals.system.capital_royal_guard_commands.you_are_not_the_sovereign_of_a_capital"));
                                                 return 0;
                                             }
 
@@ -73,26 +84,33 @@ public class CapitalRoyalGuardCommands {
                                             try {
                                                 villagerId = UUID.fromString(StringArgumentType.getString(ctx, "villagerId"));
                                             } catch (IllegalArgumentException ex) {
-                                                ctx.getSource().sendFailure(Component.literal("Invalid UUID."));
+                                                ctx.getSource().sendFailure(Component.translatable("mcacapitals.system.capital_royal_guard_commands.invalid_uuid"));
                                                 return 0;
                                             }
 
                                             Set<UUID> residents = CapitalResidentScanner.scanResidents(player.serverLevel(), capital.getCapitalId());
                                             if (!residents.contains(villagerId)) {
-                                                ctx.getSource().sendFailure(Component.literal("That villager is not a resident of your capital."));
+                                                ctx.getSource().sendFailure(Component.translatable("mcacapitals.system.capital_royal_guard_commands.that_villager_is_not_a_resident_of_your_capital"));
                                                 return 0;
                                             }
 
                                             if (!CapitalRoyalGuardService.appointRoyalGuard(player.serverLevel(), capital, villagerId)) {
-                                                ctx.getSource().sendFailure(Component.literal("That villager is not eligible to be named to the royal guard."));
+                                                ctx.getSource().sendFailure(Component.translatable("mcacapitals.system.capital_royal_guard_commands.that_villager_is_not_eligible_to_be_named_to_the_royal_guard"));
                                                 return 0;
                                             }
 
                                             CapitalDataAccess.markDirty(player.serverLevel());
-                                            ctx.getSource().sendSuccess(() -> Component.literal(
-                                                    CapitalRoyalGuardService.buildRoyalGuardDisplayName(player.serverLevel(), capital, villagerId)
-                                                            + " has been appointed to the royal guard."
-                                            ), false);
+                                            ctx.getSource().sendSuccess(
+                                                    () -> Component.translatable(
+                                                            "mcacapitals.system.capital_royal_guard_commands.appointed",
+                                                            CapitalRoyalGuardService.buildRoyalGuardDisplayNameComponent(
+                                                                    player.serverLevel(),
+                                                                    capital,
+                                                                    villagerId
+                                                            )
+                                                    ),
+                                                    false
+                                            );
                                             return 1;
                                         })))
         );

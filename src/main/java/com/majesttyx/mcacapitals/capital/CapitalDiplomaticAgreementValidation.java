@@ -4,6 +4,7 @@ import com.majesttyx.mcacapitals.data.CapitalAgreementDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.DiplomaticProposal;
 import com.majesttyx.mcacapitals.data.DiplomaticProposalType;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -22,7 +23,7 @@ final class CapitalDiplomaticAgreementValidation {
     ) {
         if (player == null || ambassadorId == null) {
             return AudienceValidation.failure(
-                    "The Ambassador is unavailable."
+                    Component.translatable("mcacapitals.diplomacy.validation.ambassador_unavailable")
             );
         }
 
@@ -31,7 +32,7 @@ final class CapitalDiplomaticAgreementValidation {
 
         if (ambassador == null || !ambassador.isAlive()) {
             return AudienceValidation.failure(
-                    "The Ambassador is unavailable."
+                    Component.translatable("mcacapitals.diplomacy.validation.ambassador_unavailable")
             );
         }
 
@@ -39,7 +40,7 @@ final class CapitalDiplomaticAgreementValidation {
                 || player.distanceToSqr(ambassador)
                 > MAX_AMBASSADOR_DISTANCE_SQR) {
             return AudienceValidation.failure(
-                    "You must remain near the Ambassador."
+                    Component.translatable("mcacapitals.diplomacy.validation.remain_near_ambassador")
             );
         }
 
@@ -61,7 +62,7 @@ final class CapitalDiplomaticAgreementValidation {
         if (source == null
                 || source.getState() != CapitalState.ACTIVE) {
             return AudienceValidation.failure(
-                    "This villager is not the Ambassador of an active capital."
+                    Component.translatable("mcacapitals.diplomacy.validation.not_active_ambassador")
             );
         }
 
@@ -93,7 +94,7 @@ final class CapitalDiplomaticAgreementValidation {
                         player.getUUID()
                 )) {
             return AudienceValidation.failure(
-                    "Only the sovereign, or the Hand serving a villager sovereign, may take this formal diplomatic action."
+                    Component.translatable("mcacapitals.diplomacy.validation.formal_authority")
             );
         }
 
@@ -103,38 +104,38 @@ final class CapitalDiplomaticAgreementValidation {
                         source
                 )) {
             return AudienceValidation.failure(
-                    "The capital requires an operational Inn and Storage building before this diplomatic action can be taken."
+                    Component.translatable("mcacapitals.diplomacy.validation.requires_inn_storage")
             );
         }
 
         return AudienceValidation.success(source);
     }
 
-    static String validateTarget(
+    static Component validateTarget(
             CapitalRecord source,
             CapitalRecord target
     ) {
         if (target == null
                 || target.getCapitalId() == null
                 || target.getState() != CapitalState.ACTIVE) {
-            return "That capital is not available for formal diplomacy.";
+            return Component.translatable("mcacapitals.diplomacy.validation.target_unavailable");
         }
 
         if (source == null
                 || source.getCapitalId() == null) {
-            return "The sending capital is unavailable.";
+            return Component.translatable("mcacapitals.diplomacy.validation.source_unavailable");
         }
 
         if (source.getCapitalId().equals(
                 target.getCapitalId()
         )) {
-            return "A capital cannot conduct foreign diplomacy with itself.";
+            return Component.translatable("mcacapitals.diplomacy.validation.self_target");
         }
 
         return null;
     }
 
-    static String validateProposal(
+    static Component validateProposal(
             ServerLevel level,
             CapitalRecord source,
             CapitalRecord target,
@@ -143,7 +144,7 @@ final class CapitalDiplomaticAgreementValidation {
             int score
     ) {
         if (type == null || state == null) {
-            return "That diplomatic proposal is invalid.";
+            return Component.translatable("mcacapitals.diplomacy.validation.proposal_invalid");
         }
 
         if (type != DiplomaticProposalType.TRUCE
@@ -151,13 +152,14 @@ final class CapitalDiplomaticAgreementValidation {
             return switch (type) {
                 case NON_AGGRESSION_PACT,
                      TRADE_AGREEMENT ->
-                        "Relations must be Cordial or better before proposing a "
-                                + type.getDisplayName()
-                                + ".";
+                        Component.translatable(
+                                "mcacapitals.diplomacy.validation.cordial_before_proposal",
+                                type.getDisplayComponent()
+                        );
                 case ROYAL_BETROTHAL ->
-                        "Relations must be at least +60 before proposing a Royal Betrothal.";
+                        Component.translatable("mcacapitals.diplomacy.validation.royal_betrothal_relation");
                 case ALLIANCE ->
-                        "Relations must be Friendly or better before proposing an Alliance.";
+                        Component.translatable("mcacapitals.diplomacy.validation.alliance_relation");
                 case TRUCE -> null;
             };
         }
@@ -183,7 +185,7 @@ final class CapitalDiplomaticAgreementValidation {
 
         if (type == DiplomaticProposalType.NON_AGGRESSION_PACT) {
             if (state != CapitalDiplomaticState.PEACE) {
-                return "A Non-Aggression Pact can only be proposed while the capitals are at peace without another agreement.";
+                return Component.translatable("mcacapitals.diplomacy.validation.nap_state");
             }
         }
 
@@ -191,13 +193,13 @@ final class CapitalDiplomaticAgreementValidation {
             if (state != CapitalDiplomaticState.PEACE
                     && state != CapitalDiplomaticState
                     .NON_AGGRESSION_PACT) {
-                return "An Alliance can only be proposed while the capitals are at peace or under a Non-Aggression Pact.";
+                return Component.translatable("mcacapitals.diplomacy.validation.alliance_state");
             }
         }
 
         if (type == DiplomaticProposalType.TRUCE
                 && state != CapitalDiplomaticState.WAR) {
-            return "A Truce can only be proposed while the capitals are at war.";
+            return Component.translatable("mcacapitals.diplomacy.validation.truce_state");
         }
 
         return null;
@@ -209,7 +211,7 @@ final class CapitalDiplomaticAgreementValidation {
     ) {
         if (player == null || proposalId == null) {
             return PlayerProposalValidation.failure(
-                    "That diplomatic proposal is invalid."
+                    Component.translatable("mcacapitals.diplomacy.validation.proposal_invalid")
             );
         }
 
@@ -222,7 +224,7 @@ final class CapitalDiplomaticAgreementValidation {
 
         if (proposal == null) {
             return PlayerProposalValidation.failure(
-                    "That diplomatic proposal is no longer pending."
+                    Component.translatable("mcacapitals.diplomacy.validation.proposal_not_pending")
             );
         }
 
@@ -230,7 +232,7 @@ final class CapitalDiplomaticAgreementValidation {
                 || level.getGameTime()
                 < proposal.getAvailableAt()) {
             return PlayerProposalValidation.failure(
-                    "That diplomatic proposal is no longer awaiting your answer."
+                    Component.translatable("mcacapitals.diplomacy.validation.proposal_not_awaiting_answer")
             );
         }
 
@@ -246,7 +248,7 @@ final class CapitalDiplomaticAgreementValidation {
                 || target == null
                 || target.getState() != CapitalState.ACTIVE) {
             return PlayerProposalValidation.failure(
-                    "One of the capitals connected to this proposal no longer exists."
+                    Component.translatable("mcacapitals.diplomacy.validation.proposal_capital_missing")
             );
         }
 
@@ -257,7 +259,7 @@ final class CapitalDiplomaticAgreementValidation {
                         player.getUUID()
                 )) {
             return PlayerProposalValidation.failure(
-                    "Only the sovereign, or the Hand serving a villager sovereign, may answer this proposal."
+                    Component.translatable("mcacapitals.diplomacy.validation.answer_authority")
             );
         }
 
@@ -267,7 +269,7 @@ final class CapitalDiplomaticAgreementValidation {
                 target
         );
 
-        String failure = validateProposal(
+        Component failure = validateProposal(
                 level,
                 source,
                 target,
@@ -291,7 +293,7 @@ final class CapitalDiplomaticAgreementValidation {
             );
 
             return PlayerProposalValidation.failure(
-                    "The diplomatic situation changed and this proposal is no longer valid."
+                    Component.translatable("mcacapitals.diplomacy.validation.situation_changed")
             );
         }
 
@@ -317,7 +319,7 @@ final class CapitalDiplomaticAgreementValidation {
     record AudienceValidation(
             boolean valid,
             CapitalRecord sourceCapital,
-            String failureMessage
+            Component failureMessage
     ) {
         static AudienceValidation success(
                 CapitalRecord capital
@@ -330,7 +332,7 @@ final class CapitalDiplomaticAgreementValidation {
         }
 
         static AudienceValidation failure(
-                String message
+                Component message
         ) {
             return new AudienceValidation(
                     false,
@@ -345,7 +347,7 @@ final class CapitalDiplomaticAgreementValidation {
             DiplomaticProposal proposal,
             CapitalRecord sourceCapital,
             CapitalRecord targetCapital,
-            String failureMessage
+            Component failureMessage
     ) {
         static PlayerProposalValidation success(
                 DiplomaticProposal proposal,
@@ -362,7 +364,7 @@ final class CapitalDiplomaticAgreementValidation {
         }
 
         static PlayerProposalValidation failure(
-                String message
+                Component message
         ) {
             return new PlayerProposalValidation(
                     false,

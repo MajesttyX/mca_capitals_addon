@@ -17,7 +17,7 @@ public class RoyalDisinheritanceItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("Removes a royal child from the line of succession.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Shift-right-click an eligible royal child.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.royal_disinheritance_item.removes_a_royal_child_from_the_line_of_succession").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.royal_disinheritance_item.shift_right_click_an_eligible_royal_child").withStyle(ChatFormatting.GRAY));
     }
 }

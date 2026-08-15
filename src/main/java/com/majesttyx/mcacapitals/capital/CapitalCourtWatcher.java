@@ -47,18 +47,24 @@ public class CapitalCourtWatcher {
         UUID oldDowager = capital.getDowager();
         UUID oldHeir = capital.getHeir();
 
-        String oldConsortDisplayName = oldConsort == null
+        String oldConsortName = oldConsort == null
                 ? null
-                : resolveDisplayName(level, capital, oldConsort);
-
-        String oldDowagerDisplayName = oldDowager == null
+                : stripKnownTitles(resolveBaseName(level, capital, oldConsort));
+        String oldDowagerName = oldDowager == null
                 ? null
-                : resolveDisplayName(level, capital, oldDowager);
-
-        String oldHeirDisplayName = oldHeir == null
+                : stripKnownTitles(resolveBaseName(level, capital, oldDowager));
+        String oldHeirName = oldHeir == null
                 ? null
-                : resolveDisplayName(level, capital, oldHeir);
-
+                : stripKnownTitles(resolveBaseName(level, capital, oldHeir));
+        CapitalChronicleEntry.Argument oldConsortTitle = oldConsort == null
+                ? null
+                : CapitalChronicleIdentitySnapshot.title(level, capital, oldConsort);
+        CapitalChronicleEntry.Argument oldDowagerTitle = oldDowager == null
+                ? null
+                : CapitalChronicleIdentitySnapshot.title(level, capital, oldDowager);
+        CapitalChronicleEntry.Argument oldHeirTitle = oldHeir == null
+                ? null
+                : CapitalChronicleIdentitySnapshot.title(level, capital, oldHeir);
         cleanupSubordinateDowagers(level, capital);
         recordRoyalMarriageEntries(level, capital, resolvedResidents);
 
@@ -77,28 +83,30 @@ public class CapitalCourtWatcher {
             if (oldConsort != null
                     && capital.getConsort() == null
                     && isConfirmedDead(level, oldConsort)) {
-                String titledName = oldConsortDisplayName == null
-                        ? resolveDisplayName(level, capital, oldConsort)
-                        : oldConsortDisplayName;
+                String deceasedName = oldConsortName == null
+                        ? stripKnownTitles(resolveBaseName(level, capital, oldConsort))
+                        : oldConsortName;
 
                 CapitalMourningService.startMourning(
                         level,
                         capital,
-                        titledName + " died."
+                        deceasedName
                 );
 
-                CapitalChronicleService.addEntry(
+                CapitalChronicleService.addEvent(
                         level,
                         capital,
-                        titledName + " died and the court entered mourning."
+                        CapitalChronicleEventId.SOVEREIGN_DEATH_MOURNING,
+                        deceasedName,
+                        oldConsortTitle
                 );
             }
 
             if (oldDowager != null
                     && isConfirmedDead(level, oldDowager)) {
-                String titledName = oldDowagerDisplayName == null
-                        ? resolveDisplayName(level, capital, oldDowager)
-                        : oldDowagerDisplayName;
+                String deceasedName = oldDowagerName == null
+                        ? stripKnownTitles(resolveBaseName(level, capital, oldDowager))
+                        : oldDowagerName;
 
                 capital.setDowager(null);
                 capital.setDowagerFemale(false);
@@ -106,33 +114,37 @@ public class CapitalCourtWatcher {
                 CapitalMourningService.startMourning(
                         level,
                         capital,
-                        titledName + " died."
+                        deceasedName
                 );
 
-                CapitalChronicleService.addEntry(
+                CapitalChronicleService.addEvent(
                         level,
                         capital,
-                        titledName + " died and the court entered mourning."
+                        CapitalChronicleEventId.SOVEREIGN_DEATH_MOURNING,
+                        deceasedName,
+                        oldDowagerTitle
                 );
             }
 
             if (!CapitalSuccessionService.isHeirStillValid(level, capital)) {
                 if (oldHeir != null
                         && isConfirmedDead(level, oldHeir)) {
-                    String titledName = oldHeirDisplayName == null
-                            ? resolveDisplayName(level, capital, oldHeir)
-                            : oldHeirDisplayName;
+                    String deceasedName = oldHeirName == null
+                            ? stripKnownTitles(resolveBaseName(level, capital, oldHeir))
+                            : oldHeirName;
 
                     CapitalMourningService.startMourning(
                             level,
                             capital,
-                            titledName + " died."
+                            deceasedName
                     );
 
-                    CapitalChronicleService.addEntry(
+                    CapitalChronicleService.addEvent(
                             level,
                             capital,
-                            titledName + " died and the court entered mourning."
+                            CapitalChronicleEventId.SOVEREIGN_DEATH_MOURNING,
+                            deceasedName,
+                            oldHeirTitle
                     );
                 }
 
@@ -234,24 +246,21 @@ public class CapitalCourtWatcher {
             }
 
             String nobleName =
-                    stripKnownTitles(
-                            resolveBaseName(level, capital, nobleId)
+                    CapitalChronicleIdentitySnapshot.name(
+                            level,
+                            capital,
+                            nobleId
                     );
 
             String spouseName =
-                    stripKnownTitles(
-                            CapitalCourtMarriageResolver.resolveSpouseName(
-                                    level,
-                                    nobleId
-                            )
+                    CapitalChronicleIdentitySnapshot.name(
+                            level,
+                            capital,
+                            currentSpouse
                     );
 
             if (!hasMarriageEntry(capital, nobleName, spouseName)) {
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        nobleName + " was married to " + spouseName + "."
-                );
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, nobleName, spouseName);
             }
         }
 
@@ -625,16 +634,13 @@ public class CapitalCourtWatcher {
             String nobleName,
             String spouseName
     ) {
-        String needle =
-                nobleName + " was married to " + spouseName + ".";
-
-        for (String entry : capital.getChronicleEntries()) {
-            if (needle.equals(entry) || entry.endsWith(needle)) {
-                return true;
-            }
-        }
-
-        return false;
+        return CapitalChronicleService.hasMarriageEvent(
+                capital,
+                CapitalChronicleEventId.ROYAL_MARRIAGE,
+                nobleName,
+                spouseName,
+                null
+        );
     }
 
     private static String stripKnownTitles(String name) {

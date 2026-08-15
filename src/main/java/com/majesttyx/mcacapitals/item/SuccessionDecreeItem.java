@@ -44,41 +44,53 @@ public class SuccessionDecreeItem extends Item {
         }
 
         if (isBound(stack)) {
-            player.sendSystemMessage(Component.literal("This decree is already bound to " + getBoundCapitalName(stack) + "."));
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.system.succession_decree_item.already_bound_to",
+                    getBoundCapitalNameComponent(stack)
+            ));
             return InteractionResultHolder.success(stack);
         }
 
         CapitalRecord capital = resolveCapitalAtPlayer(serverLevel, serverPlayer);
         if (capital == null) {
-            player.sendSystemMessage(Component.literal("Right-click within a capital to bind this decree."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.succession_decree_item.right_click_within_a_capital_to_bind_this_decree"));
             return InteractionResultHolder.fail(stack);
         }
 
         bind(stack, capital, MCAIntegrationBridge.getVillageName(serverLevel, capital.getVillageId()));
 
-        player.sendSystemMessage(Component.literal("Succession Decree bound to " + getBoundCapitalName(stack) + "."));
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.system.succession_decree_item.bound_to_success",
+                getBoundCapitalNameComponent(stack)
+        ));
         return InteractionResultHolder.success(stack);
     }
 
     @Override
     public Component getName(ItemStack stack) {
         if (isBound(stack)) {
-            return Component.literal("Succession Decree of " + getBoundCapitalName(stack));
+            return Component.translatable(
+                    "mcacapitals.system.succession_decree_item.bound_name",
+                    getBoundCapitalNameComponent(stack)
+            );
         }
 
-        return Component.literal("Blank Succession Decree");
+        return Component.translatable("mcacapitals.system.succession_decree_item.blank_succession_decree");
     }
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         if (isBound(stack)) {
-            tooltipComponents.add(Component.literal("Bound to: " + getBoundCapitalName(stack)).withStyle(ChatFormatting.GRAY));
-            tooltipComponents.add(Component.literal("Allows the sovereign to peacefully transfer rule of this capital.").withStyle(ChatFormatting.DARK_PURPLE));
+            tooltipComponents.add(Component.translatable(
+                    "mcacapitals.system.succession_decree_item.bound_to_tooltip",
+                    getBoundCapitalNameComponent(stack)
+            ).withStyle(ChatFormatting.GRAY));
+            tooltipComponents.add(Component.translatable("mcacapitals.system.succession_decree_item.allows_the_sovereign_to_peacefully_transfer_rule_of_this_capital").withStyle(ChatFormatting.DARK_PURPLE));
         } else {
-            tooltipComponents.add(Component.literal("Right-click within a capital to bind this decree to that capital.").withStyle(ChatFormatting.GRAY));
+            tooltipComponents.add(Component.translatable("mcacapitals.system.succession_decree_item.right_click_within_a_capital_to_bind_this_decree_to_that_capital").withStyle(ChatFormatting.GRAY));
         }
 
-        tooltipComponents.add(Component.literal("Shift-right-click an eligible villager or player to use.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.succession_decree_item.shift_right_click_an_eligible_villager_or_player_to_use").withStyle(ChatFormatting.GRAY));
     }
 
     public static boolean isBound(ItemStack stack) {
@@ -100,6 +112,14 @@ public class SuccessionDecreeItem extends Item {
         CompoundTag tag = stack.getTag();
         String name = tag == null ? null : tag.getString(TAG_BOUND_CAPITAL_NAME);
         return name == null || name.isBlank() ? "Unknown Capital" : name;
+    }
+
+    private static Component getBoundCapitalNameComponent(ItemStack stack) {
+        String name = getBoundCapitalName(stack);
+        if (name == null || name.isBlank() || "Unknown Capital".equals(name)) {
+            return Component.translatable("mcacapitals.system.common.unknown_capital");
+        }
+        return Component.literal(name);
     }
 
     private static void bind(ItemStack stack, CapitalRecord capital, String capitalName) {

@@ -53,15 +53,11 @@ public final class CapitalRecommendedBetrothalService {
                     continue;
                 }
 
-                String firstName = buildDisplayName(level, capital, firstId);
-                String secondName = buildDisplayName(level, capital, secondId);
+                String firstName = CapitalChronicleIdentitySnapshot.name(level, capital, firstId);
+                String secondName = CapitalChronicleIdentitySnapshot.name(level, capital, secondId);
                 String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        firstName + " and " + secondName + " were married in " + villageName + "."
-                );
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.CAPITAL_MARRIAGE, firstName, secondName, villageName);
 
                 CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
                 CapitalDataAccess.markDirty(level);
@@ -90,19 +86,4 @@ public final class CapitalRecommendedBetrothalService {
         return "ADULT".equalsIgnoreCase(ageState);
     }
 
-    private static String buildDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        String baseName = entity != null ? entity.getName().getString() : entityId.toString();
-        String displayTitle = CapitalTitleResolver.getDisplayTitle(level, capital, entityId);
-
-        if (displayTitle == null || displayTitle.isBlank() || "Commoner".equals(displayTitle) || "None".equals(displayTitle)) {
-            return baseName;
-        }
-
-        if (baseName.startsWith(displayTitle + " ")) {
-            return baseName;
-        }
-
-        return displayTitle + " " + baseName;
-    }
 }

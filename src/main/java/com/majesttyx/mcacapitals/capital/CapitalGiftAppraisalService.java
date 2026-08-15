@@ -4,6 +4,7 @@ import forge.net.mca.entity.VillagerEntityMCA;
 import forge.net.mca.entity.interaction.gifts.GiftType;
 import forge.net.mca.resources.data.analysis.IntAnalysis;
 import forge.net.mca.resources.data.SerializablePair;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.TagKey;
@@ -44,7 +45,7 @@ public final class CapitalGiftAppraisalService {
                 || contents.isEmpty()) {
             return new GiftAppraisal(
                     0,
-                    "Trivial or confusing",
+                    AppraisalId.TRIVIAL_OR_CONFUSING,
                     0
             );
         }
@@ -88,7 +89,7 @@ public final class CapitalGiftAppraisalService {
         if (rawValue <= -20) {
             return new GiftAppraisal(
                     -25,
-                    "Grave insult",
+                    AppraisalId.GRAVE_INSULT,
                     rawValue
             );
         }
@@ -96,7 +97,7 @@ public final class CapitalGiftAppraisalService {
         if (rawValue <= -8) {
             return new GiftAppraisal(
                     -15,
-                    "Offensive or threatening",
+                    AppraisalId.OFFENSIVE_OR_THREATENING,
                     rawValue
             );
         }
@@ -104,7 +105,7 @@ public final class CapitalGiftAppraisalService {
         if (rawValue < 0) {
             return new GiftAppraisal(
                     -5,
-                    "Disappointing",
+                    AppraisalId.DISAPPOINTING,
                     rawValue
             );
         }
@@ -112,7 +113,7 @@ public final class CapitalGiftAppraisalService {
         if (rawValue < 10) {
             return new GiftAppraisal(
                     0,
-                    "Trivial or confusing",
+                    AppraisalId.TRIVIAL_OR_CONFUSING,
                     rawValue
             );
         }
@@ -120,7 +121,7 @@ public final class CapitalGiftAppraisalService {
         if (rawValue < 35) {
             return new GiftAppraisal(
                     5,
-                    "Respectable",
+                    AppraisalId.RESPECTABLE,
                     rawValue
             );
         }
@@ -128,16 +129,62 @@ public final class CapitalGiftAppraisalService {
         if (rawValue < 90) {
             return new GiftAppraisal(
                     10,
-                    "Generous",
+                    AppraisalId.GENEROUS,
                     rawValue
             );
         }
 
         return new GiftAppraisal(
                 15,
-                "Exceptional",
+                AppraisalId.EXCEPTIONAL,
                 rawValue
         );
+    }
+
+
+
+    public static boolean isGraveInsult(String storedValue) {
+        return AppraisalId.fromStoredValue(storedValue) == AppraisalId.GRAVE_INSULT;
+    }
+
+    public static Component appraisalComponent(String storedValue) {
+        if (storedValue == null || storedValue.isBlank()) {
+            return Component.empty();
+        }
+
+        AppraisalId appraisalId = AppraisalId.fromStoredValue(storedValue);
+        return appraisalId == null
+                ? Component.literal(storedValue)
+                : appraisalComponent(appraisalId);
+    }
+
+    public static Component appraisalLowerComponent(String storedValue) {
+        if (storedValue == null || storedValue.isBlank()) {
+            return Component.empty();
+        }
+
+        AppraisalId appraisalId = AppraisalId.fromStoredValue(storedValue);
+        return appraisalId == null
+                ? Component.literal(storedValue.toLowerCase())
+                : appraisalLowerComponent(appraisalId);
+    }
+
+    public static Component appraisalComponent(GiftAppraisal appraisal) {
+        return appraisal == null
+                ? Component.empty()
+                : appraisalComponent(appraisal.appraisalId());
+    }
+
+    public static Component appraisalComponent(AppraisalId appraisalId) {
+        return appraisalId == null
+                ? Component.empty()
+                : Component.translatable(appraisalId.translationKey());
+    }
+
+    public static Component appraisalLowerComponent(AppraisalId appraisalId) {
+        return appraisalId == null
+                ? Component.empty()
+                : Component.translatable(appraisalId.lowerTranslationKey());
     }
 
     private static VillagerEntityMCA resolveNpcSovereign(
@@ -334,9 +381,53 @@ public final class CapitalGiftAppraisalService {
         }
     }
 
+    public enum AppraisalId {
+        GRAVE_INSULT("grave_insult", "Grave insult"),
+        OFFENSIVE_OR_THREATENING("offensive_or_threatening", "Offensive or threatening"),
+        DISAPPOINTING("disappointing", "Disappointing"),
+        TRIVIAL_OR_CONFUSING("trivial_or_confusing", "Trivial or confusing"),
+        RESPECTABLE("respectable", "Respectable"),
+        GENEROUS("generous", "Generous"),
+        EXCEPTIONAL("exceptional", "Exceptional");
+
+        private final String serializedName;
+        private final String legacyDescription;
+
+        AppraisalId(String serializedName, String legacyDescription) {
+            this.serializedName = serializedName;
+            this.legacyDescription = legacyDescription;
+        }
+
+        public String serializedName() {
+            return serializedName;
+        }
+
+        public String translationKey() {
+            return "mcacapitals.diplomacy.gift.appraisal." + serializedName;
+        }
+
+        public String lowerTranslationKey() {
+            return "mcacapitals.diplomacy.gift.appraisal_lower." + serializedName;
+        }
+
+        public static AppraisalId fromStoredValue(String value) {
+            if (value == null || value.isBlank()) {
+                return null;
+            }
+
+            for (AppraisalId appraisalId : values()) {
+                if (appraisalId.serializedName.equalsIgnoreCase(value)
+                        || appraisalId.legacyDescription.equalsIgnoreCase(value)) {
+                    return appraisalId;
+                }
+            }
+            return null;
+        }
+    }
+
     public record GiftAppraisal(
             int relationshipDelta,
-            String description,
+            AppraisalId appraisalId,
             int rawValue
     ) {
     }

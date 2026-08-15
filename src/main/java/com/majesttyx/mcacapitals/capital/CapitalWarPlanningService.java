@@ -5,13 +5,15 @@ import com.majesttyx.mcacapitals.data.CapitalRelationKey;
 import com.majesttyx.mcacapitals.data.CapitalRelationRecord;
 import com.majesttyx.mcacapitals.data.CapitalWarCause;
 import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.Map;
 import java.util.UUID;
 
 public final class CapitalWarPlanningService {
-    private static final int ENTRENCHED_HOSTILITY_THRESHOLD = -200;
+
+    private static final int ENTRENCHED_HOSTILITY_THRESHOLD = -90;
 
     private CapitalWarPlanningService() {
     }
@@ -58,7 +60,7 @@ public final class CapitalWarPlanningService {
         return CapitalWarCause.UNJUST;
     }
 
-    public static String describePlan(
+    public static Component describePlan(
             ServerLevel level,
             CapitalRecord source,
             CapitalRecord target
@@ -69,19 +71,24 @@ public final class CapitalWarPlanningService {
                 target
         );
 
-        return cause.isJustified()
-                ? "Cause: " + cause.getDisplayName() + "."
-                : "No recognized cause exists. This will be an unjust war and will damage relations with every known capital.";
+        Component description = cause.isJustified()
+                ? Component.translatable(
+                        "mcacapitals.war.plan.cause",
+                        cause.getDisplayComponent()
+                )
+                : Component.translatable("mcacapitals.war.plan.unjust");
+
+        return description;
     }
 
-    public static String validateRecovery(
+    public static Component validateRecovery(
             ServerLevel level,
             CapitalRecord source
     ) {
         if (level == null
                 || source == null
                 || source.getCapitalId() == null) {
-            return "The attacking capital is unavailable.";
+            return Component.translatable("mcacapitals.war.validation.attacking_capital_unavailable");
         }
 
         long currentDay =
@@ -94,9 +101,10 @@ public final class CapitalWarPlanningService {
                 );
 
         if (availableDay > currentDay) {
-            return "The capital is recovering from its previous campaign and cannot plan another war until day "
-                    + availableDay
-                    + ".";
+            return Component.translatable(
+                    "mcacapitals.war.validation.recovering_until_day",
+                    availableDay
+            );
         }
 
         return null;

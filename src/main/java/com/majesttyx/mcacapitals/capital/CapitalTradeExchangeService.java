@@ -46,7 +46,7 @@ final class CapitalTradeExchangeService {
                     level,
                     first,
                     second,
-                    "because peaceful trade was no longer possible."
+                    CapitalDiplomaticTradeAgreementService.TradeAgreementEndReason.TRADE_IMPOSSIBLE
             );
             return;
         }
@@ -101,7 +101,7 @@ final class CapitalTradeExchangeService {
                     first.getCapitalId(),
                     second.getCapitalId(),
                     Math.min(RELATIONSHIP_BONUS, 270 - currentRelationship),
-                    "Trade exchange completed",
+                    "mcacapitals.relationship_reason.trade_exchange_completed",
                     null
             );
         }
@@ -117,21 +117,25 @@ final class CapitalTradeExchangeService {
     ) {
         String firstName = CapitalDiplomaticAgreementText.capitalName(level, first);
         String secondName = CapitalDiplomaticAgreementText.capitalName(level, second);
-        String entry = "A trade caravan delivered "
-                + describe(firstExports)
-                + " from " + firstName
-                + " and " + describe(secondExports)
-                + " from " + secondName + ".";
-        CapitalChronicleService.addEntry(level, first, entry);
-        CapitalChronicleService.addEntry(level, second, entry);
-    }
-
-    private static String describe(List<ItemStack> stacks) {
-        return stacks.stream()
-                .map(stack -> stack.getCount() + " × " + stack.getHoverName().getString())
-                .toList()
-                .stream()
-                .reduce((first, second) -> first + ", " + second)
-                .orElse("no goods");
+        CapitalChronicleEntry.Argument firstGoods = CapitalChronicleService.itemList(firstExports);
+        CapitalChronicleEntry.Argument secondGoods = CapitalChronicleService.itemList(secondExports);
+        CapitalChronicleService.addEvent(
+                level,
+                first,
+                CapitalChronicleEventId.TRADE_CARAVAN_EXCHANGE,
+                firstGoods,
+                firstName,
+                secondGoods,
+                secondName
+        );
+        CapitalChronicleService.addEvent(
+                level,
+                second,
+                CapitalChronicleEventId.TRADE_CARAVAN_EXCHANGE,
+                firstGoods,
+                firstName,
+                secondGoods,
+                secondName
+        );
     }
 }

@@ -9,6 +9,8 @@ import com.majesttyx.mcacapitals.data.DiplomaticProposalType;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenAmbassadorCommunicationPacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -38,7 +40,7 @@ final class CapitalDiplomaticAgreementMenuService {
                 );
 
         if (!audience.valid()) {
-            sendMessage(player, "Foreign Relations", audience.failureMessage(), "");
+            sendMessage(player, Component.translatable("mcacapitals.ui.diplomacy.foreign_relations"), audience.failureMessage(), "");
             return true;
         }
 
@@ -69,18 +71,18 @@ final class CapitalDiplomaticAgreementMenuService {
         List<OpenAmbassadorCommunicationPacket.Entry> entries = new ArrayList<>();
 
         boolean escortOpen = CapitalRoyalBetrothalService.hasOpenEscortRequests(level, source);
-        String escortReason = !sovereignAuthority
-                ? "Only the sovereign, or the Hand serving a villager sovereign, may direct a royal escort."
+        Component escortReason = !sovereignAuthority
+                ? Component.translatable("mcacapitals.ui.royal_escort.authority")
                 : escortOpen
-                ? "An accepted royal betrothal is waiting for its escort."
-                : "No accepted royal betrothal currently awaits an escort.";
+                ? Component.translatable("mcacapitals.ui.royal_escort.waiting")
+                : Component.translatable("mcacapitals.ui.royal_escort.none");
 
         entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                "Royal Escort Requests",
+                Component.translatable("mcacapitals.ui.royal_escort.title"),
                 escortReason,
-                "",
-                "",
-                "Review Royal Escorts",
+                Component.empty(),
+                Component.empty(),
+                Component.translatable("mcacapitals.ui.royal_escort.review"),
                 escortOpen && sovereignAuthority
                         ? "/capitalroyalescort review " + ambassadorId
                         : "",
@@ -92,20 +94,20 @@ final class CapitalDiplomaticAgreementMenuService {
                 player,
                 ambassadorId
         );
-        String asylumReason = !sovereignAuthority
-                ? "Only the sovereign, or the Hand serving a villager sovereign, may grant asylum."
+        Component asylumReason = !sovereignAuthority
+                ? Component.translatable("mcacapitals.ui.asylum.only_sovereign_or_hand")
                 : !CapitalBuildingService.hasInn(level, source)
-                ? "The capital requires an operational Inn before refugees can seek asylum."
+                ? Component.translatable("mcacapitals.ui.asylum.requires_inn_seek")
                 : asylumOpen
-                ? "Refugees are currently seeking admission."
-                : "No refugees are currently seeking asylum inside the capital.";
+                ? Component.translatable("mcacapitals.ui.asylum.seeking_admission")
+                : Component.translatable("mcacapitals.ui.asylum.none");
 
         entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                "Asylum Requests",
+                Component.translatable("mcacapitals.ui.asylum.title"),
                 asylumReason,
-                "",
-                "",
-                "Review Asylum Requests",
+                Component.empty(),
+                Component.empty(),
+                Component.translatable("mcacapitals.ui.asylum.review"),
                 asylumOpen
                         ? "/capitalasylum review " + ambassadorId
                         : "",
@@ -143,36 +145,44 @@ final class CapitalDiplomaticAgreementMenuService {
                     && campaign.containsCapital(target.getCapitalId());
 
             String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
+            Component targetNameComponent = capitalNameComponent(targetName);
 
             entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                    targetName,
-                    "Relationship: "
-                            + CapitalRelationshipBand.fromScore(score).getDisplayName()
-                            + " ("
-                            + score
-                            + ")",
-                    "Status: " + CapitalDiplomaticAgreementText.stateDisplay(state),
+                    targetNameComponent,
+                    Component.translatable(
+                            "mcacapitals.ui.diplomacy.relationship_score",
+                            CapitalRelationshipBand.fromScore(score).getDisplayComponent(),
+                            score
+                    ),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomacy.status",
+                            CapitalDiplomaticAgreementText.stateDisplay(state)
+                    ),
                     statusFlags(tradeActive, campaignBetweenCapitals),
-                    "Manage " + targetName,
+                    Component.translatable(
+                            "mcacapitals.ui.diplomacy.manage_target",
+                            targetNameComponent
+                    ),
                     "/capitaldiplomacy options "
                             + ambassadorId
                             + " "
                             + target.getCapitalId(),
                     true,
-                    ""
+                    Component.empty()
             ));
         }
 
         if (targets.isEmpty()) {
+            Component noTargets = Component.translatable("mcacapitals.ui.diplomacy.no_targets");
             entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                    "No Known Foreign Capitals",
-                    "There are no other established capitals with which to conduct diplomacy.",
-                    "",
-                    "",
-                    "",
+                    Component.translatable("mcacapitals.ui.diplomacy.no_known_capitals"),
+                    noTargets,
+                    Component.empty(),
+                    Component.empty(),
+                    Component.empty(),
                     "",
                     false,
-                    "There are no other established capitals with which to conduct diplomacy."
+                    noTargets
             ));
         }
 
@@ -180,9 +190,9 @@ final class CapitalDiplomaticAgreementMenuService {
                 player,
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.DIPLOMACY_TARGETS,
-                        "Manage Foreign Relations",
-                        ambassadorEntity.getName().getString(),
-                        "Choose a capital to review every available diplomatic action.",
+                        Component.translatable("mcacapitals.ui.diplomacy.manage_foreign_relations"),
+                        ambassadorEntity.getName(),
+                        Component.translatable("mcacapitals.ui.diplomacy.choose_capital"),
                         "",
                         entries,
                         List.of()
@@ -205,19 +215,19 @@ final class CapitalDiplomaticAgreementMenuService {
                 CapitalDiplomaticAgreementValidation.validateMenuAudience(player, ambassadorId);
 
         if (!menuAudience.valid()) {
-            sendMessage(player, "Foreign Relations", menuAudience.failureMessage(), "");
+            sendMessage(player, Component.translatable("mcacapitals.ui.diplomacy.foreign_relations"), menuAudience.failureMessage(), "");
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
         CapitalRecord source = menuAudience.sourceCapital();
         CapitalRecord target = CapitalManager.getCapital(targetCapitalId);
-        String targetFailure = CapitalDiplomaticAgreementValidation.validateTarget(source, target);
+        Component targetFailure = CapitalDiplomaticAgreementValidation.validateTarget(source, target);
 
         if (targetFailure != null) {
             sendMessage(
                     player,
-                    "Foreign Relations",
+                    Component.translatable("mcacapitals.ui.diplomacy.foreign_relations"),
                     targetFailure,
                     "/capitaldiplomacy targets " + ambassadorId
             );
@@ -255,6 +265,7 @@ final class CapitalDiplomaticAgreementMenuService {
         );
 
         String targetName = CapitalDiplomaticAgreementText.capitalName(level, target);
+        Component targetNameComponent = capitalNameComponent(targetName);
         Entity ambassador = level.getEntity(ambassadorId);
         List<OpenAmbassadorCommunicationPacket.Action> actions = new ArrayList<>();
 
@@ -319,7 +330,7 @@ final class CapitalDiplomaticAgreementMenuService {
         CapitalDiplomaticAgreementValidation.AudienceValidation formalAudience =
                 CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
 
-        String endTradeReason;
+        Component endTradeReason;
         boolean mayEndTrade;
 
         if (!formalAudience.valid()) {
@@ -327,14 +338,20 @@ final class CapitalDiplomaticAgreementMenuService {
             endTradeReason = formalAudience.failureMessage();
         } else if (!tradeActive) {
             mayEndTrade = false;
-            endTradeReason = "No Trade Agreement is currently in force with " + targetName + ".";
+            endTradeReason = Component.translatable(
+                    "mcacapitals.ui.diplomacy.no_trade_in_force",
+                    targetNameComponent
+            );
         } else {
             mayEndTrade = true;
-            endTradeReason = "End the Trade Agreement with " + targetName + ".";
+            endTradeReason = Component.translatable(
+                    "mcacapitals.ui.diplomacy.end_trade_with",
+                    targetNameComponent
+            );
         }
 
         actions.add(new OpenAmbassadorCommunicationPacket.Action(
-                "End Trade Agreement",
+                Component.translatable("mcacapitals.ui.diplomacy.end_trade"),
                 endTradeReason,
                 mayEndTrade
                         ? "/capitaldiplomacy endtrade "
@@ -351,10 +368,10 @@ final class CapitalDiplomaticAgreementMenuService {
                 ambassadorId,
                 source,
                 target,
-                targetName,
-                "Plan Punitive War",
+                targetNameComponent,
+                Component.translatable("mcacapitals.ui.diplomacy.plan_punitive_war"),
                 "punitive",
-                "Victory demands limited reparations."
+                Component.translatable("mcacapitals.ui.diplomacy.punitive_outcome")
         );
         addWarAction(
                 actions,
@@ -362,30 +379,31 @@ final class CapitalDiplomaticAgreementMenuService {
                 ambassadorId,
                 source,
                 target,
-                targetName,
-                "Plan War of Deposition",
+                targetNameComponent,
+                Component.translatable("mcacapitals.ui.diplomacy.plan_deposition_war"),
                 "deposition",
-                "Victory removes the defending sovereign and begins an interregnum."
+                Component.translatable("mcacapitals.ui.diplomacy.deposition_outcome")
         );
 
-        String subtitle = "Relationship: "
-                + CapitalRelationshipBand.fromScore(score).getDisplayName()
-                + " ("
-                + score
-                + ") — Status: "
-                + CapitalDiplomaticAgreementText.stateDisplay(state);
+        Component subtitle = Component.translatable(
+                "mcacapitals.ui.diplomacy.relationship_and_status",
+                CapitalRelationshipBand.fromScore(score).getDisplayComponent(),
+                score,
+                CapitalDiplomaticAgreementText.stateDisplay(state)
+        );
 
-        String message = pending == null
-                ? "Every diplomatic course is shown below. Unavailable actions explain what must change first."
-                : CapitalDiplomaticAgreementText.capitalizedWithIndefiniteArticle(
-                pending.getType().getDisplayName()
-        ) + " is awaiting a response between these capitals.";
+        Component message = pending == null
+                ? Component.translatable("mcacapitals.ui.diplomacy.all_actions")
+                : Component.translatable(
+                        "mcacapitals.ui.diplomacy.pending_response",
+                        pending.getType().getCapitalizedIndefiniteComponent()
+                );
 
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.DIPLOMACY_ACTIONS,
-                        targetName,
+                        targetNameComponent,
                         subtitle,
                         message,
                         "/capitaldiplomacy targets " + ambassadorId,
@@ -414,7 +432,7 @@ final class CapitalDiplomaticAgreementMenuService {
                 );
 
         boolean enabled = validation.valid();
-        String reason = validation.failureMessage();
+        Component reason = validation.failureMessage();
 
         if (enabled) {
             long cooldown = CapitalDiplomacyDataAccess.getGiftCooldownRemaining(
@@ -425,21 +443,24 @@ final class CapitalDiplomaticAgreementMenuService {
 
             if (cooldown > 0L) {
                 enabled = false;
-                reason = "Another package may be sent to "
-                        + targetName
-                        + " in "
-                        + CapitalDiplomaticGiftText.formatDuration(cooldown)
-                        + ".";
+                reason = Component.translatable(
+                        "mcacapitals.ui.diplomacy.gift_cooldown",
+                        capitalNameComponent(targetName),
+                        CapitalDiplomaticGiftText.formatDuration(cooldown)
+                );
             } else {
-                reason = "Send the filled Diplomatic Package held in either hand to "
-                        + targetName
-                        + ".";
+                reason = Component.translatable(
+                        "mcacapitals.ui.diplomacy.send_filled_package",
+                        capitalNameComponent(targetName)
+                );
             }
         }
 
         actions.add(new OpenAmbassadorCommunicationPacket.Action(
-                "Send Diplomatic Package",
-                reason == null ? "A Diplomatic Package cannot be sent at present." : reason,
+                Component.translatable("mcacapitals.ui.diplomacy.send_package"),
+                reason == null
+                        ? Component.translatable("mcacapitals.ui.diplomacy.package_unavailable")
+                        : reason,
                 enabled
                         ? "/capitalgift send "
                         + ambassadorId
@@ -465,19 +486,20 @@ final class CapitalDiplomaticAgreementMenuService {
                 CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
 
         boolean enabled = true;
-        String reason;
+        Component reason;
 
         if (!formalAudience.valid()) {
             enabled = false;
             reason = formalAudience.failureMessage();
         } else if (pending != null) {
             enabled = false;
-            reason = CapitalDiplomaticAgreementText.capitalizedWithIndefiniteArticle(
-                    pending.getType().getDisplayName()
-            ) + " already awaits an answer between these capitals.";
+            reason = Component.translatable(
+                    "mcacapitals.ui.diplomacy.pending_already",
+                    pending.getType().getCapitalizedIndefiniteComponent()
+            );
         } else if (CapitalDiplomaticAgreementValidation.getCurrentSovereignId(target) == null) {
             enabled = false;
-            reason = "That capital currently has no sovereign who can answer a proposal.";
+            reason = Component.translatable("mcacapitals.ui.diplomacy.no_sovereign_to_answer");
         } else {
             reason = CapitalDiplomaticAgreementValidation.validateProposal(
                     player.serverLevel(),
@@ -491,14 +513,16 @@ final class CapitalDiplomaticAgreementMenuService {
             if (reason != null) {
                 enabled = false;
             } else {
-                reason = "Send "
-                        + CapitalDiplomaticAgreementText.withIndefiniteArticle(type.getDisplayName())
-                        + " proposal to "
-                        + CapitalDiplomaticAgreementText.capitalName(
-                        player.serverLevel(),
-                        target
-                )
-                        + ".";
+                reason = Component.translatable(
+                        "mcacapitals.ui.diplomacy.send_proposal",
+                        type.getIndefiniteComponent(),
+                        capitalNameComponent(
+                                CapitalDiplomaticAgreementText.capitalName(
+                                        player.serverLevel(),
+                                        target
+                                )
+                        )
+                );
             }
         }
 
@@ -518,7 +542,10 @@ final class CapitalDiplomaticAgreementMenuService {
         }
 
         actions.add(new OpenAmbassadorCommunicationPacket.Action(
-                "Propose " + type.getDisplayName(),
+                Component.translatable(
+                        "mcacapitals.ui.diplomacy.propose",
+                        type.getDisplayComponent()
+                ),
                 reason,
                 command,
                 enabled
@@ -531,16 +558,16 @@ final class CapitalDiplomaticAgreementMenuService {
             UUID ambassadorId,
             CapitalRecord source,
             CapitalRecord target,
-            String targetName,
-            String label,
+            Component targetName,
+            Component label,
             String goal,
-            String outcome
+            Component outcome
     ) {
         CapitalDiplomaticAgreementValidation.AudienceValidation formalAudience =
                 CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
 
         boolean enabled = true;
-        String reason;
+        Component reason;
 
         if (!formalAudience.valid()) {
             enabled = false;
@@ -568,15 +595,16 @@ final class CapitalDiplomaticAgreementMenuService {
             if (reason != null) {
                 enabled = false;
             } else {
-                reason = CapitalWarPlanningService.describePlan(
-                        player.serverLevel(),
-                        source,
-                        target
-                )
-                        + " Reserve up to seven Guards and Archers against "
-                        + targetName
-                        + ". "
-                        + outcome;
+                reason = Component.translatable(
+                        "mcacapitals.ui.diplomacy.war_plan_description",
+                        CapitalWarPlanningService.describePlan(
+                                player.serverLevel(),
+                                source,
+                                target
+                        ),
+                        targetName,
+                        outcome
+                );
             }
         }
 
@@ -595,27 +623,38 @@ final class CapitalDiplomaticAgreementMenuService {
         ));
     }
 
-    private static String statusFlags(
+    private static Component statusFlags(
             boolean tradeActive,
             boolean campaignBetweenCapitals
     ) {
-        List<String> flags = new ArrayList<>();
+        MutableComponent flags = Component.empty();
+        boolean hasFlag = false;
 
         if (tradeActive) {
-            flags.add("Trade Agreement: Active");
+            flags.append(Component.translatable("mcacapitals.ui.diplomacy.trade_active"));
+            hasFlag = true;
         }
 
         if (campaignBetweenCapitals) {
-            flags.add("Attack: Planned");
+            if (hasFlag) {
+                flags.append(Component.literal(" — "));
+            }
+            flags.append(Component.translatable("mcacapitals.ui.diplomacy.attack_planned"));
         }
 
-        return String.join(" — ", flags);
+        return flags;
+    }
+
+    private static Component capitalNameComponent(String name) {
+        return name == null || name.isBlank()
+                ? Component.translatable("mcacapitals.diplomacy.unknown_capital")
+                : Component.literal(name);
     }
 
     private static void sendMessage(
             ServerPlayer player,
-            String title,
-            String message,
+            Component title,
+            Component message,
             String backCommand
     ) {
         ModNetwork.sendToPlayer(
@@ -623,7 +662,7 @@ final class CapitalDiplomaticAgreementMenuService {
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.MESSAGE,
                         title,
-                        "",
+                        Component.empty(),
                         message,
                         backCommand,
                         List.of(),

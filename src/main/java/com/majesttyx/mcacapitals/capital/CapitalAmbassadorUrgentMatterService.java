@@ -110,22 +110,23 @@ public final class CapitalAmbassadorUrgentMatterService {
                             source
                     );
 
-            String typeName =
-                    proposal.getType().getDisplayName();
+            Component typeName =
+                    proposal.getType().getDisplayComponent();
 
-            String detail =
-                    sourceName
-                            + " has proposed "
-                            + CapitalDiplomaticAgreementText
-                            .withIndefiniteArticle(typeName)
-                            + ".";
+            Component detail =
+                    Component.translatable(
+                            "mcacapitals.ui.urgent_diplomacy.proposal_detail",
+                            sourceName,
+                            proposal.getType().getIndefiniteComponent()
+                    );
 
             actions.add(
                     new OpenAmbassadorCommunicationPacket.Action(
-                            "Accept "
-                                    + typeName
-                                    + " from "
-                                    + sourceName,
+                            Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.accept_proposal",
+                                    typeName,
+                                    sourceName
+                            ),
                             detail,
                             "/capitalurgent proposal "
                                     + ambassadorId
@@ -138,10 +139,11 @@ public final class CapitalAmbassadorUrgentMatterService {
 
             actions.add(
                     new OpenAmbassadorCommunicationPacket.Action(
-                            "Reject "
-                                    + typeName
-                                    + " from "
-                                    + sourceName,
+                            Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.reject_proposal",
+                                    typeName,
+                                    sourceName
+                            ),
                             detail,
                             "/capitalurgent proposal "
                                     + ambassadorId
@@ -167,33 +169,40 @@ public final class CapitalAmbassadorUrgentMatterService {
                             source
                     );
 
-            String contents =
+            Component contents =
                     CapitalDiplomaticCorrespondenceService
-                            .formatContents(
+                            .formatContentsInline(
                                     shipment.getContents()
-                            )
-                            .replace("\n", ", ");
+                            );
 
-            String detail =
-                    "From "
-                            + sourceName
-                            + " — "
-                            + shipment.getAppraisal()
-                            + " — Contents: "
-                            + contents;
+            Component detail =
+                    Component.translatable(
+                            "mcacapitals.ui.urgent_diplomacy.package_detail",
+                            sourceName,
+                            CapitalGiftAppraisalService.appraisalComponent(
+                                    shipment.getAppraisal()
+                            ),
+                            contents
+                    );
 
-            String packageLabel =
+            Component packageLabel =
                     shipments.size() > 1
-                            ? "Package "
-                            + packageNumber
-                            + " from "
-                            + sourceName
-                            : "Package from "
-                            + sourceName;
+                            ? Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.numbered_package_from",
+                                    packageNumber,
+                                    sourceName
+                            )
+                            : Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.package_from",
+                                    sourceName
+                            );
 
             actions.add(
                     new OpenAmbassadorCommunicationPacket.Action(
-                            "Accept " + packageLabel,
+                            Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.accept_package",
+                                    packageLabel
+                            ),
                             detail,
                             "/capitalurgent shipment "
                                     + ambassadorId
@@ -206,7 +215,10 @@ public final class CapitalAmbassadorUrgentMatterService {
 
             actions.add(
                     new OpenAmbassadorCommunicationPacket.Action(
-                            "Return " + packageLabel,
+                            Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.return_package",
+                                    packageLabel
+                            ),
                             detail,
                             "/capitalurgent shipment "
                                     + ambassadorId
@@ -223,8 +235,12 @@ public final class CapitalAmbassadorUrgentMatterService {
         if (asylumRequests) {
             actions.add(
                     new OpenAmbassadorCommunicationPacket.Action(
-                            "Review Asylum Requests",
-                            "Refugees inside the capital are awaiting a decision on asylum.",
+                            Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.review_asylum"
+                            ),
+                            Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.asylum_detail"
+                            ),
                             "/capitalasylum review "
                                     + ambassadorId,
                             true
@@ -235,8 +251,12 @@ public final class CapitalAmbassadorUrgentMatterService {
         if (escortRequests) {
             actions.add(
                     new OpenAmbassadorCommunicationPacket.Action(
-                            "Review Royal Escorts",
-                            "An accepted Royal Betrothal has an escort still in progress.",
+                            Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.review_escorts"
+                            ),
+                            Component.translatable(
+                                    "mcacapitals.ui.urgent_diplomacy.escort_detail"
+                            ),
                             "/capitalroyalescort review "
                                     + ambassadorId,
                             true
@@ -244,34 +264,40 @@ public final class CapitalAmbassadorUrgentMatterService {
             );
         }
 
-        String title =
-                CapitalTitleResolver.getDisplayTitle(
+        CapitalTitleResolver.ResolvedTitleId titleId =
+                CapitalTitleResolver.getResolvedTitleId(
                         level,
                         capital,
                         player.getUUID()
                 );
 
-        String formalName =
-                title == null
-                        || title.isBlank()
-                        || "None".equals(title)
-                        || "Commoner".equals(title)
-                        ? player.getName().getString()
-                        : title
-                        + " "
-                        + player.getName().getString();
+        Component formalName =
+                titleId == CapitalTitleResolver.ResolvedTitleId.NONE
+                        || titleId == CapitalTitleResolver.ResolvedTitleId.COMMONER
+                        ? player.getName()
+                        : Component.translatable(
+                                "mcacapitals.ui.urgent_diplomacy.titled_name",
+                                CapitalTitleResolver.getDisplayTitleComponent(
+                                        level,
+                                        capital,
+                                        player.getUUID()
+                                ),
+                                player.getName()
+                        );
 
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode
                                 .DIPLOMACY_ACTIONS,
-                        "Urgent Diplomatic Matters",
-                        ambassadorEntity
-                                .getName()
-                                .getString(),
-                        formalName
-                                + ", there is an urgent matter to attend to. How would you like me to proceed?",
+                        Component.translatable(
+                                "mcacapitals.ui.urgent_diplomacy.title"
+                        ),
+                        ambassadorEntity.getName(),
+                        Component.translatable(
+                                "mcacapitals.ui.urgent_diplomacy.message",
+                                formalName
+                        ),
                         "/capitalurgent continue "
                                 + ambassadorId,
                         List.of(),
@@ -298,9 +324,7 @@ public final class CapitalAmbassadorUrgentMatterService {
         if (ambassador == null
                 || !ambassador.isAlive()) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "The Ambassador is unavailable."
-                    )
+                    Component.translatable("mcacapitals.system.capital_ambassador_urgent_matter_service.the_ambassador_is_unavailable")
             );
 
             return 0;
@@ -314,16 +338,15 @@ public final class CapitalAmbassadorUrgentMatterService {
                         );
 
         if (!audience.valid()) {
-            String failure =
+            Component failure =
                     audience.failureMessage();
 
             player.sendSystemMessage(
-                    Component.literal(
-                            failure == null
-                                    || failure.isBlank()
-                                    ? "The Ambassador is unavailable."
-                                    : failure
-                    )
+                    failure == null
+                            ? Component.translatable(
+                                    "mcacapitals.system.capital_ambassador_urgent_matter_service.the_ambassador_is_unavailable"
+                            )
+                            : failure
             );
 
             return 0;

@@ -29,7 +29,7 @@ public final class CapitalRoyalBetrothalService {
     private CapitalRoyalBetrothalService() {
     }
 
-    static String validateProposal(
+    static Component validateProposal(
             ServerLevel level,
             CapitalRecord source,
             CapitalRecord target,
@@ -37,20 +37,20 @@ public final class CapitalRoyalBetrothalService {
             int score
     ) {
         if (level == null || source == null || target == null) {
-            return "That Royal Betrothal proposal is invalid.";
+            return Component.translatable("mcacapitals.diplomacy.royal_betrothal.validation.invalid");
         }
 
         if (state == CapitalDiplomaticState.WAR
                 || state == CapitalDiplomaticState.TRUCE) {
-            return "A Royal Betrothal cannot be proposed during war or a truce.";
+            return Component.translatable("mcacapitals.diplomacy.royal_betrothal.validation.war_or_truce");
         }
 
         if (score < MINIMUM_RELATIONSHIP) {
-            return "Relations must be at least Cordial before proposing a Royal Betrothal.";
+            return Component.translatable("mcacapitals.diplomacy.royal_betrothal.validation.cordial_required");
         }
 
         return findMatch(level, source, target) == null
-                ? "These capitals do not currently have two eligible unbetrothed royals."
+                ? Component.translatable("mcacapitals.diplomacy.royal_betrothal.validation.no_match")
                 : null;
     }
 
@@ -123,13 +123,13 @@ public final class CapitalRoyalBetrothalService {
                         context.level(),
                         context.source()
                 )) {
-            String name = royalName(
+            Component name = royalNameComponent(
                     context.level(),
                     context.source(),
                     royalId
             );
 
-            String title = royalTitle(
+            Component title = royalTitleComponent(
                     context.level(),
                     context.source(),
                     royalId
@@ -137,21 +137,31 @@ public final class CapitalRoyalBetrothalService {
 
             entries.add(
                     new OpenAmbassadorCommunicationPacket.Entry(
-                            title + " " + name,
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_betrothal.titled_name",
+                                    title,
+                                    name
+                            ),
                             isCrownHeir(
                                     context.source(),
                                     royalId
                             )
-                                    ? "The Crown heir must remain in "
-                                    + capitalName(
-                                    context.level(),
-                                    context.source()
-                            )
-                                    + "."
-                                    : "Eligible unmarried member of the royal family.",
-                            "",
-                            "",
-                            "Choose " + name,
+                                    ? Component.translatable(
+                                            "mcacapitals.ui.royal_betrothal.crown_heir_must_remain",
+                                            CapitalDiplomaticAgreementText.capitalNameComponent(
+                                                    context.level(),
+                                                    context.source()
+                                            )
+                                    )
+                                    : Component.translatable(
+                                            "mcacapitals.ui.royal_betrothal.eligible_own_royal"
+                                    ),
+                            Component.empty(),
+                            Component.empty(),
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_betrothal.choose",
+                                    name
+                            ),
                             "/capitaldiplomacy betrothal_target "
                                     + ambassadorId
                                     + " "
@@ -159,7 +169,7 @@ public final class CapitalRoyalBetrothalService {
                                     + " "
                                     + royalId,
                             true,
-                            ""
+                            Component.empty()
                     )
             );
         }
@@ -167,11 +177,17 @@ public final class CapitalRoyalBetrothalService {
         openSelectionScreen(
                 player,
                 context.ambassador(),
-                "Choose Your Royal",
+                Component.translatable(
+                        "mcacapitals.ui.royal_betrothal.choose_your_royal"
+                ),
                 entries,
                 entries.isEmpty()
-                        ? "Your capital has no eligible unmarried royal."
-                        : "Choose the royal who will enter the proposed betrothal.",
+                        ? Component.translatable(
+                                "mcacapitals.ui.royal_betrothal.no_eligible_own_royal"
+                        )
+                        : Component.translatable(
+                                "mcacapitals.ui.royal_betrothal.choose_own_royal_description"
+                        ),
                 "/capitaldiplomacy options "
                         + ambassadorId
                         + " "
@@ -210,7 +226,9 @@ public final class CapitalRoyalBetrothalService {
         )) {
             sendFailure(
                     player,
-                    "That royal is no longer eligible for betrothal."
+                    Component.translatable(
+                            "mcacapitals.ui.royal_betrothal.no_longer_eligible"
+                    )
             );
 
             return 0;
@@ -244,13 +262,13 @@ public final class CapitalRoyalBetrothalService {
                 continue;
             }
 
-            String name = royalName(
+            Component name = royalNameComponent(
                     context.level(),
                     context.target(),
                     targetRoyalId
             );
 
-            String title = royalTitle(
+            Component title = royalTitleComponent(
                     context.level(),
                     context.target(),
                     targetRoyalId
@@ -258,21 +276,31 @@ public final class CapitalRoyalBetrothalService {
 
             entries.add(
                     new OpenAmbassadorCommunicationPacket.Entry(
-                            title + " " + name,
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_betrothal.titled_name",
+                                    title,
+                                    name
+                            ),
                             isCrownHeir(
                                     context.target(),
                                     targetRoyalId
                             )
-                                    ? "The Crown heir must remain in "
-                                    + capitalName(
-                                    context.level(),
-                                    context.target()
-                            )
-                                    + "."
-                                    : "Eligible unmarried member of the foreign royal family.",
-                            "",
-                            "",
-                            "Choose " + name,
+                                    ? Component.translatable(
+                                            "mcacapitals.ui.royal_betrothal.crown_heir_must_remain",
+                                            CapitalDiplomaticAgreementText.capitalNameComponent(
+                                                    context.level(),
+                                                    context.target()
+                                            )
+                                    )
+                                    : Component.translatable(
+                                            "mcacapitals.ui.royal_betrothal.eligible_foreign_royal"
+                                    ),
+                            Component.empty(),
+                            Component.empty(),
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_betrothal.choose",
+                                    name
+                            ),
                             "/capitaldiplomacy betrothal_settlement "
                                     + ambassadorId
                                     + " "
@@ -282,7 +310,7 @@ public final class CapitalRoyalBetrothalService {
                                     + " "
                                     + targetRoyalId,
                             true,
-                            ""
+                            Component.empty()
                     )
             );
         }
@@ -290,17 +318,22 @@ public final class CapitalRoyalBetrothalService {
         openSelectionScreen(
                 player,
                 context.ambassador(),
-                "Choose Their Royal",
+                Component.translatable(
+                        "mcacapitals.ui.royal_betrothal.choose_their_royal"
+                ),
                 entries,
                 entries.isEmpty()
-                        ? "The other capital has no compatible eligible royal. Two Crown heirs cannot be betrothed to each other."
-                        : "Choose the royal to be matched with "
-                        + royalName(
-                        context.level(),
-                        context.source(),
-                        sourceRoyalId
-                )
-                        + ".",
+                        ? Component.translatable(
+                                "mcacapitals.ui.royal_betrothal.no_compatible_foreign_royal"
+                        )
+                        : Component.translatable(
+                                "mcacapitals.ui.royal_betrothal.choose_match_for",
+                                royalNameComponent(
+                                        context.level(),
+                                        context.source(),
+                                        sourceRoyalId
+                                )
+                        ),
                 "/capitaldiplomacy betrothal_source "
                         + ambassadorId
                         + " "
@@ -342,7 +375,9 @@ public final class CapitalRoyalBetrothalService {
         )) {
             sendFailure(
                     player,
-                    "That royal pair is no longer eligible for betrothal."
+                    Component.translatable(
+                            "mcacapitals.ui.royal_betrothal.pair_no_longer_eligible"
+                    )
             );
 
             return 0;
@@ -365,8 +400,8 @@ public final class CapitalRoyalBetrothalService {
                             forcedDestination
                     );
 
-            String destinationName =
-                    capitalName(
+            Component destinationName =
+                    CapitalDiplomaticAgreementText.capitalNameComponent(
                             context.level(),
                             destination
                     );
@@ -379,7 +414,9 @@ public final class CapitalRoyalBetrothalService {
                             targetRoyalId,
                             forcedDestination,
                             destinationName,
-                            "A Crown heir must remain in the capital they are destined to inherit."
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_betrothal.crown_heir_settlement_explanation"
+                            )
                     )
             );
         } else {
@@ -391,16 +428,18 @@ public final class CapitalRoyalBetrothalService {
                             targetRoyalId,
                             context.source()
                                     .getCapitalId(),
-                            capitalName(
+                            CapitalDiplomaticAgreementText.capitalNameComponent(
                                     context.level(),
                                     context.source()
                             ),
-                            royalName(
-                                    context.level(),
-                                    context.target(),
-                                    targetRoyalId
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_betrothal.escort_here_after_acceptance",
+                                    royalNameComponent(
+                                            context.level(),
+                                            context.target(),
+                                            targetRoyalId
+                                    )
                             )
-                                    + " will be escorted here after acceptance."
                     )
             );
 
@@ -412,16 +451,18 @@ public final class CapitalRoyalBetrothalService {
                             targetRoyalId,
                             context.target()
                                     .getCapitalId(),
-                            capitalName(
+                            CapitalDiplomaticAgreementText.capitalNameComponent(
                                     context.level(),
                                     context.target()
                             ),
-                            royalName(
-                                    context.level(),
-                                    context.source(),
-                                    sourceRoyalId
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_betrothal.escort_there_after_acceptance",
+                                    royalNameComponent(
+                                            context.level(),
+                                            context.source(),
+                                            sourceRoyalId
+                                    )
                             )
-                                    + " will be escorted there after acceptance."
                     )
             );
         }
@@ -429,21 +470,23 @@ public final class CapitalRoyalBetrothalService {
         openSelectionScreen(
                 player,
                 context.ambassador(),
-                "Choose the Couple's Capital",
+                Component.translatable(
+                        "mcacapitals.ui.royal_betrothal.choose_couples_capital"
+                ),
                 entries,
-                "Choose where "
-                        + royalName(
-                        context.level(),
-                        context.source(),
-                        sourceRoyalId
-                )
-                        + " and "
-                        + royalName(
-                        context.level(),
-                        context.target(),
-                        targetRoyalId
-                )
-                        + " will establish their household.",
+                Component.translatable(
+                        "mcacapitals.ui.royal_betrothal.choose_household",
+                        royalNameComponent(
+                                context.level(),
+                                context.source(),
+                                sourceRoyalId
+                        ),
+                        royalNameComponent(
+                                context.level(),
+                                context.target(),
+                                targetRoyalId
+                        )
+                ),
                 "/capitaldiplomacy betrothal_target "
                         + ambassadorId
                         + " "
@@ -492,7 +535,9 @@ public final class CapitalRoyalBetrothalService {
         if (match == null) {
             sendFailure(
                     player,
-                    "That royal pair or settlement is no longer eligible."
+                    Component.translatable(
+                            "mcacapitals.ui.royal_betrothal.pair_or_settlement_no_longer_eligible"
+                    )
             );
 
             return 0;
@@ -578,33 +623,34 @@ public final class CapitalRoyalBetrothalService {
                         target
                 );
 
-        String entry =
-                firstName
-                        + " and "
-                        + secondName
-                        + " were betrothed by agreement between "
-                        + sourceName
-                        + " and "
-                        + targetName
-                        + ". They will establish their household in "
-                        + capitalName(
+        String destinationName =
+                capitalName(
                         level,
                         CapitalManager.getCapital(
                                 match.destinationCapitalId()
                         )
-                )
-                        + ".";
+                );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 source,
-                entry
+                CapitalChronicleEventId.BETROTHAL_AGREEMENT,
+                firstName,
+                secondName,
+                sourceName,
+                targetName,
+                destinationName
         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 target,
-                entry
+                CapitalChronicleEventId.BETROTHAL_AGREEMENT,
+                firstName,
+                secondName,
+                sourceName,
+                targetName,
+                destinationName
         );
 
         notifyEscortRequest(
@@ -672,9 +718,7 @@ public final class CapitalRoyalBetrothalService {
 
         if (audience == null) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "The Ambassador is unavailable."
-                    )
+                    Component.translatable("mcacapitals.system.capital_royal_betrothal_service.the_ambassador_is_unavailable")
             );
 
             return 0;
@@ -720,27 +764,37 @@ public final class CapitalRoyalBetrothalService {
 
             entries.add(
                     new OpenAmbassadorCommunicationPacket.Entry(
-                            relocatingName
-                                    + " and "
-                                    + partnerName,
-                            "Escort "
-                                    + relocatingName
-                                    + " from "
-                                    + capitalName(
-                                    level,
-                                    origin
-                            )
-                                    + ".",
-                            "Destination: "
-                                    + capitalName(
-                                    level,
-                                    destination
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_escort.couple",
+                                    royalNameComponent(relocatingName),
+                                    royalNameComponent(partnerName)
                             ),
-                            "The escort is complete when both betrothed royals are alive and physically present inside the destination capital. Their later marriage is separate.",
-                            "Escort Pending",
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_escort.escort_from",
+                                    royalNameComponent(relocatingName),
+                                    CapitalDiplomaticAgreementText.capitalNameComponent(
+                                            level,
+                                            origin
+                                    )
+                            ),
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_escort.destination",
+                                    CapitalDiplomaticAgreementText.capitalNameComponent(
+                                            level,
+                                            destination
+                                    )
+                            ),
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_escort.completion_explanation"
+                            ),
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_escort.pending"
+                            ),
                             "",
                             false,
-                            "Bring both betrothed royals together inside the chosen destination capital."
+                            Component.translatable(
+                                    "mcacapitals.ui.royal_escort.pending_reason"
+                            )
                     )
             );
         }
@@ -750,12 +804,17 @@ public final class CapitalRoyalBetrothalService {
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode
                                 .ROYAL_ESCORT_REQUESTS,
-                        "Royal Escort Requests",
-                        ambassador.getName()
-                                .getString(),
+                        Component.translatable(
+                                "mcacapitals.ui.royal_escort.requests_title"
+                        ),
+                        ambassador.getName(),
                         entries.isEmpty()
-                                ? "There are no pending royal escorts connected to this capital."
-                                : "These accepted betrothals remain pending until both betrothed royals are together inside the chosen capital.",
+                                ? Component.translatable(
+                                        "mcacapitals.ui.royal_escort.none_pending"
+                                )
+                                : Component.translatable(
+                                        "mcacapitals.ui.royal_escort.pending_description"
+                                ),
                         "/capitalurgent continue "
                                 + ambassadorId,
                         entries,
@@ -884,26 +943,24 @@ public final class CapitalRoyalBetrothalService {
                             destination
                     );
 
-            String completionEntry =
-                    firstName
-                            + " and "
-                            + secondName
-                            + " arrived together in "
-                            + destinationName
-                            + ", completing the royal escort required by their betrothal.";
-
             if (origin != null) {
-                CapitalChronicleService.addEntry(
+                CapitalChronicleService.addEvent(
                         level,
                         origin,
-                        completionEntry
+                        CapitalChronicleEventId.BETROTHAL_ESCORT_COMPLETED,
+                        firstName,
+                        secondName,
+                        destinationName
                 );
             }
 
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     destination,
-                    completionEntry
+                    CapitalChronicleEventId.BETROTHAL_ESCORT_COMPLETED,
+                    firstName,
+                    secondName,
+                    destinationName
             );
         }
     }
@@ -942,42 +999,37 @@ public final class CapitalRoyalBetrothalService {
                         origin.getCapitalId(),
                         destination.getCapitalId(),
                         25,
-                        "Royal marriage completed",
+                        "mcacapitals.relationship_reason.royal_marriage_completed",
                         destination.getCapitalId()
                 );
 
-        String entry =
-                firstVillager.getName()
-                        .getString()
-                        + " and "
-                        + secondVillager.getName()
-                        .getString()
-                        + " completed the royal marriage joining "
-                        + capitalName(
-                        level,
-                        origin
-                )
-                        + " and "
-                        + capitalName(
-                        level,
-                        destination
-                )
-                        + ".";
+        String firstName = CapitalChronicleIdentitySnapshot.name(level, origin, firstVillager.getUUID());
+        String secondName = CapitalChronicleIdentitySnapshot.name(level, destination, secondVillager.getUUID());
+        String originName = capitalName(level, origin);
+        String destinationName = capitalName(level, destination);
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 origin,
-                entry
+                CapitalChronicleEventId.ROYAL_MARRIAGE_COMPLETED,
+                firstName,
+                secondName,
+                originName,
+                destinationName
         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 destination,
-                entry
+                CapitalChronicleEventId.ROYAL_MARRIAGE_COMPLETED,
+                firstName,
+                secondName,
+                originName,
+                destinationName
         );
     }
 
-    static String proposalDescription(
+    static Component proposalDescription(
             ServerLevel level,
             DiplomaticProposal proposal,
             CapitalRecord source,
@@ -986,26 +1038,28 @@ public final class CapitalRoyalBetrothalService {
         if (proposal == null
                 || !proposal
                 .hasRoyalBetrothalDetails()) {
-            return "a Royal Betrothal";
+            return Component.translatable(
+                    "mcacapitals.diplomacy.royal_betrothal.description.generic"
+            );
         }
 
-        return "the betrothal of "
-                + royalName(
-                level,
-                source,
-                proposal.getSourceRoyalId()
-        )
-                + " and "
-                + royalName(
-                level,
-                target,
-                proposal.getTargetRoyalId()
-        )
-                + ", who will settle in "
-                + capitalName(
-                level,
-                CapitalManager.getCapital(
-                        proposal.getDestinationCapitalId()
+        return Component.translatable(
+                "mcacapitals.diplomacy.royal_betrothal.description.specific",
+                royalNameComponent(
+                        level,
+                        source,
+                        proposal.getSourceRoyalId()
+                ),
+                royalNameComponent(
+                        level,
+                        target,
+                        proposal.getTargetRoyalId()
+                ),
+                CapitalDiplomaticAgreementText.capitalNameComponent(
+                        level,
+                        CapitalManager.getCapital(
+                                proposal.getDestinationCapitalId()
+                        )
                 )
         );
     }
@@ -1295,17 +1349,21 @@ public final class CapitalRoyalBetrothalService {
             UUID sourceRoyalId,
             UUID targetRoyalId,
             UUID destinationCapitalId,
-            String destinationName,
-            String explanation
+            Component destinationName,
+            Component explanation
     ) {
         return new OpenAmbassadorCommunicationPacket.Entry(
-                "Settle in "
-                        + destinationName,
+                Component.translatable(
+                        "mcacapitals.ui.royal_betrothal.settle_in",
+                        destinationName
+                ),
                 explanation,
-                "",
-                "",
-                "Choose "
-                        + destinationName,
+                Component.empty(),
+                Component.empty(),
+                Component.translatable(
+                        "mcacapitals.ui.royal_betrothal.choose",
+                        destinationName
+                ),
                 "/capitaldiplomacy betrothal_send "
                         + ambassadorId
                         + " "
@@ -1317,7 +1375,7 @@ public final class CapitalRoyalBetrothalService {
                         + " "
                         + destinationCapitalId,
                 true,
-                ""
+                Component.empty()
         );
     }
 
@@ -1331,7 +1389,9 @@ public final class CapitalRoyalBetrothalService {
                 || ambassadorId == null
                 || targetCapitalId == null) {
             return SelectionContext.failure(
-                    "That Royal Betrothal selection is invalid."
+                    Component.translatable(
+                            "mcacapitals.ui.royal_betrothal.selection_invalid"
+                    )
             );
         }
 
@@ -1354,7 +1414,7 @@ public final class CapitalRoyalBetrothalService {
                         targetCapitalId
                 );
 
-        String targetFailure =
+        Component targetFailure =
                 CapitalDiplomaticAgreementValidation
                         .validateTarget(
                                 audience.sourceCapital(),
@@ -1388,7 +1448,7 @@ public final class CapitalRoyalBetrothalService {
                                 target.getCapitalId()
                         );
 
-        String failure =
+        Component failure =
                 validateProposal(
                         level,
                         audience.sourceCapital(),
@@ -1419,9 +1479,9 @@ public final class CapitalRoyalBetrothalService {
     private static void openSelectionScreen(
             ServerPlayer player,
             Entity ambassador,
-            String title,
+            Component title,
             List<OpenAmbassadorCommunicationPacket.Entry> entries,
-            String description,
+            Component description,
             String backCommand
     ) {
         ModNetwork.sendToPlayer(
@@ -1431,9 +1491,10 @@ public final class CapitalRoyalBetrothalService {
                                 .ROYAL_ESCORT_REQUESTS,
                         title,
                         ambassador == null
-                                ? "Ambassador"
-                                : ambassador.getName()
-                                .getString(),
+                                ? Component.translatable(
+                                        "mcacapitals.dynamic.office.ambassador"
+                                )
+                                : ambassador.getName(),
                         description,
                         backCommand,
                         entries,
@@ -1473,23 +1534,53 @@ public final class CapitalRoyalBetrothalService {
                 .getString();
     }
 
-    private static String royalTitle(
+    private static Component royalNameComponent(
             ServerLevel level,
             CapitalRecord capital,
             UUID royalId
     ) {
-        String title =
+        return royalNameComponent(royalName(level, capital, royalId));
+    }
+
+    private static Component royalNameComponent(String name) {
+        return name == null
+                || name.isBlank()
+                || "Unknown Royal".equals(name)
+                ? Component.translatable("mcacapitals.ui.royal_betrothal.unknown_royal")
+                : Component.literal(name);
+    }
+
+    private static Component capitalNameComponent(String name) {
+        return name == null
+                || name.isBlank()
+                || "Unknown Capital".equals(name)
+                ? Component.translatable("mcacapitals.diplomacy.unknown_capital")
+                : Component.literal(name);
+    }
+
+    private static Component royalTitleComponent(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID royalId
+    ) {
+        Component title =
                 CapitalTitleResolver
-                        .getDisplayTitle(
+                        .getDisplayTitleComponent(
                                 level,
                                 capital,
                                 royalId
                         );
 
         return title == null
-                || title.isBlank()
-                || "None".equals(title)
-                ? "Royal"
+                || title.getString().isBlank()
+                || CapitalTitleResolver.getResolvedTitleId(
+                        level,
+                        capital,
+                        royalId
+                ) == CapitalTitleResolver.ResolvedTitleId.NONE
+                ? Component.translatable(
+                        "mcacapitals.ui.royal_betrothal.royal"
+                )
                 : title;
     }
 
@@ -1591,23 +1682,18 @@ public final class CapitalRoyalBetrothalService {
                         destination
                 );
 
-        String message =
-                "The Royal Betrothal has been accepted. Escort "
-                        + relocatingName
-                        + " from "
-                        + capitalName(
-                        level,
-                        origin
-                )
-                        + " to "
-                        + destinationName
-                        + ". The escort will be complete as soon as "
-                        + firstName
-                        + " and "
-                        + secondName
-                        + " are both alive and physically present inside "
-                        + destinationName
-                        + ". Their marriage will occur separately once MCA considers them eligible.";
+        Component message =
+                Component.translatable(
+                        "mcacapitals.ui.royal_escort.accepted_message",
+                        royalNameComponent(relocatingName),
+                        CapitalDiplomaticAgreementText.capitalNameComponent(
+                                level,
+                                origin
+                        ),
+                        capitalNameComponent(destinationName),
+                        royalNameComponent(firstName),
+                        royalNameComponent(secondName)
+                );
 
         UUID sourcePlayer =
                 CapitalDiplomaticAuthorityService
@@ -1623,12 +1709,17 @@ public final class CapitalRoyalBetrothalService {
                                 target
                         );
 
+        Component title =
+                Component.translatable(
+                        "mcacapitals.ui.royal_escort.request_title"
+                );
+
         if (sourcePlayer != null) {
             CapitalDiplomaticAgreementCorrespondenceService
                     .sendNotice(
                             level,
                             sourcePlayer,
-                            "Royal Escort Request",
+                            title,
                             message
                     );
         }
@@ -1641,7 +1732,7 @@ public final class CapitalRoyalBetrothalService {
                     .sendNotice(
                             level,
                             targetPlayer,
-                            "Royal Escort Request",
+                            title,
                             message
                     );
         }
@@ -1649,14 +1740,10 @@ public final class CapitalRoyalBetrothalService {
 
     private static void sendFailure(
             ServerPlayer player,
-            String message
+            Component message
     ) {
-        if (player != null) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            message
-                    )
-            );
+        if (player != null && message != null) {
+            player.sendSystemMessage(message);
         }
     }
 
@@ -1675,7 +1762,7 @@ public final class CapitalRoyalBetrothalService {
             CapitalRecord source,
             CapitalRecord target,
             Entity ambassador,
-            String failureMessage
+            Component failureMessage
     ) {
         private static SelectionContext success(
                 ServerLevel level,
@@ -1694,7 +1781,7 @@ public final class CapitalRoyalBetrothalService {
         }
 
         private static SelectionContext failure(
-                String message
+                Component message
         ) {
             return new SelectionContext(
                     false,

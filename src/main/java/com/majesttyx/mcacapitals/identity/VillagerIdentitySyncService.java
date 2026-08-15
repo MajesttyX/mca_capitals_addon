@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.identity;
 
 import com.majesttyx.mcacapitals.capital.CapitalAsylumService;
+import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.config.MCACapitalsConfig;
@@ -8,6 +9,7 @@ import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.SyncVillagerIdentityPacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -125,35 +127,57 @@ public final class VillagerIdentitySyncService {
                 VillagerIdentityService
                         .getIdentity(entity);
 
-        String title =
-                CapitalTitleResolver
-                        .getDisplayTitleForEntity(
-                                level,
-                                villagerId
-                        );
+        CapitalRecord titleCapital =
+                CapitalTitleResolver.findCapitalForEntity(
+                        level,
+                        villagerId
+                );
 
-        String royalGuardOrderLine =
+        CapitalTitleResolver.ResolvedTitleId titleId =
+                CapitalTitleResolver.getResolvedTitleIdForEntity(
+                        level,
+                        villagerId
+                );
+
+        Component title =
+                CapitalTitleResolver.getDisplayTitleComponentForEntity(
+                        level,
+                        villagerId
+                );
+
+        Component royalGuardOrderLine =
                 resolveRoyalGuardOrderLine(
                         level,
                         villagerId
                 );
 
-        String courtOfficeLine =
-                CapitalTitleResolver
-                        .getCourtOfficeLineForEntity(
-                                level,
-                                villagerId
-                        );
+        CapitalTitleResolver.SecondaryOfficeId courtOfficeId =
+                CapitalTitleResolver.getCourtOfficeLineIdForEntity(
+                        level,
+                        villagerId
+                );
 
-        if (courtOfficeLine == null
-                || courtOfficeLine.isBlank()) {
-            courtOfficeLine =
-                    CapitalAsylumService
-                            .getStatusLine(
-                                    level,
-                                    villagerId
-                            );
+        Component courtOfficeLine =
+                CapitalTitleResolver.getCourtOfficeComponentForEntity(
+                        level,
+                        villagerId
+                );
+
+        if (courtOfficeId == CapitalTitleResolver.SecondaryOfficeId.NONE) {
+            Component statusLine = CapitalAsylumService.getStatusComponent(
+                    level,
+                    villagerId
+            );
+            if (statusLine != null && !statusLine.getString().isBlank()) {
+                courtOfficeLine = statusLine;
+            }
         }
+
+        String baseName = CapitalNameService.resolveDisplayName(
+                level,
+                titleCapital,
+                villagerId
+        );
 
         boolean hasIdentity =
                 identity != null
@@ -165,14 +189,12 @@ public final class VillagerIdentitySyncService {
                 );
 
         boolean hasTitle =
-                title != null
-                        && !title.isBlank()
-                        && !"None".equals(title)
-                        && !"Commoner".equals(title);
+                titleId != CapitalTitleResolver.ResolvedTitleId.NONE
+                        && titleId != CapitalTitleResolver.ResolvedTitleId.COMMONER;
 
         boolean hasCourtOfficeLine =
-                courtOfficeLine != null
-                        && !courtOfficeLine.isBlank();
+                courtOfficeId != CapitalTitleResolver.SecondaryOfficeId.NONE
+                        || !courtOfficeLine.getString().isBlank();
 
         if (!hasIdentity
                 && !hasTitle
@@ -192,8 +214,11 @@ public final class VillagerIdentitySyncService {
                 identity == null
                         ? ""
                         : identity.currentSurname(),
+                baseName,
+                titleId.name(),
                 title,
                 royalGuardOrderLine,
+                courtOfficeId.name(),
                 courtOfficeLine,
                 identity != null
                         && identity.hasFoundedHouse(),
@@ -210,12 +235,12 @@ public final class VillagerIdentitySyncService {
         );
     }
 
-    private static String resolveDisplayedOriginVillageName(
+    private static Component resolveDisplayedOriginVillageName(
             ServerLevel level,
             VillagerIdentityData identity
     ) {
         if (identity == null) {
-            return "";
+            return Component.empty();
         }
 
         String historicalName =
@@ -228,7 +253,7 @@ public final class VillagerIdentitySyncService {
 
         if (mode == MCACapitalsConfig.OriginNameMode.HISTORICAL
                 || identity.originVillageId() == null) {
-            return historicalName;
+            return Component.literal(historicalName);
         }
 
         ServerLevel originLevel =
@@ -242,7 +267,7 @@ public final class VillagerIdentitySyncService {
                 originLevel,
                 identity.originVillageId()
         )) {
-            return historicalName;
+            return Component.literal(historicalName);
         }
 
         String currentName =
@@ -254,7 +279,7 @@ public final class VillagerIdentitySyncService {
         if (currentName == null
                 || currentName.isBlank()
                 || "Unknown Village".equals(currentName)) {
-            return historicalName;
+            return Component.literal(historicalName);
         }
 
         currentName = currentName.trim();
@@ -262,12 +287,14 @@ public final class VillagerIdentitySyncService {
         if (mode == MCACapitalsConfig.OriginNameMode.CURRENT
                 || historicalName.isBlank()
                 || currentName.equals(historicalName)) {
-            return currentName;
+            return Component.literal(currentName);
         }
 
-        return currentName
-                + ", formerly "
-                + historicalName;
+        return Component.translatable(
+                "mcacapitals.system.identity.origin.current_and_former_name",
+                Component.literal(currentName),
+                Component.literal(historicalName)
+        );
     }
 
     private static ServerLevel resolveOriginLevel(
@@ -343,26 +370,25 @@ public final class VillagerIdentitySyncService {
         }
     }
 
-    private static String resolveRoyalGuardOrderLine(
+    private static Component resolveRoyalGuardOrderLine(
             ServerLevel level,
             UUID villagerId
     ) {
         CapitalRecord capital =
-                CapitalTitleResolver
-                        .findCapitalForEntity(
-                                level,
-                                villagerId
-                        );
+                CapitalTitleResolver.findCapitalForEntity(
+                        level,
+                        villagerId
+                );
 
-        if (capital == null
-                || !capital.isRoyalGuard(
-                villagerId
-        )) {
-            return "";
+        if (capital == null || !capital.isRoyalGuard(villagerId)) {
+            return Component.empty();
         }
 
-        return capital.isSovereignFemale()
-                ? "Of the Queensguard"
-                : "Of the Kingsguard";
+        return Component.translatable(
+                capital.isSovereignFemale()
+                        ? "mcacapitals.dynamic.order.queensguard"
+                        : "mcacapitals.dynamic.order.kingsguard"
+        );
     }
+
 }

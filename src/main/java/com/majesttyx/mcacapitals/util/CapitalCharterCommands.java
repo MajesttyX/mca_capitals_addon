@@ -34,25 +34,28 @@ public final class CapitalCharterCommands {
     private static int requestCharter(CommandSourceStack source) {
         ServerPlayer player = getPlayer(source);
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can request a Royal Charter."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_charter_commands.only_a_player_can_request_a_royal_charter"));
             return 0;
         }
 
         ServerLevel level = source.getLevel();
         CapitalRecord capital = findRecoverableCapital(level, player);
         if (capital == null) {
-            source.sendFailure(Component.literal("There is no unclaimed capital here requesting a Royal Charter."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_charter_commands.there_is_no_unclaimed_capital_here_requesting_a_royal_charter"));
             return 0;
         }
 
         if (hasMatchingCharterInPlayerInventory(player, capital.getCapitalId())) {
-            source.sendFailure(Component.literal("You already hold the Royal Charter for " + capitalName(level, capital) + "."));
+            source.sendFailure(Component.translatable(
+                    "mcacapitals.system.capital_charter_commands.already_hold_charter_for",
+                    capitalName(level, capital)
+            ));
             return 0;
         }
 
         ItemStack charter = RoyalCharterItem.createForCapital(level, capital);
         if (charter.isEmpty()) {
-            source.sendFailure(Component.literal("Could not create a Royal Charter for this capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_charter_commands.could_not_create_a_royal_charter_for_this_capital"));
             return 0;
         }
 
@@ -66,7 +69,13 @@ public final class CapitalCharterCommands {
             CapitalDataAccess.markDirty(level);
         }
 
-        source.sendSuccess(() -> Component.literal("A Royal Charter for " + capitalName(level, capital) + " has been granted."), false);
+        source.sendSuccess(
+                () -> Component.translatable(
+                        "mcacapitals.system.capital_charter_commands.charter_granted_for",
+                        capitalName(level, capital)
+                ),
+                false
+        );
         return 1;
     }
 
@@ -118,12 +127,14 @@ public final class CapitalCharterCommands {
         return capitalId != null && capitalId.toString().equals(tag.getString(ModDataKeys.CAPITAL_ID));
     }
 
-    private static String capitalName(ServerLevel level, CapitalRecord capital) {
+    private static Component capitalName(ServerLevel level, CapitalRecord capital) {
         if (capital == null || capital.getVillageId() == null) {
-            return "this capital";
+            return Component.translatable("mcacapitals.system.common.this_capital");
         }
-        String name = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        return name == null || name.isBlank() ? "this capital" : name;
+        return MCAIntegrationBridge.getVillageNameComponent(
+                level,
+                capital.getVillageId()
+        );
     }
 
     private static ServerPlayer getPlayer(CommandSourceStack source) {

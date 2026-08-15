@@ -44,7 +44,7 @@ public class SuccessionDecreeHandler {
 
         if (!SuccessionDecreeItem.isBound(held)) {
             if (!player.level().isClientSide) {
-                player.sendSystemMessage(Component.literal("Bind the Succession Decree to a capital before using it."));
+                player.sendSystemMessage(Component.translatable("mcacapitals.system.succession_decree_handler.bind_the_succession_decree_to_a_capital_before_using_it"));
             }
             return;
         }

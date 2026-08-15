@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
@@ -45,12 +46,7 @@ public final class CapitalHeraldService {
                 capital.setHeraldFemale(MCAIntegrationBridge.isFemale(level, newHerald));
                 capital.setHeraldDisplayName(resolveBaseName(level, newHerald));
                 if (announceAppointment) {
-                    CapitalChronicleService.addEntry(
-                            level,
-                            capital,
-                            resolveRawName(level, newHerald) + " now serves as Court Herald of "
-                                    + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
-                    );
+                    CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.COURT_HERALD_APPOINTED, resolveRawName(level, newHerald), MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
                 }
                 changed = true;
             }
@@ -64,24 +60,33 @@ public final class CapitalHeraldService {
         return changed;
     }
 
-    public static String resolveHeraldSpeakerName(ServerLevel level, CapitalRecord capital) {
+    public static Component resolveHeraldSpeakerName(ServerLevel level, CapitalRecord capital) {
+        Component office = Component.translatable("mcacapitals.dynamic.office.court_herald");
         if (level == null || capital == null || capital.getHerald() == null) {
-            return "Court Herald";
+            return office;
         }
 
         Entity herald = MCAIntegrationBridge.getEntityByUuid(level, capital.getHerald());
         if (herald != null) {
             String baseName = resolveBaseNameFromCurrentName(herald.getName().getString(), capital.getHerald().toString());
             capital.setHeraldDisplayName(baseName);
-            return "Court Herald " + baseName;
+            return Component.translatable(
+                    "mcacapitals.dynamic.name.titled",
+                    office,
+                    Component.literal(baseName)
+            );
         }
 
         String storedName = capital.getHeraldDisplayName();
         if (storedName != null && !storedName.isBlank()) {
-            return "Court Herald " + storedName.trim();
+            return Component.translatable(
+                    "mcacapitals.dynamic.name.titled",
+                    office,
+                    Component.literal(storedName.trim())
+            );
         }
 
-        return "Court Herald";
+        return office;
     }
 
     private static String resolveRawName(ServerLevel level, UUID entityId) {

@@ -121,15 +121,11 @@ public class CapitalPrisonerHandler {
 
         if (newlyDetained) {
             String targetName = CapitalNameService.resolveDisplayName(level, capital, targetId);
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    targetName + " was delivered to prison and now awaits the Crown's judgment."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.PRISONER_DELIVERED, targetName);
             CapitalPlayerNotificationService.notifyPlayersInCapital(
                     level,
                     capital,
-                    Component.literal(targetName + " has been delivered to prison and is awaiting judgment.")
+                    Component.translatable("mcacapitals.justice.prisoner.delivered_awaiting_judgment", targetName)
             );
             return true;
         }
@@ -171,26 +167,18 @@ public class CapitalPrisonerHandler {
         );
 
         if (marked) {
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    targetName + " failed to answer an Arrest Warrant and was marked for execution."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.WARRANT_EXECUTION_MARKED, targetName);
             CapitalPlayerNotificationService.notifyPlayersInCapital(
                     level,
                     capital,
-                    Component.literal(targetName + " failed to answer an Arrest Warrant and has been marked for execution.")
+                    Component.translatable("mcacapitals.justice.prisoner.warrant_execution_marked", targetName)
             );
         } else {
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    targetName + " failed to answer an Arrest Warrant, but the execution mark could not be applied."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.WARRANT_EXECUTION_MARK_FAILED, targetName);
             CapitalPlayerNotificationService.notifyPlayersInCapital(
                     level,
                     capital,
-                    Component.literal(targetName + " failed to answer an Arrest Warrant, but the execution mark could not be applied.")
+                    Component.translatable("mcacapitals.justice.prisoner.warrant_execution_mark_failed", targetName)
             );
         }
 
@@ -206,30 +194,22 @@ public class CapitalPrisonerHandler {
 
         if (exiled) {
             String capitalName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-            if (capitalName == null || capitalName.isBlank()) {
-                capitalName = "the capital";
-            }
+            Object capitalDisplay = capitalName == null || capitalName.isBlank()
+                    ? CapitalChronicleService.translatable("mcacapitals.chronicle.identity.the_capital")
+                    : capitalName;
 
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    targetName + " was led beyond the capital's bounds, stripped of residence, and escaped into exile from " + capitalName + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.PRISONER_ESCAPED_EXILE, targetName, capitalDisplay);
             CapitalPlayerNotificationService.notifyPlayersInCapital(
                     level,
                     capital,
-                    Component.literal(targetName + " has escaped beyond the capital's bounds and is now an exile.")
+                    Component.translatable("mcacapitals.justice.prisoner.escaped_exile", targetName)
             );
         } else {
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    targetName + " was led beyond the capital's bounds and escaped the Crown's warrant, but exile status could not be recorded."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.PRISONER_ESCAPED_EXILE_RECORD_FAILED, targetName);
             CapitalPlayerNotificationService.notifyPlayersInCapital(
                     level,
                     capital,
-                    Component.literal(targetName + " escaped beyond the capital's bounds, but exile status could not be recorded.")
+                    Component.translatable("mcacapitals.justice.prisoner.escaped_exile_record_failed", targetName)
             );
         }
 

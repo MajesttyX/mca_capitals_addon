@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.util;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
@@ -150,6 +151,18 @@ final class MCAVillageBridge {
         return name == null || name.isBlank()
                 ? "Unknown Village"
                 : name;
+    }
+
+    static Component getVillageNameComponent(ServerLevel level, Integer villageId) {
+        Object village = villageId == null ? null : getVillageObject(level, villageId);
+        if (village == null) {
+            return Component.translatable("mcacapitals.system.common.unknown_village");
+        }
+
+        String name = MCAReflectionHelper.invokeString(village, "getName");
+        return name == null || name.isBlank()
+                ? Component.translatable("mcacapitals.system.common.unknown_village")
+                : Component.literal(name);
     }
 
     static BlockPos getVillageCenter(

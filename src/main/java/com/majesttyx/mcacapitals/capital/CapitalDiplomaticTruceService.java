@@ -3,6 +3,7 @@ package com.majesttyx.mcacapitals.capital;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalRelationKey;
 import com.majesttyx.mcacapitals.data.CapitalRelationRecord;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.Map;
@@ -79,41 +80,44 @@ final class CapitalDiplomaticTruceService {
                             second
                     );
 
-            String chronicle =
-                    "The truce between "
-                            + firstName
-                            + " and "
-                            + secondName
-                            + " expired.";
-
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     first,
-                    chronicle
+                    CapitalChronicleEventId.TRUCE_EXPIRED,
+                    firstName,
+                    secondName
             );
 
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     second,
-                    chronicle
+                    CapitalChronicleEventId.TRUCE_EXPIRED,
+                    firstName,
+                    secondName
             );
 
             notifyCurrentPlayerSovereign(
                     level,
                     first,
-                    "Truce Expired",
-                    "The truce with "
-                            + secondName
-                            + " has expired."
+                    Component.translatable(
+                            "mcacapitals.diplomacy.truce.expired_title"
+                    ),
+                    Component.translatable(
+                            "mcacapitals.diplomacy.truce.expired_message",
+                            secondName
+                    )
             );
 
             notifyCurrentPlayerSovereign(
                     level,
                     second,
-                    "Truce Expired",
-                    "The truce with "
-                            + firstName
-                            + " has expired."
+                    Component.translatable(
+                            "mcacapitals.diplomacy.truce.expired_title"
+                    ),
+                    Component.translatable(
+                            "mcacapitals.diplomacy.truce.expired_message",
+                            firstName
+                    )
             );
         }
     }
@@ -158,8 +162,8 @@ final class CapitalDiplomaticTruceService {
     private static void notifyCurrentPlayerSovereign(
             ServerLevel level,
             CapitalRecord capital,
-            String title,
-            String message
+            Component title,
+            Component message
     ) {
         if (capital.getPlayerSovereignId() != null) {
             CapitalDiplomaticAgreementCorrespondenceService

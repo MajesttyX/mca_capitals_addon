@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
@@ -79,16 +80,15 @@ public class CapitalRoyalGuardService {
         boolean changed = false;
 
         for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
-            String guardName = buildRoyalGuardHistoryName(level, guardId);
+            String guardName = CapitalChronicleIdentitySnapshot.name(level, capital, guardId);
             capital.removeRoyalGuard(guardId);
 
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    guardName
-                            + " was released from the royal guard of "
-                            + villageName
-                            + " after the transfer of power."
+                    CapitalChronicleEventId.ROYAL_GUARD_RELEASED_TRANSFER,
+                    guardName,
+                    villageName
             );
 
             changed = true;
@@ -157,13 +157,15 @@ public class CapitalRoyalGuardService {
                 capital.getRoyalGuardLiege()
         );
 
-        String guardName = buildRoyalGuardDisplayName(level, capital, villagerId);
+        String guardName = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                guardName + " was named to the royal guard of " + villageName + "."
+                CapitalChronicleEventId.ROYAL_GUARD_APPOINTED,
+                guardName,
+                villageName
         );
 
         Set<UUID> residents =
@@ -222,15 +224,14 @@ public class CapitalRoyalGuardService {
             UUID guardId
     ) {
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        String name = buildRoyalGuardHistoryName(level, guardId);
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, guardId);
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                name
-                        + " was disgraced after failing to preserve the reign of "
-                        + villageName
-                        + "."
+                CapitalChronicleEventId.ROYAL_GUARD_DISGRACED,
+                name,
+                villageName
         );
     }
 
@@ -239,30 +240,31 @@ public class CapitalRoyalGuardService {
             CapitalRecord capital,
             UUID guardId
     ) {
-        String title = MCAIntegrationBridge.isFemale(level, guardId)
-                ? "Dame"
-                : "Sir";
-
-        String baseName = resolveBaseName(level, guardId);
-
-        return title
-                + " "
-                + baseName
-                + " of the "
-                + (capital.isSovereignFemale() ? "Queensguard" : "Kingsguard");
+        return buildRoyalGuardDisplayNameComponent(level, capital, guardId).getString();
     }
 
-    private static String buildRoyalGuardHistoryName(
+    public static Component buildRoyalGuardDisplayNameComponent(
             ServerLevel level,
+            CapitalRecord capital,
             UUID guardId
     ) {
-        String title = MCAIntegrationBridge.isFemale(level, guardId)
-                ? "Dame"
-                : "Sir";
+        Component title = Component.translatable(
+                MCAIntegrationBridge.isFemale(level, guardId)
+                        ? "mcacapitals.dynamic.title.knight.female"
+                        : "mcacapitals.dynamic.title.knight.male"
+        );
 
-        String baseName = resolveBaseName(level, guardId);
-        return title + " " + baseName;
+        Component baseName = Component.literal(resolveBaseName(level, guardId));
+
+        return Component.translatable(
+                capital.isSovereignFemale()
+                        ? "mcacapitals.dynamic.name.royal_guard.queensguard"
+                        : "mcacapitals.dynamic.name.royal_guard.kingsguard",
+                title,
+                baseName
+        );
     }
+
 
     private static String resolveBaseName(ServerLevel level, UUID entityId) {
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);

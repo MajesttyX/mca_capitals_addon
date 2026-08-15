@@ -1,20 +1,18 @@
 package com.majesttyx.mcacapitals.data;
 
+import net.minecraft.network.chat.Component;
+
 import java.util.Locale;
 
 public enum CapitalPublicCrownStatus {
-    RECOGNIZED_FRIEND("Recognized Friend of the Crown"),
-    DISCOVERED_ENEMY("Discovered Enemy of the Crown"),
-    RESTORED_TO_PEACE("Restored to the Crown's Peace");
+    RECOGNIZED_FRIEND,
+    DISCOVERED_ENEMY,
+    RESTORED_TO_PEACE;
 
-    private final String displayName;
-
-    CapitalPublicCrownStatus(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public String getDisplayName() {
-        return displayName;
+    public Component getDisplayComponent() {
+        return Component.translatable(
+                "mcacapitals.justice.public_status." + getSerializedName()
+        );
     }
 
     public String getSerializedName() {

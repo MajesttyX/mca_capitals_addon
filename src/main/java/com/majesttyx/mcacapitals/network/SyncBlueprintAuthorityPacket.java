@@ -9,21 +9,18 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.MCAReputationBridge;
 import forge.net.mca.server.world.data.Village;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
 
-public class SyncBlueprintAuthorityPacket {
+public final class SyncBlueprintAuthorityPacket {
 
     private final int villageId;
     private final boolean activeCapital;
-    private final String displayTitle;
+    private final Component displayTitle;
     private final int permissionMask;
     private final int population;
     private final int reputation;
@@ -34,7 +31,7 @@ public class SyncBlueprintAuthorityPacket {
     public SyncBlueprintAuthorityPacket(
             int villageId,
             boolean activeCapital,
-            String displayTitle,
+            Component displayTitle,
             int permissionMask,
             int population,
             int reputation,
@@ -44,7 +41,9 @@ public class SyncBlueprintAuthorityPacket {
     ) {
         this.villageId = villageId;
         this.activeCapital = activeCapital;
-        this.displayTitle = displayTitle == null || displayTitle.isBlank() ? "Stranger" : displayTitle;
+        this.displayTitle = displayTitle == null
+                ? Component.translatable("mcacapitals.dynamic.rank.stranger")
+                : displayTitle;
         this.permissionMask = permissionMask;
         this.population = population;
         this.reputation = reputation;
@@ -55,7 +54,17 @@ public class SyncBlueprintAuthorityPacket {
 
     public static SyncBlueprintAuthorityPacket create(ServerPlayer player, Village village) {
         if (player == null || village == null) {
-            return new SyncBlueprintAuthorityPacket(-1, false, "Stranger", 0, 0, 0, 0, 0, false);
+            return new SyncBlueprintAuthorityPacket(
+                    -1,
+                    false,
+                    Component.translatable("mcacapitals.dynamic.rank.stranger"),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false
+            );
         }
 
         int villageId = village.getId();
@@ -67,7 +76,7 @@ public class SyncBlueprintAuthorityPacket {
             return new SyncBlueprintAuthorityPacket(
                     villageId,
                     false,
-                    "Stranger",
+                    Component.translatable("mcacapitals.dynamic.rank.stranger"),
                     0,
                     village.getPopulation(),
                     0,
@@ -122,7 +131,7 @@ public class SyncBlueprintAuthorityPacket {
         return activeCapital;
     }
 
-    public String displayTitle() {
+    public Component displayTitle() {
         return displayTitle;
     }
 
@@ -157,7 +166,7 @@ public class SyncBlueprintAuthorityPacket {
     public static void encode(SyncBlueprintAuthorityPacket packet, FriendlyByteBuf buffer) {
         buffer.writeInt(packet.villageId);
         buffer.writeBoolean(packet.activeCapital);
-        buffer.writeUtf(packet.displayTitle);
+        buffer.writeComponent(packet.displayTitle);
         buffer.writeInt(packet.permissionMask);
         buffer.writeInt(packet.population);
         buffer.writeInt(packet.reputation);
@@ -170,7 +179,7 @@ public class SyncBlueprintAuthorityPacket {
         return new SyncBlueprintAuthorityPacket(
                 buffer.readInt(),
                 buffer.readBoolean(),
-                buffer.readUtf(),
+                buffer.readComponent(),
                 buffer.readInt(),
                 buffer.readInt(),
                 buffer.readInt(),
@@ -182,14 +191,13 @@ public class SyncBlueprintAuthorityPacket {
 
     public static void handle(
             SyncBlueprintAuthorityPacket packet,
-            Supplier<NetworkEvent.Context> contextSupplier
+            java.util.function.Supplier<net.minecraftforge.network.NetworkEvent.Context> contextSupplier
     ) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-                Dist.CLIENT,
+        net.minecraftforge.network.NetworkEvent.Context context = contextSupplier.get();
+        context.enqueueWork(() -> net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(
+                net.minecraftforge.api.distmarker.Dist.CLIENT,
                 () -> () -> BlueprintAuthorityClientCache.put(packet)
         ));
         context.setPacketHandled(true);
     }
-
 }

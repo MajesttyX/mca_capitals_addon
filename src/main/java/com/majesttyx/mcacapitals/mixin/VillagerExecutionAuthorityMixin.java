@@ -52,9 +52,7 @@ public abstract class VillagerExecutionAuthorityMixin {
 
         if (player != null) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "Only the reigning Sovereign of this capital may order an execution."
-                    ).withStyle(ChatFormatting.RED)
+                    Component.translatable("mcacapitals.system.villager_execution_authority_mixin.only_the_reigning_sovereign_of_this_capital_may_order_an_execution").withStyle(ChatFormatting.RED)
             );
         }
 

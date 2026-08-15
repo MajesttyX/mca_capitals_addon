@@ -8,6 +8,7 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import forge.net.mca.entity.VillagerEntityMCA;
 import forge.net.mca.server.world.data.Village;
 import forge.net.mca.server.world.data.VillageManager;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -77,7 +78,7 @@ public final class CapitalAsylumScreenService {
             if (player != null) {
                 sendMessage(
                         player,
-                        "Asylum Requests",
+                        Component.translatable("mcacapitals.ui.asylum.title"),
                         audience.failureMessage(),
                         continuationCommand(
                                 ambassadorId
@@ -102,8 +103,8 @@ public final class CapitalAsylumScreenService {
                 )) {
             sendMessage(
                     player,
-                    "Asylum Requests",
-                    "Only the sovereign, or the Hand serving a villager sovereign, may grant asylum.",
+                    Component.translatable("mcacapitals.ui.asylum.title"),
+                    Component.translatable("mcacapitals.ui.asylum.only_sovereign_or_hand"),
                     continuationCommand(
                             ambassadorId
                     )
@@ -118,8 +119,8 @@ public final class CapitalAsylumScreenService {
         )) {
             sendMessage(
                     player,
-                    "Asylum Requests",
-                    "The capital requires an operational Inn before refugees can request asylum.",
+                    Component.translatable("mcacapitals.ui.asylum.title"),
+                    Component.translatable("mcacapitals.ui.asylum.requires_inn"),
                     continuationCommand(
                             ambassadorId
                     )
@@ -137,8 +138,8 @@ public final class CapitalAsylumScreenService {
         if (targetVillage == null) {
             sendMessage(
                     player,
-                    "Asylum Requests",
-                    "The capital's MCA village record is unavailable.",
+                    Component.translatable("mcacapitals.ui.asylum.title"),
+                    Component.translatable("mcacapitals.ui.asylum.village_unavailable"),
                     continuationCommand(
                             ambassadorId
                     )
@@ -156,8 +157,8 @@ public final class CapitalAsylumScreenService {
         if (candidates.isEmpty()) {
             sendMessage(
                     player,
-                    "Asylum Requests",
-                    "No refugees are currently seeking asylum inside the capital.",
+                    Component.translatable("mcacapitals.ui.asylum.title"),
+                    Component.translatable("mcacapitals.ui.asylum.none"),
                     continuationCommand(
                             ambassadorId
                     )
@@ -186,19 +187,23 @@ public final class CapitalAsylumScreenService {
 
             entries.add(
                     new OpenAmbassadorCommunicationPacket.Entry(
-                            refugeeName,
-                            "Exiled From: "
-                                    + record.getOriginCapitalName(),
-                            "Status: Seeking Asylum",
-                            "",
-                            "Grant Asylum to "
-                                    + refugeeName,
+                            Component.literal(refugeeName),
+                            Component.translatable(
+                                    "mcacapitals.ui.asylum.exiled_from",
+                                    storedCapitalNameComponent(record.getOriginCapitalName())
+                            ),
+                            Component.translatable("mcacapitals.ui.asylum.status_seeking"),
+                            Component.empty(),
+                            Component.translatable(
+                                    "mcacapitals.ui.asylum.grant_to",
+                                    Component.literal(refugeeName)
+                            ),
                             "/capitalasylum grant "
                                     + ambassadorId
                                     + " "
                                     + record.getRefugeeId(),
                             true,
-                            ""
+                            Component.empty()
                     )
             );
         }
@@ -208,13 +213,12 @@ public final class CapitalAsylumScreenService {
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode
                                 .ASYLUM_REQUESTS,
-                        "Asylum Requests",
-                        CapitalDiplomaticAgreementText
-                                .capitalName(
-                                        level,
-                                        targetCapital
-                                ),
-                        "Choose a refugee to admit as a resident of the capital.",
+                        Component.translatable("mcacapitals.ui.asylum.title"),
+                        CapitalDiplomaticAgreementText.capitalNameComponent(
+                                level,
+                                targetCapital
+                        ),
+                        Component.translatable("mcacapitals.ui.asylum.choose_refugee"),
                         continuationCommand(
                                 ambassadorId
                         ),
@@ -228,8 +232,8 @@ public final class CapitalAsylumScreenService {
 
     private static void sendMessage(
             ServerPlayer player,
-            String title,
-            String message,
+            Component title,
+            Component message,
             String backCommand
     ) {
         ModNetwork.sendToPlayer(
@@ -238,7 +242,7 @@ public final class CapitalAsylumScreenService {
                         OpenAmbassadorCommunicationPacket.Mode
                                 .MESSAGE,
                         title,
-                        "",
+                        Component.empty(),
                         message,
                         backCommand,
                         List.of(),
@@ -369,6 +373,14 @@ public final class CapitalAsylumScreenService {
                         capital.getVillageId()
                 )
                 .orElse(null);
+    }
+
+    private static Component storedCapitalNameComponent(String name) {
+        return name == null
+                || name.isBlank()
+                || "Unknown Capital".equals(name)
+                ? Component.translatable("mcacapitals.system.common.unknown_capital")
+                : Component.literal(name);
     }
 
     private static String continuationCommand(

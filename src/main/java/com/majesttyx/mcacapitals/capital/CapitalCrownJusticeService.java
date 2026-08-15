@@ -106,27 +106,27 @@ public final class CapitalCrownJusticeService {
             return false;
         }
         if (!CapitalResidentScanner.scanResidents(level, capital.getCapitalId()).contains(targetId)) {
-            player.sendSystemMessage(Component.literal("That villager is not a resident of this capital."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.that_villager_is_not_a_resident_of_this_capital"));
             return false;
         }
         if (!CapitalCrownStandingService.isFriend(level, capital, targetId)
                 || !CapitalCrownStandingService.isWillingToDeclareLoyalty(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("That villager has not publicly declared loyalty to this Crown."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.that_villager_has_not_publicly_declared_loyalty_to_this_crown"));
             return false;
         }
         if (MCAIntegrationBridge.getHeartsWithPlayer(level, targetId, player.getUUID()) < 200) {
-            player.sendSystemMessage(Component.literal("That villager has not yet trusted you enough to declare their loyalty openly."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.that_villager_has_not_yet_trusted_you_enough_to_declare_their_loyalty"));
             return false;
         }
         if (!isTrustedOfficeEligible(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("A villager with an active Crown case cannot be formally recognized as a Friend of the Crown."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.a_villager_with_an_active_crown_case_cannot_be_formally_recognized_as"));
             return false;
         }
 
         CapitalJusticeDataAccess.setPublicStatus(level, capital.getCapitalId(), targetId, CapitalPublicCrownStatus.RECOGNIZED_FRIEND);
         String name = CapitalNameService.resolveDisplayName(level, capital, targetId);
-        CapitalChronicleService.addEntry(level, capital, name + " was formally recognized as a Friend of the Crown by " + player.getName().getString() + ".");
-        player.sendSystemMessage(Component.literal(name + " is now a Recognized Friend of the Crown."));
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.FRIEND_OF_CROWN_RECOGNIZED_PLAYER, name, player.getName().getString());
+        player.sendSystemMessage(Component.translatable("mcacapitals.justice.crown_status.friend_recognized_player", name));
         return true;
     }
 
@@ -143,14 +143,14 @@ public final class CapitalCrownJusticeService {
             return false;
         }
         if (!isRestorationEligible(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("That villager is not eligible to be restored to the Crown's Peace."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.that_villager_is_not_eligible_to_be_restored_to_the_crown_s_peace"));
             return false;
         }
 
         CapitalJusticeDataAccess.setPublicStatus(level, capital.getCapitalId(), targetId, CapitalPublicCrownStatus.RESTORED_TO_PEACE);
         String name = CapitalNameService.resolveDisplayName(level, capital, targetId);
-        CapitalChronicleService.addEntry(level, capital, name + " was restored to the Crown's Peace by " + player.getName().getString() + ".");
-        player.sendSystemMessage(Component.literal(name + " has been restored to the Crown's Peace."));
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.CROWN_PEACE_RESTORED_PLAYER, name, player.getName().getString());
+        player.sendSystemMessage(Component.translatable("mcacapitals.justice.crown_status.peace_restored", name));
         return true;
     }
 
@@ -210,33 +210,34 @@ public final class CapitalCrownJusticeService {
                 continue;
             }
 
-            String name = CapitalNameService.resolveDisplayName(level, capital, prisonerId);
             entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                    name,
-                    "Awaiting Judgment",
-                    "Confirmed cases: " + CapitalJusticeDataAccess.getConfirmedCaseCount(level, capitalId, prisonerId),
+                    CapitalNameService.resolveDisplayNameComponent(level, capital, prisonerId),
+                    Component.translatable("mcacapitals.ui.crown_standings.awaiting_judgment"),
+                    Component.translatable(
+                            "mcacapitals.ui.crown_standings.confirmed_cases",
+                            CapitalJusticeDataAccess.getConfirmedCaseCount(level, capitalId, prisonerId)
+                    ),
                     publicStatusLine(level, capital, prisonerId),
-                    "Decide Judgment",
+                    Component.translatable("mcacapitals.ui.crown_standings.decide_judgment"),
                     "/capitaljustice options " + masterOfLawsId + " " + prisonerId,
                     true,
-                    ""
+                    Component.empty()
             ));
         }
 
         for (UUID residentId : CapitalResidentScanner.scanResidents(level, capitalId)) {
             CapitalPublicCrownStatus publicStatus = CapitalJusticeDataAccess.getPublicStatus(level, capitalId, residentId);
-            String name = CapitalNameService.resolveDisplayName(level, capital, residentId);
 
             if (isRestorationEligible(level, capital, residentId)) {
                 entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                        name,
-                        "Eligible for Restoration",
-                        "Their sentence or pardon was resolved at least five Minecraft days ago.",
-                        "Discovered Enemy of the Crown",
-                        "Restore Crown's Peace",
+                        CapitalNameService.resolveDisplayNameComponent(level, capital, residentId),
+                        Component.translatable("mcacapitals.ui.crown_standings.eligible_restoration"),
+                        Component.translatable("mcacapitals.ui.crown_standings.restoration_wait_complete"),
+                        Component.translatable("mcacapitals.justice.public_status.discovered_enemy"),
+                        Component.translatable("mcacapitals.ui.crown_standings.restore_peace"),
                         "/capitaljustice restore " + masterOfLawsId + " " + residentId,
                         true,
-                        ""
+                        Component.empty()
                 ));
                 continue;
             }
@@ -246,33 +247,56 @@ public final class CapitalCrownJusticeService {
                     && CapitalCrownStandingService.isWillingToDeclareLoyalty(level, capital, residentId)
                     && MCAIntegrationBridge.getHeartsWithPlayer(level, residentId, player.getUUID()) >= 200
                     && isTrustedOfficeEligible(level, capital, residentId)) {
-                String title = CapitalTitleResolver.getDisplayTitle(level, capital, residentId);
-                String heading = title == null || title.isBlank() || "Commoner".equals(title)
-                        ? name
-                        : title + " " + name;
+                CapitalTitleResolver.ResolvedTitleId titleId =
+                        CapitalTitleResolver.getResolvedTitleId(level, capital, residentId);
+                Component nameComponent = CapitalNameService.resolveDisplayNameComponent(
+                        level,
+                        capital,
+                        residentId
+                );
+                Component heading = titleId == CapitalTitleResolver.ResolvedTitleId.COMMONER
+                        || titleId == CapitalTitleResolver.ResolvedTitleId.NONE
+                        ? nameComponent
+                        : CapitalTitleResolver.getDisplayTitleComponent(level, capital, residentId)
+                        .copy()
+                        .append(Component.literal(" "))
+                        .append(nameComponent);
                 entries.add(new OpenAmbassadorCommunicationPacket.Entry(
                         heading,
-                        "Declared Loyalty",
-                        name + " has openly declared support for the current Crown.",
-                        "Not yet formally recognized",
-                        "Recognize " + name,
+                        Component.translatable("mcacapitals.ui.crown_standings.declared_loyalty"),
+                        Component.translatable(
+                                "mcacapitals.ui.crown_standings.declared_support",
+                                nameComponent
+                        ),
+                        Component.translatable("mcacapitals.ui.crown_standings.not_recognized"),
+                        Component.translatable(
+                                "mcacapitals.ui.crown_standings.recognize",
+                                nameComponent
+                        ),
                         "/capitaljustice recognize " + masterOfLawsId + " " + residentId,
                         true,
-                        ""
+                        Component.empty()
                 ));
             }
         }
 
-        entries.sort(Comparator.comparing(OpenAmbassadorCommunicationPacket.Entry::lineOne)
-                .thenComparing(OpenAmbassadorCommunicationPacket.Entry::heading, String.CASE_INSENSITIVE_ORDER));
+        entries.sort(Comparator
+                .comparing(
+                        (OpenAmbassadorCommunicationPacket.Entry entry) -> entry.lineOne().getString(),
+                        String.CASE_INSENSITIVE_ORDER
+                )
+                .thenComparing(
+                        entry -> entry.heading().getString(),
+                        String.CASE_INSENSITIVE_ORDER
+                ));
 
         ModNetwork.sendToPlayer(player, new OpenAmbassadorCommunicationPacket(
                 OpenAmbassadorCommunicationPacket.Mode.JUSTICE_CASES,
-                "Crown Standings",
-                master.getName().getString(),
+                Component.translatable("mcacapitals.ui.crown_standings.title"),
+                master.getName(),
                 entries.isEmpty()
-                        ? "No Crown standings currently require formal review."
-                        : "Review named villagers awaiting recognition, restoration, or judgment.",
+                        ? Component.translatable("mcacapitals.ui.crown_standings.none")
+                        : Component.translatable("mcacapitals.ui.crown_standings.review_message"),
                 "",
                 entries,
                 List.of()
@@ -291,27 +315,50 @@ public final class CapitalCrownJusticeService {
         Entity master = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, masterOfLawsId);
 
         if (capital == null || master == null || player.distanceToSqr(master) > MAX_AUDIENCE_DISTANCE_SQR || !mayDecide(level, capital, player.getUUID())) {
-            player.sendSystemMessage(Component.literal("You no longer have the authority or audience required to decide this case."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.you_no_longer_have_the_authority_or_audience_required_to_decide_this_c"));
             return 0;
         }
         if (!isAwaitingJudgment(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("That prisoner is no longer awaiting judgment."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.that_prisoner_is_no_longer_awaiting_judgment"));
             return 0;
         }
 
         String base = "/capitaljustice judge " + masterOfLawsId + " " + targetId + " ";
         List<OpenAmbassadorCommunicationPacket.Action> actions = List.of(
-                new OpenAmbassadorCommunicationPacket.Action("Royal Pardon", "Release the prisoner from this case without restoring political trust.", base + "pardon", true),
-                new OpenAmbassadorCommunicationPacket.Action("Two-Day Imprisonment", "The prisoner serves two Minecraft days before release.", base + "imprisonment", true),
-                new OpenAmbassadorCommunicationPacket.Action("Exile", "Remove residency and declare the prisoner an exile of this capital.", base + "exile", true),
-                new OpenAmbassadorCommunicationPacket.Action("Mark for Execution", "Condemn the prisoner under MCA's execution system.", base + "execution", true)
+                new OpenAmbassadorCommunicationPacket.Action(
+                        Component.translatable("mcacapitals.ui.judgment.royal_pardon"),
+                        Component.translatable("mcacapitals.ui.judgment.royal_pardon_description"),
+                        base + "pardon",
+                        true
+                ),
+                new OpenAmbassadorCommunicationPacket.Action(
+                        Component.translatable("mcacapitals.ui.judgment.imprisonment"),
+                        Component.translatable("mcacapitals.ui.judgment.imprisonment_description"),
+                        base + "imprisonment",
+                        true
+                ),
+                new OpenAmbassadorCommunicationPacket.Action(
+                        Component.translatable("mcacapitals.ui.judgment.exile"),
+                        Component.translatable("mcacapitals.ui.judgment.exile_description"),
+                        base + "exile",
+                        true
+                ),
+                new OpenAmbassadorCommunicationPacket.Action(
+                        Component.translatable("mcacapitals.ui.judgment.execution"),
+                        Component.translatable("mcacapitals.ui.judgment.execution_description"),
+                        base + "execution",
+                        true
+                )
         );
 
         ModNetwork.sendToPlayer(player, new OpenAmbassadorCommunicationPacket(
                 OpenAmbassadorCommunicationPacket.Mode.DIPLOMACY_ACTIONS,
-                "Judgment: " + CapitalNameService.resolveDisplayName(level, capital, targetId),
-                "Confirmed Enemy of the Crown",
-                "Choose the Crown's judgment. The original discovery remains in the Chronicle.",
+                Component.translatable(
+                        "mcacapitals.ui.judgment.title",
+                        CapitalNameService.resolveDisplayNameComponent(level, capital, targetId)
+                ),
+                Component.translatable("mcacapitals.ui.judgment.confirmed_enemy"),
+                Component.translatable("mcacapitals.ui.judgment.choose"),
                 "/capitaljustice review " + masterOfLawsId,
                 List.of(),
                 actions
@@ -329,15 +376,23 @@ public final class CapitalCrownJusticeService {
         Entity master = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, masterOfLawsId);
 
         if (capital == null || master == null || player.distanceToSqr(master) > MAX_AUDIENCE_DISTANCE_SQR || !mayDecide(level, capital, player.getUUID())) {
-            player.sendSystemMessage(Component.literal("You no longer have the authority or audience required to decide this case."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.you_no_longer_have_the_authority_or_audience_required_to_decide_this_c"));
             return 0;
         }
         if (!isAwaitingJudgment(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("That prisoner is no longer awaiting judgment."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.that_prisoner_is_no_longer_awaiting_judgment"));
             return 0;
         }
 
-        return applyJudgment(level, capital, targetId, judgment, player.getName().getString()) ? 1 : 0;
+        String authorityName = player.getName().getString();
+        return applyJudgment(
+                level,
+                capital,
+                targetId,
+                judgment,
+                authorityName,
+                Component.literal(authorityName)
+        ) ? 1 : 0;
     }
 
     public static boolean tickNpcGovernment(ServerLevel level, CapitalRecord capital) {
@@ -365,7 +420,14 @@ public final class CapitalCrownJusticeService {
             UUID targetId = awaiting.get(0);
             CapitalJudgmentType judgment = chooseNpcJudgment(level, capital, targetId);
             CapitalJusticeDataAccess.setLastNpcJudgmentDay(level, capitalId, day);
-            return applyJudgment(level, capital, targetId, judgment, "the Crown's council");
+            return applyJudgment(
+                    level,
+                    capital,
+                    targetId,
+                    judgment,
+                    "the Crown's council",
+                    Component.translatable("mcacapitals.justice.authority.crown_council")
+            );
         }
 
         List<UUID> restorationCandidates = CapitalResidentScanner.scanResidents(level, capitalId)
@@ -379,8 +441,8 @@ public final class CapitalCrownJusticeService {
             CapitalJusticeDataAccess.setPublicStatus(level, capitalId, targetId, CapitalPublicCrownStatus.RESTORED_TO_PEACE);
             CapitalJusticeDataAccess.setLastNpcJudgmentDay(level, capitalId, day);
             String name = CapitalNameService.resolveDisplayName(level, capital, targetId);
-            CapitalChronicleService.addEntry(level, capital, name + " was restored to the Crown's Peace by the Crown's council.");
-            CapitalPlayerNotificationService.notifyPlayersInCapital(level, capital, Component.literal(name + " has been restored to the Crown's Peace."));
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.CROWN_PEACE_RESTORED_COUNCIL, name);
+            CapitalPlayerNotificationService.notifyPlayersInCapital(level, capital, Component.translatable("mcacapitals.justice.crown_status.peace_restored", name));
             return true;
         }
 
@@ -399,8 +461,8 @@ public final class CapitalCrownJusticeService {
             CapitalJusticeDataAccess.setPublicStatus(level, capitalId, targetId, CapitalPublicCrownStatus.RECOGNIZED_FRIEND);
             CapitalJusticeDataAccess.setLastNpcJudgmentDay(level, capitalId, day);
             String name = CapitalNameService.resolveDisplayName(level, capital, targetId);
-            CapitalChronicleService.addEntry(level, capital, name + " was formally recognized as a Friend of the Crown by the Crown's council.");
-            CapitalPlayerNotificationService.notifyPlayersInCapital(level, capital, Component.literal(name + " has been recognized as a Friend of the Crown."));
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.FRIEND_OF_CROWN_RECOGNIZED_COUNCIL, name);
+            CapitalPlayerNotificationService.notifyPlayersInCapital(level, capital, Component.translatable("mcacapitals.justice.crown_status.friend_recognized_council", name));
             return true;
         }
 
@@ -431,8 +493,8 @@ public final class CapitalCrownJusticeService {
         String name = CapitalNameService.resolveDisplayName(level, capital, targetId);
         CapitalJusticeDataAccess.clearJusticeCase(level, capital.getCapitalId(), targetId);
         CapitalJusticeDataAccess.setLastResolvedDay(level, capital.getCapitalId(), targetId, currentDay(level));
-        CapitalChronicleService.addEntry(level, capital, name + " completed a two-day sentence and was released, while remaining a Discovered Enemy of the Crown.");
-        CapitalPlayerNotificationService.notifyPlayersInCapital(level, capital, Component.literal(name + " has completed the Crown's sentence and been released."));
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ENEMY_SENTENCE_COMPLETED, name);
+        CapitalPlayerNotificationService.notifyPlayersInCapital(level, capital, Component.translatable("mcacapitals.justice.sentence.completed", name));
         return true;
     }
 
@@ -442,22 +504,37 @@ public final class CapitalCrownJusticeService {
         }
     }
 
-    private static boolean applyJudgment(ServerLevel level, CapitalRecord capital, UUID targetId, CapitalJudgmentType judgment, String authorityName) {
+    private static boolean applyJudgment(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID targetId,
+            CapitalJudgmentType judgment,
+            Object authorityChronicle,
+            Component authorityDisplay
+    ) {
         UUID capitalId = capital.getCapitalId();
         String name = CapitalNameService.resolveDisplayName(level, capital, targetId);
-        String entry;
+        Component notification;
 
         switch (judgment) {
             case PARDON -> {
                 CapitalJusticeDataAccess.clearJusticeCase(level, capitalId, targetId);
                 MCAExecutionBridge.clearExecutionMark(level, targetId);
                 CapitalJusticeDataAccess.setLastResolvedDay(level, capitalId, targetId, currentDay(level));
-                entry = name + " was granted a Royal Pardon by " + authorityName + ", but the discovery as an Enemy of the Crown remains recorded.";
+                notification = Component.translatable(
+                        "mcacapitals.justice.judgment.pardon",
+                        name,
+                        authorityDisplay
+                );
             }
             case IMPRISONMENT -> {
                 CapitalJusticeDataAccess.setJudgment(level, capitalId, targetId, CapitalJudgmentType.IMPRISONMENT);
                 CapitalJusticeDataAccess.setSentenceEndDay(level, capitalId, targetId, currentDay(level) + IMPRISONMENT_DAYS);
-                entry = name + " was sentenced by " + authorityName + " to two Minecraft days of imprisonment.";
+                notification = Component.translatable(
+                        "mcacapitals.justice.judgment.imprisonment",
+                        name,
+                        authorityDisplay
+                );
             }
             case EXILE -> {
                 if (!CapitalAsylumService.markExiled(level, capital, targetId)) {
@@ -465,22 +542,39 @@ public final class CapitalCrownJusticeService {
                 }
                 CapitalJusticeDataAccess.clearJusticeCase(level, capitalId, targetId);
                 CapitalJusticeDataAccess.setLastResolvedDay(level, capitalId, targetId, currentDay(level));
-                entry = name + " was sentenced to exile by " + authorityName + ".";
+                notification = Component.translatable(
+                        "mcacapitals.justice.judgment.exile",
+                        name,
+                        authorityDisplay
+                );
             }
             case EXECUTION -> {
                 if (!MCAExecutionBridge.markForExecution(level, targetId)) {
                     return false;
                 }
                 CapitalJusticeDataAccess.setJudgment(level, capitalId, targetId, CapitalJudgmentType.EXECUTION);
-                entry = name + " was marked for execution by " + authorityName + ".";
+                notification = Component.translatable(
+                        "mcacapitals.justice.judgment.execution",
+                        name,
+                        authorityDisplay
+                );
             }
             default -> {
                 return false;
             }
         }
 
-        CapitalChronicleService.addEntry(level, capital, entry);
-        CapitalPlayerNotificationService.notifyPlayersInCapital(level, capital, Component.literal(entry));
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.CROWN_JUDGMENT,
+                name,
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.judgment." + judgment.name().toLowerCase(java.util.Locale.ROOT)
+                ),
+                authorityChronicle
+        );
+        CapitalPlayerNotificationService.notifyPlayersInCapital(level, capital, notification);
         return true;
     }
 
@@ -524,15 +618,15 @@ public final class CapitalCrownJusticeService {
 
     private static boolean validateMasterAudience(ServerPlayer player, CapitalRecord capital, Entity master) {
         if (capital == null || capital.getState() != CapitalState.ACTIVE) {
-            player.sendSystemMessage(Component.literal("That capital is no longer active."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.that_capital_is_no_longer_active"));
             return false;
         }
         if (master == null || player.distanceToSqr(master) > MAX_AUDIENCE_DISTANCE_SQR) {
-            player.sendSystemMessage(Component.literal("You must remain near the Master of Laws to make this decision."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.you_must_remain_near_the_master_of_laws_to_make_this_decision"));
             return false;
         }
         if (!mayDecide(player.serverLevel(), capital, player.getUUID())) {
-            player.sendSystemMessage(Component.literal("Only the player Sovereign, or the player Hand serving an NPC Sovereign, may make this decision."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_crown_justice_service.only_the_player_sovereign_or_the_player_hand_serving_an_npc_sovereign"));
             return false;
         }
         return true;
@@ -596,9 +690,9 @@ public final class CapitalCrownJusticeService {
         }
     }
 
-    private static String publicStatusLine(ServerLevel level, CapitalRecord capital, UUID targetId) {
+    private static Component publicStatusLine(ServerLevel level, CapitalRecord capital, UUID targetId) {
         CapitalPublicCrownStatus status = getPublicStatus(level, capital, targetId);
-        return status == null ? "" : status.getDisplayName();
+        return status == null ? Component.empty() : status.getDisplayComponent();
     }
 
     private static boolean isAtWar(ServerLevel level, CapitalRecord capital) {

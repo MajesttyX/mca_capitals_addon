@@ -1,5 +1,8 @@
 package com.majesttyx.mcacapitals.dialogue;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCommanderService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
@@ -13,6 +16,7 @@ import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.MCAReputationBridge;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -159,17 +163,17 @@ final class CapitalPetitionTitleActions {
         }
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        String officeName = capital.isSovereignFemale() ? "Hand of the Queen" : "Hand of the King";
+        Component officeName = Component.translatable(
+                capital.isSovereignFemale()
+                        ? "mcacapitals.dynamic.office.hand.female"
+                        : "mcacapitals.dynamic.office.hand.male"
+        );
         UUID previousHand = capital.getHand();
 
         if (previousHand != null && !previousHand.equals(player.getUUID())) {
             String formerName = resolveName(level, previousHand);
             if (!formerName.isBlank()) {
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        formerName + " was relieved of the office of " + officeName + " of " + villageName + "."
-                );
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.OFFICE_RELIEVED, formerName, CapitalChronicleIdentitySnapshot.handOffice(level, capital), villageName);
             }
         }
 
@@ -186,11 +190,7 @@ final class CapitalPetitionTitleActions {
 
         RoyalScepterGrantService.grantScepter(player);
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                player.getName().getString() + " was appointed " + officeName + " of " + villageName + "."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.HAND_APPOINTED, player.getName().getString(), CapitalChronicleIdentitySnapshot.handOffice(level, capital), villageName);
 
         CapitalPetitionDialogueHelper.sendDialogueKeyAndClose(
                 player,
@@ -275,11 +275,19 @@ final class CapitalPetitionTitleActions {
         PlayerCapitalTitleService.grantTitle(level, capital, player.getUUID(), granted);
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                player.getName().getString() + " was raised to the dignity of "
-                        + (female ? "Lady" : "Lord") + " in " + villageName + "."
+                CapitalChronicleEventId.LORD_ELEVATED,
+                player.getName().getString(),
+                CapitalChronicleIdentitySnapshot.genderedTitle(
+                        "lord",
+                        female
+                                ? CapitalDialogueGenderResolver.ResolvedGender.FEMALE
+                                : CapitalDialogueGenderResolver.ResolvedGender.MALE
+                ),
+                villageName,
+                CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
         );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
@@ -289,7 +297,11 @@ final class CapitalPetitionTitleActions {
                 player,
                 villagerEntity,
                 CapitalDialogueKey.LORD_SUCCESS,
-                female ? "Lady" : "Lord",
+                Component.translatable(
+                        female
+                                ? "mcacapitals.dynamic.title.lord.female"
+                                : "mcacapitals.dynamic.title.lord.male"
+                ),
                 villageName
         );
     }
@@ -348,11 +360,19 @@ final class CapitalPetitionTitleActions {
         PlayerCapitalTitleService.grantTitle(level, capital, player.getUUID(), granted);
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                player.getName().getString() + " was raised to the dignity of "
-                        + (female ? "Duchess" : "Duke") + " in " + villageName + "."
+                CapitalChronicleEventId.DUKE_ELEVATED,
+                player.getName().getString(),
+                CapitalChronicleIdentitySnapshot.genderedTitle(
+                        "duke",
+                        female
+                                ? CapitalDialogueGenderResolver.ResolvedGender.FEMALE
+                                : CapitalDialogueGenderResolver.ResolvedGender.MALE
+                ),
+                villageName,
+                CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
         );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
@@ -362,7 +382,11 @@ final class CapitalPetitionTitleActions {
                 player,
                 villagerEntity,
                 CapitalDialogueKey.DUKE_SUCCESS,
-                female ? "Duchess" : "Duke",
+                Component.translatable(
+                        female
+                                ? "mcacapitals.dynamic.title.duke.female"
+                                : "mcacapitals.dynamic.title.duke.male"
+                ),
                 villageName
         );
     }

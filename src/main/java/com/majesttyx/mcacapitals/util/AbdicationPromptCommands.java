@@ -25,17 +25,17 @@ public class AbdicationPromptCommands {
 
                                     CapitalRecord capital = CapitalManager.getCapitalBySovereign(player.getUUID());
                                     if (capital == null) {
-                                        player.sendSystemMessage(Component.literal("You are not the sovereign of a capital."));
+                                        player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_commands.you_are_not_the_sovereign_of_a_capital"));
                                         return 0;
                                     }
 
                                     boolean changed = CapitalFoundationService.abdicateSovereign(player.serverLevel(), capital);
                                     if (!changed) {
-                                        player.sendSystemMessage(Component.literal("There is no valid successor to receive the throne."));
+                                        player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_commands.there_is_no_valid_successor_to_receive_the_throne"));
                                         return 0;
                                     }
 
-                                    player.sendSystemMessage(Component.literal("By solemn declaration, you have abdicated the throne."));
+                                    player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_commands.by_solemn_declaration_you_have_abdicated_the_throne"));
                                     return 1;
                                 }))
         );

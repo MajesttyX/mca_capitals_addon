@@ -1,7 +1,10 @@
 package com.majesttyx.mcacapitals.client;
 
 import com.majesttyx.mcacapitals.MCACapitals;
+import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import forge.net.mca.entity.VillagerEntityMCA;
+import forge.net.mca.entity.ai.MoveState;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -19,47 +22,15 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = MCACapitals.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class CapitalNameTagHandler {
 
-    private static final List<String> KNOWN_TITLES = List.of(
-            "Hand of the Queen",
-            "Hand of the King",
-            "Lord Commander",
-            "Princess Consort",
-            "Prince Consort",
-            "Dowager Duchess",
-            "Dowager Princess",
-            "Dowager Prince",
-            "Dowager Queen",
-            "Dowager Duke",
-            "Dowager King",
-            "Queen Consort",
-            "King Consort",
-            "Heir Apparent",
-            "Grand Maester",
-            "Master of Laws",
-            "Ambassador",
-            "Court Herald",
-            "Crown Princess",
-            "Crown Prince",
-            "High Queen",
-            "High King",
-            "Princess",
-            "Prince",
-            "Duchess",
-            "Maester",
-            "Queen",
-            "Duke",
-            "King",
-            "Lady",
-            "Lord",
-            "Dame",
-            "Sir"
-    );
+    private static final double
+            MAX_NAME_TAG_DISTANCE_SQR =
+            4096.0D;
+
 
     private CapitalNameTagHandler() {
     }
@@ -76,19 +47,16 @@ public final class CapitalNameTagHandler {
             return;
         }
 
-        UUID villagerId = entity.getUUID();
-        VillagerIdentityClientCache.ClientVillagerIdentity identity = VillagerIdentityClientCache.get(villagerId);
-        if (identity == null) {
-            return;
+        if (renderCustomNameTag(
+                entity,
+                event.getOriginalContent(),
+                event.getPoseStack(),
+                event.getMultiBufferSource(),
+                event.getPackedLight(),
+                0.0F
+        )) {
+            event.setResult(Event.Result.DENY);
         }
-
-        List<Component> lines = buildLines(event.getOriginalContent().getString(), identity);
-        if (lines.isEmpty()) {
-            return;
-        }
-
-        event.setResult(Event.Result.DENY);
-        renderLayeredNameTag(event, lines);
     }
 
     private static boolean shouldRenderMcaNameTags(Entity entity) {
@@ -102,8 +70,7 @@ public final class CapitalNameTagHandler {
 
             Field showNameTags = config.getClass().getField("showNameTags");
             Object showNameTagsValue = showNameTags.get(config);
-            if (showNameTagsValue instanceof Boolean booleanValue
-                    && !booleanValue) {
+            if (showNameTagsValue instanceof Boolean booleanValue && !booleanValue) {
                 return false;
             }
 
@@ -125,264 +92,281 @@ public final class CapitalNameTagHandler {
         }
     }
 
-    private static List<Component> buildLines(String originalName, VillagerIdentityClientCache.ClientVillagerIdentity identity) {
+    public static boolean shouldUseCustomNameTag(
+            Entity entity
+    ) {
+        if (entity == null
+                || !MCAIntegrationBridge
+                .isMCAVillagerEntity(entity)) {
+            return false;
+        }
+
+        VillagerIdentityClientCache
+                .ClientVillagerIdentity identity =
+                VillagerIdentityClientCache
+                        .get(
+                                entity.getUUID()
+                        );
+
+        if (identity == null) {
+            return false;
+        }
+
+        String originalName = entity.getCustomName() != null
+                ? entity.getCustomName().getString()
+                : entity.getName().getString();
+
+        return !buildLines(
+                originalName,
+                identity,
+                resolveMcaStatus(entity)
+        ).isEmpty();
+    }
+
+    public static boolean renderCustomNameTag(
+            Entity entity,
+            Component originalContent,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight,
+            float partialTick
+    ) {
+        if (entity == null
+                || originalContent == null
+                || poseStack == null
+                || bufferSource == null) {
+            return false;
+        }
+
+        if (!MCAIntegrationBridge
+                .isMCAVillagerEntity(entity)) {
+            return false;
+        }
+
+        if (!isWithinRenderDistance(
+                entity
+        )) {
+            return false;
+        }
+
+        if (!canPlayerSee(
+                entity
+        )) {
+            return false;
+        }
+
+        UUID villagerId =
+                entity.getUUID();
+
+        VillagerIdentityClientCache
+                .ClientVillagerIdentity identity =
+                VillagerIdentityClientCache
+                        .get(
+                                villagerId
+                        );
+
+        if (identity == null) {
+            return false;
+        }
+
+        String originalName = entity.getCustomName() != null
+                ? entity.getCustomName().getString()
+                : entity.getName().getString();
+
+        List<Component> lines =
+                buildLines(
+                        originalName,
+                        identity,
+                        resolveMcaStatus(entity)
+                );
+
+        if (lines.isEmpty()) {
+            return false;
+        }
+
+        renderLayeredNameTag(
+                entity,
+                poseStack,
+                bufferSource,
+                packedLight,
+                partialTick,
+                lines
+        );
+
+        return true;
+    }
+
+    private static boolean isWithinRenderDistance(
+            Entity entity
+    ) {
+        return shouldRenderMcaNameTags(entity);
+    }
+
+    private static boolean canPlayerSee(
+            Entity entity
+    ) {
+        Minecraft minecraft =
+                Minecraft.getInstance();
+
+        if (minecraft == null
+                || minecraft.player == null) {
+            return true;
+        }
+
+        return !entity.isInvisibleTo(
+                minecraft.player
+        );
+    }
+
+    private static List<Component> buildLines(
+            String originalName,
+            VillagerIdentityClientCache.ClientVillagerIdentity identity,
+            McaStatus statusLine
+    ) {
         String cleanedOriginalName = normalizeSpaces(originalName);
 
-        String statusLine = detectMcaStatusLine(cleanedOriginalName);
-        if (!statusLine.isBlank()) {
-            cleanedOriginalName = removeMcaStatusLine(cleanedOriginalName);
+        CapitalTitleResolver.ResolvedTitleId titleId = identity.resolvedTitleId();
+        Component title = identity.displayTitle() == null
+                ? Component.empty()
+                : identity.displayTitle();
+        Component orderLine = identity.royalGuardOrderLine() == null
+                ? Component.empty()
+                : identity.royalGuardOrderLine();
+        Component courtOfficeLine = visibleCourtOfficeLine(identity);
+
+        String baseName = identity.baseName() == null
+                ? ""
+                : identity.baseName().trim();
+        if (baseName.isBlank()) {
+            baseName = cleanedOriginalName;
         }
 
-        String orderLine = normalizeRoyalGuardOrderLine(identity.royalGuardOrderLine());
-        if (orderLine.isBlank()) {
-            orderLine = detectRoyalGuardOrderLine(cleanedOriginalName);
-        }
-
-        if (!orderLine.isBlank()) {
-            cleanedOriginalName = removeRoyalGuardOrderLine(cleanedOriginalName);
-        }
-
-        String title = identity.displayTitle() == null ? "" : identity.displayTitle().trim();
-        if (title.isBlank() || "None".equals(title) || "Commoner".equals(title)) {
-            title = detectTitleFromOriginalName(cleanedOriginalName);
-        }
-
-        String courtOfficeLine = normalizeCourtOfficeLine(identity.courtOfficeLine());
-
-        String baseName = stripTitle(cleanedOriginalName, title);
-        String surname = identity.currentSurname() == null ? "" : identity.currentSurname().trim();
-        String fullName = appendSurname(baseName, surname);
+        String surname = identity.currentSurname() == null
+                ? ""
+                : identity.currentSurname().trim();
+        String fullNameText = appendSurname(baseName, surname);
+        Component fullName = Component.literal(fullNameText);
 
         List<Component> lines = new ArrayList<>();
 
-        if (!orderLine.isBlank()) {
-            String guardTitle = title;
-            if (!"Sir".equals(guardTitle) && !"Dame".equals(guardTitle)) {
-                guardTitle = detectTitleFromOriginalName(cleanedOriginalName);
+        if (!orderLine.getString().isBlank()) {
+            if (titleId == CapitalTitleResolver.ResolvedTitleId.ROYAL_GUARD) {
+                lines.add(titledName(title, fullName));
+            } else if (!fullNameText.isBlank()) {
+                lines.add(fullName);
             }
 
-            String guardName = stripTitle(cleanedOriginalName, guardTitle);
-            guardName = appendSurname(guardName, surname);
+            lines.add(orderLine);
+            addCourtOfficeLineIfPresent(lines, courtOfficeLine);
+            addStatusLineIfPresent(lines, statusLine);
+            return lines;
+        }
 
-            if ("Sir".equals(guardTitle) || "Dame".equals(guardTitle)) {
-                lines.add(Component.literal(guardTitle + " " + guardName));
-            } else {
-                lines.add(Component.literal(guardName));
+        if (!identity.hasTitle()) {
+            if (!fullNameText.isBlank()) {
+                lines.add(fullName);
             }
 
-            lines.add(Component.literal(orderLine));
             addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
-        if (title.isBlank() || "None".equals(title) || "Commoner".equals(title)) {
-            if (!fullName.isBlank()) {
-                lines.add(Component.literal(fullName));
+        if (titleId == CapitalTitleResolver.ResolvedTitleId.LORD
+                || titleId == CapitalTitleResolver.ResolvedTitleId.KNIGHT
+                || titleId == CapitalTitleResolver.ResolvedTitleId.ROYAL_GUARD) {
+            lines.add(titledName(title, fullName));
+            addCourtOfficeLineIfPresent(lines, courtOfficeLine);
+            addStatusLineIfPresent(lines, statusLine);
+            return lines;
+        }
+
+        if (isCourtOfficeNameFirst(titleId)) {
+            if (!fullNameText.isBlank()) {
+                lines.add(fullName);
             }
+            lines.add(title);
             addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
-        if ("Lady".equals(title) || "Lord".equals(title) || "Dame".equals(title) || "Sir".equals(title)) {
-            lines.add(Component.literal(title + " " + fullName));
+        if (isInlineTitleName(titleId)) {
+            lines.add(titledName(title, fullName));
             addCourtOfficeLineIfPresent(lines, courtOfficeLine);
             addStatusLineIfPresent(lines, statusLine);
             return lines;
         }
 
-        if (isCourtOfficeNameFirst(title)) {
-            lines.add(Component.literal(fullName));
-            lines.add(Component.literal(title));
-            addCourtOfficeLineIfPresent(lines, courtOfficeLine);
-            addStatusLineIfPresent(lines, statusLine);
-            return lines;
+        lines.add(title);
+        if (!fullNameText.isBlank()) {
+            lines.add(fullName);
         }
-
-        if (isInlineTitleName(title)) {
-            lines.add(Component.literal(title + " " + fullName));
-            addCourtOfficeLineIfPresent(lines, courtOfficeLine);
-            addStatusLineIfPresent(lines, statusLine);
-            return lines;
-        }
-
-        lines.add(Component.literal(title));
-        lines.add(Component.literal(fullName));
         addCourtOfficeLineIfPresent(lines, courtOfficeLine);
         addStatusLineIfPresent(lines, statusLine);
         return lines;
     }
 
-    private static void addCourtOfficeLineIfPresent(List<Component> lines, String courtOfficeLine) {
-        if (courtOfficeLine != null && !courtOfficeLine.isBlank()) {
-            lines.add(Component.literal(courtOfficeLine));
+    private static Component titledName(Component title, Component name) {
+        return Component.translatable(
+                "mcacapitals.dynamic.name.titled",
+                title,
+                name
+        );
+    }
+
+    private static Component visibleCourtOfficeLine(
+            VillagerIdentityClientCache.ClientVillagerIdentity identity
+    ) {
+        if (identity.resolvedCourtOfficeId()
+                != CapitalTitleResolver.SecondaryOfficeId.MASTER_OF_LAWS) {
+            return Component.empty();
+        }
+
+        return identity.courtOfficeLine() == null
+                ? Component.empty()
+                : identity.courtOfficeLine();
+    }
+
+    private static void addCourtOfficeLineIfPresent(List<Component> lines, Component courtOfficeLine) {
+        if (courtOfficeLine != null && !courtOfficeLine.getString().isBlank()) {
+            lines.add(courtOfficeLine);
         }
     }
 
-    private static void addStatusLineIfPresent(List<Component> lines, String statusLine) {
-        if (statusLine != null && !statusLine.isBlank()) {
-            lines.add(Component.literal(statusLine));
+    private static void addStatusLineIfPresent(List<Component> lines, McaStatus statusLine) {
+        if (statusLine == McaStatus.STAYING) {
+            lines.add(Component.translatable("mcacapitals.system.name_tag.staying"));
+        } else if (statusLine == McaStatus.FOLLOWING) {
+            lines.add(Component.translatable("mcacapitals.system.name_tag.following"));
         }
     }
 
-    private static boolean isCourtOfficeNameFirst(String title) {
-        return "Heir Apparent".equals(title)
-                || "Hand of the Queen".equals(title)
-                || "Hand of the King".equals(title)
-                || "Master of Laws".equals(title);
+    private static boolean isCourtOfficeNameFirst(CapitalTitleResolver.ResolvedTitleId titleId) {
+        return titleId == CapitalTitleResolver.ResolvedTitleId.HEIR_APPARENT
+                || titleId == CapitalTitleResolver.ResolvedTitleId.HAND;
     }
 
-    private static boolean isInlineTitleName(String title) {
-        return "Duke".equals(title)
-                || "Duchess".equals(title)
-                || "Prince".equals(title)
-                || "Princess".equals(title)
-                || "King".equals(title)
-                || "Queen".equals(title);
+    private static boolean isInlineTitleName(CapitalTitleResolver.ResolvedTitleId titleId) {
+        return titleId == CapitalTitleResolver.ResolvedTitleId.DUKE
+                || titleId == CapitalTitleResolver.ResolvedTitleId.ROYAL_CHILD
+                || titleId == CapitalTitleResolver.ResolvedTitleId.SOVEREIGN;
     }
 
-    private static String detectTitleFromOriginalName(String originalName) {
-        if (originalName == null || originalName.isBlank()) {
-            return "";
+    private static McaStatus resolveMcaStatus(Entity entity) {
+        if (!(entity instanceof VillagerEntityMCA villager)
+                || villager.getVillagerBrain() == null) {
+            return McaStatus.NONE;
         }
 
-        for (String title : KNOWN_TITLES) {
-            if (originalName.equals(title) || originalName.startsWith(title + " ")) {
-                return title;
-            }
+        MoveState moveState = villager.getVillagerBrain().getMoveState();
+        if (moveState == MoveState.STAY) {
+            return McaStatus.STAYING;
         }
-
-        return "";
-    }
-
-    private static String detectMcaStatusLine(String originalName) {
-        if (originalName == null || originalName.isBlank()) {
-            return "";
+        if (moveState == MoveState.FOLLOW) {
+            return McaStatus.FOLLOWING;
         }
-
-        String normalized = normalizeSpaces(originalName);
-        String lower = normalized.toLowerCase(Locale.ROOT);
-
-        if (lower.contains("(staying)")) {
-            return "Staying";
-        }
-
-        if (lower.contains("(following)")) {
-            return "Following";
-        }
-
-        if (lower.endsWith(" staying")) {
-            return "Staying";
-        }
-
-        if (lower.endsWith(" following")) {
-            return "Following";
-        }
-
-        return "";
-    }
-
-    private static String removeMcaStatusLine(String originalName) {
-        String normalized = normalizeSpaces(originalName);
-        String lower = normalized.toLowerCase(Locale.ROOT);
-
-        if (lower.contains("(staying)")) {
-            normalized = normalized.replaceAll("(?i)\\s*\\(\\s*staying\\s*\\)", "");
-            return normalizeSpaces(normalized);
-        }
-
-        if (lower.contains("(following)")) {
-            normalized = normalized.replaceAll("(?i)\\s*\\(\\s*following\\s*\\)", "");
-            return normalizeSpaces(normalized);
-        }
-
-        if (lower.endsWith(" staying")) {
-            return normalized.substring(0, normalized.length() - " staying".length()).trim();
-        }
-
-        if (lower.endsWith(" following")) {
-            return normalized.substring(0, normalized.length() - " following".length()).trim();
-        }
-
-        return normalized;
-    }
-
-    private static String normalizeCourtOfficeLine(String value) {
-        if (value == null || value.isBlank()) {
-            return "";
-        }
-
-        String lower = normalizeSpaces(value).toLowerCase(Locale.ROOT);
-        if (lower.equals("master of laws")) {
-            return "Master of Laws";
-        }
-
-        return "";
-    }
-
-    private static String normalizeRoyalGuardOrderLine(String value) {
-        if (value == null || value.isBlank()) {
-            return "";
-        }
-
-        String lower = normalizeSpaces(value).toLowerCase(Locale.ROOT);
-
-        if (lower.contains("queensguard")) {
-            return "Of the Queensguard";
-        }
-
-        if (lower.contains("kingsguard")) {
-            return "Of the Kingsguard";
-        }
-
-        return "";
-    }
-
-    private static String detectRoyalGuardOrderLine(String originalName) {
-        if (originalName == null || originalName.isBlank()) {
-            return "";
-        }
-
-        String lower = normalizeSpaces(originalName).toLowerCase(Locale.ROOT);
-
-        if (lower.contains("of the queensguard")) {
-            return "Of the Queensguard";
-        }
-
-        if (lower.contains("of the kingsguard")) {
-            return "Of the Kingsguard";
-        }
-
-        return "";
-    }
-
-    private static String removeRoyalGuardOrderLine(String originalName) {
-        if (originalName == null || originalName.isBlank()) {
-            return "";
-        }
-
-        String normalized = normalizeSpaces(originalName);
-        normalized = normalized.replaceAll("(?i)\\bof\\s+the\\s+queensguard\\b", "");
-        normalized = normalized.replaceAll("(?i)\\bof\\s+the\\s+kingsguard\\b", "");
-        return normalizeSpaces(normalized);
-    }
-
-    private static String stripTitle(String originalName, String title) {
-        String name = originalName == null ? "" : originalName.trim();
-        if (name.isBlank() || title == null || title.isBlank()) {
-            return name;
-        }
-
-        if (name.equals(title)) {
-            return "";
-        }
-
-        if (name.startsWith(title + " ")) {
-            return name.substring(title.length()).trim();
-        }
-
-        return name;
+        return McaStatus.NONE;
     }
 
     private static String appendSurname(String baseName, String surname) {
@@ -412,35 +396,95 @@ public final class CapitalNameTagHandler {
         return value.trim().replaceAll("\\s+", " ");
     }
 
-    private static void renderLayeredNameTag(RenderNameTagEvent event, List<Component> lines) {
-        Entity entity = event.getEntity();
-        Minecraft minecraft = Minecraft.getInstance();
+    private enum McaStatus {
+        NONE,
+        STAYING,
+        FOLLOWING
+    }
 
-        if (minecraft == null || minecraft.getEntityRenderDispatcher() == null) {
+    private static void renderLayeredNameTag(
+            Entity entity,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            int packedLight,
+            float partialTick,
+            List<Component> lines
+    ) {
+        Minecraft minecraft =
+                Minecraft.getInstance();
+
+        if (minecraft == null
+                || minecraft
+                .getEntityRenderDispatcher()
+                == null
+                || minecraft.font == null) {
             return;
         }
 
-        PoseStack poseStack = event.getPoseStack();
-        MultiBufferSource bufferSource = event.getMultiBufferSource();
-        Font font = event.getEntityRenderer().getFont();
-        boolean normalRender = !entity.isDiscrete();
+        Font font =
+                minecraft.font;
+
+        boolean normalRender =
+                !entity.isDiscrete();
 
         poseStack.pushPose();
-        poseStack.translate(0.0D, entity.getBbHeight() + 0.5D, 0.0D);
-        poseStack.mulPose(minecraft.getEntityRenderDispatcher().cameraOrientation());
-        poseStack.scale(-0.025F, -0.025F, 0.025F);
 
-        Matrix4f matrix = poseStack.last().pose();
-        float opacity = minecraft.options.getBackgroundOpacity(0.25F);
-        int backgroundColor = (int) (opacity * 255.0F) << 24;
+        // Use the Minecraft 1.20.1 vanilla name-tag anchor at the entity bounding-box height.
+        poseStack.translate(
+                0.0D,
+                entity.getBbHeight() + 0.5D,
+                0.0D
+        );
 
-        int totalHeight = (lines.size() - 1) * 10;
-        int startY = -totalHeight;
+        poseStack.mulPose(
+                minecraft
+                        .getEntityRenderDispatcher()
+                        .cameraOrientation()
+        );
 
-        for (int i = 0; i < lines.size(); i++) {
-            Component line = lines.get(i);
-            int y = startY + (i * 10);
-            float x = -font.width(line) / 2.0F;
+        poseStack.scale(
+                -0.025F,
+                -0.025F,
+                0.025F
+        );
+
+        Matrix4f matrix =
+                poseStack.last()
+                        .pose();
+
+        float opacity =
+                minecraft.options
+                        .getBackgroundOpacity(
+                                0.25F
+                        );
+
+        int backgroundColor =
+                (int) (
+                        opacity
+                                * 255.0F
+                ) << 24;
+
+        int totalHeight =
+                (lines.size() - 1)
+                        * 10;
+
+        int startY =
+                -totalHeight;
+
+        for (int i = 0;
+             i < lines.size();
+             i++) {
+
+            Component line =
+                    lines.get(i);
+
+            int y =
+                    startY
+                            + (i * 10);
+
+            float x =
+                    -font.width(line)
+                            / 2.0F;
 
             font.drawInBatch(
                     line,
@@ -450,9 +494,11 @@ public final class CapitalNameTagHandler {
                     false,
                     matrix,
                     bufferSource,
-                    normalRender ? Font.DisplayMode.SEE_THROUGH : Font.DisplayMode.NORMAL,
+                    normalRender
+                            ? Font.DisplayMode.SEE_THROUGH
+                            : Font.DisplayMode.NORMAL,
                     backgroundColor,
-                    event.getPackedLight()
+                    packedLight
             );
 
             if (normalRender) {
@@ -466,7 +512,7 @@ public final class CapitalNameTagHandler {
                         bufferSource,
                         Font.DisplayMode.NORMAL,
                         0,
-                        event.getPackedLight()
+                        packedLight
                 );
             }
         }

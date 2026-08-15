@@ -129,9 +129,7 @@ public final class CapitalSovereignDeclarationPromptService {
                             capital
                     );
 
-            player.sendSystemMessage(
-                    Component.literal(result.message())
-            );
+            player.sendSystemMessage(result.message());
 
             continueNormalConversation(player, villager);
             return true;
@@ -158,9 +156,7 @@ public final class CapitalSovereignDeclarationPromptService {
                             capital
                     );
 
-            player.sendSystemMessage(
-                    Component.literal(result.message())
-            );
+            player.sendSystemMessage(result.message());
 
             MCAIntegrationBridge.stopInteracting(villager);
             return true;

@@ -6,7 +6,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -18,12 +17,12 @@ public class SealedPurseItem extends Item {
 
     @Override
     public Component getName(ItemStack stack) {
-        return Component.literal("Sealed Purse");
+        return Component.translatable("mcacapitals.system.sealed_purse_item.sealed_purse");
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("Gift to the Master of Laws to bury one active case.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Success depends on their friendship with you.").withStyle(ChatFormatting.GRAY));
+    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        tooltipComponents.add(Component.translatable("mcacapitals.system.sealed_purse_item.gift_to_the_master_of_laws_to_bury_one_active_case").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.sealed_purse_item.success_depends_on_their_friendship_with_you").withStyle(ChatFormatting.GRAY));
     }
 }

@@ -2,22 +2,22 @@ package com.majesttyx.mcacapitals.network;
 
 import com.majesttyx.mcacapitals.client.VillagerIdentityClientCache;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.chat.Component;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public class SyncVillagerIdentityPacket {
 
     private final UUID villagerId;
-    private final String originVillageName;
+    private final Component originVillageName;
     private final String originSource;
     private final String currentSurname;
-    private final String displayTitle;
-    private final String royalGuardOrderLine;
-    private final String courtOfficeLine;
+    private final String baseName;
+    private final String displayTitleId;
+    private final Component displayTitle;
+    private final Component royalGuardOrderLine;
+    private final String courtOfficeId;
+    private final Component courtOfficeLine;
     private final boolean houseFounded;
     private final String houseName;
     private final String houseWords;
@@ -25,24 +25,30 @@ public class SyncVillagerIdentityPacket {
 
     public SyncVillagerIdentityPacket(
             UUID villagerId,
-            String originVillageName,
+            Component originVillageName,
             String originSource,
             String currentSurname,
-            String displayTitle,
-            String royalGuardOrderLine,
-            String courtOfficeLine,
+            String baseName,
+            String displayTitleId,
+            Component displayTitle,
+            Component royalGuardOrderLine,
+            String courtOfficeId,
+            Component courtOfficeLine,
             boolean houseFounded,
             String houseName,
             String houseWords,
             String houseWordsPersonality
     ) {
         this.villagerId = villagerId;
-        this.originVillageName = originVillageName == null ? "" : originVillageName;
+        this.originVillageName = originVillageName == null ? Component.empty() : originVillageName;
         this.originSource = originSource == null ? "" : originSource;
         this.currentSurname = currentSurname == null ? "" : currentSurname;
-        this.displayTitle = displayTitle == null ? "" : displayTitle;
-        this.royalGuardOrderLine = royalGuardOrderLine == null ? "" : royalGuardOrderLine;
-        this.courtOfficeLine = courtOfficeLine == null ? "" : courtOfficeLine;
+        this.baseName = baseName == null ? "" : baseName;
+        this.displayTitleId = displayTitleId == null ? "" : displayTitleId;
+        this.displayTitle = displayTitle == null ? Component.empty() : displayTitle;
+        this.royalGuardOrderLine = royalGuardOrderLine == null ? Component.empty() : royalGuardOrderLine;
+        this.courtOfficeId = courtOfficeId == null ? "" : courtOfficeId;
+        this.courtOfficeLine = courtOfficeLine == null ? Component.empty() : courtOfficeLine;
         this.houseFounded = houseFounded;
         this.houseName = houseName == null ? "" : houseName;
         this.houseWords = houseWords == null ? "" : houseWords;
@@ -53,7 +59,7 @@ public class SyncVillagerIdentityPacket {
         return villagerId;
     }
 
-    public String originVillageName() {
+    public Component originVillageName() {
         return originVillageName;
     }
 
@@ -65,15 +71,27 @@ public class SyncVillagerIdentityPacket {
         return currentSurname;
     }
 
-    public String displayTitle() {
+    public String baseName() {
+        return baseName;
+    }
+
+    public String displayTitleId() {
+        return displayTitleId;
+    }
+
+    public Component displayTitle() {
         return displayTitle;
     }
 
-    public String royalGuardOrderLine() {
+    public Component royalGuardOrderLine() {
         return royalGuardOrderLine;
     }
 
-    public String courtOfficeLine() {
+    public String courtOfficeId() {
+        return courtOfficeId;
+    }
+
+    public Component courtOfficeLine() {
         return courtOfficeLine;
     }
 
@@ -95,12 +113,15 @@ public class SyncVillagerIdentityPacket {
 
     public static void encode(SyncVillagerIdentityPacket packet, FriendlyByteBuf buffer) {
         buffer.writeUUID(packet.villagerId);
-        buffer.writeUtf(packet.originVillageName);
+        buffer.writeComponent(packet.originVillageName);
         buffer.writeUtf(packet.originSource);
         buffer.writeUtf(packet.currentSurname);
-        buffer.writeUtf(packet.displayTitle);
-        buffer.writeUtf(packet.royalGuardOrderLine);
-        buffer.writeUtf(packet.courtOfficeLine);
+        buffer.writeUtf(packet.baseName);
+        buffer.writeUtf(packet.displayTitleId);
+        buffer.writeComponent(packet.displayTitle);
+        buffer.writeComponent(packet.royalGuardOrderLine);
+        buffer.writeUtf(packet.courtOfficeId);
+        buffer.writeComponent(packet.courtOfficeLine);
         buffer.writeBoolean(packet.houseFounded);
         buffer.writeUtf(packet.houseName);
         buffer.writeUtf(packet.houseWords);
@@ -109,12 +130,15 @@ public class SyncVillagerIdentityPacket {
 
     public static SyncVillagerIdentityPacket decode(FriendlyByteBuf buffer) {
         UUID villagerId = buffer.readUUID();
-        String originVillageName = buffer.readUtf();
+        Component originVillageName = buffer.readComponent();
         String originSource = buffer.readUtf();
         String currentSurname = buffer.readUtf();
-        String displayTitle = buffer.readUtf();
-        String royalGuardOrderLine = buffer.readUtf();
-        String courtOfficeLine = buffer.readUtf();
+        String baseName = buffer.readUtf();
+        String displayTitleId = buffer.readUtf();
+        Component displayTitle = buffer.readComponent();
+        Component royalGuardOrderLine = buffer.readComponent();
+        String courtOfficeId = buffer.readUtf();
+        Component courtOfficeLine = buffer.readComponent();
         boolean houseFounded = buffer.readBoolean();
         String houseName = buffer.readUtf();
         String houseWords = buffer.readUtf();
@@ -125,8 +149,11 @@ public class SyncVillagerIdentityPacket {
                 originVillageName,
                 originSource,
                 currentSurname,
+                baseName,
+                displayTitleId,
                 displayTitle,
                 royalGuardOrderLine,
+                courtOfficeId,
                 courtOfficeLine,
                 houseFounded,
                 houseName,
@@ -137,13 +164,14 @@ public class SyncVillagerIdentityPacket {
 
     public static void handle(
             SyncVillagerIdentityPacket packet,
-            Supplier<NetworkEvent.Context> contextSupplier
+            java.util.function.Supplier<net.minecraftforge.network.NetworkEvent.Context> contextSupplier
     ) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-                Dist.CLIENT,
+        net.minecraftforge.network.NetworkEvent.Context context = contextSupplier.get();
+        context.enqueueWork(() -> net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(
+                net.minecraftforge.api.distmarker.Dist.CLIENT,
                 () -> () -> VillagerIdentityClientCache.put(packet)
         ));
         context.setPacketHandled(true);
     }
+
 }

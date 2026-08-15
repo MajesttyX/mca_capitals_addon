@@ -84,11 +84,7 @@ public final class CapitalMasterOfLawsService {
                 selected
         );
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                name + " was appointed Master of Laws."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.MASTER_OF_LAWS_APPOINTED, name, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
 
         sync(level, selected);
         CapitalDataAccess.markDirty(level);
@@ -144,19 +140,13 @@ public final class CapitalMasterOfLawsService {
                         capital.getVillageId()
                 );
 
-        if (previous != null
-                && !previous.equals(candidateId)) {
-            CapitalChronicleService.addEntry(
+        if (previous != null && !previous.equals(candidateId)) {
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    CapitalNameService.resolveDisplayName(
-                            level,
-                            capital,
-                            previous
-                    )
-                            + " was relieved of the office of Master of Laws of "
-                            + capitalName
-                            + "."
+                    CapitalChronicleEventId.MASTER_OF_LAWS_RELIEVED,
+                    CapitalNameService.resolveDisplayName(level, capital, previous),
+                    capitalName
             );
         }
 
@@ -192,17 +182,12 @@ public final class CapitalMasterOfLawsService {
                 candidateId
         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                CapitalNameService.resolveDisplayName(
-                        level,
-                        capital,
-                        candidateId
-                )
-                        + " was appointed Master of Laws of "
-                        + capitalName
-                        + "."
+                CapitalChronicleEventId.MASTER_OF_LAWS_APPOINTED,
+                CapitalNameService.resolveDisplayName(level, capital, candidateId),
+                capitalName
         );
 
         CapitalDataAccess.markDirty(level);

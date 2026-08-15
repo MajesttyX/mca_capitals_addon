@@ -108,13 +108,12 @@ public final class CapitalAmbassadorService {
                                 capital.getVillageId()
                         );
 
-                CapitalChronicleService.addEntry(
+                CapitalChronicleService.addEvent(
                         level,
                         capital,
-                        name
-                                + " was appointed Ambassador of "
-                                + capitalName
-                                + "."
+                        CapitalChronicleEventId.AMBASSADOR_APPOINTED,
+                        name,
+                        capitalName
                 );
 
                 changed = true;
@@ -215,17 +214,12 @@ public final class CapitalAmbassadorService {
 
         if (previous != null
                 && !previous.equals(candidateId)) {
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    CapitalNameService.resolveDisplayName(
-                            level,
-                            capital,
-                            previous
-                    )
-                            + " was relieved of the office of Ambassador of "
-                            + capitalName
-                            + "."
+                    CapitalChronicleEventId.AMBASSADOR_RELIEVED,
+                    CapitalNameService.resolveDisplayName(level, capital, previous),
+                    capitalName
             );
         }
 
@@ -263,17 +257,12 @@ public final class CapitalAmbassadorService {
                 capital.getCapitalId()
         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                CapitalNameService.resolveDisplayName(
-                        level,
-                        capital,
-                        candidateId
-                )
-                        + " was appointed Ambassador of "
-                        + capitalName
-                        + "."
+                CapitalChronicleEventId.AMBASSADOR_APPOINTED,
+                CapitalNameService.resolveDisplayName(level, capital, candidateId),
+                capitalName
         );
 
         return true;

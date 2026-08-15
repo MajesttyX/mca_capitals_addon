@@ -65,7 +65,7 @@ public final class CapitalJusticeCommands {
 
     private static int review(CommandSourceStack source, String rawMasterOfLawsId) {
         ServerPlayer player = getPlayer(source);
-        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "The Master of Laws ID is invalid.");
+        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "mcacapitals.system.command_validation.invalid_master_of_laws_id");
         return player == null || masterOfLawsId == null
                 ? 0
                 : CapitalCrownJusticeService.openReview(player, masterOfLawsId);
@@ -73,8 +73,8 @@ public final class CapitalJusticeCommands {
 
     private static int options(CommandSourceStack source, String rawMasterOfLawsId, String rawTargetId) {
         ServerPlayer player = getPlayer(source);
-        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "The Master of Laws ID is invalid.");
-        UUID targetId = parseUuid(source, rawTargetId, "The prisoner ID is invalid.");
+        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "mcacapitals.system.command_validation.invalid_master_of_laws_id");
+        UUID targetId = parseUuid(source, rawTargetId, "mcacapitals.system.command_validation.invalid_prisoner_id");
         return player == null || masterOfLawsId == null || targetId == null
                 ? 0
                 : CapitalCrownJusticeService.openJudgmentOptions(player, masterOfLawsId, targetId);
@@ -82,8 +82,8 @@ public final class CapitalJusticeCommands {
 
     private static int judge(CommandSourceStack source, String rawMasterOfLawsId, String rawTargetId, String rawJudgment) {
         ServerPlayer player = getPlayer(source);
-        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "The Master of Laws ID is invalid.");
-        UUID targetId = parseUuid(source, rawTargetId, "The prisoner ID is invalid.");
+        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "mcacapitals.system.command_validation.invalid_master_of_laws_id");
+        UUID targetId = parseUuid(source, rawTargetId, "mcacapitals.system.command_validation.invalid_prisoner_id");
         CapitalJudgmentType judgment = parseJudgment(source, rawJudgment);
         return player == null || masterOfLawsId == null || targetId == null || judgment == null
                 ? 0
@@ -92,8 +92,8 @@ public final class CapitalJusticeCommands {
 
     private static int recognize(CommandSourceStack source, String rawMasterOfLawsId, String rawTargetId) {
         ServerPlayer player = getPlayer(source);
-        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "The Master of Laws ID is invalid.");
-        UUID targetId = parseUuid(source, rawTargetId, "The villager ID is invalid.");
+        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "mcacapitals.system.command_validation.invalid_master_of_laws_id");
+        UUID targetId = parseUuid(source, rawTargetId, "mcacapitals.system.command_validation.invalid_villager_id");
         return player == null || masterOfLawsId == null || targetId == null
                 ? 0
                 : CapitalCrownJusticeService.recognizeFriend(player, masterOfLawsId, targetId) ? 1 : 0;
@@ -101,8 +101,8 @@ public final class CapitalJusticeCommands {
 
     private static int restore(CommandSourceStack source, String rawMasterOfLawsId, String rawTargetId) {
         ServerPlayer player = getPlayer(source);
-        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "The Master of Laws ID is invalid.");
-        UUID targetId = parseUuid(source, rawTargetId, "The villager ID is invalid.");
+        UUID masterOfLawsId = parseUuid(source, rawMasterOfLawsId, "mcacapitals.system.command_validation.invalid_master_of_laws_id");
+        UUID targetId = parseUuid(source, rawTargetId, "mcacapitals.system.command_validation.invalid_villager_id");
         return player == null || masterOfLawsId == null || targetId == null
                 ? 0
                 : CapitalCrownJusticeService.restoreToPeace(player, masterOfLawsId, targetId) ? 1 : 0;
@@ -112,7 +112,7 @@ public final class CapitalJusticeCommands {
         try {
             return CapitalJudgmentType.valueOf(rawJudgment.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
-            source.sendFailure(Component.literal("The judgment must be pardon, imprisonment, exile, or execution."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_justice_commands.the_judgment_must_be_pardon_imprisonment_exile_or_execution"));
             return null;
         }
     }
@@ -121,7 +121,7 @@ public final class CapitalJusticeCommands {
         try {
             return UUID.fromString(rawValue);
         } catch (IllegalArgumentException ignored) {
-            source.sendFailure(Component.literal(failureMessage));
+            source.sendFailure(Component.translatable(failureMessage));
             return null;
         }
     }
@@ -130,7 +130,7 @@ public final class CapitalJusticeCommands {
         try {
             return source.getPlayerOrException();
         } catch (Exception ignored) {
-            source.sendFailure(Component.literal("Only a player may use Crown justice decisions."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_justice_commands.only_a_player_may_use_crown_justice_decisions"));
             return null;
         }
     }

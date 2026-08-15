@@ -70,7 +70,7 @@ public class DeclarationOfAbdicationHandler {
         UUID targetId = livingTarget.getUUID();
 
         if (!MCAIntegrationBridge.isMCAVillager(level, targetId)) {
-            player.sendSystemMessage(Component.literal("The Declaration of Abdication can only be used on an MCA sovereign."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.declaration_of_abdication_handler.the_declaration_of_abdication_can_only_be_used_on_an_mca_sovereign"));
             event.setCancellationResult(InteractionResult.FAIL);
             event.setCanceled(true);
             return;
@@ -78,14 +78,14 @@ public class DeclarationOfAbdicationHandler {
 
         CapitalRecord capital = resolveCapital(level, targetId);
         if (capital == null) {
-            player.sendSystemMessage(Component.literal("That villager is not part of a capital."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.declaration_of_abdication_handler.that_villager_is_not_part_of_a_capital"));
             event.setCancellationResult(InteractionResult.FAIL);
             event.setCanceled(true);
             return;
         }
 
         if (!targetId.equals(capital.getSovereign())) {
-            player.sendSystemMessage(Component.literal("Only the current sovereign may abdicate the throne."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.declaration_of_abdication_handler.only_the_current_sovereign_may_abdicate_the_throne"));
             event.setCancellationResult(InteractionResult.FAIL);
             event.setCanceled(true);
             return;
@@ -93,15 +93,16 @@ public class DeclarationOfAbdicationHandler {
 
         boolean changed = CapitalFoundationService.abdicateSovereign(level, capital);
         if (!changed) {
-            player.sendSystemMessage(Component.literal("There is no valid successor to receive the throne."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.declaration_of_abdication_handler.there_is_no_valid_successor_to_receive_the_throne"));
             event.setCancellationResult(InteractionResult.FAIL);
             event.setCanceled(true);
             return;
         }
 
         String displayName = stripKnownTitles(livingTarget.getName().getString());
-        player.sendSystemMessage(Component.literal(
-                "By solemn declaration, " + displayName + " has abdicated the throne."
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.system.declaration_of_abdication_handler.success",
+                displayNameComponent(displayName)
         ));
 
         event.setCancellationResult(InteractionResult.SUCCESS);
@@ -123,6 +124,13 @@ public class DeclarationOfAbdicationHandler {
         }
 
         return null;
+    }
+
+    private Component displayNameComponent(String displayName) {
+        if (displayName == null || displayName.isBlank() || "Unnamed".equals(displayName)) {
+            return Component.translatable("mcacapitals.system.common.unnamed");
+        }
+        return Component.literal(displayName);
     }
 
     private String stripKnownTitles(String name) {

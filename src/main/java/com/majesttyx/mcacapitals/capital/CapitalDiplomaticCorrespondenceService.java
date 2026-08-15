@@ -4,11 +4,11 @@ import com.majesttyx.mcacapitals.data.DiplomaticShipment;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,13 +40,12 @@ public final class CapitalDiplomaticCorrespondenceService {
             return;
         }
 
-        String sourceName = getCapitalName(level, sourceCapital);
-
         online.sendSystemMessage(
-                Component.literal(
-                        "Your Ambassador reports an urgent diplomatic package from "
-                                + sourceName
-                                + ". Speak to the Ambassador to inspect and answer it."
+                Component.translatable(
+                        "mcacapitals.diplomacy.correspondence.package_arrival",
+                        capitalNameComponent(
+                                getCapitalName(level, sourceCapital)
+                        )
                 ).withStyle(ChatFormatting.GOLD)
         );
     }
@@ -54,13 +53,12 @@ public final class CapitalDiplomaticCorrespondenceService {
     public static void sendResolutionLetter(
             ServerLevel level,
             UUID recipientPlayerId,
-            String title,
-            String message
+            Component title,
+            Component message
     ) {
         if (level == null
                 || recipientPlayerId == null
-                || message == null
-                || message.isBlank()) {
+                || isBlank(message)) {
             return;
         }
 
@@ -72,32 +70,81 @@ public final class CapitalDiplomaticCorrespondenceService {
             return;
         }
 
-        String heading = title == null || title.isBlank()
-                ? "Diplomatic Correspondence"
+        Component heading = isBlank(title)
+                ? Component.translatable("mcacapitals.diplomacy.correspondence.heading")
                 : title;
 
         online.sendSystemMessage(
-                Component.literal(heading + ": " + message)
-                        .withStyle(ChatFormatting.GOLD)
+                Component.translatable(
+                        "mcacapitals.diplomacy.correspondence.notice",
+                        heading,
+                        message
+                ).withStyle(ChatFormatting.GOLD)
         );
     }
 
-    public static String formatContents(List<ItemStack> contents) {
+    public static Component formatContents(List<ItemStack> contents) {
         if (contents == null || contents.isEmpty()) {
-            return "Nothing";
+            return Component.translatable("mcacapitals.diplomacy.contents.nothing");
         }
 
-        List<String> lines = new ArrayList<>();
+        MutableComponent result = Component.empty();
+        boolean hasEntry = false;
 
         for (ItemStack stack : contents) {
             if (stack == null || stack.isEmpty()) {
                 continue;
             }
 
-            lines.add(stack.getCount() + " × " + stack.getHoverName().getString());
+            if (hasEntry) {
+                result.append(Component.literal("\n"));
+            }
+
+            result.append(
+                    Component.translatable(
+                            "mcacapitals.diplomacy.contents.entry",
+                            stack.getCount(),
+                            stack.getHoverName()
+                    )
+            );
+            hasEntry = true;
         }
 
-        return lines.isEmpty() ? "Nothing" : String.join("\n", lines);
+        return hasEntry
+                ? result
+                : Component.translatable("mcacapitals.diplomacy.contents.nothing");
+    }
+
+    public static Component formatContentsInline(List<ItemStack> contents) {
+        if (contents == null || contents.isEmpty()) {
+            return Component.translatable("mcacapitals.diplomacy.contents.nothing");
+        }
+
+        MutableComponent result = Component.empty();
+        boolean hasEntry = false;
+
+        for (ItemStack stack : contents) {
+            if (stack == null || stack.isEmpty()) {
+                continue;
+            }
+
+            if (hasEntry) {
+                result.append(Component.literal(", "));
+            }
+
+            result.append(
+                    Component.translatable(
+                            "mcacapitals.diplomacy.contents.entry",
+                            stack.getCount(),
+                            stack.getHoverName()
+                    )
+            );
+            hasEntry = true;
+        }
+
+        return hasEntry
+                ? result
+                : Component.translatable("mcacapitals.diplomacy.contents.nothing");
     }
 
     public static String getCapitalName(
@@ -109,5 +156,17 @@ public final class CapitalDiplomaticCorrespondenceService {
         }
 
         return MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+    }
+
+    private static Component capitalNameComponent(String name) {
+        return name == null
+                || name.isBlank()
+                || "Unknown Capital".equals(name)
+                ? Component.translatable("mcacapitals.diplomacy.unknown_capital")
+                : Component.literal(name);
+    }
+
+    private static boolean isBlank(Component component) {
+        return component == null || component.getString().isBlank();
     }
 }

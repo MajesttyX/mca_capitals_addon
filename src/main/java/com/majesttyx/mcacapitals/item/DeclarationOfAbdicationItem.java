@@ -14,6 +14,8 @@ import net.minecraftforge.fml.DistExecutor;
 
 import java.util.List;
 
+import java.util.List;
+
 public class DeclarationOfAbdicationItem extends Item {
 
     public DeclarationOfAbdicationItem() {
@@ -33,7 +35,7 @@ public class DeclarationOfAbdicationItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("A formal declaration used to relinquish the crown.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Right-click while standing in the capital.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.declaration_of_abdication_item.a_formal_declaration_used_to_relinquish_the_crown").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.declaration_of_abdication_item.right_click_while_standing_in_the_capital").withStyle(ChatFormatting.GRAY));
     }
 }

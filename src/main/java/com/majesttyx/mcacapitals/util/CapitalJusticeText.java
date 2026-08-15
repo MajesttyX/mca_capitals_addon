@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.List;
@@ -11,328 +12,267 @@ public final class CapitalJusticeText {
     private CapitalJusticeText() {
     }
 
-    public static String accusationIntro() {
-        return "Speak carefully. An accusation before the law is no small thing.";
+    public static Component accusationIntro() {
+        return Component.translatable("mcacapitals.justice.accusation.intro");
     }
 
-    public static String accusationCooldown() {
-        return "One charge has already been heard. Wait before bringing another.";
+    public static Component accusationCooldown() {
+        return Component.translatable("mcacapitals.justice.accusation.cooldown");
     }
 
-    public static String correctAccusation() {
-        return "You spoke true. The accused will answer before the law.";
+    public static Component correctAccusation() {
+        return Component.translatable("mcacapitals.justice.accusation.correct");
     }
 
-    public static String falseAccusation() {
-        return "The Crown does not reward careless accusations.";
+    public static Component falseAccusation() {
+        return Component.translatable("mcacapitals.justice.accusation.false");
     }
 
-    public static String arrestWarrantIssued(String targetName) {
-        return "An Arrest Warrant has been issued for "
-                + targetName
-                + ". See them to the cells quickly before the matter darkens. Do not let "
-                + targetName
-                + " escape!";
+    public static Component arrestWarrantIssued(String targetName) {
+        return Component.translatable("mcacapitals.justice.arrest_warrant.issued", targetName);
     }
 
-    public static String missedWarrant(
-            ServerLevel level,
-            UUID targetId,
-            String targetName
-    ) {
+    public static Component missedWarrant(ServerLevel level, UUID targetId, String targetName) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        "The warrant went unanswered. The court has chosen blood.",
-                        targetName + " did not come before the law. Execution has been ordered.",
-                        "The Crown’s patience ended. " + targetName + " is now condemned."
-                )
+                        "mcacapitals.justice.arrest_warrant.missed.1",
+                        "mcacapitals.justice.arrest_warrant.missed.2",
+                        "mcacapitals.justice.arrest_warrant.missed.3"
+                ),
+                targetName
         );
     }
 
-    public static String deliveredToPrison(
-            ServerLevel level,
-            UUID targetId,
-            String targetName
-    ) {
+    public static Component deliveredToPrison(ServerLevel level, UUID targetId, String targetName) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        targetName + " was delivered to the prison under Arrest Warrant.",
-                        targetName + " is now held in the Crown’s custody.",
-                        "The accused has been brought within the prison walls."
-                )
+                        "mcacapitals.justice.prison.delivered.1",
+                        "mcacapitals.justice.prison.delivered.2",
+                        "mcacapitals.justice.prison.delivered.3"
+                ),
+                targetName
         );
     }
 
-    public static String releasedFromPrison(
-            ServerLevel level,
-            UUID targetId,
-            String targetName
-    ) {
+    public static Component releasedFromPrison(ServerLevel level, UUID targetId, String targetName) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        "The warrant against " + targetName + " has been lifted.",
-                        "The law found no further cause to hold " + targetName + "."
-                )
+                        "mcacapitals.justice.prison.released.1",
+                        "mcacapitals.justice.prison.released.2"
+                ),
+                targetName
         );
     }
 
-    public static String executionAfterPrison(String targetName) {
-        return "Sufficient evidence was found against "
-                + targetName
-                + ", it is now the Crown’s pleasure to seek their execution.";
+    public static Component executionAfterPrison(String targetName) {
+        return Component.translatable("mcacapitals.justice.prison.execution_after", targetName);
     }
 
-    public static String exileDiscovery(
-            ServerLevel level,
-            UUID targetId,
-            String targetName,
-            String capitalName
-    ) {
+    public static Component exileDiscovery(ServerLevel level, UUID targetId, String targetName, String capitalName) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        "Reports say " + targetName + " has been found beyond the capital’s bounds.",
-                        "The Master of Laws has received word of " + targetName + " in exile.",
-                        targetName + " has been seen outside " + capitalName + ", far from lawful answer.",
-                        "The court names " + targetName + " absent from the Crown’s reach.",
-                        "A report of exile has entered the records: " + targetName + " is gone."
-                )
+                        "mcacapitals.justice.exile.discovery.1",
+                        "mcacapitals.justice.exile.discovery.2",
+                        "mcacapitals.justice.exile.discovery.3",
+                        "mcacapitals.justice.exile.discovery.4",
+                        "mcacapitals.justice.exile.discovery.5"
+                ),
+                targetName,
+                capitalName
         );
     }
 
-    public static String royalPardonGrantedBySovereign(
-            ServerLevel level,
-            UUID speakerId
-    ) {
+    public static Component royalPardonGrantedBySovereign(ServerLevel level, UUID speakerId) {
         return pick(
                 level,
                 speakerId,
                 List.of(
-                        "Mercy is mine to give. Take this Royal Pardon.",
-                        "The Crown may punish, but it may also forgive.",
-                        "Let this pardon carry my authority.",
-                        "Use this carefully. Mercy loses weight when spent foolishly.",
-                        "I grant it. Let the record know the Crown stayed its hand."
+                        "mcacapitals.justice.royal_pardon.granted.sovereign.1",
+                        "mcacapitals.justice.royal_pardon.granted.sovereign.2",
+                        "mcacapitals.justice.royal_pardon.granted.sovereign.3",
+                        "mcacapitals.justice.royal_pardon.granted.sovereign.4",
+                        "mcacapitals.justice.royal_pardon.granted.sovereign.5"
                 )
         );
     }
 
-    public static String royalPardonGrantedByHand(
-            ServerLevel level,
-            UUID speakerId
-    ) {
+    public static Component royalPardonGrantedByHand(ServerLevel level, UUID speakerId) {
         return pick(
                 level,
                 speakerId,
                 List.of(
-                        "I speak with the Crown’s trust. Take this Royal Pardon.",
-                        "The realm survives because law and mercy both have their hour.",
-                        "I will grant this, but do not make me regret it.",
-                        "The Crown’s mercy may pass through my hand.",
-                        "Take it. Some matters are better ended before they bleed."
+                        "mcacapitals.justice.royal_pardon.granted.hand.1",
+                        "mcacapitals.justice.royal_pardon.granted.hand.2",
+                        "mcacapitals.justice.royal_pardon.granted.hand.3",
+                        "mcacapitals.justice.royal_pardon.granted.hand.4",
+                        "mcacapitals.justice.royal_pardon.granted.hand.5"
                 )
         );
     }
 
-    public static String royalPardonGrantedByMasterOfLaws(
-            ServerLevel level,
-            UUID speakerId
-    ) {
+    public static Component royalPardonGrantedByMasterOfLaws(ServerLevel level, UUID speakerId) {
         return pick(
                 level,
                 speakerId,
                 List.of(
-                        "The law allows mercy when authority permits it. Take this.",
-                        "A pardon is not innocence. Remember that.",
-                        "I can grant this, but the record will remember.",
-                        "Very well. The law will make room for mercy.",
-                        "Take the pardon. Use it before the court hardens."
+                        "mcacapitals.justice.royal_pardon.granted.master_of_laws.1",
+                        "mcacapitals.justice.royal_pardon.granted.master_of_laws.2",
+                        "mcacapitals.justice.royal_pardon.granted.master_of_laws.3",
+                        "mcacapitals.justice.royal_pardon.granted.master_of_laws.4",
+                        "mcacapitals.justice.royal_pardon.granted.master_of_laws.5"
                 )
         );
     }
 
-    public static String royalPardonRefusedTrust(
-            ServerLevel level,
-            UUID speakerId
-    ) {
+    public static Component royalPardonRefusedTrust(ServerLevel level, UUID speakerId) {
         return pick(
                 level,
                 speakerId,
                 List.of(
-                        "A Royal Pardon requires trust. You have not earned mine.",
-                        "Mercy is too costly to hand to uncertain friends.",
-                        "I do not know you well enough to place mercy in your hands.",
-                        "Return when your loyalty is more than a hope.",
-                        "The Crown’s mercy is not given to strangers."
+                        "mcacapitals.justice.royal_pardon.refused_trust.1",
+                        "mcacapitals.justice.royal_pardon.refused_trust.2",
+                        "mcacapitals.justice.royal_pardon.refused_trust.3",
+                        "mcacapitals.justice.royal_pardon.refused_trust.4",
+                        "mcacapitals.justice.royal_pardon.refused_trust.5"
                 )
         );
     }
 
-    public static String royalPardonNoAuthority(
-            ServerLevel level,
-            UUID speakerId
-    ) {
+    public static Component royalPardonNoAuthority(ServerLevel level, UUID speakerId) {
         return pick(
                 level,
                 speakerId,
                 List.of(
-                        "I have no authority to grant such mercy.",
-                        "That is not mine to give.",
-                        "You ask the wrong person for a pardon.",
-                        "Only lawful authority may stay the court’s hand.",
-                        "I cannot grant what the Crown has not placed in my keeping."
+                        "mcacapitals.justice.royal_pardon.no_authority.1",
+                        "mcacapitals.justice.royal_pardon.no_authority.2",
+                        "mcacapitals.justice.royal_pardon.no_authority.3",
+                        "mcacapitals.justice.royal_pardon.no_authority.4",
+                        "mcacapitals.justice.royal_pardon.no_authority.5"
                 )
         );
     }
 
-    public static String royalPardonUsed(
-            ServerLevel level,
-            UUID targetId,
-            String targetName
-    ) {
+    public static Component royalPardonUsed(ServerLevel level, UUID targetId, String targetName) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        targetName + " has been granted a Royal Pardon.",
-                        "The Crown’s mercy has reached " + targetName + ".",
-                        "The warrant against " + targetName + " is ended by pardon.",
-                        "The law steps back from " + targetName + ".",
-                        "Mercy has been entered into the record."
-                )
+                        "mcacapitals.justice.royal_pardon.used.1",
+                        "mcacapitals.justice.royal_pardon.used.2",
+                        "mcacapitals.justice.royal_pardon.used.3",
+                        "mcacapitals.justice.royal_pardon.used.4",
+                        "mcacapitals.justice.royal_pardon.used.5"
+                ),
+                targetName
         );
     }
 
-    public static String sealedPurseNoCases(
-            ServerLevel level,
-            UUID speakerId
-    ) {
+    public static Component sealedPurseNoCases(ServerLevel level, UUID speakerId) {
         return pick(
                 level,
                 speakerId,
                 List.of(
-                        "There is no matter for a purse to settle.",
-                        "The records are quiet. Keep your gift.",
-                        "No case before me can be made to disappear.",
-                        "You bring silver to an empty desk.",
-                        "There is nothing here to bury."
+                        "mcacapitals.justice.sealed_purse.no_cases.1",
+                        "mcacapitals.justice.sealed_purse.no_cases.2",
+                        "mcacapitals.justice.sealed_purse.no_cases.3",
+                        "mcacapitals.justice.sealed_purse.no_cases.4",
+                        "mcacapitals.justice.sealed_purse.no_cases.5"
                 )
         );
     }
 
-    public static String sealedPurseSuccess(
-            ServerLevel level,
-            UUID targetId,
-            String targetName
-    ) {
+    public static Component sealedPurseSuccess(ServerLevel level, UUID targetId, String targetName) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        "The Master of Laws accepts the Sealed Purse. The matter disappears from the records.",
-                        "The purse changes hands. The record grows strangely quiet.",
-                        "The Master of Laws says nothing, but the case is gone.",
-                        "A seal is broken. A name is removed.",
-                        "The court forgets what it was ready to remember."
-                )
+                        "mcacapitals.justice.sealed_purse.success.1",
+                        "mcacapitals.justice.sealed_purse.success.2",
+                        "mcacapitals.justice.sealed_purse.success.3",
+                        "mcacapitals.justice.sealed_purse.success.4",
+                        "mcacapitals.justice.sealed_purse.success.5"
+                ),
+                targetName
         );
     }
 
-    public static String sealedPurseFailure(
-            ServerLevel level,
-            UUID targetId
-    ) {
+    public static Component sealedPurseFailure(ServerLevel level, UUID targetId) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        "The Master of Laws accepts the purse, but refuses to alter the records.",
-                        "The gift is taken. The law remains unmoved.",
-                        "The purse vanishes into a drawer. The case does not.",
-                        "The Master of Laws gives you a cold look. The record stands.",
-                        "Gold can open doors, but not this one."
+                        "mcacapitals.justice.sealed_purse.failure.1",
+                        "mcacapitals.justice.sealed_purse.failure.2",
+                        "mcacapitals.justice.sealed_purse.failure.3",
+                        "mcacapitals.justice.sealed_purse.failure.4",
+                        "mcacapitals.justice.sealed_purse.failure.5"
                 )
         );
     }
 
-    public static String sealedPurseFormalExecution(
-            ServerLevel level,
-            UUID targetId
-    ) {
+    public static Component sealedPurseFormalExecution(ServerLevel level, UUID targetId) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        "That matter has gone beyond quiet influence.",
-                        "Execution business cannot be buried with a purse.",
-                        "Only a Royal Pardon can answer this now.",
-                        "The record is sealed in blood. A purse will not move it.",
-                        "Too late. This is no longer a matter for discretion."
+                        "mcacapitals.justice.sealed_purse.formal_execution.1",
+                        "mcacapitals.justice.sealed_purse.formal_execution.2",
+                        "mcacapitals.justice.sealed_purse.formal_execution.3",
+                        "mcacapitals.justice.sealed_purse.formal_execution.4",
+                        "mcacapitals.justice.sealed_purse.formal_execution.5"
                 )
         );
     }
 
-    public static String masterOfLawsAppointed(
-            ServerLevel level,
-            UUID targetId,
-            String targetName
-    ) {
+    public static Component masterOfLawsAppointed(ServerLevel level, UUID targetId, String targetName) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        targetName + " was appointed Master of Laws.",
-                        targetName + " now holds the law in the Crown’s name.",
-                        "The Crown’s justice now passes through " + targetName + "."
-                )
+                        "mcacapitals.justice.master_of_laws.appointed.1",
+                        "mcacapitals.justice.master_of_laws.appointed.2",
+                        "mcacapitals.justice.master_of_laws.appointed.3"
+                ),
+                targetName
         );
     }
 
-    public static String masterOfLawsRemoved(
-            ServerLevel level,
-            UUID capitalId
-    ) {
+    public static Component masterOfLawsRemoved(ServerLevel level, UUID capitalId) {
         return pick(
                 level,
                 capitalId,
                 List.of(
-                        "The prison is gone. The Master of Laws no longer holds office.",
-                        "The Master of Laws has been relieved, for the prison no longer stands.",
-                        "No prison, no warrants, no keeper of cells."
+                        "mcacapitals.justice.master_of_laws.removed.1",
+                        "mcacapitals.justice.master_of_laws.removed.2",
+                        "mcacapitals.justice.master_of_laws.removed.3"
                 )
         );
     }
 
-    public static String naturalDukedom(
-            ServerLevel level,
-            UUID targetId,
-            String targetName
-    ) {
+    public static Component naturalDukedom(ServerLevel level, UUID targetId, String targetName) {
         return pick(
                 level,
                 targetId,
                 List.of(
-                        targetName + " was raised by the strength of the great houses.",
-                        "The great houses have lifted " + targetName + " into higher nobility.",
-                        "By wealth, blood, and influence, " + targetName + " now stands among the dukes.",
-                        "The court recognizes " + targetName + " as a power of the realm.",
-                        "A new high noble has risen from the great houses."
-                )
+                        "mcacapitals.justice.natural_dukedom.1",
+                        "mcacapitals.justice.natural_dukedom.2",
+                        "mcacapitals.justice.natural_dukedom.3",
+                        "mcacapitals.justice.natural_dukedom.4",
+                        "mcacapitals.justice.natural_dukedom.5"
+                ),
+                targetName
         );
     }
 
-    public static String royalPardonGrantLine(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID speakerId
-    ) {
+    public static Component royalPardonGrantLine(ServerLevel level, CapitalRecord capital, UUID speakerId) {
         if (capital != null && speakerId != null) {
             if (speakerId.equals(capital.getSovereign())) {
                 return royalPardonGrantedBySovereign(
@@ -362,23 +302,16 @@ public final class CapitalJusticeText {
         );
     }
 
-    private static String pick(
-            ServerLevel level,
-            UUID salt,
-            List<String> values
-    ) {
-        if (values == null || values.isEmpty()) {
-            return "";
+    private static Component pick(ServerLevel level, UUID salt, List<String> translationKeys, Object... args) {
+        if (translationKeys == null || translationKeys.isEmpty()) {
+            return Component.empty();
         }
-
-        if (values.size() == 1 || level == null) {
-            return values.get(0);
+        String key;
+        if (translationKeys.size() == 1 || level == null) {
+            key = translationKeys.get(0);
+        } else {
+            key = translationKeys.get(level.random.nextInt(translationKeys.size()));
         }
-
-        return values.get(
-                level.random.nextInt(
-                        values.size()
-                )
-        );
+        return Component.translatable(key, args);
     }
 }

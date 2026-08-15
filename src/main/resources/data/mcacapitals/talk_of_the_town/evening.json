@@ -1,0 +1,267 @@
+{
+  "conversations": [
+    {
+      "id": "01"
+    },
+    {
+      "id": "02"
+    },
+    {
+      "id": "03",
+      "requires_mourning": true
+    },
+    {
+      "id": "04",
+      "call_references": [
+        "hand"
+      ],
+      "response_references": [
+        "hand"
+      ]
+    },
+    {
+      "id": "05",
+      "call_references": [
+        "sovereign"
+      ],
+      "response_references": [
+        "sovereign"
+      ]
+    },
+    {
+      "id": "06"
+    },
+    {
+      "id": "07",
+      "call_references": [
+        "master_of_laws"
+      ],
+      "response_references": [
+        "master_of_laws"
+      ]
+    },
+    {
+      "id": "08"
+    },
+    {
+      "id": "09"
+    },
+    {
+      "id": "10"
+    },
+    {
+      "id": "11"
+    },
+    {
+      "id": "12"
+    },
+    {
+      "id": "13"
+    },
+    {
+      "id": "14"
+    },
+    {
+      "id": "15"
+    },
+    {
+      "id": "16"
+    },
+    {
+      "id": "17"
+    },
+    {
+      "id": "18"
+    },
+    {
+      "id": "19"
+    },
+    {
+      "id": "20"
+    },
+    {
+      "id": "21"
+    },
+    {
+      "id": "22"
+    },
+    {
+      "id": "23"
+    },
+    {
+      "id": "24"
+    },
+    {
+      "id": "25"
+    },
+    {
+      "id": "26"
+    },
+    {
+      "id": "27"
+    },
+    {
+      "id": "28"
+    },
+    {
+      "id": "29"
+    },
+    {
+      "id": "30"
+    },
+    {
+      "id": "31"
+    },
+    {
+      "id": "32"
+    },
+    {
+      "id": "33",
+      "call_references": [
+        "ambassador"
+      ],
+      "foreign_capital": "any"
+    },
+    {
+      "id": "34",
+      "call_references": [
+        "sovereign"
+      ]
+    },
+    {
+      "id": "35",
+      "call_references": [
+        "sovereign"
+      ]
+    },
+    {
+      "id": "36",
+      "foreign_capital": "positive"
+    },
+    {
+      "id": "37",
+      "foreign_capital": "friendly"
+    },
+    {
+      "id": "38",
+      "foreign_capital": "any"
+    },
+    {
+      "id": "39"
+    },
+    {
+      "id": "40",
+      "call_references": [
+        "heir"
+      ],
+      "response_references": [
+        "heir"
+      ]
+    },
+    {
+      "id": "41"
+    },
+    {
+      "id": "42"
+    },
+    {
+      "id": "43"
+    },
+    {
+      "id": "44"
+    },
+    {
+      "id": "45"
+    },
+    {
+      "id": "46"
+    },
+    {
+      "id": "47"
+    },
+    {
+      "id": "48"
+    },
+    {
+      "id": "49"
+    },
+    {
+      "id": "50"
+    },
+    {
+      "id": "51"
+    },
+    {
+      "id": "52",
+      "call_references": [
+        "sovereign"
+      ]
+    },
+    {
+      "id": "53"
+    },
+    {
+      "id": "54"
+    },
+    {
+      "id": "55"
+    },
+    {
+      "id": "56"
+    },
+    {
+      "id": "57"
+    },
+    {
+      "id": "58"
+    },
+    {
+      "id": "59"
+    },
+    {
+      "id": "60"
+    },
+    {
+      "id": "61"
+    },
+    {
+      "id": "62"
+    },
+    {
+      "id": "63"
+    },
+    {
+      "id": "64"
+    },
+    {
+      "id": "65"
+    },
+    {
+      "id": "66"
+    },
+    {
+      "id": "67"
+    },
+    {
+      "id": "68"
+    },
+    {
+      "id": "69"
+    },
+    {
+      "id": "70"
+    },
+    {
+      "id": "71"
+    },
+    {
+      "id": "72"
+    },
+    {
+      "id": "73"
+    },
+    {
+      "id": "74"
+    }
+  ]
+}

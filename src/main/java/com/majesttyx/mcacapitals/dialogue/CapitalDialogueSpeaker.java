@@ -7,46 +7,48 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 
 public final class CapitalDialogueSpeaker {
+
     private CapitalDialogueSpeaker() {
     }
 
-    public static void speakVillager(ServerPlayer player, Entity speaker, String line) {
-        if (player == null) {
+    public static void speakVillager(ServerPlayer player, Entity speaker, Component line) {
+        if (player == null || line == null) {
             return;
         }
 
-        player.sendSystemMessage(Component.literal(formatVillagerSpeech(speaker, line)));
+        player.sendSystemMessage(formatVillagerSpeech(speaker, line));
     }
 
-    public static void speakVillager(ServerPlayer player, Entity speaker, CapitalDialogueKey key, Object... args) {
+    public static void speakVillager(
+            ServerPlayer player,
+            Entity speaker,
+            CapitalDialogueKey key,
+            Object... args
+    ) {
         RandomSource random = resolveRandom(speaker);
-        String line = CapitalDialogueLibrary.getRandomLine(key, random, args);
+        Component line = CapitalDialogueLibrary.getRandomLine(speaker, key, random, args);
         speakVillager(player, speaker, line);
     }
 
-    public static String formatVillagerSpeech(Entity speaker, String line) {
-        String speakerName = resolveSpeakerName(speaker);
-        String cleanedLine = line == null ? "" : line.trim();
-
-        if (speakerName.isBlank()) {
-            return cleanedLine;
+    public static Component formatVillagerSpeech(Entity speaker, Component line) {
+        if (line == null) {
+            return Component.empty();
         }
 
-        return speakerName + ": " + cleanedLine;
-    }
-
-    private static String resolveSpeakerName(Entity speaker) {
-        if (speaker == null || speaker.getName() == null) {
-            return "";
+        if (speaker == null) {
+            return line;
         }
 
-        String name = speaker.getName().getString();
-        return name == null ? "" : name.trim();
+        return Component.translatable(
+                "mcacapitals.chat.villager",
+                speaker.getDisplayName(),
+                line
+        );
     }
 
     private static RandomSource resolveRandom(Entity speaker) {
         if (speaker != null) {
-            ServerLevel level = speaker instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+            ServerLevel level = speaker instanceof ServerPlayer serverPlayer
                     ? serverPlayer.serverLevel()
                     : speaker.level() instanceof ServerLevel serverLevel ? serverLevel : null;
 

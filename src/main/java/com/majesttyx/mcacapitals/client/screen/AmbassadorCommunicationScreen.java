@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
     public AmbassadorCommunicationScreen(
             OpenAmbassadorCommunicationPacket packet
     ) {
-        super(Component.literal(packet.title()));
+        super(packet.title());
         this.packet = packet;
     }
 
@@ -107,7 +108,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
             OpenAmbassadorCommunicationPacket.Entry entry =
                     packet.entries().get(entryIndex);
 
-            if (entry.buttonLabel().isBlank()
+            if (isBlank(entry.buttonLabel())
                     || entry.command().isBlank()) {
                 continue;
             }
@@ -119,9 +120,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
             Button button =
                     Button.builder(
-                                    Component.literal(
-                                            entry.buttonLabel()
-                                    ),
+                                    entry.buttonLabel(),
                                     pressed ->
                                             executeCommand(
                                                     entry.command()
@@ -165,9 +164,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
             Button button =
                     Button.builder(
-                                    Component.literal(
-                                            action.label()
-                                    ),
+                                    action.label(),
                                     pressed ->
                                             executeCommand(
                                                     action.command()
@@ -190,15 +187,13 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
     }
 
     private int getContentStartY() {
-        if (packet.message().isBlank()) {
+        if (isBlank(packet.message())) {
             return 56;
         }
 
         int lineCount =
                 this.font.split(
-                        Component.literal(
-                                packet.message()
-                        ),
+                        packet.message(),
                         Math.min(
                                 360,
                                 Math.max(
@@ -219,17 +214,15 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
         int centerX = this.width / 2;
         int bottomY = this.height - 32;
 
-        String centerLabel =
+        Component centerLabel =
                 packet.backCommand().isBlank()
-                        ? "Close"
-                        : "Back";
+                        ? Component.translatable("mcacapitals.ui.ambassador_communication.close")
+                        : Component.translatable("mcacapitals.ui.ambassador_communication.back");
 
         if (pageCount <= 1) {
             addRenderableWidget(
                     Button.builder(
-                                    Component.literal(
-                                            centerLabel
-                                    ),
+                                    centerLabel,
                                     pressed -> {
                                         if (packet.backCommand()
                                                 .isBlank()) {
@@ -255,9 +248,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
         Button previous =
                 Button.builder(
-                                Component.literal(
-                                        "Previous"
-                                ),
+                                Component.translatable("mcacapitals.system.ambassador_communication_screen.previous"),
                                 pressed -> {
                                     if (page > 0) {
                                         page--;
@@ -279,9 +270,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
         addRenderableWidget(
                 Button.builder(
-                                Component.literal(
-                                        centerLabel
-                                ),
+                                centerLabel,
                                 pressed -> {
                                     if (packet.backCommand()
                                             .isBlank()) {
@@ -304,9 +293,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
         Button next =
                 Button.builder(
-                                Component.literal(
-                                        "Next"
-                                ),
+                                Component.translatable("mcacapitals.system.ambassador_communication_screen.next"),
                                 pressed -> {
                                     if (page + 1
                                             < pageCount) {
@@ -374,7 +361,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
                 TEXT_COLOR
         );
 
-        if (!packet.subtitle().isBlank()) {
+        if (!isBlank(packet.subtitle())) {
             drawCenteredNoShadow(
                     guiGraphics,
                     packet.subtitle(),
@@ -384,7 +371,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
             );
         }
 
-        if (!packet.message().isBlank()) {
+        if (!isBlank(packet.message())) {
             drawWrappedCentered(
                     guiGraphics,
                     packet.message(),
@@ -406,10 +393,11 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
         if (pageCount > 1) {
             drawCenteredNoShadow(
                     guiGraphics,
-                    "Page "
-                            + (page + 1)
-                            + " / "
-                            + pageCount,
+                    Component.translatable(
+                            "mcacapitals.ui.ambassador_communication.page",
+                            page + 1,
+                            pageCount
+                    ),
                     centerX,
                     this.height - 46,
                     TEXT_COLOR
@@ -499,14 +487,14 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
             OpenAmbassadorCommunicationPacket.Action action =
                     packet.actions().get(actionIndex);
 
-            if (action.description().isBlank()) {
+            if (isBlank(action.description())) {
                 continue;
             }
 
             int y = startY + visibleIndex * 44 + 23;
             List<FormattedCharSequence> lines =
                     this.font.split(
-                            Component.literal(action.description()),
+                            action.description(),
                             textWidth
                     );
 
@@ -540,7 +528,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
             OpenAmbassadorCommunicationPacket.Entry entry = packet.entries().get(entryIndex);
             int y = startY + visibleIndex * 80;
-            boolean hasButton = !entry.buttonLabel().isBlank() && !entry.command().isBlank();
+            boolean hasButton = !isBlank(entry.buttonLabel()) && !entry.command().isBlank();
 
             drawCenteredNoShadow(
                     guiGraphics,
@@ -551,12 +539,12 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
             );
 
             int detailY = hasButton ? y + 38 : y + 14;
-            String firstLine = !entry.enabled() && !entry.disabledReason().isBlank()
+            Component firstLine = !entry.enabled() && !isBlank(entry.disabledReason())
                     ? entry.disabledReason()
                     : entry.lineOne();
-            String details = joinDetails(firstLine, entry.lineTwo(), entry.lineThree());
+            Component details = joinDetails(firstLine, entry.lineTwo(), entry.lineThree());
             List<FormattedCharSequence> lines = this.font.split(
-                    Component.literal(details),
+                    details,
                     textWidth
             );
 
@@ -572,49 +560,33 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
         }
     }
 
-    private String joinDetails(String... values) {
-        StringBuilder result = new StringBuilder();
-        for (String value : values) {
-            if (value == null || value.isBlank()) {
+    private Component joinDetails(Component... values) {
+        MutableComponent result = Component.empty();
+        boolean hasValue = false;
+
+        for (Component value : values) {
+            if (isBlank(value)) {
                 continue;
             }
-            if (!result.isEmpty()) {
-                result.append(" — ");
+            if (hasValue) {
+                result.append(Component.literal(" — "));
             }
-            result.append(value.trim());
-        }
-        return result.toString();
-    }
-
-    private void drawDetailLine(
-            GuiGraphics guiGraphics,
-            String text,
-            int centerX,
-            int y
-    ) {
-        if (text == null
-                || text.isBlank()) {
-            return;
+            result.append(value);
+            hasValue = true;
         }
 
-        drawCenteredNoShadow(
-                guiGraphics,
-                text,
-                centerX,
-                y,
-                TEXT_COLOR
-        );
+        return result;
     }
 
     private void drawWrappedCentered(
             GuiGraphics guiGraphics,
-            String text,
+            Component text,
             int startY,
             int color
     ) {
         List<FormattedCharSequence> lines =
                 this.font.split(
-                        Component.literal(text),
+                        text,
                         Math.min(
                                 360,
                                 Math.max(
@@ -642,7 +614,7 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
 
     private void drawCenteredNoShadow(
             GuiGraphics guiGraphics,
-            String text,
+            Component text,
             int centerX,
             int y,
             int color
@@ -672,6 +644,10 @@ public final class AmbassadorCommunicationScreen extends CapitalNoBlurScreen {
                 color,
                 false
         );
+    }
+
+    private static boolean isBlank(Component component) {
+        return component == null || component.getString().isBlank();
     }
 
     @Override

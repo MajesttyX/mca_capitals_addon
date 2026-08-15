@@ -129,23 +129,19 @@ final class CapitalInterregnumSuccessionResolver {
             capital.setDowager(oldConsort);
             capital.setDowagerFemale(oldConsortFemale);
 
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    "The wartime interregnum ended without a valid successor. "
-                            + resolveName(level, oldConsort)
-                            + " remained as surviving consort while the throne stood vacant."
+                    CapitalChronicleEventId.WARTIME_INTERREGNUM_NO_SUCCESSOR_CONSORT,
+                    resolveName(level, oldConsort),
+                    CapitalDiplomaticAgreementText.capitalName(level, capital)
             );
         } else {
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    "The wartime interregnum ended without a valid successor. "
-                            + CapitalDiplomaticAgreementText.capitalName(
-                            level,
-                            capital
-                    )
-                            + " fell vacant."
+                    CapitalChronicleEventId.WARTIME_INTERREGNUM_NO_SUCCESSOR,
+                    CapitalDiplomaticAgreementText.capitalName(level, capital)
             );
         }
 
@@ -270,20 +266,14 @@ final class CapitalInterregnumSuccessionResolver {
                         capital
                 );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
                 successorWasManualHeir
-                        ? "The wartime interregnum ended. "
-                        + successorName
-                        + ", previously named Heir Apparent, inherited the throne of "
-                        + capitalName
-                        + "."
-                        : "The wartime interregnum ended. "
-                        + successorName
-                        + " inherited the throne of "
-                        + capitalName
-                        + "."
+                        ? CapitalChronicleEventId.WARTIME_INTERREGNUM_HEIR_INHERITED
+                        : CapitalChronicleEventId.WARTIME_INTERREGNUM_SUCCESSOR_INHERITED,
+                successorName,
+                capitalName
         );
 
         finish(level, capital);

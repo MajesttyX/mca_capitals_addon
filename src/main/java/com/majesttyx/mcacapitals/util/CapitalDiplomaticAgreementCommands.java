@@ -109,13 +109,13 @@ public final class CapitalDiplomaticAgreementCommands {
 
     private static int openTargets(CommandSourceStack source, String rawAmbassadorId) {
         ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, rawAmbassadorId, "The Ambassador ID is invalid.");
+        UUID ambassadorId = parseUuid(source, rawAmbassadorId, "mcacapitals.system.command_validation.invalid_ambassador_id");
         if (player == null || ambassadorId == null) {
             return 0;
         }
         Entity ambassador = player.serverLevel().getEntity(ambassadorId);
         if (ambassador == null) {
-            source.sendFailure(Component.literal("The Ambassador is unavailable."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_diplomatic_agreement_commands.the_ambassador_is_unavailable"));
             return 0;
         }
         return CapitalDiplomaticAgreementService.openCapitalListDirect(player, ambassador) ? 1 : 0;
@@ -123,8 +123,8 @@ public final class CapitalDiplomaticAgreementCommands {
 
     private static int openOptions(CommandSourceStack source, String ambassador, String target) {
         ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, ambassador, "The Ambassador ID is invalid.");
-        UUID targetId = parseUuid(source, target, "The target capital ID is invalid.");
+        UUID ambassadorId = parseUuid(source, ambassador, "mcacapitals.system.command_validation.invalid_ambassador_id");
+        UUID targetId = parseUuid(source, target, "mcacapitals.system.command_validation.invalid_target_capital_id");
         return player == null || ambassadorId == null || targetId == null
                 ? 0
                 : CapitalDiplomaticAgreementService.openActionList(player, ambassadorId, targetId);
@@ -132,14 +132,14 @@ public final class CapitalDiplomaticAgreementCommands {
 
     private static int propose(CommandSourceStack source, String ambassador, String target, String rawType) {
         ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, ambassador, "The Ambassador ID is invalid.");
-        UUID targetId = parseUuid(source, target, "The target capital ID is invalid.");
+        UUID ambassadorId = parseUuid(source, ambassador, "mcacapitals.system.command_validation.invalid_ambassador_id");
+        UUID targetId = parseUuid(source, target, "mcacapitals.system.command_validation.invalid_target_capital_id");
         DiplomaticProposalType type = DiplomaticProposalType.fromSerializedName(rawType);
         if (player == null || ambassadorId == null || targetId == null) {
             return 0;
         }
         if (type == null) {
-            source.sendFailure(Component.literal("That diplomatic proposal type is invalid."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_diplomatic_agreement_commands.that_diplomatic_proposal_type_is_invalid"));
             return 0;
         }
         return CapitalDiplomaticAgreementService.propose(player, ambassadorId, targetId, type);
@@ -147,8 +147,8 @@ public final class CapitalDiplomaticAgreementCommands {
 
     private static int betrothalSource(CommandSourceStack source, String ambassador, String target) {
         ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, ambassador, "The Ambassador ID is invalid.");
-        UUID targetId = parseUuid(source, target, "The target capital ID is invalid.");
+        UUID ambassadorId = parseUuid(source, ambassador, "mcacapitals.system.command_validation.invalid_ambassador_id");
+        UUID targetId = parseUuid(source, target, "mcacapitals.system.command_validation.invalid_target_capital_id");
         return player == null || ambassadorId == null || targetId == null
                 ? 0
                 : CapitalDiplomaticAgreementService.openBetrothalSourceSelection(player, ambassadorId, targetId);
@@ -161,9 +161,9 @@ public final class CapitalDiplomaticAgreementCommands {
             String sourceRoyal
     ) {
         ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, ambassador, "The Ambassador ID is invalid.");
-        UUID targetId = parseUuid(source, target, "The target capital ID is invalid.");
-        UUID sourceRoyalId = parseUuid(source, sourceRoyal, "The chosen royal ID is invalid.");
+        UUID ambassadorId = parseUuid(source, ambassador, "mcacapitals.system.command_validation.invalid_ambassador_id");
+        UUID targetId = parseUuid(source, target, "mcacapitals.system.command_validation.invalid_target_capital_id");
+        UUID sourceRoyalId = parseUuid(source, sourceRoyal, "mcacapitals.system.command_validation.invalid_chosen_royal_id");
         return player == null || ambassadorId == null || targetId == null || sourceRoyalId == null
                 ? 0
                 : CapitalDiplomaticAgreementService.openBetrothalTargetSelection(
@@ -182,10 +182,10 @@ public final class CapitalDiplomaticAgreementCommands {
             String targetRoyal
     ) {
         ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, ambassador, "The Ambassador ID is invalid.");
-        UUID targetId = parseUuid(source, target, "The target capital ID is invalid.");
-        UUID sourceRoyalId = parseUuid(source, sourceRoyal, "The chosen royal ID is invalid.");
-        UUID targetRoyalId = parseUuid(source, targetRoyal, "The foreign royal ID is invalid.");
+        UUID ambassadorId = parseUuid(source, ambassador, "mcacapitals.system.command_validation.invalid_ambassador_id");
+        UUID targetId = parseUuid(source, target, "mcacapitals.system.command_validation.invalid_target_capital_id");
+        UUID sourceRoyalId = parseUuid(source, sourceRoyal, "mcacapitals.system.command_validation.invalid_chosen_royal_id");
+        UUID targetRoyalId = parseUuid(source, targetRoyal, "mcacapitals.system.command_validation.invalid_foreign_royal_id");
         return player == null || ambassadorId == null || targetId == null
                 || sourceRoyalId == null || targetRoyalId == null
                 ? 0
@@ -207,11 +207,11 @@ public final class CapitalDiplomaticAgreementCommands {
             String destination
     ) {
         ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, ambassador, "The Ambassador ID is invalid.");
-        UUID targetId = parseUuid(source, target, "The target capital ID is invalid.");
-        UUID sourceRoyalId = parseUuid(source, sourceRoyal, "The chosen royal ID is invalid.");
-        UUID targetRoyalId = parseUuid(source, targetRoyal, "The foreign royal ID is invalid.");
-        UUID destinationId = parseUuid(source, destination, "The settlement capital ID is invalid.");
+        UUID ambassadorId = parseUuid(source, ambassador, "mcacapitals.system.command_validation.invalid_ambassador_id");
+        UUID targetId = parseUuid(source, target, "mcacapitals.system.command_validation.invalid_target_capital_id");
+        UUID sourceRoyalId = parseUuid(source, sourceRoyal, "mcacapitals.system.command_validation.invalid_chosen_royal_id");
+        UUID targetRoyalId = parseUuid(source, targetRoyal, "mcacapitals.system.command_validation.invalid_foreign_royal_id");
+        UUID destinationId = parseUuid(source, destination, "mcacapitals.system.command_validation.invalid_settlement_capital_id");
         return player == null || ambassadorId == null || targetId == null
                 || sourceRoyalId == null || targetRoyalId == null || destinationId == null
                 ? 0
@@ -227,8 +227,8 @@ public final class CapitalDiplomaticAgreementCommands {
 
     private static int endTrade(CommandSourceStack source, String ambassador, String target) {
         ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, ambassador, "The Ambassador ID is invalid.");
-        UUID targetId = parseUuid(source, target, "The target capital ID is invalid.");
+        UUID ambassadorId = parseUuid(source, ambassador, "mcacapitals.system.command_validation.invalid_ambassador_id");
+        UUID targetId = parseUuid(source, target, "mcacapitals.system.command_validation.invalid_target_capital_id");
         return player == null || ambassadorId == null || targetId == null
                 ? 0
                 : CapitalDiplomaticAgreementService.endTradeAgreement(player, ambassadorId, targetId);
@@ -236,8 +236,8 @@ public final class CapitalDiplomaticAgreementCommands {
 
     private static int declareWar(CommandSourceStack source, String ambassador, String target) {
         ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, ambassador, "The Ambassador ID is invalid.");
-        UUID targetId = parseUuid(source, target, "The target capital ID is invalid.");
+        UUID ambassadorId = parseUuid(source, ambassador, "mcacapitals.system.command_validation.invalid_ambassador_id");
+        UUID targetId = parseUuid(source, target, "mcacapitals.system.command_validation.invalid_target_capital_id");
         return player == null || ambassadorId == null || targetId == null
                 ? 0
                 : CapitalDiplomaticAgreementService.declareWar(player, ambassadorId, targetId);
@@ -247,7 +247,7 @@ public final class CapitalDiplomaticAgreementCommands {
         try {
             return UUID.fromString(rawValue);
         } catch (IllegalArgumentException ignored) {
-            source.sendFailure(Component.literal(failureMessage));
+            source.sendFailure(Component.translatable(failureMessage));
             return null;
         }
     }
@@ -256,7 +256,7 @@ public final class CapitalDiplomaticAgreementCommands {
         try {
             return source.getPlayerOrException();
         } catch (Exception ignored) {
-            source.sendFailure(Component.literal("Only a player may conduct formal diplomacy."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_diplomatic_agreement_commands.only_a_player_may_conduct_formal_diplomacy"));
             return null;
         }
     }

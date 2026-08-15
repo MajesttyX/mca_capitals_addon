@@ -5,6 +5,8 @@ import com.majesttyx.mcacapitals.data.CapitalRelationshipEvent;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenAmbassadorCommunicationPacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -52,8 +54,8 @@ public final class CapitalForeignAffairsService {
         if (source == null) {
             sendMessage(
                     player,
-                    "Foreign Affairs",
-                    "This villager is not available to discuss foreign affairs."
+                    Component.translatable("mcacapitals.ui.foreign_affairs.title"),
+                    Component.translatable("mcacapitals.ui.foreign_affairs.unavailable")
             );
 
             return true;
@@ -100,17 +102,14 @@ public final class CapitalForeignAffairsService {
                 ambassadorEntity
         );
 
-        String ambassadorName =
-                ambassadorEntity
-                        .getName()
-                        .getString();
-
         if (targets.isEmpty()) {
             sendMessage(
                     player,
-                    "Foreign Affairs",
-                    ambassadorName
-                            + ": There are no other established capitals with which we have foreign affairs."
+                    Component.translatable("mcacapitals.ui.foreign_affairs.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.foreign_affairs.no_targets",
+                            ambassadorEntity.getName()
+                    )
             );
 
             return true;
@@ -126,15 +125,15 @@ public final class CapitalForeignAffairsService {
                 )) {
             entries.add(
                     new OpenAmbassadorCommunicationPacket.Entry(
-                            "Royal Escort Requests",
-                            "An accepted royal betrothal is waiting for its escort.",
-                            "",
-                            "",
-                            "Review Royal Escorts",
+                            Component.translatable("mcacapitals.ui.royal_escort.title"),
+                            Component.translatable("mcacapitals.ui.royal_escort.waiting"),
+                            Component.empty(),
+                            Component.empty(),
+                            Component.translatable("mcacapitals.ui.royal_escort.review"),
                             "/capitalroyalescort review "
                                     + ambassadorEntity.getUUID(),
                             true,
-                            ""
+                            Component.empty()
                     )
             );
         }
@@ -172,36 +171,47 @@ public final class CapitalForeignAffairsService {
                                     target
                             );
 
+            String targetName =
+                    CapitalDiplomaticAgreementText
+                            .capitalName(
+                                    level,
+                                    target
+                            );
+
+            Component targetNameComponent = targetName == null || targetName.isBlank()
+                    ? Component.translatable("mcacapitals.diplomacy.unknown_capital")
+                    : Component.literal(targetName);
+
+            Component status = tradeActive
+                    ? Component.translatable(
+                            "mcacapitals.ui.foreign_affairs.status_with_trade",
+                            foreignAffairsStatus(state)
+                    )
+                    : Component.translatable(
+                            "mcacapitals.ui.foreign_affairs.status",
+                            foreignAffairsStatus(state)
+                    );
+
             entries.add(
                     new OpenAmbassadorCommunicationPacket.Entry(
-                            CapitalDiplomaticAgreementText
-                                    .capitalName(
-                                            level,
-                                            target
-                                    ),
-                            "Relationship: "
-                                    + CapitalRelationshipBand
-                                    .fromScore(score)
-                                    .getDisplayName()
-                                    + " ("
-                                    + score
-                                    + ")",
-                            "Status: "
-                                    + foreignAffairsStatus(
-                                    state
-                            )
-                                    + (tradeActive
-                                    ? " | Trade Agreement: Active"
-                                    : ""),
+                            targetNameComponent,
+                            Component.translatable(
+                                    "mcacapitals.ui.diplomacy.relationship_score",
+                                    CapitalRelationshipBand
+                                            .fromScore(score)
+                                            .getDisplayComponent(),
+                                    score
+                            ),
+                            status,
                             recentRelationshipChanges(
                                     level,
                                     source,
                                     target
                             ),
-                            "",
+                            Component.empty(),
                             "",
                             true,
-                            ""
+                            Component.empty()
                     )
             );
         }
@@ -210,9 +220,9 @@ public final class CapitalForeignAffairsService {
                 player,
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.FOREIGN_AFFAIRS,
-                        "Foreign Affairs",
-                        ambassadorName,
-                        "Here is the current state of our foreign affairs.",
+                        Component.translatable("mcacapitals.ui.foreign_affairs.title"),
+                        ambassadorEntity.getName(),
+                        Component.translatable("mcacapitals.ui.foreign_affairs.current_state"),
                         "",
                         entries,
                         List.of()
@@ -222,7 +232,7 @@ public final class CapitalForeignAffairsService {
         return true;
     }
 
-    private static String recentRelationshipChanges(
+    private static Component recentRelationshipChanges(
             ServerLevel level,
             CapitalRecord source,
             CapitalRecord target
@@ -236,10 +246,10 @@ public final class CapitalForeignAffairsService {
                         );
 
         if (history.isEmpty()) {
-            return "Recent changes: None recorded";
+            return Component.translatable("mcacapitals.ui.foreign_affairs.recent_none");
         }
 
-        List<String> recent = new ArrayList<>();
+        List<Component> recent = new ArrayList<>();
 
         for (int index = history.size() - 1;
              index >= 0 && recent.size() < 2;
@@ -258,33 +268,43 @@ public final class CapitalForeignAffairsService {
                     : Integer.toString(event.amount());
 
             recent.add(
-                    amount
-                            + " "
-                            + event.reason()
+                    Component.translatable(
+                            "mcacapitals.ui.foreign_affairs.change_entry",
+                            Component.literal(amount),
+                            event.reasonComponent()
+                    )
             );
         }
 
-        return recent.isEmpty()
-                ? "Recent changes: None recorded"
-                : "Recent changes: "
-                + String.join("; ", recent);
+        if (recent.isEmpty()) {
+            return Component.translatable("mcacapitals.ui.foreign_affairs.recent_none");
+        }
+
+        MutableComponent joined = Component.empty();
+        for (int index = 0; index < recent.size(); index++) {
+            if (index > 0) {
+                joined.append(Component.literal("; "));
+            }
+            joined.append(recent.get(index));
+        }
+
+        return Component.translatable(
+                "mcacapitals.ui.foreign_affairs.recent_changes",
+                joined
+        );
     }
 
-    private static String foreignAffairsStatus(
+    private static Component foreignAffairsStatus(
             CapitalDiplomaticState state
     ) {
         if (state == null) {
-            return "Unknown";
+            return Component.translatable("mcacapitals.ui.foreign_affairs.status_unknown");
         }
 
-        return switch (state) {
-            case PEACE -> "Peaceful";
-            case ALLIANCE -> "Allied";
-            case WAR -> "At War";
-            case TRUCE -> "Truce";
-            case NON_AGGRESSION_PACT ->
-                    "Non-Aggression Pact";
-        };
+        return Component.translatable(
+                "mcacapitals.ui.foreign_affairs.status_"
+                        + state.getSerializedName()
+        );
     }
 
     private static CapitalRecord resolveAudience(
@@ -326,15 +346,15 @@ public final class CapitalForeignAffairsService {
 
     private static void sendMessage(
             ServerPlayer player,
-            String title,
-            String message
+            Component title,
+            Component message
     ) {
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.MESSAGE,
                         title,
-                        "",
+                        Component.empty(),
                         message,
                         "",
                         List.of(),

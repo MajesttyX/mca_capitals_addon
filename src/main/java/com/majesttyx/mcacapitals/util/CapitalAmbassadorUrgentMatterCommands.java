@@ -133,7 +133,7 @@ public final class CapitalAmbassadorUrgentMatterCommands {
                 parseUuid(
                         source,
                         rawAmbassadorId,
-                        "The Ambassador ID is invalid."
+                        "mcacapitals.system.command_validation.invalid_ambassador_id"
                 );
 
         if (player == null
@@ -161,14 +161,14 @@ public final class CapitalAmbassadorUrgentMatterCommands {
                 parseUuid(
                         source,
                         rawAmbassadorId,
-                        "The Ambassador ID is invalid."
+                        "mcacapitals.system.command_validation.invalid_ambassador_id"
                 );
 
         UUID proposalId =
                 parseUuid(
                         source,
                         rawProposalId,
-                        "The proposal ID is invalid."
+                        "mcacapitals.system.command_validation.invalid_proposal_id"
                 );
 
         if (player == null
@@ -195,9 +195,7 @@ public final class CapitalAmbassadorUrgentMatterCommands {
                             );
         } else {
             source.sendFailure(
-                    Component.literal(
-                            "Choose accept or reject."
-                    )
+                    Component.translatable("mcacapitals.system.capital_ambassador_urgent_matter_commands.choose_accept_or_reject")
             );
 
             return 0;
@@ -225,14 +223,14 @@ public final class CapitalAmbassadorUrgentMatterCommands {
                 parseUuid(
                         source,
                         rawAmbassadorId,
-                        "The Ambassador ID is invalid."
+                        "mcacapitals.system.command_validation.invalid_ambassador_id"
                 );
 
         UUID shipmentId =
                 parseUuid(
                         source,
                         rawShipmentId,
-                        "The package ID is invalid."
+                        "mcacapitals.system.command_validation.invalid_package_id"
                 );
 
         if (player == null
@@ -259,9 +257,7 @@ public final class CapitalAmbassadorUrgentMatterCommands {
                             );
         } else {
             source.sendFailure(
-                    Component.literal(
-                            "Choose accept or return."
-                    )
+                    Component.translatable("mcacapitals.system.capital_ambassador_urgent_matter_commands.choose_accept_or_return")
             );
 
             return 0;
@@ -285,7 +281,7 @@ public final class CapitalAmbassadorUrgentMatterCommands {
             return UUID.fromString(rawValue);
         } catch (IllegalArgumentException ignored) {
             source.sendFailure(
-                    Component.literal(
+                    Component.translatable(
                             failureMessage
                     )
             );
@@ -301,9 +297,7 @@ public final class CapitalAmbassadorUrgentMatterCommands {
             return source.getPlayerOrException();
         } catch (Exception ignored) {
             source.sendFailure(
-                    Component.literal(
-                            "Only a player may answer diplomatic matters."
-                    )
+                    Component.translatable("mcacapitals.system.capital_ambassador_urgent_matter_commands.only_a_player_may_answer_diplomatic_matters")
             );
 
             return null;

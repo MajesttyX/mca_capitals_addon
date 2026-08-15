@@ -33,9 +33,7 @@ final class CapitalDiplomaticProposalResolutionService {
         if (!validation.valid()) {
             if (player != null) {
                 player.sendSystemMessage(
-                        Component.literal(
-                                validation.failureMessage()
-                        )
+                        validation.failureMessage()
                 );
             }
 
@@ -50,9 +48,7 @@ final class CapitalDiplomaticProposalResolutionService {
         );
 
         player.sendSystemMessage(
-                Component.literal(
-                        "Your acceptance has been dispatched. The other court may receive it within one to five minutes."
-                )
+                Component.translatable("mcacapitals.system.capital_diplomatic_proposal_resolution_service.your_acceptance_has_been_dispatched_the_other_court_may_receive_it_wit")
         );
 
         return 1;
@@ -73,9 +69,7 @@ final class CapitalDiplomaticProposalResolutionService {
         if (!validation.valid()) {
             if (player != null) {
                 player.sendSystemMessage(
-                        Component.literal(
-                                validation.failureMessage()
-                        )
+                        validation.failureMessage()
                 );
             }
 
@@ -90,9 +84,7 @@ final class CapitalDiplomaticProposalResolutionService {
         );
 
         player.sendSystemMessage(
-                Component.literal(
-                        "Your rejection has been dispatched. The other court may receive it within one to five minutes."
-                )
+                Component.translatable("mcacapitals.system.capital_diplomatic_proposal_resolution_service.your_rejection_has_been_dispatched_the_other_court_may_receive_it_with")
         );
 
         return 1;
@@ -125,8 +117,12 @@ final class CapitalDiplomaticProposalResolutionService {
                         level,
                         proposal,
                         source,
-                        "Proposal Undeliverable",
-                        "The diplomatic response could not be delivered because the receiving capital no longer exists."
+                        Component.translatable(
+                                "mcacapitals.diplomacy.correspondence.undeliverable_title"
+                        ),
+                        Component.translatable(
+                                "mcacapitals.diplomacy.correspondence.response_undeliverable"
+                        )
                 );
             }
 
@@ -157,7 +153,7 @@ final class CapitalDiplomaticProposalResolutionService {
                 target
         );
 
-        String failure =
+        Component failure =
                 CapitalDiplomaticAgreementValidation
                         .validateProposal(
                                 level,
@@ -188,9 +184,13 @@ final class CapitalDiplomaticProposalResolutionService {
                     level,
                     proposal,
                     source,
-                    proposal.getType().getDisplayName()
-                            + " Failed",
-                    "The acceptance arrived after the diplomatic situation changed, so the agreement could not be established."
+                    Component.translatable(
+                            "mcacapitals.diplomacy.proposal.failed_title",
+                            proposal.getType().getDisplayComponent()
+                    ),
+                    Component.translatable(
+                            "mcacapitals.diplomacy.proposal.acceptance_situation_changed"
+                    )
             );
             return;
         }
@@ -257,7 +257,7 @@ final class CapitalDiplomaticProposalResolutionService {
                         target.getCapitalId()
                 );
 
-        String validationFailure =
+        Component validationFailure =
                 CapitalDiplomaticAgreementValidation
                         .validateProposal(
                                 level,
@@ -375,8 +375,8 @@ final class CapitalDiplomaticProposalResolutionService {
             ServerLevel level,
             DiplomaticProposal proposal,
             CapitalRecord source,
-            String title,
-            String message
+            Component title,
+            Component message
     ) {
         UUID recipient =
                 source.getPlayerSovereignId() != null
@@ -417,8 +417,12 @@ final class CapitalDiplomaticProposalResolutionService {
                         level,
                         proposal,
                         source,
-                        "Royal Betrothal Failed",
-                        "The proposed Royal Betrothal could not be established because the match was no longer eligible."
+                        Component.translatable(
+                                "mcacapitals.diplomacy.royal_betrothal.failed_title"
+                        ),
+                        Component.translatable(
+                                "mcacapitals.diplomacy.royal_betrothal.match_no_longer_eligible"
+                        )
                 );
                 return false;
             }
@@ -428,7 +432,7 @@ final class CapitalDiplomaticProposalResolutionService {
                     source.getCapitalId(),
                     target.getCapitalId(),
                     proposal.getType().getAcceptanceBonus(),
-                    "Royal Betrothal accepted",
+                    "mcacapitals.relationship_reason.royal_betrothal_accepted",
                     target.getCapitalId()
             );
 
@@ -441,18 +445,21 @@ final class CapitalDiplomaticProposalResolutionService {
                     level,
                     proposal,
                     source,
-                    "Royal Betrothal Accepted",
-                    CapitalDiplomaticAgreementText
-                            .capitalName(level, target)
-                            + " accepted "
-                            + CapitalRoyalBetrothalService
-                            .proposalDescription(
-                                    level,
-                                    proposal,
-                                    source,
-                                    target
-                            )
-                            + "."
+                    Component.translatable(
+                            "mcacapitals.diplomacy.royal_betrothal.accepted_title"
+                    ),
+                    Component.translatable(
+                            "mcacapitals.diplomacy.royal_betrothal.accepted_message",
+                            CapitalDiplomaticAgreementText
+                                    .capitalName(level, target),
+                            CapitalRoyalBetrothalService
+                                    .proposalDescription(
+                                            level,
+                                            proposal,
+                                            source,
+                                            target
+                                    )
+                    )
             );
             return true;
         }
@@ -482,8 +489,12 @@ final class CapitalDiplomaticProposalResolutionService {
                         level,
                         proposal,
                         source,
-                        "Trade Agreement Failed",
-                        "The proposed Trade Agreement could not be established because its requirements were no longer met."
+                        Component.translatable(
+                                "mcacapitals.diplomacy.trade.failed_title"
+                        ),
+                        Component.translatable(
+                                "mcacapitals.diplomacy.trade.requirements_no_longer_met"
+                        )
                 );
                 return false;
             }
@@ -494,8 +505,8 @@ final class CapitalDiplomaticProposalResolutionService {
                     target.getCapitalId(),
                     proposal.getType().getAcceptanceBonus(),
                     renewal
-                            ? "Trade Agreement renewed"
-                            : "Trade Agreement accepted",
+                            ? "mcacapitals.relationship_reason.trade_agreement_renewed"
+                            : "mcacapitals.relationship_reason.trade_agreement_accepted",
                     target.getCapitalId()
             );
 
@@ -508,16 +519,20 @@ final class CapitalDiplomaticProposalResolutionService {
                     level,
                     proposal,
                     source,
-                    renewal
-                            ? "Trade Agreement Renewed"
-                            : "Trade Agreement Accepted",
-                    CapitalDiplomaticAgreementText.capitalName(
-                            level,
-                            target
+                    Component.translatable(
+                            renewal
+                                    ? "mcacapitals.diplomacy.trade.renewed_title"
+                                    : "mcacapitals.diplomacy.trade.accepted_title"
+                    ),
+                    Component.translatable(
+                            renewal
+                                    ? "mcacapitals.diplomacy.trade.renewed_message"
+                                    : "mcacapitals.diplomacy.trade.accepted_message",
+                            CapitalDiplomaticAgreementText.capitalName(
+                                    level,
+                                    target
+                            )
                     )
-                            + (renewal
-                            ? " accepted the renewal of the Trade Agreement for another thirteen Minecraft days."
-                            : " accepted the proposed Trade Agreement for thirteen Minecraft days.")
             );
 
             return true;
@@ -544,8 +559,8 @@ final class CapitalDiplomaticProposalResolutionService {
                 source.getCapitalId(),
                 target.getCapitalId(),
                 proposal.getType().getAcceptanceBonus(),
-                proposal.getType().getDisplayName()
-                        + " accepted",
+                "mcacapitals.relationship_reason.proposal_accepted."
+                        + proposal.getType().getSerializedName(),
                 target.getCapitalId()
         );
 
@@ -566,40 +581,43 @@ final class CapitalDiplomaticProposalResolutionService {
                         target
                 );
 
-        String entry =
-                sourceName
-                        + " and "
-                        + targetName
-                        + " entered into "
-                        + CapitalDiplomaticAgreementText
-                        .withIndefiniteArticle(
-                                proposal.getType()
-                                        .getDisplayName()
-                        )
-                        + ".";
+        CapitalChronicleEntry.Argument agreementType =
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.agreement_type."
+                                + proposal.getType().getSerializedName()
+                );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 source,
-                entry
+                CapitalChronicleEventId.DIPLOMATIC_AGREEMENT_ACCEPTED,
+                sourceName,
+                targetName,
+                agreementType
         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 target,
-                entry
+                CapitalChronicleEventId.DIPLOMATIC_AGREEMENT_ACCEPTED,
+                sourceName,
+                targetName,
+                agreementType
         );
 
         notifySource(
                 level,
                 proposal,
                 source,
-                proposal.getType().getDisplayName()
-                        + " Accepted",
-                targetName
-                        + " accepted the proposed "
-                        + proposal.getType().getDisplayName()
-                        + "."
+                Component.translatable(
+                        "mcacapitals.diplomacy.proposal.accepted_title",
+                        proposal.getType().getDisplayComponent()
+                ),
+                Component.translatable(
+                        "mcacapitals.diplomacy.proposal.accepted_message",
+                        targetName,
+                        proposal.getType().getDisplayComponent()
+                )
         );
 
         return true;
@@ -628,40 +646,43 @@ final class CapitalDiplomaticProposalResolutionService {
                         target
                 );
 
-        String entry =
-                targetName
-                        + " rejected "
-                        + CapitalDiplomaticAgreementText
-                        .withIndefiniteArticle(
-                                proposal.getType()
-                                        .getDisplayName()
-                        )
-                        + " proposed by "
-                        + sourceName
-                        + ".";
+        CapitalChronicleEntry.Argument agreementType =
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.agreement_type."
+                                + proposal.getType().getSerializedName()
+                );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 source,
-                entry
+                CapitalChronicleEventId.DIPLOMATIC_AGREEMENT_REJECTED,
+                targetName,
+                agreementType,
+                sourceName
         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 target,
-                entry
+                CapitalChronicleEventId.DIPLOMATIC_AGREEMENT_REJECTED,
+                targetName,
+                agreementType,
+                sourceName
         );
 
         notifySource(
                 level,
                 proposal,
                 source,
-                proposal.getType().getDisplayName()
-                        + " Rejected",
-                targetName
-                        + " rejected the proposed "
-                        + proposal.getType().getDisplayName()
-                        + "."
+                Component.translatable(
+                        "mcacapitals.diplomacy.proposal.rejected_title",
+                        proposal.getType().getDisplayComponent()
+                ),
+                Component.translatable(
+                        "mcacapitals.diplomacy.proposal.rejected_message",
+                        targetName,
+                        proposal.getType().getDisplayComponent()
+                )
         );
     }
 }
