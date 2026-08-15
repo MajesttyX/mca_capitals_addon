@@ -35,16 +35,16 @@ public final class HouseFoundationAutoService {
                 continue;
             }
 
-            String title = CapitalTitleResolver.getDisplayTitleForEntity(level, candidateId);
+            CapitalTitleResolver.ResolvedTitleId titleId = CapitalTitleResolver.getResolvedTitleIdForEntity(level, candidateId);
 
-            if (isRoyalChildTitle(title)) {
+            if (isRoyalChildTitle(titleId)) {
                 if (inheritRoyalHouseFromParent(level, capital, candidate)) {
                     changed = true;
                 }
                 continue;
             }
 
-            if (!isFoundingTitle(title)) {
+            if (!isFoundingTitle(titleId)) {
                 continue;
             }
 
@@ -61,14 +61,10 @@ public final class HouseFoundationAutoService {
         LinkedHashSet<UUID> candidates = new LinkedHashSet<>();
 
         addIfPresent(candidates, capital.getSovereign());
-        addIfPresent(candidates, capital.getConsort());
-        addIfPresent(candidates, capital.getHeir());
-        addIfPresent(candidates, capital.getGrandMaester());
-
-        candidates.addAll(capital.getRoyalChildren());
-        candidates.addAll(capital.getLegitimizedRoyalChildren());
         candidates.addAll(capital.getDukes());
         candidates.addAll(capital.getLords());
+        candidates.addAll(capital.getRoyalChildren());
+        candidates.addAll(capital.getLegitimizedRoyalChildren());
 
         if (residents != null) {
             candidates.addAll(residents);
@@ -83,30 +79,15 @@ public final class HouseFoundationAutoService {
         }
     }
 
-    private static boolean isFoundingTitle(String title) {
-        if (title == null || title.isBlank()) {
-            return false;
-        }
-
-        return switch (title) {
-            case "King", "Queen",
-                 "Duke", "Duchess",
-                 "Lord", "Lady",
-                 "Maester", "Grand Maester" -> true;
-            default -> false;
-        };
+    private static boolean isFoundingTitle(CapitalTitleResolver.ResolvedTitleId titleId) {
+        return titleId == CapitalTitleResolver.ResolvedTitleId.SOVEREIGN
+                || titleId == CapitalTitleResolver.ResolvedTitleId.DUKE
+                || titleId == CapitalTitleResolver.ResolvedTitleId.LORD;
     }
 
-    private static boolean isRoyalChildTitle(String title) {
-        if (title == null || title.isBlank()) {
-            return false;
-        }
-
-        return switch (title) {
-            case "Crown Prince", "Crown Princess",
-                 "Prince", "Princess" -> true;
-            default -> false;
-        };
+    private static boolean isRoyalChildTitle(CapitalTitleResolver.ResolvedTitleId titleId) {
+        return titleId == CapitalTitleResolver.ResolvedTitleId.CROWN_HEIR
+                || titleId == CapitalTitleResolver.ResolvedTitleId.ROYAL_CHILD;
     }
 
     private static boolean inheritRoyalHouseFromParent(ServerLevel level, CapitalRecord capital, Entity child) {

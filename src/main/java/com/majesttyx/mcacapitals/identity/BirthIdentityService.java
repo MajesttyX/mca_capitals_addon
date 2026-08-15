@@ -2,16 +2,16 @@ package com.majesttyx.mcacapitals.identity;
 
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import com.majesttyx.mcacapitals.util.EntityPersistentData;
+import net.conczin.mca.entity.ai.relationship.EntityRelationship;
+import net.conczin.mca.entity.ai.relationship.Gender;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
-import com.majesttyx.mcacapitals.util.EntityPersistentData;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -255,14 +255,14 @@ public final class BirthIdentityService {
             return secondParent;
         }
 
-        GenderKind firstGender = getGender(firstParent);
-        GenderKind secondGender = getGender(secondParent);
+        Gender firstGender = getGender(firstParent);
+        Gender secondGender = getGender(secondParent);
 
-        if (firstGender == GenderKind.MALE && secondGender == GenderKind.FEMALE) {
+        if (firstGender == Gender.MALE && secondGender == Gender.FEMALE) {
             return firstParent;
         }
 
-        if (secondGender == GenderKind.MALE && firstGender == GenderKind.FEMALE) {
+        if (secondGender == Gender.MALE && firstGender == Gender.FEMALE) {
             return secondParent;
         }
 
@@ -295,123 +295,49 @@ public final class BirthIdentityService {
             return 900;
         }
 
-        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, entity.getUUID());
-        return rankValue(title);
+        CapitalTitleResolver.ResolvedTitleId titleId = CapitalTitleResolver.getResolvedTitleIdForEntity(level, entity.getUUID());
+        return rankValue(titleId);
     }
 
-    private static int rankValue(String title) {
-        if (title == null || title.isBlank()) {
+    private static int rankValue(CapitalTitleResolver.ResolvedTitleId titleId) {
+        if (titleId == null) {
             return 900;
         }
 
-        String normalized = title.trim().toLowerCase(Locale.ROOT);
-
-        return switch (normalized) {
-            case "high queen", "high king" -> 20;
-            case "queen", "king" -> 30;
-            case "queen consort", "king consort" -> 40;
-            case "dowager queen", "dowager king" -> 50;
-            case "heir apparent" -> 60;
-            case "crown princess", "crown prince" -> 70;
-            case "princess", "prince" -> 80;
-            case "princess consort", "prince consort" -> 90;
-            case "dowager princess", "dowager prince" -> 100;
-            case "hand of the queen", "hand of the king" -> 110;
-            case "grand maester" -> 115;
-            case "duchess", "duke" -> 120;
-            case "dowager duchess", "dowager duke" -> 130;
-            case "maester" -> 140;
-            case "lord commander" -> 150;
-            case "lady", "lord" -> 170;
-            case "dame", "sir" -> 180;
+        return switch (titleId) {
+            case HIGH_SOVEREIGN -> 20;
+            case SOVEREIGN -> 30;
+            case SOVEREIGN_CONSORT -> 40;
+            case SOVEREIGN_DOWAGER -> 50;
+            case HEIR_APPARENT -> 60;
+            case CROWN_HEIR -> 70;
+            case ROYAL_CHILD -> 80;
+            case PRINCE_CONSORT -> 90;
+            case DOWAGER_PRINCE -> 100;
+            case HAND -> 110;
+            case GRAND_MAESTER -> 115;
+            case DUKE -> 120;
+            case DOWAGER_DUKE -> 130;
+            case MAESTER -> 140;
+            case LORD_COMMANDER -> 150;
+            case LORD -> 170;
+            case ROYAL_GUARD, KNIGHT -> 180;
             default -> 900;
         };
     }
 
-    private static GenderKind getGender(Entity entity) {
+    private static Gender getGender(Entity entity) {
         if (entity == null) {
-            return GenderKind.UNASSIGNED;
+            return Gender.UNASSIGNED;
         }
 
-        Optional<Object> relationship = resolveEntityRelationship(entity);
-        if (relationship.isPresent()) {
-            Object gender = invokeNoArg(relationship.get(), "getGender");
-            return normalizeGender(gender);
+        try {
+            return EntityRelationship.of(entity)
+                    .map(EntityRelationship::getGender)
+                    .orElse(Gender.UNASSIGNED);
+        } catch (Throwable ignored) {
+            return Gender.UNASSIGNED;
         }
-
-        if (entity.level() instanceof ServerLevel level) {
-            if (MCAIntegrationBridge.isFemale(level, entity.getUUID())) {
-                return GenderKind.FEMALE;
-            }
-        }
-
-        return GenderKind.UNASSIGNED;
-    }
-
-    private static Optional<Object> resolveEntityRelationship(Entity entity) {
-        if (entity == null) {
-            return Optional.empty();
-        }
-
-        String[] classNames = new String[] {
-                "net.mca.entity.ai.relationship.EntityRelationship",
-                "forge.net.mca.entity.ai.relationship.EntityRelationship",
-                "fabric.net.mca.entity.ai.relationship.EntityRelationship",
-                "quilt.net.mca.entity.ai.relationship.EntityRelationship",
-                "net.conczin.mca.entity.ai.relationship.EntityRelationship"
-        };
-
-        for (String className : classNames) {
-            try {
-                Class<?> relationshipClass = Class.forName(className);
-                Method ofMethod = relationshipClass.getMethod("of", Entity.class);
-                Object value = ofMethod.invoke(null, entity);
-
-                if (value instanceof Optional<?> optional) {
-                    return optional.map(object -> object);
-                }
-
-                if (value != null) {
-                    return Optional.of(value);
-                }
-            } catch (Throwable ignored) {
-                // Try the next MCA package path.
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    private static GenderKind normalizeGender(Object gender) {
-        if (gender == null) {
-            return GenderKind.UNASSIGNED;
-        }
-
-        String value;
-        if (gender instanceof Enum<?> enumValue) {
-            value = enumValue.name();
-        } else {
-            value = String.valueOf(gender);
-        }
-
-        if (value == null || value.isBlank()) {
-            return GenderKind.UNASSIGNED;
-        }
-
-        String normalized = value.trim().toUpperCase(Locale.ROOT);
-        if (normalized.endsWith(".MALE")) {
-            return GenderKind.MALE;
-        }
-
-        if (normalized.endsWith(".FEMALE")) {
-            return GenderKind.FEMALE;
-        }
-
-        return switch (normalized) {
-            case "MALE" -> GenderKind.MALE;
-            case "FEMALE" -> GenderKind.FEMALE;
-            default -> GenderKind.UNASSIGNED;
-        };
     }
 
     private static void writePendingBirthIdentity(Entity child, InheritedBirthIdentity inherited) {
@@ -474,33 +400,6 @@ public final class BirthIdentityService {
         }
 
         EntityPersistentData.get(child).remove(PENDING_BIRTH_IDENTITY_TAG);
-    }
-
-    private static Object invokeNoArg(Object target, String methodName) {
-        if (target == null || methodName == null || methodName.isBlank()) {
-            return null;
-        }
-
-        Class<?> current = target.getClass();
-        while (current != null) {
-            try {
-                Method method = current.getDeclaredMethod(methodName);
-                method.setAccessible(true);
-                return method.invoke(target);
-            } catch (NoSuchMethodException ignored) {
-                current = current.getSuperclass();
-            } catch (Throwable ignored) {
-                return null;
-            }
-        }
-
-        return null;
-    }
-
-    private enum GenderKind {
-        MALE,
-        FEMALE,
-        UNASSIGNED
     }
 
     private record InheritedBirthIdentity(

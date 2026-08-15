@@ -19,6 +19,7 @@ public final class MCACapitalsConfig {
 
     private static final String CONFIG_FILE_NAME = "mcacapitals.properties";
     private static final String ENABLED_CULTURE_NAME_BUCKETS_KEY = "enabledCultureNameBuckets";
+    private static final String ORIGIN_NAME_MODE_KEY = "originNameMode";
 
     public static final List<String> DEFAULT_CULTURE_NAME_BUCKETS = List.of(
             "albania",
@@ -96,6 +97,31 @@ public final class MCACapitalsConfig {
     private MCACapitalsConfig() {
     }
 
+
+    public static OriginNameMode originNameMode() {
+        Path configPath = FabricLoader.getInstance().getConfigDir().resolve(CONFIG_FILE_NAME);
+        ensureConfigExists(configPath);
+
+        Properties properties = new Properties();
+        try (Reader reader = Files.newBufferedReader(configPath)) {
+            properties.load(reader);
+        } catch (IOException exception) {
+            MCACapitals.LOGGER.warn("Could not read MCA Capitals config. Using historical origin names.", exception);
+            return OriginNameMode.HISTORICAL;
+        }
+
+        String raw = properties.getProperty(ORIGIN_NAME_MODE_KEY, OriginNameMode.HISTORICAL.name());
+        if (raw == null || raw.isBlank()) {
+            return OriginNameMode.HISTORICAL;
+        }
+
+        try {
+            return OriginNameMode.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return OriginNameMode.HISTORICAL;
+        }
+    }
+
     public static Set<String> enabledCultureNameBuckets() {
         LinkedHashSet<String> enabled = new LinkedHashSet<>();
 
@@ -161,6 +187,7 @@ public final class MCACapitalsConfig {
 
             Properties properties = new Properties();
             properties.setProperty(ENABLED_CULTURE_NAME_BUCKETS_KEY, String.join(",", ALL_CULTURE_NAME_BUCKETS));
+            properties.setProperty(ORIGIN_NAME_MODE_KEY, OriginNameMode.HISTORICAL.name());
 
             try (Writer writer = Files.newBufferedWriter(configPath)) {
                 properties.store(
@@ -177,5 +204,11 @@ public final class MCACapitalsConfig {
         ArrayList<String> buckets = new ArrayList<>(DEFAULT_CULTURE_NAME_BUCKETS);
         buckets.addAll(FANTASY_CULTURE_NAME_BUCKETS);
         return List.copyOf(buckets);
+    }
+
+    public enum OriginNameMode {
+        HISTORICAL,
+        CURRENT,
+        CURRENT_AND_FORMER
     }
 }

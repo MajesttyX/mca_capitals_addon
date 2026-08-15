@@ -1,5 +1,7 @@
 package com.majesttyx.mcacapitals.item;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalFoundationService;
@@ -73,18 +75,18 @@ public class RoyalDisinheritanceHandler {
         UUID targetId = livingTarget.getUUID();
 
         if (!MCAIntegrationBridge.isMCAVillager(level, targetId)) {
-            player.sendSystemMessage(Component.literal("Royal disinheritance can only be used on an MCA villager."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.royal_disinheritance_handler.royal_disinheritance_can_only_be_used_on_an_mca_villager"));
             return InteractionResult.FAIL;
         }
 
         CapitalRecord capital = resolveCapital(level, targetId);
         if (capital == null) {
-            player.sendSystemMessage(Component.literal("That villager is not part of a capital."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.royal_disinheritance_handler.that_villager_is_not_part_of_a_capital"));
             return InteractionResult.FAIL;
         }
 
         if (!capital.isRoyalChild(targetId) && !targetId.equals(capital.getHeir())) {
-            player.sendSystemMessage(Component.literal("That villager has no royal claim to strip."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.royal_disinheritance_handler.that_villager_has_no_royal_claim_to_strip"));
             return InteractionResult.FAIL;
         }
 
@@ -94,12 +96,17 @@ public class RoyalDisinheritanceHandler {
         CapitalFoundationService.refreshCourt(level, capital);
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
 
-        CapitalChronicleService.addEntry(level, capital,
-                displayName + " was disinherited and stripped of royal claim in "
-                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.DISINHERITED,
+                displayName,
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+        );
 
-        player.sendSystemMessage(Component.literal(
-                "By royal decree, " + displayName + " is disinherited and stripped of all royal claim."
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.system.royal_disinheritance_handler.success",
+                displayNameComponent(displayName)
         ));
 
         return InteractionResult.SUCCESS;
@@ -121,6 +128,13 @@ public class RoyalDisinheritanceHandler {
         }
 
         return null;
+    }
+
+    private static Component displayNameComponent(String displayName) {
+        if (displayName == null || displayName.isBlank() || "Unnamed".equals(displayName)) {
+            return Component.translatable("mcacapitals.system.common.unnamed");
+        }
+        return Component.literal(displayName);
     }
 
     private static String stripKnownTitles(String name) {

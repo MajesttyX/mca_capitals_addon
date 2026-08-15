@@ -2,8 +2,8 @@ package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
-import com.majesttyx.mcacapitals.capital.CapitalRankRequirements;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalRankRequirements;
 import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.identity.DecreeOfTheHouseService;
@@ -169,10 +169,12 @@ public final class CapitalPetitionService {
             player.drop(decree, false);
         }
 
-        player.sendSystemMessage(Component.literal(
-                villagerEntity.getName().getString() + ": The records of a House are not changed lightly. Take this Decree and use it carefully."
+        player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                villagerEntity,
+                Component.translatable("mcacapitals.petition.decree_house.granted")
         ));
     }
+
     private static void handleAccusationRequest(ServerPlayer player, Entity villagerEntity) {
         CapitalJusticeService.openAccusationSelection(player, villagerEntity);
     }
@@ -190,25 +192,20 @@ public final class CapitalPetitionService {
         ServerLevel level = player.serverLevel();
         UUID villagerId = villagerEntity.getUUID();
         CapitalRecord capital = resolveCapital(level, villagerId);
-        if (capital == null
-                || capital.getState() != CapitalState.ACTIVE
-                || !canGrantRoyalPardon(capital, villagerId)) {
-            player.sendSystemMessage(Component.literal(
-                    villagerEntity.getName().getString() + ": "
-                            + CapitalJusticeText.royalPardonNoAuthority(level, villagerId)
+
+        if (capital == null || capital.getState() != CapitalState.ACTIVE || !canGrantRoyalPardon(capital, villagerId)) {
+            player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                    villagerEntity,
+                    CapitalJusticeText.royalPardonNoAuthority(level, villagerId)
             ));
             return;
         }
 
-        int hearts = MCAIntegrationBridge.getHeartsWithPlayer(
-                level,
-                villagerId,
-                player.getUUID()
-        );
+        int hearts = MCAIntegrationBridge.getHeartsWithPlayer(level, villagerId, player.getUUID());
         if (hearts < ROYAL_PARDON_MIN_HEARTS) {
-            player.sendSystemMessage(Component.literal(
-                    villagerEntity.getName().getString() + ": "
-                            + CapitalJusticeText.royalPardonRefusedTrust(level, villagerId)
+            player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                    villagerEntity,
+                    CapitalJusticeText.royalPardonRefusedTrust(level, villagerId)
             ));
             return;
         }
@@ -218,9 +215,10 @@ public final class CapitalPetitionService {
         if (!inserted) {
             player.drop(pardon, false);
         }
-        player.sendSystemMessage(Component.literal(
-                villagerEntity.getName().getString() + ": "
-                        + CapitalJusticeText.royalPardonGrantLine(level, capital, villagerId)
+
+        player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                villagerEntity,
+                CapitalJusticeText.royalPardonGrantLine(level, capital, villagerId)
         ));
     }
 
@@ -236,8 +234,8 @@ public final class CapitalPetitionService {
         if (capital != null) {
             return capital;
         }
+
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
         return CapitalManager.getCapitalByVillageId(villageId);
     }
-
 }

@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class CapitalNaturalDukedomService {
+
     private static final int BIG_HOUSES_PER_DUKE = 2;
     private static final int DAILY_CHANCE = 20;
 
@@ -44,10 +45,7 @@ public final class CapitalNaturalDukedomService {
         capital.setLastNaturalDukedomDay(currentDay);
 
         int bigHouses =
-                CapitalBuildingService.countBigHouses(
-                        level,
-                        capital
-                );
+                CapitalBuildingService.countBigHouses(level, capital);
 
         int allowedNaturalDukes =
                 bigHouses / BIG_HOUSES_PER_DUKE;
@@ -58,10 +56,7 @@ public final class CapitalNaturalDukedomService {
         }
 
         int currentNaturalDukes =
-                countNaturalDukes(
-                        capital,
-                        residents
-                );
+                countNaturalDukes(capital, residents);
 
         if (currentNaturalDukes >= allowedNaturalDukes) {
             CapitalDataAccess.markDirty(level);
@@ -74,11 +69,7 @@ public final class CapitalNaturalDukedomService {
         }
 
         UUID candidate =
-                selectCandidate(
-                        level,
-                        capital,
-                        residents
-                );
+                selectCandidate(level, capital, residents);
 
         if (candidate == null) {
             CapitalDataAccess.markDirty(level);
@@ -86,15 +77,9 @@ public final class CapitalNaturalDukedomService {
         }
 
         boolean female =
-                MCAIntegrationBridge.isFemale(
-                        level,
-                        candidate
-                );
+                MCAIntegrationBridge.isFemale(level, candidate);
 
-        capital.addDuke(
-                candidate,
-                female
-        );
+        capital.addDuke(candidate, female);
 
         String name =
                 CapitalNameService.resolveDisplayName(
@@ -103,18 +88,14 @@ public final class CapitalNaturalDukedomService {
                         candidate
                 );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                CapitalJusticeText.naturalDukedom(
-                        level,
-                        candidate,
-                        name
-                )
+                CapitalChronicleEventId.NATURAL_DUKEDOM,
+                name
         );
 
         CapitalDataAccess.markDirty(level);
-
         return true;
     }
 
@@ -125,8 +106,7 @@ public final class CapitalNaturalDukedomService {
         int count = 0;
 
         for (UUID duke : capital.getDukes()) {
-            if (duke != null
-                    && residents.contains(duke)) {
+            if (duke != null && residents.contains(duke)) {
                 count++;
             }
         }
@@ -139,105 +119,44 @@ public final class CapitalNaturalDukedomService {
             CapitalRecord capital,
             Set<UUID> residents
     ) {
-        Set<UUID> blocked =
-                new HashSet<>();
+        Set<UUID> blocked = new HashSet<>();
+
+        addIfPresent(blocked, capital.getSovereign());
+        addIfPresent(blocked, capital.getConsort());
+        addIfPresent(blocked, capital.getDowager());
+        addIfPresent(blocked, capital.getHeir());
+        addIfPresent(blocked, capital.getHand());
+        addIfPresent(blocked, capital.getCommander());
+        addIfPresent(blocked, capital.getHerald());
+        addIfPresent(blocked, capital.getGrandMaester());
+        addIfPresent(blocked, capital.getMasterOfLaws());
 
         addIfPresent(
                 blocked,
-                capital.getSovereign()
+                CapitalAmbassadorService.getAmbassador(level, capital)
         );
 
-        addIfPresent(
-                blocked,
-                capital.getConsort()
-        );
+        blocked.addAll(capital.getRoyalChildren());
+        blocked.addAll(capital.getDisinheritedRoyalChildren());
+        blocked.addAll(capital.getLegitimizedRoyalChildren());
+        blocked.addAll(capital.getDukes());
+        blocked.addAll(capital.getRoyalGuards());
+        blocked.addAll(capital.getDisgracedRoyalGuards());
 
-        addIfPresent(
-                blocked,
-                capital.getDowager()
-        );
-
-        addIfPresent(
-                blocked,
-                capital.getHeir()
-        );
-
-        addIfPresent(
-                blocked,
-                capital.getHand()
-        );
-
-        addIfPresent(
-                blocked,
-                capital.getCommander()
-        );
-
-        addIfPresent(
-                blocked,
-                capital.getHerald()
-        );
-
-        addIfPresent(
-                blocked,
-                capital.getGrandMaester()
-        );
-
-        addIfPresent(
-                blocked,
-                capital.getMasterOfLaws()
-        );
-
-        addIfPresent(
-                blocked,
-                CapitalAmbassadorService.getAmbassador(
-                        level,
-                        capital
-                )
-        );
-
-        blocked.addAll(
-                capital.getRoyalChildren()
-        );
-
-        blocked.addAll(
-                capital.getDisinheritedRoyalChildren()
-        );
-
-        blocked.addAll(
-                capital.getLegitimizedRoyalChildren()
-        );
-
-        blocked.addAll(
-                capital.getDukes()
-        );
-
-        blocked.addAll(
-                capital.getRoyalGuards()
-        );
-
-        blocked.addAll(
-                capital.getDisgracedRoyalGuards()
-        );
-
-        List<UUID> candidates =
-                new ArrayList<>();
+        List<UUID> candidates = new ArrayList<>();
 
         for (UUID resident : residents) {
             if (resident == null
                     || blocked.contains(resident)
-                    || CapitalAmbassadorService.isAmbassador(
-                    level,
-                    resident
-            )) {
+                    || CapitalAmbassadorService.isAmbassador(level, resident)) {
                 continue;
             }
 
-            int weight =
-                    CapitalCrownJusticeService.naturalElevationWeight(
-                            level,
-                            capital,
-                            resident
-                    );
+            int weight = CapitalCrownJusticeService.naturalElevationWeight(
+                    level,
+                    capital,
+                    resident
+            );
 
             if (weight <= 0) {
                 continue;
@@ -257,9 +176,7 @@ public final class CapitalNaturalDukedomService {
                 continue;
             }
 
-            for (int index = 0;
-                 index < weight;
-                 index++) {
+            for (int index = 0; index < weight; index++) {
                 candidates.add(resident);
             }
         }
@@ -268,16 +185,10 @@ public final class CapitalNaturalDukedomService {
             return null;
         }
 
-        candidates.sort(
-                Comparator.comparing(
-                        UUID::toString
-                )
-        );
+        candidates.sort(Comparator.comparing(UUID::toString));
 
         return candidates.get(
-                level.random.nextInt(
-                        candidates.size()
-                )
+                level.random.nextInt(candidates.size())
         );
     }
 

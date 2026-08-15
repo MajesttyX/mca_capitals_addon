@@ -3,6 +3,8 @@ package com.majesttyx.mcacapitals.network;
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.client.BetrothalSelectionClient;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -13,9 +15,8 @@ import java.util.UUID;
 
 public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
 
-    public static final Type<OpenBetrothalSelectionPacket> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(MCACapitals.MODID, "open_betrothal_selection")
-    );
+    public static final Type<OpenBetrothalSelectionPacket> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(MCACapitals.MODID, "open_betrothal_selection"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, OpenBetrothalSelectionPacket> CODEC =
             StreamCodec.ofMember(OpenBetrothalSelectionPacket::encode, OpenBetrothalSelectionPacket::decode);
@@ -32,9 +33,9 @@ public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
             List<Candidate> recommendationCandidates
     ) {
         this.capitalId = capitalId;
-        this.villageName = villageName == null ? "" : villageName;
-        this.playerCandidates = new ArrayList<>(playerCandidates == null ? List.of() : playerCandidates);
-        this.recommendationCandidates = new ArrayList<>(recommendationCandidates == null ? List.of() : recommendationCandidates);
+        this.villageName = villageName;
+        this.playerCandidates = new ArrayList<>(playerCandidates);
+        this.recommendationCandidates = new ArrayList<>(recommendationCandidates);
     }
 
     public UUID capitalId() {
@@ -53,14 +54,14 @@ public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
         return recommendationCandidates;
     }
 
-    public void encode(RegistryFriendlyByteBuf buffer) {
+    private void encode(RegistryFriendlyByteBuf buffer) {
         buffer.writeUUID(capitalId);
         buffer.writeUtf(villageName);
         writeCandidates(buffer, playerCandidates);
         writeCandidates(buffer, recommendationCandidates);
     }
 
-    public static OpenBetrothalSelectionPacket decode(RegistryFriendlyByteBuf buffer) {
+    private static OpenBetrothalSelectionPacket decode(RegistryFriendlyByteBuf buffer) {
         UUID capitalId = buffer.readUUID();
         String villageName = buffer.readUtf();
         List<Candidate> playerCandidates = readCandidates(buffer);
@@ -82,7 +83,7 @@ public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
         buffer.writeInt(candidates.size());
         for (Candidate candidate : candidates) {
             buffer.writeUUID(candidate.id);
-            buffer.writeUtf(candidate.name);
+            ComponentSerialization.STREAM_CODEC.encode(buffer, candidate.name);
         }
     }
 
@@ -90,7 +91,10 @@ public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
         int size = buffer.readInt();
         List<Candidate> candidates = new ArrayList<>();
         for (int i = 0; i < size; i++) {
-            candidates.add(new Candidate(buffer.readUUID(), buffer.readUtf()));
+            candidates.add(new Candidate(
+                    buffer.readUUID(),
+                    ComponentSerialization.STREAM_CODEC.decode(buffer)
+            ));
         }
         return candidates;
     }
@@ -102,18 +106,18 @@ public class OpenBetrothalSelectionPacket implements CustomPacketPayload {
 
     public static class Candidate {
         private final UUID id;
-        private final String name;
+        private final Component name;
 
-        public Candidate(UUID id, String name) {
+        public Candidate(UUID id, Component name) {
             this.id = id;
-            this.name = name == null ? "" : name;
+            this.name = name == null ? Component.empty() : name;
         }
 
         public UUID id() {
             return id;
         }
 
-        public String name() {
+        public Component name() {
             return name;
         }
     }

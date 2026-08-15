@@ -85,13 +85,13 @@ public final class DecreeOfTheHouseService {
         ServerLevel level = player.serverLevel();
         Entity target = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, targetId);
         if (target == null || !MCAIntegrationBridge.isMCAVillagerEntity(target)) {
-            player.sendSystemMessage(Component.literal("That villager is no longer available."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_service.that_villager_is_no_longer_available"));
             return false;
         }
 
         ItemStack decree = findHeldDecree(player);
         if (decree.isEmpty()) {
-            player.sendSystemMessage(Component.literal("You must be holding a Decree of the House to complete this revision."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_service.you_must_be_holding_a_decree_of_the_house_to_complete_this_revision"));
             return false;
         }
 
@@ -99,7 +99,7 @@ public final class DecreeOfTheHouseService {
         houseWords = normalizeHouseWords(houseWords);
 
         if (!isValidNamePart(currentSurname, 2, 40)) {
-            player.sendSystemMessage(Component.literal("Surname must be 2-40 characters using letters, spaces, hyphens, or apostrophes."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_service.surname_must_be_2_40_characters_using_letters_spaces_hyphens_or_apostr"));
             return false;
         }
 
@@ -109,7 +109,7 @@ public final class DecreeOfTheHouseService {
         boolean establishedHouse = before.hasFoundedHouse();
 
         if (establishedHouse && !isValidHouseWords(houseWords)) {
-            player.sendSystemMessage(Component.literal("House Words must be 2-80 characters and cannot contain formatting codes."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_service.house_words_must_be_2_80_characters_and_cannot_contain_formatting_code"));
             return false;
         }
 
@@ -129,11 +129,18 @@ public final class DecreeOfTheHouseService {
         damageDecree(decree);
 
         VillagerIdentityData after = VillagerIdentityService.getIdentity(target);
-        player.sendSystemMessage(Component.literal(
-                "The House records have been revised: "
-                        + after.currentSurname()
-                        + (after.hasFoundedHouse() ? " — " + after.houseWords() : "")
-        ));
+        player.sendSystemMessage(
+                after.hasFoundedHouse()
+                        ? Component.translatable(
+                                "mcacapitals.system.decree_of_the_house_service.house_records_revised_with_words",
+                                after.currentSurname(),
+                                after.houseWords()
+                        )
+                        : Component.translatable(
+                                "mcacapitals.system.decree_of_the_house_service.house_records_revised",
+                                after.currentSurname()
+                        )
+        );
 
         return true;
     }
@@ -149,7 +156,7 @@ public final class DecreeOfTheHouseService {
 
         ItemStack decree = findHeldDecree(player);
         if (decree.isEmpty()) {
-            player.sendSystemMessage(Component.literal("You must be holding a Decree of the House to revise your House."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_service.you_must_be_holding_a_decree_of_the_house_to_revise_your_house"));
             return false;
         }
 
@@ -158,27 +165,34 @@ public final class DecreeOfTheHouseService {
         houseWords = PlayerHouseService.normalizeHouseWords(houseWords);
 
         if (!PlayerHouseService.isValidHouseName(houseName)) {
-            player.sendSystemMessage(Component.literal("House name must be 2-20 characters using letters, spaces, hyphens, or apostrophes."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_service.house_name_must_be_2_20_characters_using_letters_spaces_hyphens_or_apo"));
             return false;
         }
 
         if (!houseWords.isBlank() && !PlayerHouseService.isValidHouseWords(houseWords)) {
-            player.sendSystemMessage(Component.literal("House Words must be 2-80 characters and cannot contain formatting codes."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_service.house_words_must_be_2_80_characters_and_cannot_contain_formatting_code"));
             return false;
         }
 
         if (!PlayerHouseService.reviseHouse(level, player, houseName, houseWords)) {
-            player.sendSystemMessage(Component.literal("The House records could not be revised."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_service.the_house_records_could_not_be_revised"));
             return false;
         }
 
         damageDecree(decree);
 
-        player.sendSystemMessage(Component.literal(
-                "Your House records have been revised: House "
-                        + houseName
-                        + (houseWords.isBlank() ? "" : " — " + houseWords)
-        ));
+        player.sendSystemMessage(
+                houseWords.isBlank()
+                        ? Component.translatable(
+                                "mcacapitals.system.decree_of_the_house_service.player_house_records_revised",
+                                houseName
+                        )
+                        : Component.translatable(
+                                "mcacapitals.system.decree_of_the_house_service.player_house_records_revised_with_words",
+                                houseName,
+                                houseWords
+                        )
+        );
 
         return true;
     }

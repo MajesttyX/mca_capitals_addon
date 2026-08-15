@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -24,14 +25,21 @@ public class CapitalSuccessionService {
             return false;
         }
 
+        if (isSurvivalPlayerSovereignDeath(level, capital)) {
+            return false;
+        }
+
         if (isValidLivingSovereign(level, sovereign)) {
             return false;
         }
 
+        boolean oldPlayerSovereign = capital.isPlayerSovereign();
+        UUID oldPlayerSovereignId = capital.getPlayerSovereignId();
+
         UUID oldConsort = capital.getConsort();
         boolean oldConsortFemale = capital.isConsortFemale();
 
-        String deadName = resolveName(level, sovereign);
+        String deadName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
 
         Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
         Map<UUID, Boolean> oldRoyalChildFemale = new LinkedHashMap<>(capital.getRoyalChildFemale());
@@ -40,7 +48,7 @@ public class CapitalSuccessionService {
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
         UUID successor = findSuccessor(level, capital, residents);
 
-        CapitalMourningService.startMourning(level, capital, deadName + " died.");
+        CapitalMourningService.startMourning(level, capital, deadName);
 
         if (successor == null) {
             capital.setSovereign(null);
@@ -52,24 +60,17 @@ public class CapitalSuccessionService {
             capital.setHeirMode(CapitalRecord.HeirMode.NONE);
             capital.setState(CapitalState.PENDING);
 
+            clearDeadPlayerSovereignState(level, capital, oldPlayerSovereign, oldPlayerSovereignId);
+
             if (isValidRelationshipPerson(level, oldConsort)) {
                 capital.setDowager(oldConsort);
                 capital.setDowagerFemale(oldConsortFemale);
 
-                String dowagerName = resolveName(level, oldConsort);
+                String dowagerName = CapitalChronicleIdentitySnapshot.name(level, capital, oldConsort);
 
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        deadName + " died. " + dowagerName + " was left as surviving consort while the throne stood vacant."
-                );
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.SOVEREIGN_DIED_CONSORT_SURVIVES, deadName, dowagerName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
             } else {
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        deadName + " died and no valid successor remained. "
-                                + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + " fell vacant."
-                );
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.SOVEREIGN_DIED_NO_SUCCESSOR, deadName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
             }
 
             capital.getRoyalChildren().clear();
@@ -112,6 +113,8 @@ public class CapitalSuccessionService {
         capital.setConsortFemale(false);
         capital.setState(CapitalState.ACTIVE);
 
+        clearDeadPlayerSovereignState(level, capital, oldPlayerSovereign, oldPlayerSovereignId);
+
         CapitalFoundationService.refreshCourt(level, capital);
 
         for (UUID royalChild : oldRoyalChildren) {
@@ -152,22 +155,12 @@ public class CapitalSuccessionService {
 
         CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
 
-        String successorName = resolveName(level, successor);
+        String successorName = CapitalChronicleIdentitySnapshot.name(level, capital, successor);
 
         if (successorWasManualHeir) {
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    deadName + " died. " + successorName + ", previously named Heir Apparent, inherited the throne of "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.SOVEREIGN_DIED_HEIR_INHERITED, deadName, successorName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
         } else {
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    deadName + " died. " + successorName + " inherited the throne of "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.SOVEREIGN_DIED_SUCCESSOR_INHERITED, deadName, successorName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
         }
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
@@ -321,6 +314,25 @@ public class CapitalSuccessionService {
         return null;
     }
 
+    private static boolean isSurvivalPlayerSovereignDeath(ServerLevel level, CapitalRecord capital) {
+        return capital.isPlayerSovereign()
+                && level != null
+                && level.getServer() != null
+                && !level.getServer().isHardcore();
+    }
+
+    private static void clearDeadPlayerSovereignState(ServerLevel level, CapitalRecord capital, boolean oldPlayerSovereign, UUID oldPlayerSovereignId) {
+        if (!oldPlayerSovereign) {
+            return;
+        }
+
+        CapitalSovereignAppointmentService.clearPlayerSovereignState(capital);
+
+        if (oldPlayerSovereignId != null && capital.getCapitalId() != null) {
+            PlayerCapitalTitleService.clear(level, oldPlayerSovereignId, capital.getCapitalId());
+        }
+    }
+
     private static List<UUID> orderedRoyalSuccessors(CapitalRecord capital) {
         LinkedHashSet<UUID> ordered = new LinkedHashSet<>();
 
@@ -410,13 +422,5 @@ public class CapitalSuccessionService {
                 && !MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId);
     }
 
-    private static String resolveName(ServerLevel level, UUID id) {
-        String recentDeathName = CapitalDeathTransitionService.getRecentDeathDisplayName(id);
-        if (recentDeathName != null && !recentDeathName.isBlank()) {
-            return recentDeathName;
-        }
 
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
-        return entity != null ? entity.getName().getString() : id.toString();
-    }
 }

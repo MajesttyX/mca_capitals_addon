@@ -41,7 +41,7 @@ public class SuccessionDecreeCommands {
     private static int confirm(CommandSourceStack source, String rawCapitalId, String rawTargetId) {
         ServerPlayer player = getPlayer(source);
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use this."));
+            source.sendFailure(Component.translatable("mcacapitals.system.succession_decree_commands.only_a_player_can_use_this"));
             return 0;
         }
 
@@ -54,53 +54,57 @@ public class SuccessionDecreeCommands {
 
         ItemStack decree = findHeldBoundDecree(player, capitalId);
         if (decree.isEmpty()) {
-            source.sendFailure(Component.literal("Hold the Succession Decree bound to this capital to transfer the crown."));
+            source.sendFailure(Component.translatable("mcacapitals.system.succession_decree_commands.hold_the_succession_decree_bound_to_this_capital_to_transfer_the_crown"));
             return 0;
         }
 
         CapitalRecord capital = CapitalManager.getCapital(capitalId);
         if (capital == null) {
-            source.sendFailure(Component.literal("The bound capital no longer exists."));
+            source.sendFailure(Component.translatable("mcacapitals.system.succession_decree_commands.the_bound_capital_no_longer_exists"));
             return 0;
         }
 
         if (!isPlayerSovereignOfCapital(player, capital)) {
-            source.sendFailure(Component.literal("Only the player sovereign of this capital can use the Succession Decree."));
+            source.sendFailure(Component.translatable("mcacapitals.system.succession_decree_commands.only_the_player_sovereign_of_this_capital_can_use_the_succession_decre"));
             return 0;
         }
 
         if (targetId.equals(player.getUUID()) || targetId.equals(capital.getSovereign())) {
-            source.sendFailure(Component.literal("You already hold the crown of this capital."));
+            source.sendFailure(Component.translatable("mcacapitals.system.succession_decree_commands.you_already_hold_the_crown_of_this_capital"));
             return 0;
         }
 
         ServerPlayer targetPlayer = level.getServer().getPlayerList().getPlayer(targetId);
         if (targetPlayer != null) {
             if (!CapitalSuccessionDecreeService.transferToPlayer(level, capital, targetPlayer)) {
-                source.sendFailure(Component.literal("The crown could not be transferred."));
+                source.sendFailure(Component.translatable("mcacapitals.system.succession_decree_commands.the_crown_could_not_be_transferred"));
                 return 0;
             }
 
-            player.sendSystemMessage(Component.literal("You transferred the crown of "
-                    + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
-                    + " to " + targetPlayer.getName().getString() + "."));
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.system.succession_decree_commands.crown_transferred",
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    targetPlayer.getName()
+            ));
             return 1;
         }
 
         if (!isEligibleVillagerSuccessor(level, capital, targetId)) {
-            source.sendFailure(Component.literal("That villager is not eligible to receive this crown."));
+            source.sendFailure(Component.translatable("mcacapitals.system.succession_decree_commands.that_villager_is_not_eligible_to_receive_this_crown"));
             return 0;
         }
 
         String targetName = resolveName(level, targetId);
         if (!CapitalSuccessionDecreeService.transferToVillager(level, capital, targetId)) {
-            source.sendFailure(Component.literal("The crown could not be transferred."));
+            source.sendFailure(Component.translatable("mcacapitals.system.succession_decree_commands.the_crown_could_not_be_transferred"));
             return 0;
         }
 
-        player.sendSystemMessage(Component.literal("You transferred the crown of "
-                + MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
-                + " to " + targetName + "."));
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.system.succession_decree_commands.crown_transferred",
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                targetName
+        ));
         return 1;
     }
 
@@ -184,7 +188,7 @@ public class SuccessionDecreeCommands {
         try {
             return UUID.fromString(rawId);
         } catch (IllegalArgumentException ex) {
-            source.sendFailure(Component.literal("Invalid UUID."));
+            source.sendFailure(Component.translatable("mcacapitals.system.succession_decree_commands.invalid_uuid"));
             return null;
         }
     }

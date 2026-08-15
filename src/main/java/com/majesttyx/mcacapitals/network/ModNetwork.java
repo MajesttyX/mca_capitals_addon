@@ -65,6 +65,10 @@ public final class ModNetwork {
                 OpenBetrothalSelectionPacket.CODEC
         );
         PayloadTypeRegistry.playS2C().register(
+                OpenAccusationSelectionPacket.TYPE,
+                OpenAccusationSelectionPacket.CODEC
+        );
+        PayloadTypeRegistry.playS2C().register(
                 OpenRoyalCharterDecisionPacket.TYPE,
                 OpenRoyalCharterDecisionPacket.CODEC
         );
@@ -113,6 +117,13 @@ public final class ModNetwork {
                 OpenBetrothalSelectionPacket.TYPE,
                 (packet, context) -> context.client().execute(
                         () -> OpenBetrothalSelectionPacket.handle(packet)
+                )
+        );
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                OpenAccusationSelectionPacket.TYPE,
+                (packet, context) -> context.client().execute(
+                        () -> OpenAccusationSelectionPacket.handle(packet)
                 )
         );
 

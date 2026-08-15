@@ -154,11 +154,64 @@ final class CapitalMaesterSelection {
             UUID villagerId,
             Set<UUID> residents
     ) {
-        return isMaester(
+        if (level == null
+                || capital == null
+                || villagerId == null) {
+            return false;
+        }
+
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(
                 level,
-                capital,
                 villagerId,
                 residents
+        )) {
+            return false;
+        }
+
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(
+                level,
+                capital,
+                villagerId
+        )) {
+            return false;
+        }
+
+        if (CapitalAmbassadorService.isAmbassador(
+                level,
+                villagerId
+        )) {
+            return false;
+        }
+
+        if (villagerId.equals(capital.getSovereign())
+                || villagerId.equals(capital.getConsort())
+                || villagerId.equals(capital.getDowager())
+                || villagerId.equals(capital.getHeir())
+                || villagerId.equals(capital.getCommander())
+                || villagerId.equals(capital.getHand())) {
+            return false;
+        }
+
+        if (capital.isRoyalChild(villagerId)
+                || capital.isLegitimizedRoyalChild(villagerId)
+                || capital.isPrinceConsort(villagerId)
+                || capital.isDowagerPrince(villagerId)
+                || capital.isDuke(villagerId)
+                || capital.isMarriageDuke(villagerId)
+                || capital.isDowagerDuke(villagerId)) {
+            return false;
+        }
+
+        if (!CapitalRoleValidation.isCurrentlyLoaded(
+                level,
+                villagerId
+        )) {
+            return true;
+        }
+
+        return MCAIntegrationBridge.isMasterClericVillager(
+                level,
+                villagerId
         );
     }
 }

@@ -15,7 +15,9 @@ public final class CapitalDiplomaticGiftCommands {
     private CapitalDiplomaticGiftCommands() {
     }
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void register(
+            CommandDispatcher<CommandSourceStack> dispatcher
+    ) {
         dispatcher.register(
                 Commands.literal("capitalgift")
                         .then(
@@ -30,17 +32,19 @@ public final class CapitalDiplomaticGiftCommands {
                                                                                 "targetCapitalId",
                                                                                 StringArgumentType.word()
                                                                         )
-                                                                        .executes(context -> send(
-                                                                                context.getSource(),
-                                                                                StringArgumentType.getString(
-                                                                                        context,
-                                                                                        "ambassadorId"
-                                                                                ),
-                                                                                StringArgumentType.getString(
-                                                                                        context,
-                                                                                        "targetCapitalId"
+                                                                        .executes(
+                                                                                context -> send(
+                                                                                        context.getSource(),
+                                                                                        StringArgumentType.getString(
+                                                                                                context,
+                                                                                                "ambassadorId"
+                                                                                        ),
+                                                                                        StringArgumentType.getString(
+                                                                                                context,
+                                                                                                "targetCapitalId"
+                                                                                        )
                                                                                 )
-                                                                        ))
+                                                                        )
                                                         )
                                         )
                         )
@@ -53,24 +57,36 @@ public final class CapitalDiplomaticGiftCommands {
             String rawTargetCapitalId
     ) {
         ServerPlayer player;
+
         try {
-            player = source.getPlayerOrException();
+            player =
+                    source.getPlayerOrException();
         } catch (Exception ignored) {
-            source.sendFailure(Component.literal(
-                    "Only a player may send a diplomatic package."
-            ));
+            source.sendFailure(
+                    Component.translatable("mcacapitals.system.capital_diplomatic_gift_commands.only_a_player_may_send_a_diplomatic_package")
+            );
+
             return 0;
         }
 
         UUID ambassadorId;
         UUID targetCapitalId;
+
         try {
-            ambassadorId = UUID.fromString(rawAmbassadorId);
-            targetCapitalId = UUID.fromString(rawTargetCapitalId);
+            ambassadorId =
+                    UUID.fromString(
+                            rawAmbassadorId
+                    );
+
+            targetCapitalId =
+                    UUID.fromString(
+                            rawTargetCapitalId
+                    );
         } catch (IllegalArgumentException ignored) {
-            source.sendFailure(Component.literal(
-                    "The diplomatic destination is invalid."
-            ));
+            source.sendFailure(
+                    Component.translatable("mcacapitals.system.capital_diplomatic_gift_commands.the_diplomatic_destination_is_invalid")
+            );
+
             return 0;
         }
 

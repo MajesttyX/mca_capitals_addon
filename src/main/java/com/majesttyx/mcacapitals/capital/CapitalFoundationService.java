@@ -39,23 +39,15 @@ public class CapitalFoundationService {
         CapitalCourtBuilder.rebuildCourt(level, capital, residents);
         CapitalNameService.refreshCapitalNames(level, capital, residents);
 
-        String dukeName = MCAIntegrationBridge.getEntityByUuid(level, villagerId) != null
-                ? MCAIntegrationBridge.getEntityByUuid(level, villagerId).getName().getString()
-                : villagerId.toString();
+        String dukeName = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
         UUID spouse = MCAIntegrationBridge.getSpouse(level, villagerId);
         if (spouse != null && residents.contains(spouse)) {
-            String spouseName = MCAIntegrationBridge.getEntityByUuid(level, spouse) != null
-                    ? MCAIntegrationBridge.getEntityByUuid(level, spouse).getName().getString()
-                    : spouse.toString();
+            String spouseName = CapitalChronicleIdentitySnapshot.name(level, capital, spouse);
 
-            CapitalChronicleService.addEntry(level, capital,
-                    dukeName + " was raised to ducal rank, and " + spouseName
-                            + " entered the court by marriage.");
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.FOUNDATION_DUKE_AND_SPOUSE, dukeName, spouseName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
         } else {
-            CapitalChronicleService.addEntry(level, capital,
-                    dukeName + " was raised to ducal rank in "
-                            + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.FOUNDATION_DUKE, dukeName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
         }
 
         CapitalManager.putCapital(capital);

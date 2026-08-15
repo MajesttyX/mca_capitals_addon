@@ -52,13 +52,7 @@ public final class CapitalDiplomaticResolutionService {
                         level,
                         targetCapital
                 ) != null) {
-            recordGraveInsult(
-                    level,
-                    sourceCapital,
-                    targetCapital,
-                    shipment
-            );
-
+            recordGraveInsult(level, sourceCapital, targetCapital, shipment);
             shipment.setStatus(
                     DiplomaticShipmentStatus
                             .AWAITING_PLAYER_RESPONSE
@@ -85,19 +79,13 @@ public final class CapitalDiplomaticResolutionService {
                 return false;
             }
 
-            recordGraveInsult(
-                    level,
-                    sourceCapital,
-                    targetCapital,
-                    shipment
-            );
-
+            recordGraveInsult(level, sourceCapital, targetCapital, shipment);
             applyRelationship(
                     level,
                     sourceCapital,
                     targetCapital,
                     shipment.getRelationshipDelta(),
-                    "Diplomatic insult returned"
+                    "mcacapitals.relationship_reason.diplomatic_insult_returned"
             );
 
             recordReturned(
@@ -115,13 +103,16 @@ public final class CapitalDiplomaticResolutionService {
                     level,
                     shipment,
                     sourceCapital,
-                    "Gift Returned",
-                    "The court of "
-                            + capitalName(
-                            level,
-                            targetCapital
+                    Component.translatable(
+                            "mcacapitals.diplomacy.gift.returned_title"
+                    ),
+                    Component.translatable(
+                            "mcacapitals.diplomacy.gift.returned_condemned",
+                            capitalName(
+                                    level,
+                                    targetCapital
+                            )
                     )
-                            + " returned the package and condemned it as an insult."
             );
         } else {
             if (!CapitalDiplomaticStorageService
@@ -133,19 +124,13 @@ public final class CapitalDiplomaticResolutionService {
                 return false;
             }
 
-            recordGraveInsult(
-                    level,
-                    sourceCapital,
-                    targetCapital,
-                    shipment
-            );
-
+            recordGraveInsult(level, sourceCapital, targetCapital, shipment);
             applyRelationship(
                     level,
                     sourceCapital,
                     targetCapital,
                     shipment.getRelationshipDelta(),
-                    "Diplomatic gift accepted"
+                    "mcacapitals.relationship_reason.diplomatic_gift_accepted"
             );
 
             recordAccepted(
@@ -162,13 +147,16 @@ public final class CapitalDiplomaticResolutionService {
                     level,
                     shipment,
                     sourceCapital,
-                    "Gift Accepted",
-                    "The court of "
-                            + capitalName(
-                            level,
-                            targetCapital
+                    Component.translatable(
+                            "mcacapitals.diplomacy.gift.accepted_title"
+                    ),
+                    Component.translatable(
+                            "mcacapitals.diplomacy.gift.accepted_by_court",
+                            capitalName(
+                                    level,
+                                    targetCapital
+                            )
                     )
-                            + " accepted the diplomatic package."
             );
         }
 
@@ -184,18 +172,9 @@ public final class CapitalDiplomaticResolutionService {
             ServerPlayer player,
             UUID shipmentId
     ) {
-        Validation validation = validatePlayerResponse(
-                player,
-                shipmentId
-        );
-
+        Validation validation = validatePlayerResponse(player, shipmentId);
         if (!validation.valid()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            validation.failureMessage()
-                    )
-            );
-
+            player.sendSystemMessage(validation.failureMessage());
             return 0;
         }
 
@@ -204,17 +183,8 @@ public final class CapitalDiplomaticResolutionService {
         CapitalRecord sourceCapital = validation.sourceCapital();
         CapitalRecord targetCapital = validation.targetCapital();
 
-        if (!CapitalDiplomaticStorageService.deposit(
-                level,
-                targetCapital,
-                shipment.getContents()
-        )) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            "The receiving capital's MCA village storage is unavailable."
-                    )
-            );
-
+        if (!CapitalDiplomaticStorageService.deposit(level, targetCapital, shipment.getContents())) {
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_diplomatic_resolution_service.the_receiving_capital_s_mca_village_storage_is_unavailable"));
             return 0;
         }
 
@@ -224,35 +194,15 @@ public final class CapitalDiplomaticResolutionService {
                 targetCapital,
                 shipment.getRelationshipDelta(),
                 shipment.getRelationshipDelta() < 0
-                        ? "Diplomatic insult accepted"
-                        : "Diplomatic gift accepted"
+                        ? "mcacapitals.relationship_reason.diplomatic_insult_accepted"
+                        : "mcacapitals.relationship_reason.diplomatic_gift_accepted"
         );
+        recordAccepted(level, sourceCapital, targetCapital);
+        shipment.setStatus(DiplomaticShipmentStatus.ACCEPTED_RESPONSE_IN_TRANSIT);
+        shipment.setAvailableAt(CapitalDiplomaticDelayService.schedule(level));
+        CapitalDiplomacyDataAccess.get(level).setDirty();
 
-        recordAccepted(
-                level,
-                sourceCapital,
-                targetCapital
-        );
-
-        shipment.setStatus(
-                DiplomaticShipmentStatus
-                        .ACCEPTED_RESPONSE_IN_TRANSIT
-        );
-
-        shipment.setAvailableAt(
-                CapitalDiplomaticDelayService.schedule(level)
-        );
-
-        CapitalDiplomacyDataAccess
-                .get(level)
-                .setDirty();
-
-        player.sendSystemMessage(
-                Component.literal(
-                        "The package has been accepted and sent to the capital's MCA Storage system. Your reply is travelling to the sending court."
-                )
-        );
-
+        player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_diplomatic_resolution_service.the_package_has_been_accepted_and_sent_to_the_capital_s_mca_storage_sy"));
         return 1;
     }
 
@@ -260,42 +210,19 @@ public final class CapitalDiplomaticResolutionService {
             ServerPlayer player,
             UUID shipmentId
     ) {
-        Validation validation = validatePlayerResponse(
-                player,
-                shipmentId
-        );
-
+        Validation validation = validatePlayerResponse(player, shipmentId);
         if (!validation.valid()) {
-            player.sendSystemMessage(
-                    Component.literal(
-                            validation.failureMessage()
-                    )
-            );
-
+            player.sendSystemMessage(validation.failureMessage());
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
         DiplomaticShipment shipment = validation.shipment();
+        shipment.setStatus(DiplomaticShipmentStatus.RETURNED_IN_TRANSIT);
+        shipment.setAvailableAt(CapitalDiplomaticDelayService.schedule(level));
+        CapitalDiplomacyDataAccess.get(level).setDirty();
 
-        shipment.setStatus(
-                DiplomaticShipmentStatus.RETURNED_IN_TRANSIT
-        );
-
-        shipment.setAvailableAt(
-                CapitalDiplomaticDelayService.schedule(level)
-        );
-
-        CapitalDiplomacyDataAccess
-                .get(level)
-                .setDirty();
-
-        player.sendSystemMessage(
-                Component.literal(
-                        "The package has been sent back. It may take one to five minutes to reach the sending court."
-                )
-        );
-
+        player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_diplomatic_resolution_service.the_package_has_been_sent_back_it_may_take_one_to_five_minutes_to_reac"));
         return 1;
     }
 
@@ -303,55 +230,32 @@ public final class CapitalDiplomaticResolutionService {
             ServerLevel level,
             DiplomaticShipment shipment
     ) {
-        if (level == null
-                || shipment == null
-                || shipment.getStatus()
-                != DiplomaticShipmentStatus
-                .ACCEPTED_RESPONSE_IN_TRANSIT) {
+        if (level == null || shipment == null
+                || shipment.getStatus() != DiplomaticShipmentStatus.ACCEPTED_RESPONSE_IN_TRANSIT) {
             return false;
         }
 
-        CapitalRecord sourceCapital =
-                CapitalManager.getCapital(
-                        shipment.getSourceCapitalId()
-                );
-
-        CapitalRecord targetCapital =
-                CapitalManager.getCapital(
-                        shipment.getTargetCapitalId()
-                );
-
+        CapitalRecord sourceCapital = CapitalManager.getCapital(shipment.getSourceCapitalId());
+        CapitalRecord targetCapital = CapitalManager.getCapital(shipment.getTargetCapitalId());
         if (sourceCapital == null) {
-            CapitalDiplomacyDataAccess.removeShipment(
-                    level,
-                    shipment.getShipmentId()
-            );
-
+            CapitalDiplomacyDataAccess.removeShipment(level, shipment.getShipmentId());
             return true;
         }
 
-        shipment.setStatus(
-                DiplomaticShipmentStatus.ACCEPTED
-        );
-
+        shipment.setStatus(DiplomaticShipmentStatus.ACCEPTED);
         notifySource(
                 level,
                 shipment,
                 sourceCapital,
-                "Gift Accepted",
-                "The court of "
-                        + capitalName(
-                        level,
-                        targetCapital
+                Component.translatable(
+                        "mcacapitals.diplomacy.gift.accepted_title"
+                ),
+                Component.translatable(
+                        "mcacapitals.diplomacy.gift.accepted_by_court",
+                        capitalName(level, targetCapital)
                 )
-                        + " accepted the diplomatic package."
         );
-
-        CapitalDiplomacyDataAccess.removeShipment(
-                level,
-                shipment.getShipmentId()
-        );
-
+        CapitalDiplomacyDataAccess.removeShipment(level, shipment.getShipmentId());
         return true;
     }
 
@@ -359,89 +263,55 @@ public final class CapitalDiplomaticResolutionService {
             ServerLevel level,
             DiplomaticShipment shipment
     ) {
-        if (level == null
-                || shipment == null
-                || shipment.getStatus()
-                != DiplomaticShipmentStatus
-                .RETURNED_IN_TRANSIT) {
+        if (level == null || shipment == null
+                || shipment.getStatus() != DiplomaticShipmentStatus.RETURNED_IN_TRANSIT) {
             return false;
         }
 
-        CapitalRecord sourceCapital =
-                CapitalManager.getCapital(
-                        shipment.getSourceCapitalId()
-                );
-
-        CapitalRecord targetCapital =
-                CapitalManager.getCapital(
-                        shipment.getTargetCapitalId()
-                );
-
+        CapitalRecord sourceCapital = CapitalManager.getCapital(shipment.getSourceCapitalId());
+        CapitalRecord targetCapital = CapitalManager.getCapital(shipment.getTargetCapitalId());
         if (sourceCapital == null) {
-            CapitalDiplomacyDataAccess.removeShipment(
-                    level,
-                    shipment.getShipmentId()
-            );
-
+            CapitalDiplomacyDataAccess.removeShipment(level, shipment.getShipmentId());
             return true;
         }
 
-        if (!CapitalDiplomaticStorageService.deposit(
-                level,
-                sourceCapital,
-                shipment.getContents()
-        )) {
+        if (!CapitalDiplomaticStorageService.deposit(level, sourceCapital, shipment.getContents())) {
             return false;
         }
 
-        boolean insulting =
-                shipment.getRelationshipDelta() < 0;
-
+        boolean insulting = shipment.getRelationshipDelta() < 0;
         if (insulting && targetCapital != null) {
             applyRelationship(
                     level,
                     sourceCapital,
                     targetCapital,
                     shipment.getRelationshipDelta(),
-                    "Diplomatic insult returned"
+                    "mcacapitals.relationship_reason.diplomatic_insult_returned"
             );
         }
-
         if (targetCapital != null) {
-            recordReturned(
-                    level,
-                    sourceCapital,
-                    targetCapital,
-                    insulting
-            );
+            recordReturned(level, sourceCapital, targetCapital, insulting);
         }
 
-        shipment.setStatus(
-                DiplomaticShipmentStatus.RETURNED
-        );
-
+        shipment.setStatus(DiplomaticShipmentStatus.RETURNED);
         notifySource(
                 level,
                 shipment,
                 sourceCapital,
-                "Gift Returned",
-                "The diplomatic package was returned from "
-                        + capitalName(
-                        level,
-                        targetCapital
+                Component.translatable(
+                        "mcacapitals.diplomacy.gift.returned_title"
+                ),
+                Component.translatable(
+                        "mcacapitals.diplomacy.gift.returned_from",
+                        capitalName(level, targetCapital)
                 )
-                        + "."
         );
-
-        CapitalDiplomacyDataAccess.removeShipment(
-                level,
-                shipment.getShipmentId()
-        );
-
+        CapitalDiplomacyDataAccess.removeShipment(level, shipment.getShipmentId());
         return true;
     }
 
-    public static List<DiplomaticShipment> getPendingForPlayer(
+    public static List<DiplomaticShipment>
+    getPendingForPlayer(
             ServerLevel level,
             UUID playerId
     ) {
@@ -453,7 +323,8 @@ public final class CapitalDiplomaticResolutionService {
                 new ArrayList<>();
 
         for (CapitalRecord capital :
-                CapitalManager.getAllCapitalRecords()) {
+                CapitalManager
+                        .getAllCapitalRecords()) {
             if (capital == null
                     || capital.getState()
                     != CapitalState.ACTIVE
@@ -495,11 +366,12 @@ public final class CapitalDiplomaticResolutionService {
             return false;
         }
 
-        if (!CapitalDiplomaticStorageService.deposit(
-                level,
-                sourceCapital,
-                shipment.getContents()
-        )) {
+        if (!CapitalDiplomaticStorageService
+                .deposit(
+                        level,
+                        sourceCapital,
+                        shipment.getContents()
+                )) {
             return false;
         }
 
@@ -507,8 +379,12 @@ public final class CapitalDiplomaticResolutionService {
                 level,
                 shipment,
                 sourceCapital,
-                "Package Undeliverable",
-                "The destination capital no longer exists. The package was returned to your capital's MCA Storage system."
+                Component.translatable(
+                        "mcacapitals.diplomacy.gift.undeliverable_title"
+                ),
+                Component.translatable(
+                        "mcacapitals.diplomacy.gift.undeliverable_message"
+                )
         );
 
         CapitalDiplomacyDataAccess.removeShipment(
@@ -525,22 +401,29 @@ public final class CapitalDiplomaticResolutionService {
     ) {
         if (player == null || shipmentId == null) {
             return Validation.failure(
-                    "That diplomatic package is invalid."
+                    Component.translatable(
+                            "mcacapitals.diplomacy.gift.validation.package_invalid"
+                    )
             );
         }
 
-        ServerLevel level = player.serverLevel();
+        ServerLevel level =
+                player.serverLevel();
 
         DiplomaticShipment shipment =
-                CapitalDiplomacyDataAccess.getShipment(
-                        level,
-                        shipmentId
-                );
+                CapitalDiplomacyDataAccess
+                        .getShipment(
+                                level,
+                                shipmentId
+                        );
 
         if (shipment == null
-                || !shipment.isAwaitingPlayerResponse()) {
+                || !shipment
+                .isAwaitingPlayerResponse()) {
             return Validation.failure(
-                    "That diplomatic package is no longer awaiting a response."
+                    Component.translatable(
+                            "mcacapitals.diplomacy.gift.validation.no_longer_awaiting"
+                    )
             );
         }
 
@@ -559,7 +442,9 @@ public final class CapitalDiplomaticResolutionService {
                 || targetCapital.getState()
                 != CapitalState.ACTIVE) {
             return Validation.failure(
-                    "One of the capitals connected to this package no longer exists."
+                    Component.translatable(
+                            "mcacapitals.diplomacy.gift.validation.capital_missing"
+                    )
             );
         }
 
@@ -570,7 +455,9 @@ public final class CapitalDiplomaticResolutionService {
                         player.getUUID()
                 )) {
             return Validation.failure(
-                    "Only the player sovereign, or the player Hand serving a villager sovereign, may answer this package."
+                    Component.translatable(
+                            "mcacapitals.diplomacy.gift.validation.answer_authority"
+                    )
             );
         }
 
@@ -591,27 +478,11 @@ public final class CapitalDiplomaticResolutionService {
                 || sourceCapital == null
                 || targetCapital == null
                 || shipment == null
-                || !"Grave insult".equalsIgnoreCase(
-                shipment.getAppraisal()
-        )) {
+                || !CapitalGiftAppraisalService.isGraveInsult(shipment.getAppraisal())) {
             return;
         }
 
-        CapitalChronicleService.addEntry(
-                level,
-                targetCapital,
-                "A diplomatic package from "
-                        + capitalName(
-                        level,
-                        sourceCapital
-                )
-                        + " was judged a grave insult by the court of "
-                        + capitalName(
-                        level,
-                        targetCapital
-                )
-                        + "."
-        );
+        CapitalChronicleService.addEvent(level, targetCapital, CapitalChronicleEventId.DIPLOMATIC_PACKAGE_GRAVE_INSULT, capitalName(level, sourceCapital), capitalName(level, targetCapital));
     }
 
     private static void applyRelationship(
@@ -621,14 +492,15 @@ public final class CapitalDiplomaticResolutionService {
             int amount,
             String reason
     ) {
-        CapitalDiplomacyDataAccess.adjustRelationship(
-                level,
-                sourceCapital.getCapitalId(),
-                targetCapital.getCapitalId(),
-                amount,
-                reason,
-                sourceCapital.getCapitalId()
-        );
+        CapitalDiplomacyDataAccess
+                .adjustRelationship(
+                        level,
+                        sourceCapital.getCapitalId(),
+                        targetCapital.getCapitalId(),
+                        amount,
+                        reason,
+                        sourceCapital.getCapitalId()
+                );
     }
 
     private static void recordAccepted(
@@ -636,43 +508,23 @@ public final class CapitalDiplomaticResolutionService {
             CapitalRecord sourceCapital,
             CapitalRecord targetCapital
     ) {
-        String sourceName = capitalName(
-                level,
-                sourceCapital
-        );
+        String sourceName = capitalName(level, sourceCapital);
+        String targetName = capitalName(level, targetCapital);
 
-        String targetName = capitalName(
-                level,
-                targetCapital
-        );
-
-        long day = Math.max(
-                1L,
-                level.getDayTime() / 24000L + 1L
-        );
-
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 sourceCapital,
-                "On day "
-                        + day
-                        + ", the court of "
-                        + targetName
-                        + " accepted a diplomatic package from "
-                        + sourceName
-                        + "."
+                CapitalChronicleEventId.DIPLOMATIC_PACKAGE_ACCEPTED_SOURCE,
+                sourceName,
+                targetName
         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 targetCapital,
-                "On day "
-                        + day
-                        + ", a diplomatic package from "
-                        + sourceName
-                        + " was accepted by the court of "
-                        + targetName
-                        + "."
+                CapitalChronicleEventId.DIPLOMATIC_PACKAGE_ACCEPTED_TARGET,
+                sourceName,
+                targetName
         );
     }
 
@@ -682,63 +534,27 @@ public final class CapitalDiplomaticResolutionService {
             CapitalRecord targetCapital,
             boolean insulting
     ) {
-        String sourceName = capitalName(
-                level,
-                sourceCapital
-        );
+        String sourceName = capitalName(level, sourceCapital);
+        String targetName = capitalName(level, targetCapital);
 
-        String targetName = capitalName(
-                level,
-                targetCapital
-        );
-
-        long day = Math.max(
-                1L,
-                level.getDayTime() / 24000L + 1L
-        );
-
-        String sourceEntry = insulting
-                ? "On day "
-                + day
-                + ", the court of "
-                + targetName
-                + " condemned and returned a diplomatic package from "
-                + sourceName
-                + "."
-                : "On day "
-                + day
-                + ", the court of "
-                + targetName
-                + " returned a diplomatic package from "
-                + sourceName
-                + ".";
-
-        String targetEntry = insulting
-                ? "On day "
-                + day
-                + ", a diplomatic package from "
-                + sourceName
-                + " was condemned as an insult and returned by "
-                + targetName
-                + "."
-                : "On day "
-                + day
-                + ", a diplomatic package from "
-                + sourceName
-                + " was returned by "
-                + targetName
-                + ".";
-
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 sourceCapital,
-                sourceEntry
+                insulting
+                        ? CapitalChronicleEventId.DIPLOMATIC_PACKAGE_INSULT_RETURNED_SOURCE
+                        : CapitalChronicleEventId.DIPLOMATIC_PACKAGE_RETURNED_SOURCE,
+                targetName,
+                sourceName
         );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 targetCapital,
-                targetEntry
+                insulting
+                        ? CapitalChronicleEventId.DIPLOMATIC_PACKAGE_INSULT_RETURNED_TARGET
+                        : CapitalChronicleEventId.DIPLOMATIC_PACKAGE_RETURNED_TARGET,
+                sourceName,
+                targetName
         );
     }
 
@@ -746,14 +562,15 @@ public final class CapitalDiplomaticResolutionService {
             ServerLevel level,
             DiplomaticShipment shipment,
             CapitalRecord sourceCapital,
-            String title,
-            String message
+            Component title,
+            Component message
     ) {
         UUID recipient =
                 sourceCapital.getPlayerSovereignId();
 
         if (recipient == null) {
-            recipient = shipment.getSenderSovereignId();
+            recipient =
+                    shipment.getSenderSovereignId();
         }
 
         if (recipient == null) {
@@ -785,7 +602,7 @@ public final class CapitalDiplomaticResolutionService {
             DiplomaticShipment shipment,
             CapitalRecord sourceCapital,
             CapitalRecord targetCapital,
-            String failureMessage
+            Component failureMessage
     ) {
 
         private static Validation success(
@@ -803,7 +620,7 @@ public final class CapitalDiplomaticResolutionService {
         }
 
         private static Validation failure(
-                String message
+                Component message
         ) {
             return new Validation(
                     false,

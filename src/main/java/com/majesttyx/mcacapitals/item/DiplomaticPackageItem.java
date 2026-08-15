@@ -80,7 +80,7 @@ public final class DiplomaticPackageItem extends Item {
 
     @Override
     public Component getName(ItemStack stack) {
-        return Component.literal("Diplomatic Package");
+        return Component.translatable("mcacapitals.system.diplomatic_package_item.diplomatic_package");
     }
 
     @Override
@@ -97,16 +97,20 @@ public final class DiplomaticPackageItem extends Item {
         int occupied = 0;
         for (ItemStack stored : contents.nonEmptyItems()) {
             occupied++;
-            tooltip.add(Component.literal(
-                    stored.getCount() + " × " + stored.getHoverName().getString()
+            tooltip.add(Component.translatable(
+                    "mcacapitals.system.diplomatic_package_item.stored_item",
+                    stored.getCount(),
+                    stored.getHoverName()
             ).withStyle(ChatFormatting.GRAY));
         }
         if (occupied == 0) {
-            tooltip.add(Component.literal("Empty")
+            tooltip.add(Component.translatable("mcacapitals.system.diplomatic_package_item.empty")
                     .withStyle(ChatFormatting.GRAY));
         }
-        tooltip.add(Component.literal(
-                occupied + "/" + SLOT_COUNT + " slots filled"
+        tooltip.add(Component.translatable(
+                "mcacapitals.system.diplomatic_package_item.slots_filled",
+                occupied,
+                SLOT_COUNT
         ).withStyle(ChatFormatting.DARK_GRAY));
     }
 

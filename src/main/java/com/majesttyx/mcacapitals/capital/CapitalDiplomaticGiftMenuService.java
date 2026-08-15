@@ -4,6 +4,7 @@ import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenAmbassadorCommunicationPacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -19,127 +20,242 @@ final class CapitalDiplomaticGiftMenuService {
     private CapitalDiplomaticGiftMenuService() {
     }
 
-    static boolean openDestinationList(ServerPlayer player, Entity ambassadorEntity) {
-        CapitalDiplomaticGiftValidation.Validation validation =
-                CapitalDiplomaticGiftValidation.validateAudience(
-                        player,
-                        ambassadorEntity,
-                        false
-                );
+    static boolean openDestinationList(
+            ServerPlayer player,
+            Entity ambassadorEntity
+    ) {
+        CapitalDiplomaticGiftValidation
+                .Validation validation =
+                CapitalDiplomaticGiftValidation
+                        .validateAudience(
+                                player,
+                                ambassadorEntity,
+                                false
+                        );
+
         if (!validation.valid()) {
             if (player != null) {
-                sendMessage(player, "Diplomatic Gifts", validation.failureMessage());
+                sendMessage(
+                        player,
+                        Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                        validation.failureMessage()
+                );
             }
+
             return true;
         }
 
-        CapitalDiplomaticGiftValidation.HeldPackage heldPackage =
-                CapitalDiplomaticGiftValidation.findHeldPackage(player);
+        CapitalDiplomaticGiftValidation
+                .HeldPackage heldPackage =
+                CapitalDiplomaticGiftValidation
+                        .findHeldPackage(
+                                player
+                        );
+
         if (heldPackage == null) {
-            MCAIntegrationBridge.stopInteracting(ambassadorEntity);
+            MCAIntegrationBridge.stopInteracting(
+                    ambassadorEntity
+            );
+
             sendMessage(
                     player,
-                    "Diplomatic Gifts",
-                    ambassadorEntity.getName().getString()
-                            + ": You will need to hold a filled Diplomatic Package before I can send a gift to another capital."
+                    Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomatic_gifts.need_filled_package",
+                            ambassadorEntity.getName()
+                    )
             );
+
             return true;
         }
 
-        List<ItemStack> contents = CapitalDiplomaticGiftValidation.readAndValidateContents(
-                heldPackage.stack()
-        );
+        List<ItemStack> contents =
+                CapitalDiplomaticGiftValidation
+                        .readAndValidateContents(
+                                heldPackage.stack()
+                        );
+
         if (contents.isEmpty()) {
-            MCAIntegrationBridge.stopInteracting(ambassadorEntity);
+            MCAIntegrationBridge.stopInteracting(
+                    ambassadorEntity
+            );
+
             sendMessage(
                     player,
-                    "Diplomatic Gifts",
-                    ambassadorEntity.getName().getString()
-                            + ": This Diplomatic Package is empty. Place at least one gift inside it before we send it."
+                    Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomatic_gifts.package_empty",
+                            ambassadorEntity.getName()
+                    )
             );
+
             return true;
         }
 
-        ServerLevel level = player.serverLevel();
-        CapitalRecord sourceCapital = validation.sourceCapital();
-        UUID ambassadorId = ambassadorEntity.getUUID();
+        ServerLevel level =
+                player.serverLevel();
 
-        List<CapitalRecord> targets = CapitalManager.getAllCapitalRecords()
-                .stream()
-                .filter(target -> target != null)
-                .filter(target -> target.getState() == CapitalState.ACTIVE)
-                .filter(target -> target.getCapitalId() != null)
-                .filter(target -> !target.getCapitalId().equals(sourceCapital.getCapitalId()))
-                .sorted(Comparator.comparing(
-                        target -> CapitalDiplomaticGiftText.getCapitalName(level, target),
-                        String.CASE_INSENSITIVE_ORDER
-                ))
-                .toList();
+        CapitalRecord sourceCapital =
+                validation.sourceCapital();
 
-        MCAIntegrationBridge.stopInteracting(ambassadorEntity);
+        UUID ambassadorId =
+                ambassadorEntity.getUUID();
+
+        List<CapitalRecord> targets =
+                CapitalManager
+                        .getAllCapitalRecords()
+                        .stream()
+                        .filter(target ->
+                                target != null
+                        )
+                        .filter(target ->
+                                target.getState()
+                                        == CapitalState.ACTIVE
+                        )
+                        .filter(target ->
+                                target.getCapitalId()
+                                        != null
+                        )
+                        .filter(target ->
+                                !target.getCapitalId()
+                                        .equals(
+                                                sourceCapital
+                                                        .getCapitalId()
+                                        )
+                        )
+                        .sorted(
+                                Comparator.comparing(
+                                        target ->
+                                                CapitalDiplomaticGiftText
+                                                        .getCapitalName(
+                                                                level,
+                                                                target
+                                                        ),
+                                        String.CASE_INSENSITIVE_ORDER
+                                )
+                        )
+                        .toList();
+
+        MCAIntegrationBridge.stopInteracting(
+                ambassadorEntity
+        );
+
         if (targets.isEmpty()) {
             sendMessage(
                     player,
-                    "Diplomatic Gifts",
-                    ambassadorEntity.getName().getString()
-                            + ": There are no other established capitals to receive a package."
+                    Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomatic_gifts.no_targets",
+                            ambassadorEntity.getName()
+                    )
             );
+
             return true;
         }
 
-        List<OpenAmbassadorCommunicationPacket.Entry> entries = new ArrayList<>();
-        for (CapitalRecord target : targets) {
-            int score = CapitalDiplomacyDataAccess.getRelationshipScore(
-                    level,
-                    sourceCapital.getCapitalId(),
-                    target.getCapitalId()
-            );
-            long cooldown = CapitalDiplomacyDataAccess.getGiftCooldownRemaining(
-                    level,
-                    sourceCapital.getCapitalId(),
-                    target.getCapitalId()
-            );
-            String targetName = CapitalDiplomaticGiftText.getCapitalName(level, target);
-            String relationship = CapitalRelationshipBand.fromScore(score).getDisplayName();
-            boolean enabled = cooldown <= 0L;
-            String cooldownText = enabled
-                    ? "Status: Ready to Send"
-                    : "Available in " + CapitalDiplomaticGiftText.formatDuration(cooldown);
+        List<OpenAmbassadorCommunicationPacket.Entry> entries =
+                new ArrayList<>();
 
-            entries.add(new OpenAmbassadorCommunicationPacket.Entry(
-                    targetName,
-                    "Relationship: " + relationship + " (" + score + ")",
-                    cooldownText,
-                    "",
-                    "Send Gift to " + targetName,
-                    "/capitalgift send " + ambassadorId + " " + target.getCapitalId(),
-                    enabled,
-                    enabled ? "" : cooldownText
-            ));
+        for (CapitalRecord target :
+                targets) {
+            int score =
+                    CapitalDiplomacyDataAccess
+                            .getRelationshipScore(
+                                    level,
+                                    sourceCapital
+                                            .getCapitalId(),
+                                    target.getCapitalId()
+                            );
+
+            long cooldown =
+                    CapitalDiplomacyDataAccess
+                            .getGiftCooldownRemaining(
+                                    level,
+                                    sourceCapital
+                                            .getCapitalId(),
+                                    target.getCapitalId()
+                            );
+
+            String targetName =
+                    CapitalDiplomaticGiftText
+                            .getCapitalName(
+                                    level,
+                                    target
+                            );
+
+            Component targetNameComponent = targetName.isBlank()
+                    ? Component.translatable("mcacapitals.diplomacy.unknown_capital")
+                    : Component.literal(targetName);
+
+            Component relationship =
+                    CapitalRelationshipBand
+                            .fromScore(score)
+                            .getDisplayComponent();
+
+            boolean enabled =
+                    cooldown <= 0L;
+
+            Component cooldownText =
+                    enabled
+                            ? Component.translatable("mcacapitals.ui.diplomatic_gifts.ready")
+                            : Component.translatable(
+                                    "mcacapitals.ui.diplomatic_gifts.available_in",
+                                    CapitalDiplomaticGiftText.formatDuration(cooldown)
+                            );
+
+            entries.add(
+                    new OpenAmbassadorCommunicationPacket.Entry(
+                            targetNameComponent,
+                            Component.translatable(
+                                    "mcacapitals.ui.diplomacy.relationship_score",
+                                    relationship,
+                                    score
+                            ),
+                            cooldownText,
+                            Component.empty(),
+                            Component.translatable(
+                                    "mcacapitals.ui.diplomatic_gifts.send_to",
+                                    targetNameComponent
+                            ),
+                            "/capitalgift send "
+                                    + ambassadorId
+                                    + " "
+                                    + target.getCapitalId(),
+                            enabled,
+                            enabled
+                                    ? Component.empty()
+                                    : cooldownText
+                    )
+            );
         }
 
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.GIFT_DESTINATIONS,
-                        "Send Gift to Capital",
-                        ambassadorEntity.getName().getString(),
-                        "Choose the capital that should receive the held Diplomatic Package.",
+                        Component.translatable("mcacapitals.ui.diplomatic_gifts.send_title"),
+                        ambassadorEntity.getName(),
+                        Component.translatable("mcacapitals.ui.diplomatic_gifts.choose_target"),
                         "",
                         entries,
                         List.of()
                 )
         );
+
         return true;
     }
 
-    private static void sendMessage(ServerPlayer player, String title, String message) {
+    private static void sendMessage(
+            ServerPlayer player,
+            Component title,
+            Component message
+    ) {
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
                         OpenAmbassadorCommunicationPacket.Mode.MESSAGE,
                         title,
-                        "",
+                        Component.empty(),
                         message,
                         "",
                         List.of(),

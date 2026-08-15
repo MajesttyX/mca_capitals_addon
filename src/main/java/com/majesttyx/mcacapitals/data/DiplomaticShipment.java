@@ -14,6 +14,7 @@ import java.util.UUID;
 public final class DiplomaticShipment {
 
     public static final int MAX_SLOTS = 3;
+
     private static final String KEY_SHIPMENT_ID = "ShipmentId";
     private static final String KEY_SOURCE_CAPITAL_ID = "SourceCapitalId";
     private static final String KEY_TARGET_CAPITAL_ID = "TargetCapitalId";
@@ -26,6 +27,7 @@ public final class DiplomaticShipment {
     private static final String KEY_APPRAISAL = "Appraisal";
     private static final String KEY_STATUS = "Status";
     private static final String KEY_CONTENTS = "Contents";
+
     private final UUID shipmentId;
     private final UUID sourceCapitalId;
     private final UUID targetCapitalId;
@@ -38,6 +40,7 @@ public final class DiplomaticShipment {
     private final String appraisal;
     private DiplomaticShipmentStatus status;
     private final List<ItemStack> contents;
+
     public DiplomaticShipment(
             UUID shipmentId,
             UUID sourceCapitalId,
@@ -65,6 +68,7 @@ public final class DiplomaticShipment {
                 contents
         );
     }
+
     public DiplomaticShipment(
             UUID shipmentId,
             UUID sourceCapitalId,
@@ -93,6 +97,7 @@ public final class DiplomaticShipment {
                 contents
         );
     }
+
     public DiplomaticShipment(
             UUID shipmentId,
             UUID sourceCapitalId,
@@ -114,11 +119,13 @@ public final class DiplomaticShipment {
                     "Diplomatic shipment IDs cannot be null."
             );
         }
+
         if (sourceCapitalId.equals(targetCapitalId)) {
             throw new IllegalArgumentException(
                     "A diplomatic shipment cannot target its source capital."
             );
         }
+
         this.shipmentId = shipmentId;
         this.sourceCapitalId = sourceCapitalId;
         this.targetCapitalId = targetCapitalId;
@@ -129,13 +136,14 @@ public final class DiplomaticShipment {
         this.availableAt = Math.max(this.createdAt, availableAt);
         this.relationshipDelta = Math.max(-15, Math.min(10, relationshipDelta));
         this.appraisal = appraisal == null || appraisal.isBlank()
-                ? "Trivial or confusing"
+                ? "trivial_or_confusing"
                 : appraisal;
         this.status = status == null
                 ? DiplomaticShipmentStatus.DISPATCHED
                 : status;
         this.contents = copyContents(contents);
     }
+
     public UUID getShipmentId() {
         return shipmentId;
     }
@@ -159,6 +167,7 @@ public final class DiplomaticShipment {
     public UUID getNotifiedPlayerId() {
         return notifiedPlayerId;
     }
+
     public void setNotifiedPlayerId(UUID notifiedPlayerId) {
         this.notifiedPlayerId = notifiedPlayerId;
     }
@@ -178,6 +187,7 @@ public final class DiplomaticShipment {
     public void setAvailableAt(long availableAt) {
         this.availableAt = Math.max(0L, availableAt);
     }
+
     public boolean isReady(long gameTime) {
         return gameTime >= availableAt;
     }
@@ -199,6 +209,7 @@ public final class DiplomaticShipment {
                 ? DiplomaticShipmentStatus.DISPATCHED
                 : status;
     }
+
     public List<ItemStack> getContents() {
         return Collections.unmodifiableList(copyContents(contents));
     }
@@ -206,11 +217,13 @@ public final class DiplomaticShipment {
     public boolean isAwaitingPlayerResponse() {
         return status == DiplomaticShipmentStatus.AWAITING_PLAYER_RESPONSE;
     }
+
     public CompoundTag save(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         tag.putUUID(KEY_SHIPMENT_ID, shipmentId);
         tag.putUUID(KEY_SOURCE_CAPITAL_ID, sourceCapitalId);
         tag.putUUID(KEY_TARGET_CAPITAL_ID, targetCapitalId);
+
         if (senderSovereignId != null) {
             tag.putUUID(KEY_SENDER_SOVEREIGN_ID, senderSovereignId);
         }
@@ -220,11 +233,13 @@ public final class DiplomaticShipment {
         if (notifiedPlayerId != null) {
             tag.putUUID(KEY_NOTIFIED_PLAYER_ID, notifiedPlayerId);
         }
+
         tag.putLong(KEY_CREATED_AT, createdAt);
         tag.putLong(KEY_AVAILABLE_AT, availableAt);
         tag.putInt(KEY_RELATIONSHIP_DELTA, relationshipDelta);
         tag.putString(KEY_APPRAISAL, appraisal);
         tag.putString(KEY_STATUS, status.getSerializedName());
+
         ListTag contentsTag = new ListTag();
         for (ItemStack stack : contents) {
             if (!stack.isEmpty()) {
@@ -234,6 +249,7 @@ public final class DiplomaticShipment {
         tag.put(KEY_CONTENTS, contentsTag);
         return tag;
     }
+
     public static DiplomaticShipment load(
             CompoundTag tag,
             HolderLookup.Provider registries
@@ -243,6 +259,7 @@ public final class DiplomaticShipment {
                 || !tag.hasUUID(KEY_TARGET_CAPITAL_ID)) {
             return null;
         }
+
         List<ItemStack> contents = new ArrayList<>();
         ListTag contentsTag = tag.getList(KEY_CONTENTS, Tag.TAG_COMPOUND);
         for (Tag rawStack : contentsTag) {
@@ -258,6 +275,7 @@ public final class DiplomaticShipment {
                 contents.add(stack);
             }
         }
+
         UUID senderSovereignId = tag.hasUUID(KEY_SENDER_SOVEREIGN_ID)
                 ? tag.getUUID(KEY_SENDER_SOVEREIGN_ID)
                 : null;
@@ -271,6 +289,7 @@ public final class DiplomaticShipment {
         long availableAt = tag.contains(KEY_AVAILABLE_AT)
                 ? tag.getLong(KEY_AVAILABLE_AT)
                 : createdAt;
+
         return new DiplomaticShipment(
                 tag.getUUID(KEY_SHIPMENT_ID),
                 tag.getUUID(KEY_SOURCE_CAPITAL_ID),
@@ -286,6 +305,7 @@ public final class DiplomaticShipment {
                 contents
         );
     }
+
     private static List<ItemStack> copyContents(List<ItemStack> source) {
         List<ItemStack> copy = new ArrayList<>();
         if (source == null) {

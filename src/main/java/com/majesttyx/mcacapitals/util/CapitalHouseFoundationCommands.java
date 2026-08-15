@@ -46,7 +46,7 @@ public class CapitalHouseFoundationCommands {
     private static int foundLookTarget(CommandSourceStack source) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_foundation_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
@@ -65,7 +65,7 @@ public class CapitalHouseFoundationCommands {
     private static int clearLookTarget(CommandSourceStack source) {
         Entity target = getLookedAtMCAVillager(source);
         if (target == null) {
-            source.sendFailure(Component.literal("Look at a loaded MCA villager within 16 blocks."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_foundation_commands.look_at_a_loaded_mca_villager_within_16_blocks"));
             return 0;
         }
 
@@ -102,7 +102,7 @@ public class CapitalHouseFoundationCommands {
     private static Entity getLookedAtMCAVillager(CommandSourceStack source) {
         ServerPlayer player = getPlayer(source);
         if (player == null) {
-            source.sendFailure(Component.literal("Only a player can use the look-target version of this command."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_house_foundation_commands.only_a_player_can_use_the_look_target_version_of_this_command"));
             return null;
         }
 

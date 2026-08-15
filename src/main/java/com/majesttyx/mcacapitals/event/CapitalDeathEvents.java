@@ -1,5 +1,7 @@
 package com.majesttyx.mcacapitals.event;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalDeathTransitionService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
@@ -88,25 +90,22 @@ public final class CapitalDeathEvents {
                         source
                 );
 
-        if (executionerName == null
-                || executionerName.isBlank()) {
-            CapitalChronicleService.addEntry(
+        if (executionerName == null || executionerName.isBlank()) {
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
+                    CapitalChronicleEventId.EXECUTED_CONDEMNED,
                     villagerName
-                            + " was executed after being condemned by the Crown."
             );
-
             return;
         }
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                villagerName
-                        + " was executed by "
-                        + executionerName
-                        + " after being condemned by the Crown."
+                CapitalChronicleEventId.EXECUTED_BY_CROWN,
+                villagerName,
+                executionerName
         );
     }
 

@@ -19,22 +19,42 @@ public final class CapitalCampaignCommands {
     private CapitalCampaignCommands() {
     }
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void register(
+            CommandDispatcher<CommandSourceStack> dispatcher
+    ) {
         dispatcher.register(
                 Commands.literal("capitalcampaign")
                         .then(
                                 Commands.literal("launch")
                                         .then(
-                                                Commands.argument("ambassadorId", StringArgumentType.word())
+                                                Commands.argument(
+                                                                "ambassadorId",
+                                                                StringArgumentType.word()
+                                                        )
                                                         .then(
-                                                                Commands.argument("targetCapitalId", StringArgumentType.word())
+                                                                Commands.argument(
+                                                                                "targetCapitalId",
+                                                                                StringArgumentType.word()
+                                                                        )
                                                                         .then(
-                                                                                Commands.argument("warGoal", StringArgumentType.word())
+                                                                                Commands.argument(
+                                                                                                "warGoal",
+                                                                                                StringArgumentType.word()
+                                                                                        )
                                                                                         .executes(context -> launch(
                                                                                                 context.getSource(),
-                                                                                                StringArgumentType.getString(context, "ambassadorId"),
-                                                                                                StringArgumentType.getString(context, "targetCapitalId"),
-                                                                                                StringArgumentType.getString(context, "warGoal")
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "ambassadorId"
+                                                                                                ),
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "targetCapitalId"
+                                                                                                ),
+                                                                                                StringArgumentType.getString(
+                                                                                                        context,
+                                                                                                        "warGoal"
+                                                                                                )
                                                                                         ))
                                                                         )
                                                         )
@@ -42,10 +62,16 @@ public final class CapitalCampaignCommands {
                         )
                         .then(
                                 Commands.literal("clearcooldown")
-                                        .requires(source -> source.hasPermission(2))
+                                        .requires(source ->
+                                                source.hasPermission(2)
+                                        )
                                         .then(
                                                 Commands.literal("all")
-                                                        .executes(context -> clearAllCooldowns(context.getSource()))
+                                                        .executes(context ->
+                                                                clearAllCooldowns(
+                                                                        context.getSource()
+                                                                )
+                                                        )
                                         )
                         )
         );
@@ -57,65 +83,107 @@ public final class CapitalCampaignCommands {
             String rawTargetCapitalId,
             String rawWarGoal
     ) {
-        ServerPlayer player = getPlayer(source);
-        UUID ambassadorId = parseUuid(source, rawAmbassadorId, "The Ambassador ID is invalid.");
-        UUID targetCapitalId = parseUuid(source, rawTargetCapitalId, "The target capital ID is invalid.");
-        CapitalWarGoal warGoal = parseWarGoal(source, rawWarGoal);
+        ServerPlayer player =
+                getPlayer(source);
 
-        if (player == null || ambassadorId == null || targetCapitalId == null || warGoal == null) {
+        UUID ambassadorId = parseUuid(
+                source,
+                rawAmbassadorId,
+                "mcacapitals.system.command_validation.invalid_ambassador_id"
+        );
+
+        UUID targetCapitalId = parseUuid(
+                source,
+                rawTargetCapitalId,
+                "mcacapitals.system.command_validation.invalid_target_capital_id"
+        );
+
+        CapitalWarGoal warGoal = parseWarGoal(
+                source,
+                rawWarGoal
+        );
+
+        if (player == null
+                || ambassadorId == null
+                || targetCapitalId == null
+                || warGoal == null) {
             return 0;
         }
-        return CapitalCampaignService.launchCampaign(
-                player,
-                ambassadorId,
-                targetCapitalId,
-                warGoal
-        );
+
+        return CapitalCampaignService
+                .launchCampaign(
+                        player,
+                        ambassadorId,
+                        targetCapitalId,
+                        warGoal
+                );
     }
 
-    private static int clearAllCooldowns(CommandSourceStack source) {
-        long currentDay = CapitalWarDataAccess.currentDay(source.getLevel());
+    private static int clearAllCooldowns(
+            CommandSourceStack source
+    ) {
+        long currentDay =
+                CapitalWarDataAccess.currentDay(
+                        source.getLevel()
+                );
+
         int cleared = 0;
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+        for (CapitalRecord capital :
+                CapitalManager.getAllCapitalRecords()) {
             if (capital == null
                     || capital.getCapitalId() == null
-                    || CapitalWarDataAccess.getCampaignAvailableDay(
-                    source.getLevel(),
-                    capital.getCapitalId()) <= currentDay) {
+                    || CapitalWarDataAccess
+                    .getCampaignAvailableDay(
+                            source.getLevel(),
+                            capital.getCapitalId()
+                    ) <= currentDay) {
                 continue;
             }
+
             CapitalWarDataAccess.setCampaignRecovery(
                     source.getLevel(),
                     capital.getCapitalId(),
                     0L
             );
+
             cleared++;
         }
 
         int result = cleared;
+
         source.sendSuccess(
                 () -> Component.literal(
                         "Cleared campaign recovery cooldowns for "
                                 + result
-                                + (result == 1 ? " capital." : " capitals.")
+                                + (result == 1
+                                ? " capital."
+                                : " capitals.")
                 ),
                 true
         );
+
         return 1;
     }
 
-    private static CapitalWarGoal parseWarGoal(CommandSourceStack source, String rawValue) {
+    private static CapitalWarGoal parseWarGoal(
+            CommandSourceStack source,
+            String rawValue
+    ) {
         if (rawValue == null) {
             return null;
         }
+
         for (CapitalWarGoal goal : CapitalWarGoal.values()) {
             if (goal.getSerializedName().equalsIgnoreCase(rawValue)
                     || goal.name().equalsIgnoreCase(rawValue)) {
                 return goal;
             }
         }
-        source.sendFailure(Component.literal("The war goal must be punitive or deposition."));
+
+        source.sendFailure(
+                Component.translatable("mcacapitals.system.capital_campaign_commands.the_war_goal_must_be_punitive_or_deposition")
+        );
         return null;
     }
 
@@ -127,18 +195,24 @@ public final class CapitalCampaignCommands {
         try {
             return UUID.fromString(rawValue);
         } catch (IllegalArgumentException ignored) {
-            source.sendFailure(Component.literal(failureMessage));
+            source.sendFailure(
+                    Component.translatable(failureMessage)
+            );
+
             return null;
         }
     }
 
-    private static ServerPlayer getPlayer(CommandSourceStack source) {
+    private static ServerPlayer getPlayer(
+            CommandSourceStack source
+    ) {
         try {
             return source.getPlayerOrException();
         } catch (Exception ignored) {
-            source.sendFailure(Component.literal(
-                    "Only a player sovereign may launch a military campaign."
-            ));
+            source.sendFailure(
+                    Component.translatable("mcacapitals.system.capital_campaign_commands.only_a_player_sovereign_may_launch_a_military_campaign")
+            );
+
             return null;
         }
     }

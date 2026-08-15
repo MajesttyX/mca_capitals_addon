@@ -14,11 +14,18 @@ import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.conczin.mca.entity.VillagerEntityMCA;
 import net.conczin.mca.server.world.data.Village;
 import net.conczin.mca.server.world.data.VillageManager;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 public final class CapitalAsylumService {
@@ -39,21 +46,22 @@ public final class CapitalAsylumService {
             return false;
         }
 
-        Entity refugee =
-                MCAIntegrationBridge.findLoadedMCAVillagerByUuid(
-                        level,
-                        refugeeId
-                );
+        Entity entity =
+                MCAIntegrationBridge
+                        .findLoadedMCAVillagerByUuid(
+                                level,
+                                refugeeId
+                        );
 
-        if (refugee == null
-                || !refugee.isAlive()
-                || refugee.isRemoved()) {
+        if (!(entity
+                instanceof VillagerEntityMCA villager)
+                || !villager.isAlive()) {
             return false;
         }
 
         VillagerIdentityService.ensureAssigned(
                 level,
-                refugee,
+                villager,
                 originCapital
         );
 
@@ -69,45 +77,192 @@ public final class CapitalAsylumService {
             return false;
         }
 
-        String originName =
-                CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        originCapital
-                );
-
         CapitalRefugeeRecord record =
                 CapitalRefugeeDataAccess.markExiled(
                         level,
                         refugeeId,
                         originCapital.getCapitalId(),
                         originCapital.getVillageId(),
-                        originName
+                        CapitalDiplomaticAgreementText
+                                .capitalName(
+                                        level,
+                                        originCapital
+                                )
                 );
 
         if (record == null) {
             return false;
         }
 
-        CapitalJusticeDataAccess.markDiscoveredExile(
-                level,
-                originCapital.getCapitalId(),
-                refugeeId
-        );
+        CapitalJusticeDataAccess
+                .markDiscoveredExile(
+                        level,
+                        originCapital.getCapitalId(),
+                        refugeeId
+                );
 
-        CapitalResidentScanner.clearCache(
-                level
-        );
+        CapitalResidentScanner.clearCache(level);
+        CapitalDataAccess.markDirty(level);
 
-        CapitalDataAccess.markDirty(
-                level
-        );
-
-        VillagerIdentitySyncService.syncToNearbyPlayers(
-                level,
-                refugee
-        );
+        VillagerIdentitySyncService
+                .syncToNearbyPlayers(
+                        level,
+                        villager
+                );
 
         return true;
+    }
+
+    public static void sendReviewOption(
+            ServerPlayer player,
+            Entity ambassadorEntity
+    ) {
+        if (player == null
+                || ambassadorEntity == null) {
+            return;
+        }
+
+        CapitalDiplomaticAgreementValidation
+                .AudienceValidation audience =
+                CapitalDiplomaticAgreementValidation
+                        .validateAudience(
+                                player,
+                                ambassadorEntity.getUUID()
+                        );
+
+        if (!audience.valid()
+                || findCandidates(
+                player.serverLevel(),
+                audience.sourceCapital()
+        ).isEmpty()) {
+            return;
+        }
+
+        player.sendSystemMessage(
+                clickable(
+                        Component.translatable(
+                                "mcacapitals.ui.asylum.review_link"
+                        ),
+                        "/capitalasylum review "
+                                + ambassadorEntity.getUUID(),
+                        Component.translatable(
+                                "mcacapitals.ui.asylum.review_hover"
+                        ),
+                        ChatFormatting.AQUA
+                )
+        );
+    }
+
+    public static int openRequests(
+            ServerPlayer player,
+            UUID ambassadorId
+    ) {
+        CapitalDiplomaticAgreementValidation
+                .AudienceValidation audience =
+                CapitalDiplomaticAgreementValidation
+                        .validateAudience(
+                                player,
+                                ambassadorId
+                        );
+
+        if (!audience.valid()) {
+            if (player != null) {
+                player.sendSystemMessage(
+                        audience.failureMessage()
+                );
+            }
+
+            return 0;
+        }
+
+        ServerLevel level =
+                player.serverLevel();
+
+        CapitalRecord targetCapital =
+                audience.sourceCapital();
+
+        if (!CapitalBuildingService.hasInn(
+                level,
+                targetCapital
+        )) {
+            player.sendSystemMessage(
+                    Component.translatable("mcacapitals.system.capital_asylum_service.the_capital_requires_an_operational_inn_before_refugees_can_request_as")
+            );
+
+            return 0;
+        }
+
+        if (getVillage(
+                level,
+                targetCapital
+        ) == null) {
+            player.sendSystemMessage(
+                    Component.translatable("mcacapitals.system.capital_asylum_service.the_capital_s_mca_village_record_is_unavailable")
+            );
+
+            return 0;
+        }
+
+        List<CapitalRefugeeRecord> candidates =
+                findCandidates(
+                        level,
+                        targetCapital
+                );
+
+        if (candidates.isEmpty()) {
+            player.sendSystemMessage(
+                    Component.translatable("mcacapitals.system.capital_asylum_service.no_refugees_are_currently_seeking_asylum_inside_the_capital")
+            );
+
+            return 0;
+        }
+
+        player.sendSystemMessage(
+                Component.translatable("mcacapitals.system.capital_asylum_service.refugees_currently_seeking_asylum").withStyle(
+                        ChatFormatting.GOLD
+                )
+        );
+
+        for (CapitalRefugeeRecord record :
+                candidates) {
+            Entity refugee =
+                    MCAIntegrationBridge
+                            .findLoadedMCAVillagerByUuid(
+                                    level,
+                                    record.getRefugeeId()
+                            );
+
+            if (refugee == null) {
+                continue;
+            }
+
+            MutableComponent line =
+                    clickable(
+                            Component.translatable(
+                                    "mcacapitals.ui.asylum.grant_link"
+                            ),
+                            "/capitalasylum grant "
+                                    + ambassadorId
+                                    + " "
+                                    + record.getRefugeeId(),
+                            Component.translatable(
+                                    "mcacapitals.ui.asylum.grant_hover"
+                            ),
+                            ChatFormatting.GREEN
+                    ).append(
+                            Component.translatable(
+                                    "mcacapitals.ui.asylum.candidate_line",
+                                    refugee.getName(),
+                                    record.getOriginCapitalName()
+                            ).withStyle(
+                                    ChatFormatting.GRAY
+                            )
+                    );
+
+            player.sendSystemMessage(line);
+        }
+
+        return 1;
     }
 
     public static int grantAsylum(
@@ -115,18 +270,18 @@ public final class CapitalAsylumService {
             UUID ambassadorId,
             UUID refugeeId
     ) {
-        CapitalDiplomaticAgreementValidation.AudienceValidation audience =
-                CapitalDiplomaticAgreementValidation.validateAudience(
-                        player,
-                        ambassadorId
-                );
+        CapitalDiplomaticAgreementValidation
+                .AudienceValidation audience =
+                CapitalDiplomaticAgreementValidation
+                        .validateAudience(
+                                player,
+                                ambassadorId
+                        );
 
         if (!audience.valid()) {
             if (player != null) {
                 player.sendSystemMessage(
-                        Component.literal(
-                                audience.failureMessage()
-                        )
+                        audience.failureMessage()
                 );
             }
 
@@ -148,21 +303,18 @@ public final class CapitalAsylumService {
         if (record == null
                 || !record.isAwaitingAsylum()) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "That villager is not awaiting asylum."
-                    )
+                    Component.translatable("mcacapitals.system.capital_asylum_service.that_villager_is_not_awaiting_asylum")
             );
 
             return 0;
         }
 
-        if (record.getOriginCapitalId().equals(
-                targetCapital.getCapitalId()
-        )) {
+        if (record.getOriginCapitalId()
+                .equals(
+                        targetCapital.getCapitalId()
+                )) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "A capital cannot grant foreign asylum to its own exile."
-                    )
+                    Component.translatable("mcacapitals.system.capital_asylum_service.a_capital_cannot_grant_foreign_asylum_to_its_own_exile")
             );
 
             return 0;
@@ -173,9 +325,7 @@ public final class CapitalAsylumService {
                 targetCapital
         )) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "The capital requires an operational Inn before asylum can be granted."
-                    )
+                    Component.translatable("mcacapitals.system.capital_asylum_service.the_capital_requires_an_operational_inn_before_asylum_can_be_granted")
             );
 
             return 0;
@@ -189,31 +339,29 @@ public final class CapitalAsylumService {
 
         if (targetVillage == null) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "The capital's MCA village record is unavailable."
-                    )
+                    Component.translatable("mcacapitals.system.capital_asylum_service.the_capital_s_mca_village_record_is_unavailable")
             );
 
             return 0;
         }
 
         Entity entity =
-                MCAIntegrationBridge.findLoadedMCAVillagerByUuid(
+                MCAIntegrationBridge
+                        .findLoadedMCAVillagerByUuid(
+                                level,
+                                refugeeId
+                        );
+
+        if (!(entity
+                instanceof VillagerEntityMCA villager)
+                || !villager.isAlive()
+                || !MCAIntegrationBridge
+                .isTeenOrAdultVillager(
                         level,
                         refugeeId
-                );
-
-        if (!(entity instanceof VillagerEntityMCA villager)
-                || !villager.isAlive()
-                || villager.isRemoved()
-                || !MCAIntegrationBridge.isTeenOrAdultVillager(
-                level,
-                refugeeId
-        )) {
+                )) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "The refugee must be present and able to enter the capital."
-                    )
+                    Component.translatable("mcacapitals.system.capital_asylum_service.the_refugee_must_be_present_and_able_to_enter_the_capital")
             );
 
             return 0;
@@ -223,9 +371,7 @@ public final class CapitalAsylumService {
                 villager
         )) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "The refugee must be inside the capital before asylum can be granted."
-                    )
+                    Component.translatable("mcacapitals.system.capital_asylum_service.the_refugee_must_be_inside_the_capital_before_asylum_can_be_granted")
             );
 
             return 0;
@@ -245,9 +391,7 @@ public final class CapitalAsylumService {
         if (currentHome != null
                 && !alreadyResidentOfTarget) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "That refugee currently belongs to a different MCA village."
-                    )
+                    Component.translatable("mcacapitals.system.capital_asylum_service.that_refugee_currently_belongs_to_a_different_mca_village")
             );
 
             return 0;
@@ -258,9 +402,7 @@ public final class CapitalAsylumService {
         if (!alreadyResidentOfTarget) {
             if (!targetVillage.hasSpace()) {
                 player.sendSystemMessage(
-                        Component.literal(
-                                "The capital has no free MCA residence capacity for this refugee."
-                        )
+                        Component.translatable("mcacapitals.system.capital_asylum_service.the_capital_has_no_free_mca_residence_capacity_for_this_refugee")
                 );
 
                 return 0;
@@ -277,9 +419,7 @@ public final class CapitalAsylumService {
                 );
 
                 player.sendSystemMessage(
-                        Component.literal(
-                                "The refugee could not be assigned to this capital's MCA village."
-                        )
+                        Component.translatable("mcacapitals.system.capital_asylum_service.the_refugee_could_not_be_assigned_to_this_capital_s_mca_village")
                 );
 
                 return 0;
@@ -304,9 +444,7 @@ public final class CapitalAsylumService {
                 );
 
                 player.sendSystemMessage(
-                        Component.literal(
-                                "The refugee could not be assigned to this capital's MCA village."
-                        )
+                        Component.translatable("mcacapitals.system.capital_asylum_service.the_refugee_could_not_be_assigned_to_this_capital_s_mca_village")
                 );
 
                 return 0;
@@ -320,11 +458,12 @@ public final class CapitalAsylumService {
                 refugeeId
         );
 
-        if (!CapitalRefugeeDataAccess.grantAsylum(
-                level,
-                refugeeId,
-                targetCapital.getCapitalId()
-        )) {
+        if (!CapitalRefugeeDataAccess
+                .grantAsylum(
+                        level,
+                        refugeeId,
+                        targetCapital.getCapitalId()
+                )) {
             if (assignedHomeHere) {
                 MCAIntegrationBridge.leaveHome(
                         level,
@@ -333,9 +472,7 @@ public final class CapitalAsylumService {
             }
 
             player.sendSystemMessage(
-                    Component.literal(
-                            "The asylum record could not be saved."
-                    )
+                    Component.translatable("mcacapitals.system.capital_asylum_service.the_asylum_record_could_not_be_saved")
             );
 
             return 0;
@@ -346,53 +483,54 @@ public final class CapitalAsylumService {
                 CrownStanding.FRIEND_OF_CROWN
         );
 
-        CapitalJusticeDataAccess.setPublicStatus(
-                level,
-                targetCapital.getCapitalId(),
-                refugeeId,
-                CapitalPublicCrownStatus.RECOGNIZED_FRIEND
-        );
-
-        CapitalResidentScanner.clearCache(
-                level
-        );
-
-        CapitalDataAccess.markDirty(
-                level
-        );
-
-        CapitalNameService.refreshCapitalNames(
-                level,
-                targetCapital,
-                CapitalResidentScanner.scanResidents(
+        CapitalJusticeDataAccess
+                .setPublicStatus(
                         level,
-                        targetCapital.getCapitalId()
-                )
-        );
-
-        VillagerIdentitySyncService.syncToNearbyPlayers(
-                level,
-                villager
-        );
-
-        String refugeeName =
-                villager.getName().getString();
-
-        String targetName =
-                CapitalDiplomaticAgreementText.capitalName(
-                        level,
-                        targetCapital
+                        targetCapital.getCapitalId(),
+                        refugeeId,
+                        CapitalPublicCrownStatus
+                                .RECOGNIZED_FRIEND
                 );
 
-        CapitalChronicleService.addEntry(
+        CapitalResidentScanner.clearCache(level);
+        CapitalDataAccess.markDirty(level);
+
+        CapitalNameService
+                .refreshCapitalNames(
+                        level,
+                        targetCapital,
+                        CapitalResidentScanner
+                                .scanResidents(
+                                        level,
+                                        targetCapital
+                                                .getCapitalId()
+                                )
+                );
+
+        VillagerIdentitySyncService
+                .syncToNearbyPlayers(
+                        level,
+                        villager
+                );
+
+        String refugeeName =
+                villager.getName()
+                        .getString();
+
+        String targetName =
+                CapitalDiplomaticAgreementText
+                        .capitalName(
+                                level,
+                                targetCapital
+                        );
+
+        CapitalChronicleService.addEvent(
                 level,
                 targetCapital,
-                refugeeName
-                        + ", exiled from "
-                        + record.getOriginCapitalName()
-                        + ", was granted asylum in "
-                        + targetName
-                        + "."
+                CapitalChronicleEventId.ASYLUM_GRANTED_DESTINATION,
+                refugeeName,
+                record.getOriginCapitalName(),
+                targetName
         );
 
         applyOriginCapitalConsequences(
@@ -405,11 +543,10 @@ public final class CapitalAsylumService {
         );
 
         player.sendSystemMessage(
-                Component.literal(
-                        refugeeName
-                                + " has been granted asylum and is now an MCA resident of "
-                                + targetName
-                                + "."
+                Component.translatable(
+                        "mcacapitals.asylum.granted_resident",
+                        refugeeName,
+                        targetName
                 )
         );
 
@@ -420,6 +557,16 @@ public final class CapitalAsylumService {
             ServerLevel level,
             UUID villagerId
     ) {
+        return getStatusComponent(
+                level,
+                villagerId
+        ).getString();
+    }
+
+    public static Component getStatusComponent(
+            ServerLevel level,
+            UUID villagerId
+    ) {
         CapitalRefugeeRecord record =
                 CapitalRefugeeDataAccess.getRecord(
                         level,
@@ -427,17 +574,19 @@ public final class CapitalAsylumService {
                 );
 
         if (record == null) {
-            return "";
+            return Component.empty();
         }
 
-        return record.isAwaitingAsylum()
-                ? "Exiled From "
-                + record.getOriginCapitalName()
-                : "Refugee from "
-                + record.getOriginCapitalName();
+        return Component.translatable(
+                record.isAwaitingAsylum()
+                        ? "mcacapitals.ui.asylum.status_exiled_from"
+                        : "mcacapitals.ui.asylum.status_refugee_from",
+                record.getOriginCapitalName()
+        );
     }
 
-    private static void applyOriginCapitalConsequences(
+    private static void
+    applyOriginCapitalConsequences(
             ServerLevel level,
             CapitalRecord targetCapital,
             CapitalRefugeeRecord record,
@@ -455,80 +604,216 @@ public final class CapitalAsylumService {
         }
 
         boolean discoveredExile =
-                CapitalJusticeDataAccess.hasDiscoveredExile(
-                        level,
-                        originCapital.getCapitalId(),
-                        refugeeId
-                );
+                CapitalJusticeDataAccess
+                        .hasDiscoveredExile(
+                                level,
+                                originCapital
+                                        .getCapitalId(),
+                                refugeeId
+                        );
 
         CapitalPublicCrownStatus originStatus =
-                CapitalJusticeDataAccess.getPublicStatus(
-                        level,
-                        originCapital.getCapitalId(),
-                        refugeeId
-                );
+                CapitalJusticeDataAccess
+                        .getPublicStatus(
+                                level,
+                                originCapital
+                                        .getCapitalId(),
+                                refugeeId
+                        );
 
         if (discoveredExile
                 && originStatus
-                != CapitalPublicCrownStatus.DISCOVERED_ENEMY) {
-            CapitalJusticeDataAccess.setPublicStatus(
-                    level,
-                    originCapital.getCapitalId(),
-                    refugeeId,
-                    CapitalPublicCrownStatus.DISCOVERED_ENEMY
-            );
+                != CapitalPublicCrownStatus
+                .DISCOVERED_ENEMY) {
+            CapitalJusticeDataAccess
+                    .setPublicStatus(
+                            level,
+                            originCapital
+                                    .getCapitalId(),
+                            refugeeId,
+                            CapitalPublicCrownStatus
+                                    .DISCOVERED_ENEMY
+                    );
 
             originStatus =
-                    CapitalPublicCrownStatus.DISCOVERED_ENEMY;
+                    CapitalPublicCrownStatus
+                            .DISCOVERED_ENEMY;
         }
 
         boolean recognizedEnemy =
                 originStatus
-                        == CapitalPublicCrownStatus.DISCOVERED_ENEMY;
+                        == CapitalPublicCrownStatus
+                        .DISCOVERED_ENEMY;
 
-        CapitalDiplomacyDataAccess.adjustRelationship(
-                level,
-                originCapital.getCapitalId(),
-                targetCapital.getCapitalId(),
-                recognizedEnemy ? -45 : -30,
-                recognizedEnemy
-                        ? "Asylum granted to a recognized Enemy of the Crown"
-                        : "Asylum granted to a foreign exile",
-                targetCapital.getCapitalId()
-        );
+        CapitalDiplomacyDataAccess
+                .adjustRelationship(
+                        level,
+                        originCapital.getCapitalId(),
+                        targetCapital.getCapitalId(),
+                        recognizedEnemy ? -45 : -30,
+                        recognizedEnemy
+                                ? "mcacapitals.relationship_reason.asylum_recognized_enemy"
+                                : "mcacapitals.relationship_reason.asylum_foreign_exile",
+                        targetCapital.getCapitalId()
+                );
 
-        CapitalWarDataAccess.recordGrievance(
-                level,
-                originCapital.getCapitalId(),
-                targetCapital.getCapitalId(),
-                recognizedEnemy
-                        ? CapitalWarCause.SERIOUS_ASYLUM_DISPUTE
-                        : CapitalWarCause.ASYLUM_DISPUTE,
-                10L
-        );
+        CapitalWarDataAccess
+                .recordGrievance(
+                        level,
+                        originCapital.getCapitalId(),
+                        targetCapital.getCapitalId(),
+                        recognizedEnemy
+                                ? CapitalWarCause
+                                .SERIOUS_ASYLUM_DISPUTE
+                                : CapitalWarCause
+                                .ASYLUM_DISPUTE,
+                        10L
+                );
 
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 originCapital,
-                targetName
-                        + " granted asylum to the exile "
-                        + refugeeName
-                        + "."
+                CapitalChronicleEventId.ASYLUM_GRANTED_ORIGIN,
+                targetName,
+                refugeeName
         );
 
-        if (originCapital.getPlayerSovereignId() != null) {
-            CapitalDiplomaticAgreementCorrespondenceService.sendNotice(
-                    level,
-                    originCapital.getPlayerSovereignId(),
-                    "Asylum Granted",
-                    targetName
-                            + " granted asylum to "
-                            + refugeeName
-                            + ", an exile from "
-                            + record.getOriginCapitalName()
-                            + "."
-            );
+        if (originCapital
+                .getPlayerSovereignId()
+                != null) {
+            CapitalDiplomaticAgreementCorrespondenceService
+                    .sendNotice(
+                            level,
+                            originCapital
+                                    .getPlayerSovereignId(),
+                            Component.translatable(
+                                    "mcacapitals.asylum.granted_title"
+                            ),
+                            Component.translatable(
+                                    "mcacapitals.asylum.granted_origin_notice",
+                                    targetName,
+                                    refugeeName,
+                                    record.getOriginCapitalName()
+                            )
+                    );
         }
+    }
+
+    private static List<CapitalRefugeeRecord>
+    findCandidates(
+            ServerLevel level,
+            CapitalRecord targetCapital
+    ) {
+        if (level == null
+                || targetCapital == null
+                || targetCapital.getCapitalId()
+                == null) {
+            return List.of();
+        }
+
+        Village village =
+                getVillage(
+                        level,
+                        targetCapital
+                );
+
+        if (village == null) {
+            return List.of();
+        }
+
+        return CapitalRefugeeDataAccess
+                .getAwaitingAsylum(level)
+                .stream()
+                .filter(
+                        record ->
+                                record != null
+                )
+                .filter(
+                        record ->
+                                !record
+                                        .getOriginCapitalId()
+                                        .equals(
+                                                targetCapital
+                                                        .getCapitalId()
+                                        )
+                )
+                .filter(
+                        record ->
+                                isPresentCandidate(
+                                        level,
+                                        village,
+                                        targetCapital,
+                                        record
+                                )
+                )
+                .sorted(
+                        Comparator.comparing(
+                                record ->
+                                        candidateName(
+                                                level,
+                                                record
+                                        ),
+                                String.CASE_INSENSITIVE_ORDER
+                        )
+                )
+                .toList();
+    }
+
+    private static boolean isPresentCandidate(
+            ServerLevel level,
+            Village village,
+            CapitalRecord targetCapital,
+            CapitalRefugeeRecord record
+    ) {
+        Entity entity =
+                MCAIntegrationBridge
+                        .findLoadedMCAVillagerByUuid(
+                                level,
+                                record.getRefugeeId()
+                        );
+
+        if (!(entity
+                instanceof VillagerEntityMCA villager)
+                || !villager.isAlive()
+                || !MCAIntegrationBridge
+                .isTeenOrAdultVillager(
+                        level,
+                        record.getRefugeeId()
+                )
+                || !village.isWithinBorder(
+                villager
+        )) {
+            return false;
+        }
+
+        Village currentHome =
+                villager.getResidency()
+                        .getHomeVillage()
+                        .orElse(null);
+
+        return currentHome == null
+                || isTargetVillage(
+                currentHome,
+                targetCapital
+        );
+    }
+
+    private static String candidateName(
+            ServerLevel level,
+            CapitalRefugeeRecord record
+    ) {
+        Entity entity =
+                MCAIntegrationBridge
+                        .findLoadedMCAVillagerByUuid(
+                                level,
+                                record.getRefugeeId()
+                        );
+
+        return entity == null
+                ? record.getRefugeeId()
+                .toString()
+                : entity.getName()
+                .getString();
     }
 
     private static Village getVillage(
@@ -537,7 +822,8 @@ public final class CapitalAsylumService {
     ) {
         if (level == null
                 || capital == null
-                || capital.getVillageId() == null) {
+                || capital.getVillageId()
+                == null) {
             return null;
         }
 
@@ -554,9 +840,38 @@ public final class CapitalAsylumService {
     ) {
         return village != null
                 && targetCapital != null
-                && targetCapital.getVillageId() != null
+                && targetCapital.getVillageId()
+                != null
                 && village.getId()
                 == targetCapital.getVillageId();
+    }
+
+    private static MutableComponent clickable(
+            Component label,
+            String command,
+            Component hover,
+            ChatFormatting color
+    ) {
+        return label.copy()
+                .setStyle(
+                        Style.EMPTY
+                                .withColor(color)
+                                .withBold(true)
+                                .withClickEvent(
+                                        new ClickEvent(
+                                                ClickEvent.Action
+                                                        .RUN_COMMAND,
+                                                command
+                                        )
+                                )
+                                .withHoverEvent(
+                                        new HoverEvent(
+                                                HoverEvent.Action
+                                                        .SHOW_TEXT,
+                                                hover
+                                        )
+                                )
+                );
     }
 
     private static void removeTrustedOffices(
@@ -571,9 +886,11 @@ public final class CapitalAsylumService {
         boolean anyChanged = false;
 
         for (CapitalRecord capital :
-                CapitalManager.getAllCapitalRecords()) {
+                CapitalManager
+                        .getAllCapitalRecords()) {
             if (capital == null
-                    || capital.getCapitalId() == null) {
+                    || capital.getCapitalId()
+                    == null) {
                 continue;
             }
 
@@ -622,26 +939,32 @@ public final class CapitalAsylumService {
                 capital.removeRoyalGuard(
                         refugeeId
                 );
+
                 changed = true;
             }
 
             if (refugeeId.equals(
-                    CapitalAmbassadorService.getAmbassador(
-                            level,
-                            capital
-                    )
+                    CapitalAmbassadorService
+                            .getAmbassador(
+                                    level,
+                                    capital
+                            )
             )) {
-                CapitalDiplomacyDataAccess.clearAmbassador(
-                        level,
-                        capital.getCapitalId()
-                );
+                CapitalDiplomacyDataAccess
+                        .clearAmbassador(
+                                level,
+                                capital.getCapitalId()
+                        );
+
                 changed = true;
             }
 
             if (changed) {
-                CapitalCourtWatcher.clearFingerprint(
-                        capital.getCapitalId()
-                );
+                CapitalCourtWatcher
+                        .clearFingerprint(
+                                capital.getCapitalId()
+                        );
+
                 anyChanged = true;
             }
         }

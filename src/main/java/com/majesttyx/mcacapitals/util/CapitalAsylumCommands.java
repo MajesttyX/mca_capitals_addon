@@ -78,15 +78,13 @@ public final class CapitalAsylumCommands {
             String rawAmbassadorId
     ) {
         ServerPlayer player =
-                getPlayer(
-                        source
-                );
+                getPlayer(source);
 
         UUID ambassadorId =
                 parseUuid(
                         source,
                         rawAmbassadorId,
-                        "The Ambassador ID is invalid."
+                        "mcacapitals.system.command_validation.invalid_ambassador_id"
                 );
 
         if (player == null
@@ -94,10 +92,11 @@ public final class CapitalAsylumCommands {
             return 0;
         }
 
-        return CapitalAsylumScreenService.openRequests(
-                player,
-                ambassadorId
-        );
+        return CapitalAsylumScreenService
+                .openRequests(
+                        player,
+                        ambassadorId
+                );
     }
 
     private static int grant(
@@ -106,22 +105,20 @@ public final class CapitalAsylumCommands {
             String rawRefugeeId
     ) {
         ServerPlayer player =
-                getPlayer(
-                        source
-                );
+                getPlayer(source);
 
         UUID ambassadorId =
                 parseUuid(
                         source,
                         rawAmbassadorId,
-                        "The Ambassador ID is invalid."
+                        "mcacapitals.system.command_validation.invalid_ambassador_id"
                 );
 
         UUID refugeeId =
                 parseUuid(
                         source,
                         rawRefugeeId,
-                        "The refugee ID is invalid."
+                        "mcacapitals.system.command_validation.invalid_refugee_id"
                 );
 
         if (player == null
@@ -137,10 +134,11 @@ public final class CapitalAsylumCommands {
                         refugeeId
                 );
 
-        CapitalAmbassadorUrgentMatterService.continueConversation(
-                player,
-                ambassadorId
-        );
+        CapitalAmbassadorUrgentMatterService
+                .continueConversation(
+                        player,
+                        ambassadorId
+                );
 
         return result;
     }
@@ -151,12 +149,10 @@ public final class CapitalAsylumCommands {
             String failureMessage
     ) {
         try {
-            return UUID.fromString(
-                    rawValue
-            );
+            return UUID.fromString(rawValue);
         } catch (IllegalArgumentException ignored) {
             source.sendFailure(
-                    Component.literal(
+                    Component.translatable(
                             failureMessage
                     )
             );
@@ -172,9 +168,7 @@ public final class CapitalAsylumCommands {
             return source.getPlayerOrException();
         } catch (Exception ignored) {
             source.sendFailure(
-                    Component.literal(
-                            "Only a player may review asylum requests."
-                    )
+                    Component.translatable("mcacapitals.system.capital_asylum_commands.only_a_player_may_review_asylum_requests")
             );
 
             return null;

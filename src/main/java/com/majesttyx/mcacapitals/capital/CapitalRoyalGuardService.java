@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
@@ -12,178 +13,93 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CapitalRoyalGuardService {
+
     public static final int REQUIRED_POPULATION = 25;
     public static final int MAX_ROYAL_GUARDS = 2;
 
     private CapitalRoyalGuardService() {
     }
 
-    public static boolean tickRoyalGuards(
-            ServerLevel level,
-            CapitalRecord capital,
-            Set<UUID> residents
-    ) {
+    public static boolean tickRoyalGuards(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         boolean changed = false;
 
-        changed |= handleSovereignChange(
-                level,
-                capital
-        );
+        changed |= handleSovereignChange(level, capital);
 
-        for (UUID guardId :
-                new ArrayList<>(
-                        capital.getRoyalGuards()
-                )) {
-            if (!isValidRoyalGuard(
-                    level,
-                    capital,
-                    guardId,
-                    residents
-            )) {
-                capital.removeRoyalGuard(
-                        guardId
-                );
+        for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
+            if (!isValidRoyalGuard(level, capital, guardId, residents)) {
+                capital.removeRoyalGuard(guardId);
                 changed = true;
             }
         }
 
         if (capital.getSovereign() == null) {
             if (changed) {
-                CapitalNameService.refreshCapitalNames(
-                        level,
-                        capital,
-                        residents
-                );
-
-                CapitalCourtWatcher.clearFingerprint(
-                        capital.getCapitalId()
-                );
+                CapitalNameService.refreshCapitalNames(level, capital, residents);
+                CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
             }
-
             return changed;
         }
 
         if (capital.getRoyalGuardLiege() == null) {
-            capital.setRoyalGuardLiege(
-                    capital.getSovereign()
-            );
+            capital.setRoyalGuardLiege(capital.getSovereign());
             changed = true;
         }
 
-        if (MCAIntegrationBridge.isMCAVillager(
-                level,
-                capital.getSovereign()
-        )) {
-            while (capital.getRoyalGuards().size()
-                    < MAX_ROYAL_GUARDS
-                    && isEligibleForNewRoyalGuard(
-                    level,
-                    capital
-            )) {
-                UUID candidate =
-                        findBestCandidate(
-                                level,
-                                capital,
-                                residents
-                        );
-
+        if (MCAIntegrationBridge.isMCAVillager(level, capital.getSovereign())) {
+            while (capital.getRoyalGuards().size() < MAX_ROYAL_GUARDS
+                    && isEligibleForNewRoyalGuard(level, capital)) {
+                UUID candidate = findBestCandidate(level, capital, residents);
                 if (candidate == null) {
                     break;
                 }
 
-                appointRoyalGuard(
-                        level,
-                        capital,
-                        candidate
-                );
-
+                appointRoyalGuard(level, capital, candidate);
                 changed = true;
             }
         }
 
         if (changed) {
-            CapitalNameService.refreshCapitalNames(
-                    level,
-                    capital,
-                    residents
-            );
-
-            CapitalCourtWatcher.clearFingerprint(
-                    capital.getCapitalId()
-            );
-
-            CapitalDataAccess.markDirty(
-                    level
-            );
+            CapitalNameService.refreshCapitalNames(level, capital, residents);
+            CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+            CapitalDataAccess.markDirty(level);
         }
 
         return changed;
     }
 
-    public static boolean clearRoyalGuardsForTransfer(
-            ServerLevel level,
-            CapitalRecord capital
-    ) {
-        if (level == null
-                || capital == null) {
+    public static boolean clearRoyalGuardsForTransfer(ServerLevel level, CapitalRecord capital) {
+        if (level == null || capital == null) {
             return false;
         }
 
-        if (capital.getRoyalGuards().isEmpty()
-                && capital.getRoyalGuardLiege() == null) {
+        if (capital.getRoyalGuards().isEmpty() && capital.getRoyalGuardLiege() == null) {
             return false;
         }
 
-        String villageName =
-                MCAIntegrationBridge.getVillageName(
-                        level,
-                        capital.getVillageId()
-                );
-
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
         boolean changed = false;
 
-        for (UUID guardId :
-                new ArrayList<>(
-                        capital.getRoyalGuards()
-                )) {
-            String guardName =
-                    buildRoyalGuardHistoryName(
-                            level,
-                            guardId
-                    );
+        for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
+            String guardName = CapitalChronicleIdentitySnapshot.name(level, capital, guardId);
+            capital.removeRoyalGuard(guardId);
 
-            capital.removeRoyalGuard(
-                    guardId
-            );
-
-            CapitalChronicleService.addEntry(
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    guardName
-                            + " was released from the royal guard of "
-                            + villageName
-                            + " after the transfer of power."
+                    CapitalChronicleEventId.ROYAL_GUARD_RELEASED_TRANSFER,
+                    guardName,
+                    villageName
             );
 
             changed = true;
         }
 
-        capital.setRoyalGuardLiege(
-                capital.getSovereign()
-        );
-
-        capital.setLastRoyalGuardPromptDay(
-                0L
-        );
+        capital.setRoyalGuardLiege(capital.getSovereign());
+        capital.setLastRoyalGuardPromptDay(0L);
 
         if (changed) {
-            CapitalCourtWatcher.clearFingerprint(
-                    capital.getCapitalId()
-            );
-
-            CapitalDataAccess.markDirty(
-                    level
-            );
+            CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+            CapitalDataAccess.markDirty(level);
         }
 
         return changed;
@@ -194,38 +110,19 @@ public class CapitalRoyalGuardService {
             CapitalRecord capital,
             Set<UUID> residents
     ) {
-        List<UUID> result =
-                new ArrayList<>();
+        List<UUID> result = new ArrayList<>();
 
         for (UUID residentId : residents) {
-            if (!isCandidate(
-                    level,
-                    capital,
-                    residentId
-            )) {
+            if (!isCandidate(level, capital, residentId)) {
                 continue;
             }
 
-            result.add(
-                    residentId
-            );
+            result.add(residentId);
         }
 
-        result.sort(
-                Comparator
-                        .comparing(
-                                (UUID id) ->
-                                        !CapitalCrownJusticeService.isRecognizedFriend(
-                                                level,
-                                                capital,
-                                                id
-                                        )
-                        )
-                        .thenComparing(
-                                UUID::toString
-                        )
-        );
-
+        result.sort(Comparator
+                .comparing((UUID id) -> !CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
+                .thenComparing(UUID::toString));
         return result;
     }
 
@@ -234,94 +131,50 @@ public class CapitalRoyalGuardService {
             CapitalRecord capital,
             UUID villagerId
     ) {
-        if (villagerId == null
-                || capital == null
-                || level == null) {
+        if (villagerId == null || capital == null || level == null) {
             return false;
         }
 
-        if (!isCandidate(
-                level,
-                capital,
-                villagerId
-        )) {
+        if (!isCandidate(level, capital, villagerId)) {
             return false;
         }
 
-        if (capital.getRoyalGuards().size()
-                >= MAX_ROYAL_GUARDS) {
+        if (capital.getRoyalGuards().size() >= MAX_ROYAL_GUARDS) {
             return false;
         }
 
-        if (!isEligibleForNewRoyalGuard(
-                level,
-                capital
-        )) {
+        if (!isEligibleForNewRoyalGuard(level, capital)) {
             return false;
         }
 
         if (capital.getRoyalGuardLiege() == null) {
-            capital.setRoyalGuardLiege(
-                    capital.getSovereign()
-            );
+            capital.setRoyalGuardLiege(capital.getSovereign());
         }
 
         capital.addRoyalGuard(
                 villagerId,
-                MCAIntegrationBridge.isFemale(
-                        level,
-                        villagerId
-                ),
+                MCAIntegrationBridge.isFemale(level, villagerId),
                 capital.getRoyalGuardLiege()
         );
 
-        String guardName =
-                buildRoyalGuardDisplayName(
-                        level,
-                        capital,
-                        villagerId
-                );
+        String guardName = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
-        String villageName =
-                MCAIntegrationBridge.getVillageName(
-                        level,
-                        capital.getVillageId()
-                );
-
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                guardName
-                        + " was named to the royal guard of "
-                        + villageName
-                        + "."
+                CapitalChronicleEventId.ROYAL_GUARD_APPOINTED,
+                guardName,
+                villageName
         );
 
         Set<UUID> residents =
-                CapitalResidentScanner.scanResidents(
-                        level,
-                        capital.getCapitalId()
-                );
+                CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
 
-        CapitalHeraldService.refreshHeraldAfterStatusChange(
-                level,
-                capital,
-                residents
-        );
-
-        CapitalNameService.refreshCapitalNames(
-                level,
-                capital,
-                residents
-        );
-
-        CapitalCourtWatcher.clearFingerprint(
-                capital.getCapitalId()
-        );
-
-        CapitalDataAccess.markDirty(
-                level
-        );
+        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
+        CapitalNameService.refreshCapitalNames(level, capital, residents);
+        CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
+        CapitalDataAccess.markDirty(level);
 
         return true;
     }
@@ -330,34 +183,17 @@ public class CapitalRoyalGuardService {
             ServerLevel level,
             CapitalRecord capital
     ) {
-        UUID sovereign =
-                capital.getSovereign();
-
-        UUID liege =
-                capital.getRoyalGuardLiege();
+        UUID sovereign = capital.getSovereign();
+        UUID liege = capital.getRoyalGuardLiege();
 
         if (sovereign == null) {
-            if (liege != null
-                    || !capital.getRoyalGuards().isEmpty()) {
-                for (UUID guardId :
-                        new ArrayList<>(
-                                capital.getRoyalGuards()
-                        )) {
-                    recordDisgrace(
-                            level,
-                            capital,
-                            guardId
-                    );
-
-                    capital.disgraceRoyalGuard(
-                            guardId
-                    );
+            if (liege != null || !capital.getRoyalGuards().isEmpty()) {
+                for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
+                    recordDisgrace(level, capital, guardId);
+                    capital.disgraceRoyalGuard(guardId);
                 }
 
-                capital.setRoyalGuardLiege(
-                        null
-                );
-
+                capital.setRoyalGuardLiege(null);
                 return true;
             }
 
@@ -365,35 +201,17 @@ public class CapitalRoyalGuardService {
         }
 
         if (liege == null) {
-            capital.setRoyalGuardLiege(
-                    sovereign
-            );
-
+            capital.setRoyalGuardLiege(sovereign);
             return true;
         }
 
-        if (!liege.equals(
-                sovereign
-        )) {
-            for (UUID guardId :
-                    new ArrayList<>(
-                            capital.getRoyalGuards()
-                    )) {
-                recordDisgrace(
-                        level,
-                        capital,
-                        guardId
-                );
-
-                capital.disgraceRoyalGuard(
-                        guardId
-                );
+        if (!liege.equals(sovereign)) {
+            for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
+                recordDisgrace(level, capital, guardId);
+                capital.disgraceRoyalGuard(guardId);
             }
 
-            capital.setRoyalGuardLiege(
-                    sovereign
-            );
-
+            capital.setRoyalGuardLiege(sovereign);
             return true;
         }
 
@@ -405,25 +223,15 @@ public class CapitalRoyalGuardService {
             CapitalRecord capital,
             UUID guardId
     ) {
-        String villageName =
-                MCAIntegrationBridge.getVillageName(
-                        level,
-                        capital.getVillageId()
-                );
+        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String name = CapitalChronicleIdentitySnapshot.name(level, capital, guardId);
 
-        String name =
-                buildRoyalGuardHistoryName(
-                        level,
-                        guardId
-                );
-
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 level,
                 capital,
-                name
-                        + " was disgraced after failing to preserve the reign of "
-                        + villageName
-                        + "."
+                CapitalChronicleEventId.ROYAL_GUARD_DISGRACED,
+                name,
+                villageName
         );
     }
 
@@ -432,83 +240,45 @@ public class CapitalRoyalGuardService {
             CapitalRecord capital,
             UUID guardId
     ) {
-        String title =
-                MCAIntegrationBridge.isFemale(
-                        level,
-                        guardId
-                )
-                        ? "Dame"
-                        : "Sir";
+        return buildRoyalGuardDisplayNameComponent(level, capital, guardId).getString();
+    }
 
-        String baseName =
-                resolveBaseName(
-                        level,
-                        guardId
-                );
+    public static Component buildRoyalGuardDisplayNameComponent(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID guardId
+    ) {
+        Component title = Component.translatable(
+                MCAIntegrationBridge.isFemale(level, guardId)
+                        ? "mcacapitals.dynamic.title.knight.female"
+                        : "mcacapitals.dynamic.title.knight.male"
+        );
 
-        return title
-                + " "
-                + baseName
-                + " of the "
-                + (
+        Component baseName = Component.literal(resolveBaseName(level, guardId));
+
+        return Component.translatable(
                 capital.isSovereignFemale()
-                        ? "Queensguard"
-                        : "Kingsguard"
+                        ? "mcacapitals.dynamic.name.royal_guard.queensguard"
+                        : "mcacapitals.dynamic.name.royal_guard.kingsguard",
+                title,
+                baseName
         );
     }
 
-    private static String buildRoyalGuardHistoryName(
-            ServerLevel level,
-            UUID guardId
-    ) {
-        String title =
-                MCAIntegrationBridge.isFemale(
-                        level,
-                        guardId
-                )
-                        ? "Dame"
-                        : "Sir";
 
-        String baseName =
-                resolveBaseName(
-                        level,
-                        guardId
-                );
-
-        return title
-                + " "
-                + baseName;
-    }
-
-    private static String resolveBaseName(
-            ServerLevel level,
-            UUID entityId
-    ) {
-        Entity entity =
-                MCAIntegrationBridge.getEntityByUuid(
-                        level,
-                        entityId
-                );
+    private static String resolveBaseName(ServerLevel level, UUID entityId) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
 
         if (entity == null) {
             return entityId.toString();
         }
 
-        String currentName =
-                entity.getName()
-                        .getString();
+        String currentName = entity.getName().getString();
 
-        currentName =
-                currentName
-                        .replace(
-                                " of the Kingsguard",
-                                ""
-                        )
-                        .replace(
-                                " of the Queensguard",
-                                ""
-                        )
-                        .trim();
+        currentName = currentName
+                .replace(" of the Kingsguard", "")
+                .replace(" of the Queensguard", "")
+                .trim();
 
         String[] prefixes = {
                 "High Queen ",
@@ -552,14 +322,8 @@ public class CapitalRoyalGuardService {
             changed = false;
 
             for (String prefix : prefixes) {
-                if (currentName.startsWith(
-                        prefix
-                )) {
-                    currentName =
-                            currentName.substring(
-                                    prefix.length()
-                            ).trim();
-
+                if (currentName.startsWith(prefix)) {
+                    currentName = currentName.substring(prefix.length()).trim();
                     changed = true;
                     break;
                 }
@@ -577,9 +341,7 @@ public class CapitalRoyalGuardService {
             UUID villagerId,
             Set<UUID> residents
     ) {
-        if (villagerId == null
-                || capital == null
-                || level == null) {
+        if (villagerId == null || capital == null || level == null) {
             return false;
         }
 
@@ -595,49 +357,30 @@ public class CapitalRoyalGuardService {
             return false;
         }
 
-        if (villagerId.equals(
-                capital.getSovereign()
-        )) {
+        if (villagerId.equals(capital.getSovereign())) {
             return false;
         }
 
-        if (CapitalAmbassadorService.isAmbassador(
-                level,
-                villagerId
-        )) {
+        if (CapitalAmbassadorService.isAmbassador(level, villagerId)) {
             return false;
         }
 
-        if (!CapitalRoleValidation.isCurrentlyLoaded(
-                level,
-                villagerId
-        )) {
-            return capital.getRoyalGuards()
-                    .contains(
-                            villagerId
-                    );
+        if (!CapitalRoleValidation.isCurrentlyLoaded(level, villagerId)) {
+            return capital.getRoyalGuards().contains(villagerId);
         }
 
-        if (!MCAIntegrationBridge.isMCAGuard(
-                level,
-                villagerId
-        )) {
+        if (!MCAIntegrationBridge.isMCAGuard(level, villagerId)) {
             return false;
         }
 
-        return capital.getRoyalGuards()
-                .contains(
-                        villagerId
-                );
+        return capital.getRoyalGuards().contains(villagerId);
     }
 
     private static boolean isEligibleForNewRoyalGuard(
             ServerLevel level,
             CapitalRecord capital
     ) {
-        if (level == null
-                || capital == null
-                || capital.getVillageId() == null) {
+        if (level == null || capital == null || capital.getVillageId() == null) {
             return false;
         }
 
@@ -652,12 +395,7 @@ public class CapitalRoyalGuardService {
             CapitalRecord capital,
             Set<UUID> residents
     ) {
-        List<UUID> valid =
-                getValidCandidates(
-                        level,
-                        capital,
-                        residents
-                );
+        List<UUID> valid = getValidCandidates(level, capital, residents);
 
         if (valid.isEmpty()) {
             return null;
@@ -671,133 +409,85 @@ public class CapitalRoyalGuardService {
             CapitalRecord capital,
             UUID villagerId
     ) {
-        if (villagerId == null
-                || capital == null
-                || level == null) {
+        if (villagerId == null || capital == null || level == null) {
             return false;
         }
 
-        if (capital.getRoyalGuards().contains(
-                villagerId
-        )) {
+        if (capital.getRoyalGuards().contains(villagerId)) {
             return false;
         }
 
-        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(
-                level,
-                capital,
-                villagerId
-        )) {
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, villagerId)) {
             return false;
         }
 
-        if (CapitalAmbassadorService.isAmbassador(
-                level,
-                villagerId
-        )) {
+        if (CapitalAmbassadorService.isAmbassador(level, villagerId)) {
             return false;
         }
 
-        if (villagerId.equals(
-                capital.getSovereign()
-        )) {
+        if (villagerId.equals(capital.getSovereign())) {
             return false;
         }
 
-        if (villagerId.equals(
-                capital.getCommander()
-        )) {
+        if (villagerId.equals(capital.getCommander())) {
             return false;
         }
 
-        if (villagerId.equals(
-                capital.getHand()
-        )) {
+        if (villagerId.equals(capital.getHand())) {
             return false;
         }
 
-        if (villagerId.equals(
-                capital.getGrandMaester()
-        )) {
+        if (villagerId.equals(capital.getGrandMaester())) {
             return false;
         }
 
-        if (villagerId.equals(
-                capital.getHerald()
-        )) {
+        if (villagerId.equals(capital.getHerald())) {
             return false;
         }
 
-        if (villagerId.equals(
-                capital.getHeir()
-        )) {
+        if (villagerId.equals(capital.getHeir())) {
             return false;
         }
 
-        if (villagerId.equals(
-                capital.getConsort()
-        )) {
+        if (villagerId.equals(capital.getConsort())) {
             return false;
         }
 
-        if (villagerId.equals(
-                capital.getDowager()
-        )) {
+        if (villagerId.equals(capital.getDowager())) {
             return false;
         }
 
-        if (capital.isRoyalChild(
-                villagerId
-        )) {
+        if (capital.isRoyalChild(villagerId)) {
             return false;
         }
 
-        if (capital.isLegitimizedRoyalChild(
-                villagerId
-        )) {
+        if (capital.isLegitimizedRoyalChild(villagerId)) {
             return false;
         }
 
-        if (capital.isPrinceConsort(
-                villagerId
-        )) {
+        if (capital.isPrinceConsort(villagerId)) {
             return false;
         }
 
-        if (capital.isDowagerPrince(
-                villagerId
-        )) {
+        if (capital.isDowagerPrince(villagerId)) {
             return false;
         }
 
-        if (capital.isDuke(
-                villagerId
-        )
-                || capital.isMarriageDuke(
-                villagerId
-        )
-                || capital.isDowagerDuke(
-                villagerId
-        )) {
+        if (capital.isDuke(villagerId)
+                || capital.isMarriageDuke(villagerId)
+                || capital.isDowagerDuke(villagerId)) {
             return false;
         }
 
-        if (capital.isLord(
-                villagerId
-        )) {
+        if (capital.isLord(villagerId)) {
             return false;
         }
 
-        if (!MCAIntegrationBridge.isAliveMCAVillager(
-                level,
-                villagerId
-        )) {
+        if (!MCAIntegrationBridge.isAliveMCAVillager(level, villagerId)) {
             return false;
         }
 
-        return MCAIntegrationBridge.isMCAGuard(
-                level,
-                villagerId
-        );
+        return MCAIntegrationBridge.isMCAGuard(level, villagerId);
     }
+
 }

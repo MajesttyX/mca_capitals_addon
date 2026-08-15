@@ -130,10 +130,11 @@ final class HouseWordsPool {
         List<Selection> candidates = new ArrayList<>();
 
         for (String bucket : bucketOrder) {
-            List<String> phrases = buckets.getOrDefault(bucket, Collections.emptyList());
-            for (String phrase : phrases) {
+            List<String> ids = buckets.getOrDefault(bucket, Collections.emptyList());
+            for (String id : ids) {
+                String phrase = HouseWordsLocalization.canonicalEnglish(id);
                 if (!phrase.isBlank() && !usedData.isPhraseUsed(phrase)) {
-                    candidates.add(new Selection(bucket, phrase));
+                    candidates.add(new Selection(bucket, id, phrase));
                 }
             }
         }
@@ -191,13 +192,15 @@ final class HouseWordsPool {
                             continue;
                         }
 
-                        String phrase = normalizePhrase(element.getAsString());
-                        if (phrase.isBlank() || globallySeen.contains(phrase)) {
+                        String id = HouseWordsLocalization.normalizeDefinitionId(element.getAsString());
+                        if (id.isBlank()
+                                || HouseWordsLocalization.canonicalEnglish(id).isBlank()
+                                || globallySeen.contains(id)) {
                             continue;
                         }
 
-                        globallySeen.add(phrase);
-                        uniqueForBucket.add(phrase);
+                        globallySeen.add(id);
+                        uniqueForBucket.add(id);
                     }
                 }
 
@@ -228,13 +231,9 @@ final class HouseWordsPool {
         return PERSONALITY_BUCKET_ORDER.contains(normalized) ? normalized : UNASSIGNED;
     }
 
-    private static String normalizePhrase(String value) {
-        return value == null ? "" : value.trim().replaceAll("\\s+", " ");
-    }
-
-    record Selection(String bucket, String phrase) {
+    record Selection(String bucket, String id, String phrase) {
         static Selection empty(String preferredBucket) {
-            return new Selection(normalizeBucket(preferredBucket), "");
+            return new Selection(normalizeBucket(preferredBucket), "", "");
         }
 
         boolean hasWords() {

@@ -31,6 +31,7 @@ public final class CapitalDiplomaticAgreementCorrespondenceService {
         ServerPlayer online = level.getServer()
                 .getPlayerList()
                 .getPlayer(recipientPlayerId);
+
         if (online == null) {
             return;
         }
@@ -39,13 +40,16 @@ public final class CapitalDiplomaticAgreementCorrespondenceService {
                 level,
                 sourceCapital
         );
+
+        Component sourceNameComponent = sourceName == null || sourceName.isBlank()
+                ? Component.translatable("mcacapitals.diplomacy.unknown_capital")
+                : Component.literal(sourceName);
+
         online.sendSystemMessage(
-                Component.literal(
-                        "Your Ambassador reports an urgent "
-                                + proposal.getType().getDisplayName()
-                                + " proposal from "
-                                + sourceName
-                                + ". Speak to the Ambassador to answer it."
+                Component.translatable(
+                        "mcacapitals.diplomacy.correspondence.proposal_arrival",
+                        proposal.getType().getDisplayComponent(),
+                        sourceNameComponent
                 ).withStyle(ChatFormatting.GOLD)
         );
     }
@@ -53,29 +57,34 @@ public final class CapitalDiplomaticAgreementCorrespondenceService {
     public static void sendNotice(
             ServerLevel level,
             UUID recipientPlayerId,
-            String title,
-            String message
+            Component title,
+            Component message
     ) {
         if (level == null
                 || recipientPlayerId == null
                 || message == null
-                || message.isBlank()) {
+                || message.getString().isBlank()) {
             return;
         }
 
         ServerPlayer online = level.getServer()
                 .getPlayerList()
                 .getPlayer(recipientPlayerId);
+
         if (online == null) {
             return;
         }
 
-        String heading = title == null || title.isBlank()
-                ? "Diplomatic Correspondence"
+        Component heading = title == null || title.getString().isBlank()
+                ? Component.translatable("mcacapitals.diplomacy.correspondence.heading")
                 : title;
+
         online.sendSystemMessage(
-                Component.literal(heading + ": " + message)
-                        .withStyle(ChatFormatting.GOLD)
+                Component.translatable(
+                        "mcacapitals.diplomacy.correspondence.notice",
+                        heading,
+                        message
+                ).withStyle(ChatFormatting.GOLD)
         );
     }
 }

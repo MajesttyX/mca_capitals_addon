@@ -35,11 +35,7 @@ public abstract class InteractScreenIdentityMixin {
     @Unique
     private static final int MCACAPITALS_TOOLTIP_HEIGHT = 12;
 
-    @Inject(
-            method = "drawTextPopups",
-            at = @At("TAIL"),
-            remap = false
-    )
+    @Inject(method = "drawTextPopups", at = @At("TAIL"), remap = false)
     private void mcacapitals$drawOriginAndHouse(GuiGraphics graphics, CallbackInfo ci) {
         Entity villager = mcacapitals$getVillagerEntity();
         if (villager == null) {
@@ -63,19 +59,19 @@ public abstract class InteractScreenIdentityMixin {
 
         List<Component> bottomUpBlocks = new ArrayList<>();
 
-        String wordsLine = identity.houseWordsDisplayLine();
-        if (!wordsLine.isBlank()) {
-            bottomUpBlocks.add(Component.literal(wordsLine));
+        Component wordsLine = identity.houseWordsDisplayLine();
+        if (!wordsLine.getString().isBlank()) {
+            bottomUpBlocks.add(wordsLine);
         }
 
-        String surnameOrHouseLine = identity.surnameOrHouseDisplayLine();
-        if (!surnameOrHouseLine.isBlank()) {
-            bottomUpBlocks.add(Component.literal(surnameOrHouseLine));
+        Component surnameOrHouseLine = identity.surnameOrHouseDisplayLine();
+        if (!surnameOrHouseLine.getString().isBlank()) {
+            bottomUpBlocks.add(surnameOrHouseLine);
         }
 
-        String originLine = identity.originDisplayLine();
-        if (!originLine.isBlank()) {
-            bottomUpBlocks.add(Component.literal(originLine));
+        Component originLine = identity.originDisplayLine();
+        if (!originLine.getString().isBlank()) {
+            bottomUpBlocks.add(originLine);
         }
 
         if (bottomUpBlocks.isEmpty()) {

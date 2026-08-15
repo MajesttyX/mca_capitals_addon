@@ -24,9 +24,13 @@ public abstract class MessengerCapitalDialogueMixin {
         Messenger messenger = (Messenger) (Object) this;
         Entity speaker = messenger.asEntity();
         if (target instanceof ServerPlayer serverPlayer && speaker != null) {
-            String line = CapitalDialogueService.maybeFormatMcaPhraseLine(serverPlayer, speaker, phraseId);
-            if (line != null && !line.isBlank()) {
-                return Component.literal(line);
+            Component line = CapitalDialogueService.maybeFormatMcaPhraseLine(
+                    serverPlayer,
+                    speaker,
+                    phraseId
+            );
+            if (line != null) {
+                return line.copy();
             }
         }
 
@@ -34,7 +38,9 @@ public abstract class MessengerCapitalDialogueMixin {
         String targetName;
         if (target instanceof ServerPlayer serverPlayer) {
             targetName = Messenger.getName(serverPlayer);
-            genderString = "#G" + PlayerSaveData.get(serverPlayer).getGender().name().toLowerCase(Locale.ROOT) + ".";
+            genderString = "#G"
+                    + PlayerSaveData.get(serverPlayer).getGender().name().toLowerCase(Locale.ROOT)
+                    + ".";
         } else {
             targetName = target.getName().getString();
         }
@@ -45,14 +51,16 @@ public abstract class MessengerCapitalDialogueMixin {
 
         String professionString = "";
         if (speaker instanceof VillagerEntityMCA villager && !villager.isBaby()) {
-            professionString = "#P" + BuiltInRegistries.VILLAGER_PROFESSION.getKey(villager.getProfession()).getPath() + ".";
+            professionString = "#P"
+                    + BuiltInRegistries.VILLAGER_PROFESSION.getKey(villager.getProfession()).getPath()
+                    + ".";
         }
 
         String personalityString = "";
         if (speaker instanceof VillagerEntityMCA villager) {
-            personalityString = "#E" + Personality.encodeDialogueId(
-                    villager.getVillagerBrain().getPersonalityId()
-            ) + ".";
+            personalityString = "#E"
+                    + Personality.encodeDialogueId(villager.getVillagerBrain().getPersonality().getId())
+                    + ".";
         }
 
         return Component.translatable(

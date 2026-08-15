@@ -32,11 +32,19 @@ public class AbdicationPromptManager {
         PENDING_CAPITALS.put(playerId, capital.getCapitalId());
         PENDING_STAGES.put(playerId, Stage.FIRST_CONFIRM);
 
-        player.sendSystemMessage(Component.literal("Do you wish to abdicate the throne? "));
+        player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_manager.do_you_wish_to_abdicate_the_throne"));
         player.sendSystemMessage(
-                clickable("Yes", "/capitalabdication yes", ChatFormatting.GREEN)
+                clickable(
+                        Component.translatable("mcacapitals.system.abdication_prompt_manager.yes"),
+                        "/capitalabdication yes",
+                        ChatFormatting.GREEN
+                )
                         .append(Component.literal(" / "))
-                        .append(clickable("No", "/capitalabdication no", ChatFormatting.RED))
+                        .append(clickable(
+                                Component.translatable("mcacapitals.system.abdication_prompt_manager.no"),
+                                "/capitalabdication no",
+                                ChatFormatting.RED
+                        ))
         );
     }
 
@@ -46,30 +54,38 @@ public class AbdicationPromptManager {
         Stage stage = PENDING_STAGES.get(playerId);
 
         if (capitalId == null || stage == null) {
-            player.sendSystemMessage(Component.literal("There is no abdication decision awaiting your answer."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_manager.there_is_no_abdication_decision_awaiting_your_answer"));
             return 0;
         }
 
         if (!yes) {
             clear(playerId);
-            player.sendSystemMessage(Component.literal("The Declaration of Abdication has been set aside."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_manager.the_declaration_of_abdication_has_been_set_aside"));
             return 1;
         }
 
         CapitalRecord capital = CapitalManager.getCapital(capitalId);
         if (capital == null || !playerId.equals(capital.getSovereign())) {
             clear(playerId);
-            player.sendSystemMessage(Component.literal("You are no longer the sovereign of that capital."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_manager.you_are_no_longer_the_sovereign_of_that_capital"));
             return 0;
         }
 
         if (stage == Stage.FIRST_CONFIRM) {
             PENDING_STAGES.put(playerId, Stage.FINAL_CONFIRM);
-            player.sendSystemMessage(Component.literal("Are you sure? This cannot be undone."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_manager.are_you_sure_this_cannot_be_undone"));
             player.sendSystemMessage(
-                    clickable("Yes", "/capitalabdication yes", ChatFormatting.GREEN)
+                    clickable(
+                            Component.translatable("mcacapitals.system.abdication_prompt_manager.yes"),
+                            "/capitalabdication yes",
+                            ChatFormatting.GREEN
+                    )
                             .append(Component.literal(" / "))
-                            .append(clickable("No", "/capitalabdication no", ChatFormatting.RED))
+                            .append(clickable(
+                                    Component.translatable("mcacapitals.system.abdication_prompt_manager.no"),
+                                    "/capitalabdication no",
+                                    ChatFormatting.RED
+                            ))
             );
             return 1;
         }
@@ -78,11 +94,11 @@ public class AbdicationPromptManager {
         clear(playerId);
 
         if (!changed) {
-            player.sendSystemMessage(Component.literal("There is no valid successor to receive the throne."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_manager.there_is_no_valid_successor_to_receive_the_throne"));
             return 0;
         }
 
-        player.sendSystemMessage(Component.literal("By solemn declaration, you have abdicated the throne."));
+        player.sendSystemMessage(Component.translatable("mcacapitals.system.abdication_prompt_manager.by_solemn_declaration_you_have_abdicated_the_throne"));
         return 1;
     }
 
@@ -91,8 +107,8 @@ public class AbdicationPromptManager {
         PENDING_STAGES.remove(playerId);
     }
 
-    private static MutableComponent clickable(String text, String command, ChatFormatting color) {
-        return Component.literal(text).setStyle(
+    private static MutableComponent clickable(Component text, String command, ChatFormatting color) {
+        return text.copy().setStyle(
                 Style.EMPTY
                         .withColor(color)
                         .withBold(true)

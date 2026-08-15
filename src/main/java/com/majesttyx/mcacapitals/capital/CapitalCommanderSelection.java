@@ -158,8 +158,11 @@ final class CapitalCommanderSelection {
             return false;
         }
 
-        if (residents != null
-                && !residents.contains(commanderId)) {
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(
+                level,
+                commanderId,
+                residents
+        )) {
             return false;
         }
 
@@ -177,6 +180,13 @@ final class CapitalCommanderSelection {
                 commanderId
         )) {
             return false;
+        }
+
+        if (!CapitalRoleValidation.isCurrentlyLoaded(
+                level,
+                commanderId
+        )) {
+            return true;
         }
 
         Entity entity = MCAIntegrationBridge.getEntityByUuid(

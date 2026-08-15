@@ -44,7 +44,7 @@ public final class CapitalPetitionCommands {
         try {
             player = source.getPlayerOrException();
         } catch (Exception ex) {
-            source.sendFailure(Component.literal("Only a player may present a betrothal petition."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_petition_commands.only_a_player_may_present_a_betrothal_petition"));
             return 0;
         }
 
@@ -54,7 +54,7 @@ public final class CapitalPetitionCommands {
             capitalId = UUID.fromString(rawCapitalId);
             villagerId = UUID.fromString(rawVillagerId);
         } catch (IllegalArgumentException ex) {
-            source.sendFailure(Component.literal("That betrothal petition carried an invalid seal."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_petition_commands.that_betrothal_petition_carried_an_invalid_seal"));
             return 0;
         }
 
@@ -71,7 +71,7 @@ public final class CapitalPetitionCommands {
         try {
             player = source.getPlayerOrException();
         } catch (Exception ex) {
-            source.sendFailure(Component.literal("Only a player may present a betrothal recommendation."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_petition_commands.only_a_player_may_present_a_betrothal_recommendation"));
             return 0;
         }
 
@@ -83,7 +83,7 @@ public final class CapitalPetitionCommands {
             firstVillagerId = UUID.fromString(rawFirstVillagerId);
             secondVillagerId = UUID.fromString(rawSecondVillagerId);
         } catch (IllegalArgumentException ex) {
-            source.sendFailure(Component.literal("That betrothal recommendation carried an invalid seal."));
+            source.sendFailure(Component.translatable("mcacapitals.system.capital_petition_commands.that_betrothal_recommendation_carried_an_invalid_seal"));
             return 0;
         }
 

@@ -73,9 +73,10 @@ public final class CapitalPlayerLegalHandler {
                     player.getUUID(),
                     entry.getKey()
             )) {
-                player.sendSystemMessage(Component.literal(
+                player.sendSystemMessage(Component.translatable(
+                        "mcacapitals.justice.player_warrant.issued_for_failure_to_leave",
                         CapitalDiplomaticAgreementText.capitalName(player.serverLevel(), capital)
-                                + " has issued a warrant because you failed to leave within two real-time minutes."
+
                 ));
             }
         }
@@ -108,10 +109,10 @@ public final class CapitalPlayerLegalHandler {
                     player.getUUID(),
                     entry.getKey()
             );
-            player.sendSystemMessage(Component.literal(
-                    "Your five-minute sentence in "
-                            + CapitalDiplomaticAgreementText.capitalName(player.serverLevel(), capital)
-                            + " is complete. Its warrant has been cleared."
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.justice.player_warrant.sentence_complete",
+                    CapitalDiplomaticAgreementText.capitalName(player.serverLevel(), capital)
+
             ));
         }
     }
@@ -135,10 +136,10 @@ public final class CapitalPlayerLegalHandler {
             )) {
                 activeKeys.add(key);
                 if (notifiedWantedEntries.add(key)) {
-                    player.sendSystemMessage(Component.literal(
-                            "You are wanted by "
-                                    + CapitalDiplomaticAgreementText.capitalName(player.serverLevel(), capital)
-                                    + ". Its court orders you to leave."
+                    player.sendSystemMessage(Component.translatable(
+                            "mcacapitals.justice.player_warrant.wanted_entry",
+                            CapitalDiplomaticAgreementText.capitalName(player.serverLevel(), capital)
+
                     ));
                 }
             }

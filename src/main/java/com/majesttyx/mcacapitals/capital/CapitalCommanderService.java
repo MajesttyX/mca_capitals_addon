@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CapitalCommanderService {
+
     public static final int REQUIRED_POPULATION = 20;
 
     private CapitalCommanderService() {
@@ -27,6 +28,7 @@ public class CapitalCommanderService {
         }
 
         boolean changed = false;
+
         UUID playerCommander =
                 PlayerCapitalTitleService.getCommanderHolder(
                         level,
@@ -72,7 +74,6 @@ public class CapitalCommanderService {
 
             if (newCommander != null) {
                 capital.setCommander(newCommander);
-
                 capital.setCommanderFemale(
                         MCAIntegrationBridge.isFemale(
                                 level,
@@ -87,20 +88,13 @@ public class CapitalCommanderService {
                         );
 
                 String commanderName =
-                        resolveDisplayName(
+                        CapitalChronicleIdentitySnapshot.name(
                                 level,
                                 capital,
                                 newCommander
                         );
 
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        commanderName
-                                + " was appointed Commander of the Royal Guard of "
-                                + villageName
-                                + "."
-                );
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_GUARD_COMMANDER_APPOINTED, commanderName, villageName);
 
                 changed = true;
             }
@@ -109,16 +103,7 @@ public class CapitalCommanderService {
         if (previousCommander != null
                 && capital.getCommander() == null
                 && playerCommander == null) {
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    "The office of Commander of the Royal Guard stands vacant in "
-                            + MCAIntegrationBridge.getVillageName(
-                            level,
-                            capital.getVillageId()
-                    )
-                            + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_GUARD_COMMANDER_VACANT, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
         }
 
         Entity activeCommander =
@@ -251,7 +236,7 @@ public class CapitalCommanderService {
         if (capital.getCommander() != null
                 && !capital.getCommander().equals(playerId)) {
             String formerName =
-                    resolveDisplayName(
+                    CapitalChronicleIdentitySnapshot.name(
                             level,
                             capital,
                             capital.getCommander()
@@ -260,14 +245,7 @@ public class CapitalCommanderService {
             capital.setCommander(null);
             capital.setCommanderFemale(false);
 
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    formerName
-                            + " was relieved of the office of Commander of the Royal Guard of "
-                            + villageName
-                            + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_GUARD_COMMANDER_RELIEVED, formerName, villageName);
         }
 
         PlayerCapitalTitleService.revokeCommanderForCapital(
@@ -282,27 +260,19 @@ public class CapitalCommanderService {
         );
 
         String commanderName =
-                resolveDisplayName(
+                CapitalChronicleIdentitySnapshot.name(
                         level,
                         capital,
                         playerId
                 );
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                commanderName
-                        + " was appointed Commander of the Royal Guard of "
-                        + villageName
-                        + "."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_GUARD_COMMANDER_APPOINTED, commanderName, villageName);
 
         CapitalCourtWatcher.clearFingerprint(
                 capital.getCapitalId()
         );
 
         CapitalDataAccess.markDirty(level);
-
         return true;
     }
 
@@ -343,11 +313,11 @@ public class CapitalCommanderService {
             String villageName,
             String commanderName
     ) {
-        String message =
-                commanderName
-                        + " has been appointed Commander of the Royal Guard of "
-                        + villageName
-                        + ".";
+        Component message = Component.translatable(
+                "mcacapitals.system.commander.appointed_broadcast",
+                commanderName,
+                villageName
+        );
 
         Integer villageId = capital.getVillageId();
 
@@ -367,9 +337,7 @@ public class CapitalCommanderService {
 
             if (playerVillage != null
                     && playerVillage.equals(villageId)) {
-                serverPlayer.sendSystemMessage(
-                        Component.literal(message)
-                );
+                serverPlayer.sendSystemMessage(message);
             }
         }
     }

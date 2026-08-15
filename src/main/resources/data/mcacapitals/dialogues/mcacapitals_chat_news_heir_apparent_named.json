@@ -1,0 +1,17 @@
+{
+  "silent": true,
+  "auto": true,
+  "answers": [
+    {
+      "name": "heir_apparent_named",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "next": "mcacapitals_runtime_mcacapitals_chat_news_heir_apparent_named"
+          }
+        }
+      ]
+    }
+  ]
+}

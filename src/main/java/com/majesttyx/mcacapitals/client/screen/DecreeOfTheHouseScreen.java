@@ -30,7 +30,7 @@ public class DecreeOfTheHouseScreen extends Screen {
     private String houseWords = "";
 
     public DecreeOfTheHouseScreen(OpenDecreeOfTheHousePacket packet) {
-        super(Component.literal(packet.playerTarget() ? "Revise Your House" : "Decree of the House"));
+        super(Component.translatable(packet.playerTarget() ? "mcacapitals.ui.decree_house.title.player" : "mcacapitals.ui.decree_house.title.villager"));
         this.targetId = packet.targetId();
         this.playerTarget = packet.playerTarget();
         this.houseFounded = packet.houseFounded() || packet.playerTarget();
@@ -56,7 +56,7 @@ public class DecreeOfTheHouseScreen extends Screen {
                 top + 48,
                 184,
                 18,
-                Component.literal(playerTarget ? "House Name" : "Surname / House Name")
+                Component.translatable(playerTarget ? "mcacapitals.ui.decree_house.house_name" : "mcacapitals.ui.decree_house.surname_house_name")
         );
         surnameBox.setMaxLength(playerTarget ? 20 : 40);
         surnameBox.setValue(surname);
@@ -69,7 +69,7 @@ public class DecreeOfTheHouseScreen extends Screen {
                 top + 86,
                 184,
                 18,
-                Component.literal("House Words")
+                Component.translatable("mcacapitals.ui.decree_house.house_words")
         );
         houseWordsBox.setMaxLength(80);
         houseWordsBox.setValue(houseWords);
@@ -78,11 +78,11 @@ public class DecreeOfTheHouseScreen extends Screen {
         houseWordsBox.setResponder(value -> errorMessage = Component.empty());
         addRenderableWidget(houseWordsBox);
 
-        addRenderableWidget(Button.builder(Component.literal("Save"), button -> submit())
+        addRenderableWidget(Button.builder(Component.translatable("mcacapitals.ui.decree_house.save"), button -> submit())
                 .bounds(left + 42, top + 118, 70, 20)
                 .build());
 
-        addRenderableWidget(Button.builder(Component.literal("Cancel"), button -> onClose())
+        addRenderableWidget(Button.builder(Component.translatable("mcacapitals.ui.decree_house.cancel"), button -> onClose())
                 .bounds(left + 128, top + 118, 70, 20)
                 .build());
 
@@ -95,22 +95,22 @@ public class DecreeOfTheHouseScreen extends Screen {
 
         if (playerTarget) {
             if (!isValidNamePart(surnameValue, 2, 20)) {
-                errorMessage = Component.literal("House name must be 2-20 valid characters.");
+                errorMessage = Component.translatable("mcacapitals.ui.decree_house.error.house_name");
                 return;
             }
 
             if (!houseWordsValue.trim().isBlank() && !isValidHouseWords(houseWordsValue)) {
-                errorMessage = Component.literal("House Words must be 2-80 valid characters.");
+                errorMessage = Component.translatable("mcacapitals.ui.decree_house.error.house_words");
                 return;
             }
         } else {
             if (!isValidNamePart(surnameValue, 2, 40)) {
-                errorMessage = Component.literal("Surname must be 2-40 valid characters.");
+                errorMessage = Component.translatable("mcacapitals.ui.decree_house.error.surname");
                 return;
             }
 
             if (houseFounded && !isValidHouseWords(houseWordsValue)) {
-                errorMessage = Component.literal("House Words must be 2-80 valid characters.");
+                errorMessage = Component.translatable("mcacapitals.ui.decree_house.error.house_words");
                 return;
             }
         }
@@ -162,7 +162,7 @@ public class DecreeOfTheHouseScreen extends Screen {
 
         graphics.drawString(
                 this.font,
-                playerTarget ? "House Name" : "Surname / House Name",
+                Component.translatable(playerTarget ? "mcacapitals.ui.decree_house.house_name" : "mcacapitals.ui.decree_house.surname_house_name"),
                 left + 28,
                 top + 37,
                 0xE8D8B0,
@@ -171,7 +171,7 @@ public class DecreeOfTheHouseScreen extends Screen {
 
         graphics.drawString(
                 this.font,
-                "House Words",
+                Component.translatable("mcacapitals.ui.decree_house.house_words"),
                 left + 28,
                 top + 75,
                 houseFounded ? 0xE8D8B0 : 0x777777,
@@ -179,11 +179,11 @@ public class DecreeOfTheHouseScreen extends Screen {
         );
 
         if (!houseFounded) {
-            graphics.drawString(this.font, "Only established Houses have House Words.", left + 28, top + 106, 0x888888, false);
+            graphics.drawString(this.font, Component.translatable("mcacapitals.ui.decree_house.house_words_unavailable"), left + 28, top + 106, 0x888888, false);
         }
 
         if (playerTarget) {
-            graphics.drawString(this.font, "Leave House Words blank to set them later.", left + 28, top + 106, 0x888888, false);
+            graphics.drawString(this.font, Component.translatable("mcacapitals.ui.decree_house.house_words_optional"), left + 28, top + 106, 0x888888, false);
         }
 
         if (errorMessage != null && errorMessage != Component.empty()) {

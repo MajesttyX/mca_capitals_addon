@@ -39,16 +39,18 @@ public class RoyalCharterItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, net.minecraft.world.entity.player.Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
+
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer && level instanceof ServerLevel serverLevel) {
             openCharterFlow(serverLevel, serverPlayer, stack);
         }
+
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.literal("Used to found a monarchy in an eligible village.").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.literal("Right-click to choose the first sovereign.").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.royal_charter_item.used_to_found_a_monarchy_in_an_eligible_village").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.system.royal_charter_item.right_click_to_choose_the_first_sovereign").withStyle(ChatFormatting.GRAY));
     }
 
     private static void openCharterFlow(ServerLevel level, ServerPlayer player, ItemStack stack) {
@@ -59,6 +61,7 @@ public class RoyalCharterItem extends Item {
 
         CompoundTag tag = ModItemStackData.getCustomData(stack);
         UUID capitalId = parseUuid(tag.getString(ModDataKeys.CAPITAL_ID));
+
         if (capitalId == null) {
             ModNetwork.sendToPlayer(player, new OpenRoyalCharterDecisionPacket());
             return;
@@ -71,6 +74,7 @@ public class RoyalCharterItem extends Item {
             player.containerMenu.broadcastChanges();
             tag = ModItemStackData.getCustomData(stack);
         }
+
         String villageName = tag.getString(ModDataKeys.VILLAGE_NAME);
 
         if (!PlayerHouseService.hasHouse(level, player.getUUID())) {
@@ -85,20 +89,26 @@ public class RoyalCharterItem extends Item {
         if (capital == null || capital.getVillageId() == null) {
             return ItemStack.EMPTY;
         }
+
         ItemStack stack = new ItemStack(ModItems.ROYAL_CHARTER.get());
         refreshCharterData(level, capital, stack);
         return stack;
     }
 
     private static void refreshCharterData(ServerLevel level, CapitalRecord capital, ItemStack stack) {
-        if (level == null || capital == null || capital.getCapitalId() == null
-                || capital.getVillageId() == null || stack == null || stack.isEmpty()) {
+        if (level == null
+                || capital == null
+                || capital.getCapitalId() == null
+                || capital.getVillageId() == null
+                || stack == null
+                || stack.isEmpty()) {
             return;
         }
 
         CompoundTag tag = ModItemStackData.hasCustomData(stack)
                 ? ModItemStackData.getCustomData(stack)
                 : new CompoundTag();
+
         tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
         tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId());
         tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
@@ -108,7 +118,12 @@ public class RoyalCharterItem extends Item {
                 .sorted(Comparator
                         .comparing((Map.Entry<UUID, String> entry) -> resolveCandidateName(level, entry.getKey(), entry.getValue()), String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(entry -> entry.getKey().toString()))
-                .forEach(entry -> addCandidate(candidates, entry.getKey(), resolveCandidateName(level, entry.getKey(), entry.getValue())));
+                .forEach(entry -> addCandidate(
+                        candidates,
+                        entry.getKey(),
+                        resolveCandidateName(level, entry.getKey(), entry.getValue())
+                ));
+
         tag.put(ModDataKeys.CANDIDATES, candidates);
         ModItemStackData.setCustomData(stack, tag);
     }
@@ -117,6 +132,7 @@ public class RoyalCharterItem extends Item {
         String resolvedName = villagerName == null || villagerName.isBlank()
                 ? villagerId.toString()
                 : villagerName.trim();
+
         Entity entity = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, villagerId);
         if (entity == null) {
             return resolvedName;
@@ -127,11 +143,14 @@ public class RoyalCharterItem extends Item {
         if (surname == null || surname.isBlank()) {
             return resolvedName;
         }
+
         String normalizedName = resolvedName.toLowerCase(Locale.ROOT);
         String normalizedSurname = surname.trim().toLowerCase(Locale.ROOT);
-        if (normalizedName.equals(normalizedSurname) || normalizedName.endsWith(" " + normalizedSurname)) {
+        if (normalizedName.equals(normalizedSurname)
+                || normalizedName.endsWith(" " + normalizedSurname)) {
             return resolvedName;
         }
+
         return resolvedName + " " + surname.trim();
     }
 
@@ -139,7 +158,11 @@ public class RoyalCharterItem extends Item {
         if (candidates == null || villagerId == null) {
             return;
         }
-        String resolvedName = villagerName == null || villagerName.isBlank() ? villagerId.toString() : villagerName;
+
+        String resolvedName = villagerName == null || villagerName.isBlank()
+                ? villagerId.toString()
+                : villagerName;
+
         CompoundTag candidateTag = new CompoundTag();
         candidateTag.putString(ModDataKeys.VILLAGER_ID, villagerId.toString());
         candidateTag.putString(ModDataKeys.VILLAGER_NAME, resolvedName);

@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CapitalCourtBuilder {
+
     private static final String[] KNOWN_TITLE_PREFIXES = new String[] {
             "High Queen",
             "High King",
@@ -51,115 +52,52 @@ public class CapitalCourtBuilder {
     private CapitalCourtBuilder() {
     }
 
-    public static void rebuildCourt(
-            ServerLevel level,
-            CapitalRecord capital,
-            Set<UUID> residents
-    ) {
+    public static void rebuildCourt(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
         UUID sovereign = capital.getSovereign();
-
         if (sovereign == null) {
             return;
         }
 
         UUID previousConsort = capital.getConsort();
 
-        Set<UUID> oldRoyalChildren =
-                new LinkedHashSet<>(
-                        capital.getRoyalChildren()
-                );
+        Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
+        Set<UUID> preservedDirectDukes = new LinkedHashSet<>(capital.getDukes());
+        Map<UUID, Boolean> preservedDirectDukeFemale = new LinkedHashMap<>(capital.getDukeFemale());
 
-        Set<UUID> preservedDirectDukes =
-                new LinkedHashSet<>(
-                        capital.getDukes()
-                );
+        Set<UUID> preservedDirectLords = new LinkedHashSet<>(capital.getLords());
+        Map<UUID, Boolean> preservedDirectLordFemale = new LinkedHashMap<>(capital.getLordFemale());
 
-        Map<UUID, Boolean> preservedDirectDukeFemale =
-                new LinkedHashMap<>(
-                        capital.getDukeFemale()
-                );
-
-        Set<UUID> preservedDirectLords =
-                new LinkedHashSet<>(
-                        capital.getLords()
-                );
-
-        Map<UUID, Boolean> preservedDirectLordFemale =
-                new LinkedHashMap<>(
-                        capital.getLordFemale()
-                );
-
-        UUID existingDowager =
-                capital.getDowager();
-
-        boolean existingDowagerFemale =
-                capital.isDowagerFemale();
+        UUID existingDowager = capital.getDowager();
+        boolean existingDowagerFemale = capital.isDowagerFemale();
 
         UUID newConsort = null;
         boolean newConsortFemale = false;
         UUID newHeir = null;
 
-        Set<UUID> newRoyalChildren =
-                new LinkedHashSet<>();
+        Set<UUID> newRoyalChildren = new LinkedHashSet<>();
+        Map<UUID, Boolean> newRoyalChildFemale = new LinkedHashMap<>();
+        List<UUID> discoveredRoyalBirthOrder = new ArrayList<>();
 
-        Map<UUID, Boolean> newRoyalChildFemale =
-                new LinkedHashMap<>();
+        Map<UUID, UUID> newPrinceConsortSources = new LinkedHashMap<>();
+        Map<UUID, Boolean> newPrinceConsortFemale = new LinkedHashMap<>();
 
-        List<UUID> discoveredRoyalBirthOrder =
-                new ArrayList<>();
+        Set<UUID> newDukes = new LinkedHashSet<>();
+        Map<UUID, Boolean> newDukeFemale = new LinkedHashMap<>();
 
-        Map<UUID, UUID> newPrinceConsortSources =
-                new LinkedHashMap<>();
+        Map<UUID, UUID> newMarriageDukeSources = new LinkedHashMap<>();
+        Map<UUID, Boolean> newMarriageDukeFemale = new LinkedHashMap<>();
 
-        Map<UUID, Boolean> newPrinceConsortFemale =
-                new LinkedHashMap<>();
+        Set<UUID> newLords = new LinkedHashSet<>();
+        Map<UUID, Boolean> newLordFemale = new LinkedHashMap<>();
 
-        Set<UUID> newDukes =
-                new LinkedHashSet<>();
+        Set<UUID> newKnights = new LinkedHashSet<>();
+        Map<UUID, Boolean> newKnightFemale = new LinkedHashMap<>();
 
-        Map<UUID, Boolean> newDukeFemale =
-                new LinkedHashMap<>();
-
-        Map<UUID, UUID> newMarriageDukeSources =
-                new LinkedHashMap<>();
-
-        Map<UUID, Boolean> newMarriageDukeFemale =
-                new LinkedHashMap<>();
-
-        Set<UUID> newLords =
-                new LinkedHashSet<>();
-
-        Map<UUID, Boolean> newLordFemale =
-                new LinkedHashMap<>();
-
-        Set<UUID> newKnights =
-                new LinkedHashSet<>();
-
-        Map<UUID, Boolean> newKnightFemale =
-                new LinkedHashMap<>();
-
-        UUID spouse =
-                CapitalCourtMarriageResolver.findActualSpouse(
-                        level,
-                        sovereign
-                );
-
-        if (isValidRelationshipPerson(
-                level,
-                spouse
-        )
-                && CapitalCourtMarriageResolver.isValidMarriedConsort(
-                level,
-                sovereign,
-                spouse
-        )) {
+        UUID spouse = CapitalCourtMarriageResolver.findActualSpouse(level, sovereign);
+        if (isValidRelationshipPerson(level, spouse)
+                && CapitalCourtMarriageResolver.isValidMarriedConsort(level, sovereign, spouse)) {
             newConsort = spouse;
-
-            newConsortFemale =
-                    MCAIntegrationBridge.isFemale(
-                            level,
-                            spouse
-                    );
+            newConsortFemale = MCAIntegrationBridge.isFemale(level, spouse);
         }
 
         collectRoyalChildren(
@@ -172,21 +110,8 @@ public class CapitalCourtBuilder {
                 discoveredRoyalBirthOrder
         );
 
-        synchronizeRoyalSuccessionOrder(
-                capital,
-                newRoyalChildren,
-                discoveredRoyalBirthOrder
-        );
-
-        newHeir =
-                resolveHeir(
-                        level,
-                        capital,
-                        residents,
-                        sovereign,
-                        newRoyalChildren
-                );
-
+        synchronizeRoyalSuccessionOrder(capital, newRoyalChildren, discoveredRoyalBirthOrder);
+        newHeir = resolveHeir(level, capital, residents, sovereign, newRoyalChildren);
         collectHeirChildren(
                 level,
                 capital,
@@ -195,12 +120,7 @@ public class CapitalCourtBuilder {
                 newRoyalChildFemale,
                 discoveredRoyalBirthOrder
         );
-
-        synchronizeRoyalSuccessionOrder(
-                capital,
-                newRoyalChildren,
-                discoveredRoyalBirthOrder
-        );
+        synchronizeRoyalSuccessionOrder(capital, newRoyalChildren, discoveredRoyalBirthOrder);
 
         collectPrinceConsortSources(
                 level,
@@ -212,62 +132,21 @@ public class CapitalCourtBuilder {
                 newPrinceConsortFemale
         );
 
-        preserveDirectDukes(
-                level,
-                capital,
-                preservedDirectDukes,
-                preservedDirectDukeFemale,
-                existingDowager,
-                newDukes,
-                newDukeFemale
-        );
+        preserveDirectDukes(level, capital, preservedDirectDukes, preservedDirectDukeFemale, existingDowager, newDukes, newDukeFemale);
+        preserveDirectLords(level, capital, preservedDirectLords, preservedDirectLordFemale, existingDowager, newLords, newLordFemale);
 
-        preserveDirectLords(
-                level,
-                capital,
-                preservedDirectLords,
-                preservedDirectLordFemale,
-                existingDowager,
-                newLords,
-                newLordFemale
-        );
+        Set<UUID> allRelevant = buildAllRelevantResidents(residents, preservedDirectDukes, preservedDirectLords, newRoyalChildren, newConsort, existingDowager);
+        classifyCourtResidents(level, capital, residents, allRelevant, sovereign, newConsort, existingDowager, newHeir,
+                newRoyalChildren, newDukes, newLords, newLordFemale, newKnights, newKnightFemale);
 
-        Set<UUID> allRelevant =
-                buildAllRelevantResidents(
-                        residents,
-                        preservedDirectDukes,
-                        preservedDirectLords,
-                        newRoyalChildren,
-                        newConsort,
-                        existingDowager
-                );
-
-        classifyCourtResidents(
+        CapitalCourtMarriageResolver.collectMarriageDukeSources(
                 level,
-                capital,
                 residents,
-                allRelevant,
-                sovereign,
-                newConsort,
-                existingDowager,
-                newHeir,
-                newRoyalChildren,
+                capital,
                 newDukes,
-                newLords,
-                newLordFemale,
-                newKnights,
-                newKnightFemale
+                newMarriageDukeSources,
+                newMarriageDukeFemale
         );
-
-        CapitalCourtMarriageResolver
-                .collectMarriageDukeSources(
-                        level,
-                        residents,
-                        capital,
-                        newDukes,
-                        newMarriageDukeSources,
-                        newMarriageDukeFemale
-                );
 
         CapitalCourtApplier.applyComputedCourt(
                 level,
@@ -289,299 +168,105 @@ public class CapitalCourtBuilder {
                 newKnightFemale
         );
 
-        if (newConsort != null
-                && !newConsort.equals(
-                previousConsort
-        )) {
-            ServerPlayer livePlayerSpouse =
-                    CapitalCourtMarriageResolver
-                            .findActualPlayerSpouse(
-                                    level,
-                                    sovereign
-                            );
+        if (newConsort != null && !newConsort.equals(previousConsort)) {
+            ServerPlayer livePlayerSpouse = CapitalCourtMarriageResolver.findActualPlayerSpouse(level, sovereign);
 
             if (livePlayerSpouse != null) {
-                capital.setPlayerConsort(
-                        true
-                );
-
-                capital.setPlayerConsortId(
-                        livePlayerSpouse.getUUID()
-                );
-
-                capital.setPlayerConsortName(
-                        livePlayerSpouse
-                                .getGameProfile()
-                                .getName()
-                );
-
-                capital.setConsort(
-                        livePlayerSpouse.getUUID()
-                );
-
-                capital.setConsortFemale(
-                        false
-                );
-
-                newConsort =
-                        livePlayerSpouse.getUUID();
-            } else if (!MCAIntegrationBridge
-                    .isMCAVillager(
-                            level,
-                            newConsort
-                    )) {
-                capital.setPlayerConsort(
-                        true
-                );
-
-                capital.setPlayerConsortId(
-                        newConsort
-                );
-
-                capital.setPlayerConsortName(
-                        resolveBestOnlinePlayerName(
-                                level
-                        )
-                );
+                capital.setPlayerConsort(true);
+                capital.setPlayerConsortId(livePlayerSpouse.getUUID());
+                capital.setPlayerConsortName(livePlayerSpouse.getGameProfile().getName());
+                capital.setConsort(livePlayerSpouse.getUUID());
+                capital.setConsortFemale(false);
+                newConsort = livePlayerSpouse.getUUID();
+            } else if (!MCAIntegrationBridge.isMCAVillager(level, newConsort)) {
+                capital.setPlayerConsort(true);
+                capital.setPlayerConsortId(newConsort);
+                capital.setPlayerConsortName(resolveBestOnlinePlayerName(level));
             }
 
-            if (MCAIntegrationBridge.isMCAVillager(
-                    level,
-                    newConsort
-            )) {
-                String sovereignName =
-                        resolveTitledName(
-                                level,
-                                sovereign
-                        );
+            if (MCAIntegrationBridge.isMCAVillager(level, newConsort)) {
+                String sovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
+                String consortName = CapitalChronicleIdentitySnapshot.name(level, capital, newConsort);
 
-                String consortName =
-                        resolveTitledName(
-                                level,
-                                newConsort
-                        );
-
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        sovereignName
-                                + " was married to "
-                                + consortName
-                                + "."
-                );
+                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, sovereignName, consortName);
             }
         }
 
-        restoreAndCleanDowager(
-                capital,
-                existingDowager,
-                existingDowagerFemale
-        );
-
-        writeRoyalChildChronicleEntries(
-                level,
-                capital,
-                oldRoyalChildren,
-                newRoyalChildren
-        );
+        restoreAndCleanDowager(capital, existingDowager, existingDowagerFemale);
+        writeRoyalChildChronicleEntries(level, capital, oldRoyalChildren, newRoyalChildren);
     }
 
-    public static void applySovereignMarriage(
-            ServerLevel level,
-            CapitalRecord capital
-    ) {
-        UUID sovereign =
-                capital.getSovereign();
-
+    public static void applySovereignMarriage(ServerLevel level, CapitalRecord capital) {
+        UUID sovereign = capital.getSovereign();
         if (sovereign == null) {
             return;
         }
 
-        UUID previousConsort =
-                capital.getConsort();
+        UUID previousConsort = capital.getConsort();
 
-        UUID spouse =
-                CapitalCourtMarriageResolver.findActualSpouse(
-                        level,
-                        sovereign
-                );
+        UUID spouse = CapitalCourtMarriageResolver.findActualSpouse(level, sovereign);
+        UUID validConsort = (isValidRelationshipPerson(level, spouse)
+                && CapitalCourtMarriageResolver.isValidMarriedConsort(level, sovereign, spouse)) ? spouse : null;
+        boolean spouseFemale = validConsort != null && MCAIntegrationBridge.isFemale(level, validConsort);
 
-        UUID validConsort =
-                (
-                        isValidRelationshipPerson(
-                                level,
-                                spouse
-                        )
-                                && CapitalCourtMarriageResolver
-                                .isValidMarriedConsort(
-                                        level,
-                                        sovereign,
-                                        spouse
-                                )
-                )
-                        ? spouse
-                        : null;
-
-        boolean spouseFemale =
-                validConsort != null
-                        && MCAIntegrationBridge.isFemale(
-                        level,
-                        validConsort
-                );
-
-        ServerPlayer livePlayerSpouse =
-                CapitalCourtMarriageResolver
-                        .findActualPlayerSpouse(
-                                level,
-                                sovereign
-                        );
-
+        ServerPlayer livePlayerSpouse = CapitalCourtMarriageResolver.findActualPlayerSpouse(level, sovereign);
         if (livePlayerSpouse != null) {
-            validConsort =
-                    livePlayerSpouse.getUUID();
-
+            validConsort = livePlayerSpouse.getUUID();
             spouseFemale = false;
         }
 
-        capital.setConsort(
-                validConsort
-        );
-
-        capital.setConsortFemale(
-                spouseFemale
-        );
+        capital.setConsort(validConsort);
+        capital.setConsortFemale(spouseFemale);
 
         if (livePlayerSpouse != null) {
-            capital.setPlayerConsort(
-                    true
-            );
-
-            capital.setPlayerConsortId(
-                    livePlayerSpouse.getUUID()
-            );
-
-            capital.setPlayerConsortName(
-                    livePlayerSpouse
-                            .getGameProfile()
-                            .getName()
-            );
-        } else if (validConsort != null
-                && !MCAIntegrationBridge.isMCAVillager(
-                level,
-                validConsort
-        )) {
-            capital.setPlayerConsort(
-                    true
-            );
-
-            capital.setPlayerConsortId(
-                    validConsort
-            );
-
-            capital.setPlayerConsortName(
-                    resolveBestOnlinePlayerName(
-                            level
-                    )
-            );
+            capital.setPlayerConsort(true);
+            capital.setPlayerConsortId(livePlayerSpouse.getUUID());
+            capital.setPlayerConsortName(livePlayerSpouse.getGameProfile().getName());
+        } else if (validConsort != null && !MCAIntegrationBridge.isMCAVillager(level, validConsort)) {
+            capital.setPlayerConsort(true);
+            capital.setPlayerConsortId(validConsort);
+            capital.setPlayerConsortName(resolveBestOnlinePlayerName(level));
         } else {
-            capital.setPlayerConsort(
-                    false
-            );
-
-            capital.setPlayerConsortId(
-                    null
-            );
-
-            capital.setPlayerConsortName(
-                    null
-            );
+            capital.setPlayerConsort(false);
+            capital.setPlayerConsortId(null);
+            capital.setPlayerConsortName(null);
         }
 
-        if (capital.getDowager() != null
-                && capital.getDowager()
-                .equals(
-                        capital.getConsort()
-                )) {
-            capital.setDowager(
-                    null
-            );
-
-            capital.setDowagerFemale(
-                    false
-            );
+        if (capital.getDowager() != null && capital.getDowager().equals(capital.getConsort())) {
+            capital.setDowager(null);
+            capital.setDowagerFemale(false);
         }
 
         if (capital.getSovereign() != null) {
-            capital.setState(
-                    CapitalState.ACTIVE
-            );
+            capital.setState(CapitalState.ACTIVE);
         }
 
         if (validConsort != null
-                && !validConsort.equals(
-                previousConsort
-        )
-                && MCAIntegrationBridge.isMCAVillager(
-                level,
-                validConsort
-        )) {
-            String sovereignName =
-                    resolveTitledName(
-                            level,
-                            sovereign
-                    );
+                && !validConsort.equals(previousConsort)
+                && MCAIntegrationBridge.isMCAVillager(level, validConsort)) {
+            String sovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
+            String consortName = CapitalChronicleIdentitySnapshot.name(level, capital, validConsort);
 
-            String consortName =
-                    resolveTitledName(
-                            level,
-                            validConsort
-                    );
-
-            CapitalChronicleService.addEntry(
-                    level,
-                    capital,
-                    sovereignName
-                            + " was married to "
-                            + consortName
-                            + "."
-            );
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, sovereignName, consortName);
         }
     }
 
-    static boolean isValidRelationshipPerson(
-            ServerLevel level,
-            UUID personId
-    ) {
+    static boolean isValidRelationshipPerson(ServerLevel level, UUID personId) {
         if (personId == null) {
             return false;
         }
 
-        Entity entity =
-                MCAIntegrationBridge.getEntityByUuid(
-                        level,
-                        personId
-                );
-
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, personId);
         if (entity != null) {
-            return entity.isAlive()
-                    && !entity.isRemoved();
+            return entity.isAlive() && !entity.isRemoved();
         }
 
-        ServerPlayer player =
-                level.getServer()
-                        .getPlayerList()
-                        .getPlayer(
-                                personId
-                        );
-
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(personId);
         if (player != null) {
             return true;
         }
 
-        return MCAIntegrationBridge.hasFamilyNode(
-                level,
-                personId
-        );
+        return MCAIntegrationBridge.hasFamilyNode(level, personId);
     }
 
     private static void collectRoyalChildren(
@@ -593,92 +278,36 @@ public class CapitalCourtBuilder {
             Map<UUID, Boolean> newRoyalChildFemale,
             List<UUID> discoveredRoyalBirthOrder
     ) {
-        for (UUID childId :
-                MCAIntegrationBridge.getChildren(
-                        level,
-                        sovereign
-                )) {
-            if (childId == null
-                    || capital.isDisinheritedRoyalChild(
-                    childId
-            )) {
+        for (UUID childId : MCAIntegrationBridge.getChildren(level, sovereign)) {
+            if (childId == null || capital.isDisinheritedRoyalChild(childId)) {
                 continue;
             }
 
-            boolean dynasticChild =
-                    MCAIntegrationBridge.isChildOf(
-                            level,
-                            childId,
-                            sovereign
-                    );
-
-            if (dynasticChild
-                    || capital.isLegitimizedRoyalChild(
-                    childId
-            )) {
-                if (newRoyalChildren.add(
-                        childId
-                )) {
-                    discoveredRoyalBirthOrder.add(
-                            childId
-                    );
+            boolean dynasticChild = MCAIntegrationBridge.isChildOf(level, childId, sovereign);
+            if (dynasticChild || capital.isLegitimizedRoyalChild(childId)) {
+                if (newRoyalChildren.add(childId)) {
+                    discoveredRoyalBirthOrder.add(childId);
                 }
-
-                newRoyalChildFemale.put(
-                        childId,
-                        MCAIntegrationBridge.isFemale(
-                                level,
-                                childId
-                        )
-                );
+                newRoyalChildFemale.put(childId, MCAIntegrationBridge.isFemale(level, childId));
             }
         }
 
-        for (UUID existingRoyalChild :
-                capital.getRoyalChildren()) {
-            if (existingRoyalChild == null
-                    || capital.isDisinheritedRoyalChild(
-                    existingRoyalChild
-            )) {
+        for (UUID existingRoyalChild : capital.getRoyalChildren()) {
+            if (existingRoyalChild == null || capital.isDisinheritedRoyalChild(existingRoyalChild)) {
                 continue;
             }
 
-            if (newRoyalChildren.add(
-                    existingRoyalChild
-            )
-                    && !discoveredRoyalBirthOrder
-                    .contains(
-                            existingRoyalChild
-                    )) {
-                discoveredRoyalBirthOrder.add(
-                        existingRoyalChild
-                );
+            if (newRoyalChildren.add(existingRoyalChild) && !discoveredRoyalBirthOrder.contains(existingRoyalChild)) {
+                discoveredRoyalBirthOrder.add(existingRoyalChild);
             }
 
-            boolean female =
-                    capital.getRoyalChildFemale()
-                            .getOrDefault(
-                                    existingRoyalChild,
-                                    existingDowager != null
-                                            && MCAIntegrationBridge.isChildOf(
-                                            level,
-                                            existingRoyalChild,
-                                            existingDowager
-                                    )
-                                            ? MCAIntegrationBridge.isFemale(
-                                            level,
-                                            existingRoyalChild
-                                    )
-                                            : MCAIntegrationBridge.isFemale(
-                                            level,
-                                            existingRoyalChild
-                                    )
-                            );
-
-            newRoyalChildFemale.put(
+            boolean female = capital.getRoyalChildFemale().getOrDefault(
                     existingRoyalChild,
-                    female
+                    existingDowager != null && MCAIntegrationBridge.isChildOf(level, existingRoyalChild, existingDowager)
+                            ? MCAIntegrationBridge.isFemale(level, existingRoyalChild)
+                            : MCAIntegrationBridge.isFemale(level, existingRoyalChild)
             );
+            newRoyalChildFemale.put(existingRoyalChild, female);
         }
     }
 
@@ -694,41 +323,19 @@ public class CapitalCourtBuilder {
             return;
         }
 
-        for (UUID childId :
-                MCAIntegrationBridge.getChildren(
-                        level,
-                        heir
-                )) {
-            if (childId == null
-                    || capital.isDisinheritedRoyalChild(
-                    childId
-            )) {
+        for (UUID childId : MCAIntegrationBridge.getChildren(level, heir)) {
+            if (childId == null || capital.isDisinheritedRoyalChild(childId)) {
                 continue;
             }
 
-            if (!MCAIntegrationBridge.isChildOf(
-                    level,
-                    childId,
-                    heir
-            )) {
+            if (!MCAIntegrationBridge.isChildOf(level, childId, heir)) {
                 continue;
             }
 
-            if (newRoyalChildren.add(
-                    childId
-            )) {
-                discoveredRoyalBirthOrder.add(
-                        childId
-                );
+            if (newRoyalChildren.add(childId)) {
+                discoveredRoyalBirthOrder.add(childId);
             }
-
-            newRoyalChildFemale.put(
-                    childId,
-                    MCAIntegrationBridge.isFemale(
-                            level,
-                            childId
-                    )
-            );
+            newRoyalChildFemale.put(childId, MCAIntegrationBridge.isFemale(level, childId));
         }
     }
 
@@ -737,56 +344,32 @@ public class CapitalCourtBuilder {
             Set<UUID> newRoyalChildren,
             List<UUID> discoveredRoyalBirthOrder
     ) {
-        LinkedHashSet<UUID> merged =
-                new LinkedHashSet<>();
+        LinkedHashSet<UUID> merged = new LinkedHashSet<>();
 
-        for (UUID childId :
-                capital.getRoyalSuccessionOrder()) {
+        for (UUID childId : capital.getRoyalSuccessionOrder()) {
             if (childId != null
-                    && newRoyalChildren.contains(
-                    childId
-            )
-                    && !capital.isDisinheritedRoyalChild(
-                    childId
-            )) {
-                merged.add(
-                        childId
-                );
+                    && newRoyalChildren.contains(childId)
+                    && !capital.isDisinheritedRoyalChild(childId)) {
+                merged.add(childId);
             }
         }
 
-        for (UUID childId :
-                discoveredRoyalBirthOrder) {
+        for (UUID childId : discoveredRoyalBirthOrder) {
             if (childId != null
-                    && newRoyalChildren.contains(
-                    childId
-            )
-                    && !capital.isDisinheritedRoyalChild(
-                    childId
-            )) {
-                merged.add(
-                        childId
-                );
+                    && newRoyalChildren.contains(childId)
+                    && !capital.isDisinheritedRoyalChild(childId)) {
+                merged.add(childId);
             }
         }
 
-        for (UUID childId :
-                newRoyalChildren) {
+        for (UUID childId : newRoyalChildren) {
             if (childId != null
-                    && !capital.isDisinheritedRoyalChild(
-                    childId
-            )) {
-                merged.add(
-                        childId
-                );
+                    && !capital.isDisinheritedRoyalChild(childId)) {
+                merged.add(childId);
             }
         }
 
-        capital.setRoyalSuccessionOrder(
-                new ArrayList<>(
-                        merged
-                )
-        );
+        capital.setRoyalSuccessionOrder(new ArrayList<>(merged));
     }
 
     private static UUID resolveHeir(
@@ -796,80 +379,34 @@ public class CapitalCourtBuilder {
             UUID sovereign,
             Set<UUID> newRoyalChildren
     ) {
-        UUID existingHeir =
-                capital.getHeir();
+        UUID existingHeir = capital.getHeir();
 
-        if (capital.getHeirMode()
-                == CapitalRecord.HeirMode.MANUAL) {
-            if (isValidManualHeirCandidate(
-                    level,
-                    existingHeir,
-                    sovereign,
-                    residents,
-                    newRoyalChildren
-            )) {
+        if (capital.getHeirMode() == CapitalRecord.HeirMode.MANUAL) {
+            if (isValidManualHeirCandidate(level, existingHeir, sovereign, residents, newRoyalChildren)) {
                 return existingHeir;
             }
         }
 
-        UUID directChildHeir =
-                firstValidDirectChildOfSovereign(
-                        level,
-                        capital,
-                        residents,
-                        sovereign,
-                        newRoyalChildren
-                );
-
+        UUID directChildHeir = firstValidDirectChildOfSovereign(level, capital, residents, sovereign, newRoyalChildren);
         if (directChildHeir != null) {
-            capital.setHeirMode(
-                    CapitalRecord.HeirMode.DYNASTIC
-            );
-
+            capital.setHeirMode(CapitalRecord.HeirMode.DYNASTIC);
             return directChildHeir;
         }
 
-        if (capital.getHeirMode()
-                != CapitalRecord.HeirMode.MANUAL) {
-            if (isValidDynasticHeirCandidate(
-                    level,
-                    existingHeir,
-                    sovereign,
-                    newRoyalChildren
-            )
-                    && MCAIntegrationBridge.isChildOf(
-                    level,
-                    existingHeir,
-                    sovereign
-            )) {
+        if (capital.getHeirMode() != CapitalRecord.HeirMode.MANUAL) {
+            if (isValidDynasticHeirCandidate(level, existingHeir, sovereign, newRoyalChildren)
+                    && MCAIntegrationBridge.isChildOf(level, existingHeir, sovereign)) {
                 return existingHeir;
             }
         }
 
-        UUID newHeir =
-                firstValidRoyalChild(
-                        capital.getRoyalSuccessionOrder(),
-                        residents,
-                        sovereign,
-                        level,
-                        newRoyalChildren
-                );
-
+        UUID newHeir = firstValidRoyalChild(capital.getRoyalSuccessionOrder(), residents, sovereign, level, newRoyalChildren);
         if (newHeir == null) {
-            newHeir =
-                    firstValidRoyalChild(
-                            capital.getRoyalSuccessionOrder(),
-                            null,
-                            sovereign,
-                            level,
-                            newRoyalChildren
-                    );
+            newHeir = firstValidRoyalChild(capital.getRoyalSuccessionOrder(), null, sovereign, level, newRoyalChildren);
         }
 
         if (newHeir != null) {
-            capital.setHeirMode(
-                    CapitalRecord.HeirMode.DYNASTIC
-            );
+            capital.setHeirMode(CapitalRecord.HeirMode.DYNASTIC);
         }
 
         return newHeir;
@@ -882,83 +419,41 @@ public class CapitalCourtBuilder {
             UUID sovereign,
             Set<UUID> newRoyalChildren
     ) {
-        for (UUID childId :
-                capital.getRoyalSuccessionOrder()) {
-            if (childId == null
-                    || childId.equals(
-                    sovereign
-            )) {
+        for (UUID childId : capital.getRoyalSuccessionOrder()) {
+            if (childId == null || childId.equals(sovereign)) {
                 continue;
             }
-
-            if (capital.isDisinheritedRoyalChild(
-                    childId
-            )) {
+            if (capital.isDisinheritedRoyalChild(childId)) {
                 continue;
             }
-
-            if (!newRoyalChildren.contains(
-                    childId
-            )) {
+            if (!newRoyalChildren.contains(childId)) {
                 continue;
             }
-
-            if (!MCAIntegrationBridge.isChildOf(
-                    level,
-                    childId,
-                    sovereign
-            )) {
+            if (!MCAIntegrationBridge.isChildOf(level, childId, sovereign)) {
                 continue;
             }
-
-            if (residents != null
-                    && !residents.contains(
-                    childId
-            )) {
+            if (residents != null && !residents.contains(childId)) {
                 continue;
             }
-
-            if (isValidLivingFamilyMember(
-                    level,
-                    childId
-            )) {
+            if (isValidLivingFamilyMember(level, childId)) {
                 return childId;
             }
         }
 
-        for (UUID childId :
-                capital.getRoyalSuccessionOrder()) {
-            if (childId == null
-                    || childId.equals(
-                    sovereign
-            )) {
+        for (UUID childId : capital.getRoyalSuccessionOrder()) {
+            if (childId == null || childId.equals(sovereign)) {
                 continue;
             }
-
-            if (capital.isDisinheritedRoyalChild(
-                    childId
-            )) {
+            if (capital.isDisinheritedRoyalChild(childId)) {
                 continue;
             }
-
-            if (!newRoyalChildren.contains(
-                    childId
-            )) {
+            if (!newRoyalChildren.contains(childId)) {
                 continue;
             }
-
-            if (!MCAIntegrationBridge.isChildOf(
-                    level,
-                    childId,
-                    sovereign
-            )) {
+            if (!MCAIntegrationBridge.isChildOf(level, childId, sovereign)) {
                 continue;
             }
-
-            if (isValidLivingFamilyMember(
-                    level,
-                    childId
-            )) {
+            if (isValidLivingFamilyMember(level, childId)) {
                 return childId;
             }
         }
@@ -975,80 +470,36 @@ public class CapitalCourtBuilder {
             Map<UUID, UUID> newPrinceConsortSources,
             Map<UUID, Boolean> newPrinceConsortFemale
     ) {
-        Set<UUID> princeSources =
-                new LinkedHashSet<>(
-                        newRoyalChildren
-                );
-
+        Set<UUID> princeSources = new LinkedHashSet<>(newRoyalChildren);
         if (newHeir != null) {
-            princeSources.add(
-                    newHeir
-            );
+            princeSources.add(newHeir);
         }
 
-        for (UUID princeId :
-                princeSources) {
+        for (UUID princeId : princeSources) {
             if (princeId == null) {
                 continue;
             }
 
-            UUID spouse =
-                    CapitalCourtMarriageResolver
-                            .findActualVillagerSpouse(
-                                    level,
-                                    princeId
-                            );
-
+            UUID spouse = CapitalCourtMarriageResolver.findActualVillagerSpouse(level, princeId);
             if (spouse == null) {
                 continue;
             }
-
-            if (!CapitalCourtMarriageResolver
-                    .isValidMarriedConsort(
-                            level,
-                            princeId,
-                            spouse
-                    )) {
+            if (!CapitalCourtMarriageResolver.isValidMarriedConsort(level, princeId, spouse)) {
+                continue;
+            }
+            if (residents != null && !residents.contains(spouse)) {
+                continue;
+            }
+            if (spouse.equals(capital.getSovereign())
+                    || spouse.equals(capital.getConsort())
+                    || spouse.equals(capital.getDowager())
+                    || spouse.equals(capital.getCommander())
+                    || spouse.equals(capital.getHeir())) {
                 continue;
             }
 
-            if (residents != null
-                    && !residents.contains(
-                    spouse
-            )) {
-                continue;
-            }
-
-            if (spouse.equals(
-                    capital.getSovereign()
-            )
-                    || spouse.equals(
-                    capital.getConsort()
-            )
-                    || spouse.equals(
-                    capital.getDowager()
-            )
-                    || spouse.equals(
-                    capital.getCommander()
-            )
-                    || spouse.equals(
-                    capital.getHeir()
-            )) {
-                continue;
-            }
-
-            newPrinceConsortSources.put(
-                    spouse,
-                    princeId
-            );
-
-            newPrinceConsortFemale.put(
-                    spouse,
-                    MCAIntegrationBridge.isFemale(
-                            level,
-                            spouse
-                    )
-            );
+            newPrinceConsortSources.put(spouse, princeId);
+            newPrinceConsortFemale.put(spouse, MCAIntegrationBridge.isFemale(level, spouse));
         }
     }
 
@@ -1061,34 +512,15 @@ public class CapitalCourtBuilder {
             Set<UUID> newDukes,
             Map<UUID, Boolean> newDukeFemale
     ) {
-        for (UUID dukeId :
-                preservedDirectDukes) {
+        for (UUID dukeId : preservedDirectDukes) {
             if (dukeId == null) {
                 continue;
             }
-
-            if (existingDowager != null
-                    && existingDowager.equals(
-                    dukeId
-            )) {
+            if (existingDowager != null && existingDowager.equals(dukeId)) {
                 continue;
             }
-
-            newDukes.add(
-                    dukeId
-            );
-
-            newDukeFemale.put(
-                    dukeId,
-                    preservedDirectDukeFemale
-                            .getOrDefault(
-                                    dukeId,
-                                    MCAIntegrationBridge.isFemale(
-                                            level,
-                                            dukeId
-                                    )
-                            )
-            );
+            newDukes.add(dukeId);
+            newDukeFemale.put(dukeId, preservedDirectDukeFemale.getOrDefault(dukeId, MCAIntegrationBridge.isFemale(level, dukeId)));
         }
     }
 
@@ -1101,34 +533,15 @@ public class CapitalCourtBuilder {
             Set<UUID> newLords,
             Map<UUID, Boolean> newLordFemale
     ) {
-        for (UUID lordId :
-                preservedDirectLords) {
+        for (UUID lordId : preservedDirectLords) {
             if (lordId == null) {
                 continue;
             }
-
-            if (existingDowager != null
-                    && existingDowager.equals(
-                    lordId
-            )) {
+            if (existingDowager != null && existingDowager.equals(lordId)) {
                 continue;
             }
-
-            newLords.add(
-                    lordId
-            );
-
-            newLordFemale.put(
-                    lordId,
-                    preservedDirectLordFemale
-                            .getOrDefault(
-                                    lordId,
-                                    MCAIntegrationBridge.isFemale(
-                                            level,
-                                            lordId
-                                    )
-                            )
-            );
+            newLords.add(lordId);
+            newLordFemale.put(lordId, preservedDirectLordFemale.getOrDefault(lordId, MCAIntegrationBridge.isFemale(level, lordId)));
         }
     }
 
@@ -1140,35 +553,16 @@ public class CapitalCourtBuilder {
             UUID newConsort,
             UUID existingDowager
     ) {
-        Set<UUID> allRelevant =
-                new LinkedHashSet<>(
-                        residents
-                );
-
-        allRelevant.addAll(
-                newRoyalChildren
-        );
-
-        allRelevant.addAll(
-                preservedDirectDukes
-        );
-
-        allRelevant.addAll(
-                preservedDirectLords
-        );
-
+        Set<UUID> allRelevant = new LinkedHashSet<>(residents);
+        allRelevant.addAll(newRoyalChildren);
+        allRelevant.addAll(preservedDirectDukes);
+        allRelevant.addAll(preservedDirectLords);
         if (newConsort != null) {
-            allRelevant.add(
-                    newConsort
-            );
+            allRelevant.add(newConsort);
         }
-
         if (existingDowager != null) {
-            allRelevant.add(
-                    existingDowager
-            );
+            allRelevant.add(existingDowager);
         }
-
         return allRelevant;
     }
 
@@ -1188,58 +582,20 @@ public class CapitalCourtBuilder {
             Set<UUID> newKnights,
             Map<UUID, Boolean> newKnightFemale
     ) {
-        for (UUID residentId :
-                allRelevant) {
-            if (shouldSkipCourtClassification(
-                    capital,
-                    residents,
-                    residentId,
-                    sovereign,
-                    newConsort,
-                    existingDowager,
-                    newHeir,
-                    newRoyalChildren,
-                    newDukes,
-                    newLords
-            )) {
+        for (UUID residentId : allRelevant) {
+            if (shouldSkipCourtClassification(capital, residents, residentId, sovereign, newConsort, existingDowager, newHeir, newRoyalChildren, newDukes, newLords)) {
                 continue;
             }
 
-            if (MCAIntegrationBridge.isMCAGuard(
-                    level,
-                    residentId
-            )) {
-                newKnights.add(
-                        residentId
-                );
-
-                newKnightFemale.put(
-                        residentId,
-                        MCAIntegrationBridge.isFemale(
-                                level,
-                                residentId
-                        )
-                );
-
+            if (MCAIntegrationBridge.isMCAGuard(level, residentId)) {
+                newKnights.add(residentId);
+                newKnightFemale.put(residentId, MCAIntegrationBridge.isFemale(level, residentId));
                 continue;
             }
 
-            if (MCAIntegrationBridge
-                    .isMasterProfessionVillager(
-                            level,
-                            residentId
-                    )) {
-                newLords.add(
-                        residentId
-                );
-
-                newLordFemale.put(
-                        residentId,
-                        MCAIntegrationBridge.isFemale(
-                                level,
-                                residentId
-                        )
-                );
+            if (MCAIntegrationBridge.isMasterProfessionVillager(level, residentId)) {
+                newLords.add(residentId);
+                newLordFemale.put(residentId, MCAIntegrationBridge.isFemale(level, residentId));
             }
         }
     }
@@ -1259,134 +615,54 @@ public class CapitalCourtBuilder {
         if (residentId == null) {
             return true;
         }
-
-        if (residentId.equals(
-                sovereign
-        )) {
+        if (residentId.equals(sovereign)) {
             return true;
         }
-
-        if (newConsort != null
-                && residentId.equals(
-                newConsort
-        )) {
+        if (newConsort != null && residentId.equals(newConsort)) {
             return true;
         }
-
-        if (existingDowager != null
-                && residentId.equals(
-                existingDowager
-        )) {
+        if (existingDowager != null && residentId.equals(existingDowager)) {
             return true;
         }
-
-        if (newHeir != null
-                && residentId.equals(
-                newHeir
-        )) {
+        if (newHeir != null && residentId.equals(newHeir)) {
             return true;
         }
-
-        if (residentId.equals(
-                capital.getCommander()
-        )) {
+        if (residentId.equals(capital.getCommander())) {
             return true;
         }
-
-        if (newRoyalChildren.contains(
-                residentId
-        )) {
+        if (newRoyalChildren.contains(residentId)) {
             return true;
         }
-
-        if (!residents.contains(
-                residentId
-        )) {
+        if (!residents.contains(residentId)) {
             return true;
         }
-
-        if (newDukes.contains(
-                residentId
-        )) {
+        if (newDukes.contains(residentId)) {
             return true;
         }
-
-        return newLords.contains(
-                residentId
-        );
+        return newLords.contains(residentId);
     }
 
-    private static void restoreAndCleanDowager(
-            CapitalRecord capital,
-            UUID existingDowager,
-            boolean existingDowagerFemale
-    ) {
-        capital.setDowager(
-                existingDowager
-        );
+    private static void restoreAndCleanDowager(CapitalRecord capital, UUID existingDowager, boolean existingDowagerFemale) {
+        capital.setDowager(existingDowager);
+        capital.setDowagerFemale(existingDowagerFemale);
 
-        capital.setDowagerFemale(
-                existingDowagerFemale
-        );
-
-        if (capital.getDowager() != null
-                && capital.getDowager()
-                .equals(
-                        capital.getSovereign()
-                )) {
-            capital.setDowager(
-                    null
-            );
-
-            capital.setDowagerFemale(
-                    false
-            );
+        if (capital.getDowager() != null && capital.getDowager().equals(capital.getSovereign())) {
+            capital.setDowager(null);
+            capital.setDowagerFemale(false);
         }
 
-        if (capital.getDowager() != null
-                && capital.getDowager()
-                .equals(
-                        capital.getConsort()
-                )) {
-            capital.setDowager(
-                    null
-            );
-
-            capital.setDowagerFemale(
-                    false
-            );
+        if (capital.getDowager() != null && capital.getDowager().equals(capital.getConsort())) {
+            capital.setDowager(null);
+            capital.setDowagerFemale(false);
         }
 
         if (capital.getDowager() != null) {
-            capital.getKnights()
-                    .remove(
-                            capital.getDowager()
-                    );
-
-            capital.getKnightFemale()
-                    .remove(
-                            capital.getDowager()
-                    );
-
-            capital.getLords()
-                    .remove(
-                            capital.getDowager()
-                    );
-
-            capital.getLordFemale()
-                    .remove(
-                            capital.getDowager()
-                    );
-
-            capital.getDukes()
-                    .remove(
-                            capital.getDowager()
-                    );
-
-            capital.getDukeFemale()
-                    .remove(
-                            capital.getDowager()
-                    );
+            capital.getKnights().remove(capital.getDowager());
+            capital.getKnightFemale().remove(capital.getDowager());
+            capital.getLords().remove(capital.getDowager());
+            capital.getLordFemale().remove(capital.getDowager());
+            capital.getDukes().remove(capital.getDowager());
+            capital.getDukeFemale().remove(capital.getDowager());
         }
     }
 
@@ -1396,29 +672,10 @@ public class CapitalCourtBuilder {
             Set<UUID> oldRoyalChildren,
             Set<UUID> newRoyalChildren
     ) {
-        for (UUID childId :
-                newRoyalChildren) {
-            if (!oldRoyalChildren.contains(
-                    childId
-            )) {
-                String name =
-                        resolveName(
-                                level,
-                                childId
-                        );
-
-                CapitalChronicleService.addEntry(
-                        level,
-                        capital,
-                        "A royal child, "
-                                + name
-                                + ", was entered into the dynastic record of "
-                                + MCAIntegrationBridge.getVillageName(
-                                level,
-                                capital.getVillageId()
-                        )
-                                + "."
-                );
+        for (UUID childId : newRoyalChildren) {
+            if (!oldRoyalChildren.contains(childId)) {
+                String name = resolveName(level, childId);
+                CapitalChronicleService.addEvent(level, capital, childId.equals(capital.getHeir()) ? CapitalChronicleEventId.CROWN_CHILD_RECORDED : CapitalChronicleEventId.ROYAL_CHILD_RECORDED, name, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
             }
         }
     }
@@ -1430,36 +687,20 @@ public class CapitalCourtBuilder {
             ServerLevel level,
             Set<UUID> validRoyalChildren
     ) {
-        for (UUID childId :
-                orderedRoyalChildren) {
-            if (childId == null
-                    || childId.equals(
-                    sovereign
-            )) {
+        for (UUID childId : orderedRoyalChildren) {
+            if (childId == null || childId.equals(sovereign)) {
                 continue;
             }
-
-            if (!validRoyalChildren.contains(
-                    childId
-            )) {
+            if (!validRoyalChildren.contains(childId)) {
                 continue;
             }
-
-            if (residents != null
-                    && !residents.contains(
-                    childId
-            )) {
+            if (residents != null && !residents.contains(childId)) {
                 continue;
             }
-
-            if (isValidLivingFamilyMember(
-                    level,
-                    childId
-            )) {
+            if (isValidLivingFamilyMember(level, childId)) {
                 return childId;
             }
         }
-
         return null;
     }
 
@@ -1469,23 +710,15 @@ public class CapitalCourtBuilder {
             UUID sovereign,
             Set<UUID> validRoyalChildren
     ) {
-        if (candidate == null
-                || candidate.equals(
-                sovereign
-        )) {
+        if (candidate == null || candidate.equals(sovereign)) {
             return false;
         }
 
-        if (!validRoyalChildren.contains(
-                candidate
-        )) {
+        if (!validRoyalChildren.contains(candidate)) {
             return false;
         }
 
-        return isValidLivingFamilyMember(
-                level,
-                candidate
-        );
+        return isValidLivingFamilyMember(level, candidate);
     }
 
     private static boolean isValidManualHeirCandidate(
@@ -1495,204 +728,91 @@ public class CapitalCourtBuilder {
             Set<UUID> residents,
             Set<UUID> validRoyalChildren
     ) {
-        if (candidate == null
-                || candidate.equals(
-                sovereign
-        )) {
+        if (candidate == null || candidate.equals(sovereign)) {
             return false;
         }
 
-        if (!isValidLivingFamilyMember(
-                level,
-                candidate
-        )) {
+        if (!isValidLivingFamilyMember(level, candidate)) {
             return false;
         }
 
-        if (residents != null
-                && residents.contains(
-                candidate
-        )) {
+        if (residents != null && residents.contains(candidate)) {
             return true;
         }
 
-        return validRoyalChildren.contains(
-                candidate
-        )
-                || isValidRelationshipPerson(
-                level,
-                candidate
-        );
+        return validRoyalChildren.contains(candidate) || isValidRelationshipPerson(level, candidate);
     }
 
-    private static boolean isValidLivingFamilyMember(
-            ServerLevel level,
-            UUID entityId
-    ) {
+    private static boolean isValidLivingFamilyMember(ServerLevel level, UUID entityId) {
         if (entityId == null) {
             return false;
         }
 
-        Entity entity =
-                MCAIntegrationBridge.getEntityByUuid(
-                        level,
-                        entityId
-                );
-
-        if (entity != null
-                && (
-                !entity.isAlive()
-                        || entity.isRemoved()
-        )) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
+        if (entity != null && (!entity.isAlive() || entity.isRemoved())) {
             return false;
         }
 
-        return MCAIntegrationBridge.hasFamilyNode(
-                level,
-                entityId
-        )
-                && !MCAIntegrationBridge
-                .isFamilyNodeDeceased(
-                        level,
-                        entityId
-                );
+        return MCAIntegrationBridge.hasFamilyNode(level, entityId)
+                && !MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId);
     }
 
-    private static String resolveTitledName(
-            ServerLevel level,
-            UUID entityId
-    ) {
-        String name =
-                normalizeBaseName(
-                        resolveName(
-                                level,
-                                entityId
-                        )
-                );
-
-        String title =
-                CapitalTitleResolver
-                        .getDisplayTitleForEntity(
-                                level,
-                                entityId
-                        );
-
-        if (title == null
-                || title.isBlank()
-                || "Commoner".equals(title)
-                || "None".equals(title)) {
+    private static String resolveTitledName(ServerLevel level, UUID entityId) {
+        String name = normalizeBaseName(resolveName(level, entityId));
+        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, entityId);
+        if (title == null || title.isBlank() || "Commoner".equals(title) || "None".equals(title)) {
             return name;
         }
 
-        return title
-                + " "
-                + name;
+        return title + " " + name;
     }
 
-    private static String normalizeBaseName(
-            String name
-    ) {
-        if (name == null
-                || name.isBlank()) {
+    private static String normalizeBaseName(String name) {
+        if (name == null || name.isBlank()) {
             return "Unknown";
         }
 
-        String result =
-                name.trim();
+        String result = name.trim();
 
-        if (result.endsWith(
-                " of the Kingsguard"
-        )) {
-            result =
-                    result.substring(
-                            0,
-                            result.length()
-                                    - " of the Kingsguard".length()
-                    ).trim();
+        if (result.endsWith(" of the Kingsguard")) {
+            result = result.substring(0, result.length() - " of the Kingsguard".length()).trim();
         }
-
-        if (result.endsWith(
-                " of the Queensguard"
-        )) {
-            result =
-                    result.substring(
-                            0,
-                            result.length()
-                                    - " of the Queensguard".length()
-                    ).trim();
+        if (result.endsWith(" of the Queensguard")) {
+            result = result.substring(0, result.length() - " of the Queensguard".length()).trim();
         }
 
         boolean changed = true;
-
         while (changed) {
             changed = false;
-
-            for (String title :
-                    KNOWN_TITLE_PREFIXES) {
-                String prefix =
-                        title + " ";
-
-                if (result.startsWith(
-                        prefix
-                )) {
-                    result =
-                            result.substring(
-                                    prefix.length()
-                            ).trim();
-
+            for (String title : KNOWN_TITLE_PREFIXES) {
+                String prefix = title + " ";
+                if (result.startsWith(prefix)) {
+                    result = result.substring(prefix.length()).trim();
                     changed = true;
                     break;
                 }
             }
         }
 
-        return result.isBlank()
-                ? "Unknown"
-                : result;
+        return result.isBlank() ? "Unknown" : result;
     }
 
-    private static String resolveName(
-            ServerLevel level,
-            UUID entityId
-    ) {
-        Entity entity =
-                MCAIntegrationBridge.getEntityByUuid(
-                        level,
-                        entityId
-                );
-
+    private static String resolveName(ServerLevel level, UUID entityId) {
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
         if (entity != null) {
-            return entity.getName()
-                    .getString();
+            return entity.getName().getString();
         }
 
-        ServerPlayer player =
-                level.getServer()
-                        .getPlayerList()
-                        .getPlayer(
-                                entityId
-                        );
-
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(entityId);
         if (player != null) {
-            return player.getName()
-                    .getString();
+            return player.getName().getString();
         }
 
         return "Unknown";
     }
 
-    private static String resolveBestOnlinePlayerName(
-            ServerLevel level
-    ) {
-        List<ServerPlayer> players =
-                level.getServer()
-                        .getPlayerList()
-                        .getPlayers();
-
-        return players.isEmpty()
-                ? "Unknown"
-                : players.get(0)
-                .getName()
-                .getString();
+    private static String resolveBestOnlinePlayerName(ServerLevel level) {
+        List<ServerPlayer> players = level.getServer().getPlayerList().getPlayers();
+        return players.isEmpty() ? "Unknown" : players.get(0).getName().getString();
     }
 }

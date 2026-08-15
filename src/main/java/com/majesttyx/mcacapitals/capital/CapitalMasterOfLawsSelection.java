@@ -113,6 +113,70 @@ public final class CapitalMasterOfLawsSelection {
         return true;
     }
 
+    public static boolean isValidExisting(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents,
+            UUID entityId
+    ) {
+        if (level == null
+                || capital == null
+                || entityId == null) {
+            return false;
+        }
+
+        if (!CapitalRoleValidation.isExistingRoleStillResolvable(
+                level,
+                entityId,
+                residents
+        )) {
+            return false;
+        }
+
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(
+                level,
+                capital,
+                entityId
+        )) {
+            return false;
+        }
+
+        if (CapitalAmbassadorService.isAmbassador(
+                level,
+                entityId
+        )) {
+            return false;
+        }
+
+        if (entityId.equals(capital.getSovereign())
+                || entityId.equals(capital.getConsort())
+                || entityId.equals(capital.getDowager())
+                || entityId.equals(capital.getHeir())
+                || entityId.equals(capital.getHand())
+                || entityId.equals(capital.getCommander())
+                || entityId.equals(capital.getHerald())
+                || entityId.equals(capital.getGrandMaester())
+                || capital.isRoyalGuard(entityId)) {
+            return false;
+        }
+
+        if (!CapitalRoleValidation.isCurrentlyLoaded(
+                level,
+                entityId
+        )) {
+            return true;
+        }
+
+        return MCAIntegrationBridge.isTeenOrAdultVillager(
+                level,
+                entityId
+        )
+                && MCAIntegrationBridge.isAliveMCAVillager(
+                level,
+                entityId
+        );
+    }
+
     private static UUID firstEligibleDuke(
             ServerLevel level,
             CapitalRecord capital,

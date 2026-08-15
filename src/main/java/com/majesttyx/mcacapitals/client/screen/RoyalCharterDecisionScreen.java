@@ -7,13 +7,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-public class RoyalCharterDecisionScreen extends Screen {
+public class RoyalCharterDecisionScreen extends CapitalNoBlurScreen {
 
     private static final ResourceLocation BACKGROUND =
             ResourceLocation.fromNamespaceAndPath("mcacapitals", "textures/gui/declaration_paper.png");
@@ -22,7 +21,7 @@ public class RoyalCharterDecisionScreen extends Screen {
     private static final int BG_HEIGHT = 160;
 
     public RoyalCharterDecisionScreen() {
-        super(Component.literal("Royal Charter"));
+        super(Component.translatable("mcacapitals.system.royal_charter_decision_screen.royal_charter"));
     }
 
     @Override
@@ -33,7 +32,7 @@ public class RoyalCharterDecisionScreen extends Screen {
         int top = (this.height - BG_HEIGHT) / 2;
 
         addRenderableWidget(
-                Button.builder(Component.literal("Choose Sovereign"), button -> {
+                Button.builder(Component.translatable("mcacapitals.system.royal_charter_decision_screen.choose_sovereign"), button -> {
                     if (getHeldCharter().isEmpty()) {
                         onClose();
                         return;
@@ -43,7 +42,7 @@ public class RoyalCharterDecisionScreen extends Screen {
         );
 
         addRenderableWidget(
-                Button.builder(Component.literal("Declare Myself"), button -> {
+                Button.builder(Component.translatable("mcacapitals.system.royal_charter_decision_screen.declare_myself"), button -> {
                     ItemStack stack = getHeldCharter();
                     if (stack.isEmpty() || !ModItemStackData.hasCustomData(stack)) {
                         onClose();
@@ -61,7 +60,7 @@ public class RoyalCharterDecisionScreen extends Screen {
         );
 
         addRenderableWidget(
-                Button.builder(Component.literal("Remain Ungoverned"), button -> {
+                Button.builder(Component.translatable("mcacapitals.system.royal_charter_decision_screen.remain_ungoverned"), button -> {
                     ItemStack stack = getHeldCharter();
                     if (stack.isEmpty() || !ModItemStackData.hasCustomData(stack)) {
                         onClose();
@@ -81,22 +80,28 @@ public class RoyalCharterDecisionScreen extends Screen {
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(guiGraphics, mouseX, mouseY, partialTick);
-
         int left = (this.width - BG_WIDTH) / 2;
         int top = (this.height - BG_HEIGHT) / 2;
 
         guiGraphics.blit(BACKGROUND, left, top, 0, 0, BG_WIDTH, BG_HEIGHT, BG_WIDTH, BG_HEIGHT);
 
-        drawCenteredNoShadow(guiGraphics, "Royal Charter", this.width / 2, top + 16, 0x3E2E1F);
+        drawCenteredNoShadow(guiGraphics, Component.translatable("mcacapitals.system.royal_charter_decision_screen.royal_charter"), this.width / 2, top + 16, 0x3E2E1F);
 
         ItemStack stack = getHeldCharter();
         String villageName = ModItemStackData.hasCustomData(stack)
                 ? ModItemStackData.getCustomData(stack).getString(ModDataKeys.VILLAGE_NAME)
-                : "Unknown Village";
+                : "";
+        Component villageNameComponent = villageName == null
+                || villageName.isBlank()
+                || "Unknown Village".equals(villageName)
+                ? Component.translatable("mcacapitals.system.common.unknown_village")
+                : Component.literal(villageName);
 
         drawWrappedCenteredNoShadow(guiGraphics,
-                Component.literal(villageName + " has risen to capital status. Choose its course."),
+                Component.translatable(
+                        "mcacapitals.system.royal_charter_decision_screen.capital_status_prompt",
+                        villageNameComponent
+                ),
                 this.width / 2, top + 36, 118, 0x3E2E1F);
 
         super.render(guiGraphics, mouseX, mouseY, partialTick);
@@ -121,7 +126,7 @@ public class RoyalCharterDecisionScreen extends Screen {
         return ItemStack.EMPTY;
     }
 
-    private void drawCenteredNoShadow(GuiGraphics guiGraphics, String text, int centerX, int y, int color) {
+    private void drawCenteredNoShadow(GuiGraphics guiGraphics, Component text, int centerX, int y, int color) {
         int width = this.font.width(text);
         guiGraphics.drawString(this.font, text, centerX - width / 2, y, color, false);
     }

@@ -15,42 +15,25 @@ public final class CapitalCampaignHornRetreatHandler {
     private CapitalCampaignHornRetreatHandler() {
     }
 
-    public static void onUseItem(
-            ServerPlayer player,
-            InteractionHand hand
-    ) {
-        if (player == null
-                || hand == null
-                || !player.getItemInHand(hand).is(Items.GOAT_HORN)) {
+    public static void onUseItem(ServerPlayer player, InteractionHand hand) {
+        if (player == null || hand == null || !player.getItemInHand(hand).is(Items.GOAT_HORN)) {
             return;
         }
 
         ServerLevel level = player.serverLevel();
-        for (CapitalCampaignRecord campaign :
-                CapitalCampaignDataAccess.getActiveCampaigns(level)) {
+        for (CapitalCampaignRecord campaign : CapitalCampaignDataAccess.getActiveCampaigns(level)) {
             if (campaign == null
                     || campaign.getPhase() != CapitalCampaignPhase.ACTIVE
                     || campaign.getInitiatingPlayerId() == null
-                    || !campaign.getInitiatingPlayerId().equals(
-                    player.getUUID()
-            )) {
+                    || !campaign.getInitiatingPlayerId().equals(player.getUUID())) {
                 continue;
             }
 
-            CapitalRecord attackingCapital = CapitalManager.getCapital(
-                    campaign.getAttackingCapitalId()
-            );
-            CapitalRecord defendingCapital = CapitalManager.getCapital(
-                    campaign.getDefendingCapitalId()
-            );
+            CapitalRecord attackingCapital = CapitalManager.getCapital(campaign.getAttackingCapitalId());
+            CapitalRecord defendingCapital = CapitalManager.getCapital(campaign.getDefendingCapitalId());
             if (attackingCapital == null
                     || defendingCapital == null
-                    || !CapitalPlayerNotificationService
-                    .isPlayerWithinCapital(
-                            level,
-                            defendingCapital,
-                            player
-                    )) {
+                    || !CapitalPlayerNotificationService.isPlayerWithinCapital(level, defendingCapital, player)) {
                 continue;
             }
 
@@ -62,46 +45,49 @@ public final class CapitalCampaignHornRetreatHandler {
                 return;
             }
 
-            CapitalCampaignTargetingService.clearCampaignTargets(
-                    level,
-                    campaign
+            CapitalCampaignTargetingService.clearCampaignTargets(level, campaign);
+            CapitalCampaignReturnService.processRetreat(level, campaign, attackingCapital, defendingCapital);
+
+            String attackingName = CapitalDiplomaticAgreementText.capitalName(level, attackingCapital);
+            String defendingName = CapitalDiplomaticAgreementText.capitalName(level, defendingCapital);
+
+            CapitalChronicleService.addEventWithoutHerald(
+                    level, attackingCapital, CapitalChronicleEventId.CAMPAIGN_RETREAT_ORDERED,
+                    player.getName().getString(), defendingName, attackingName
             );
-            CapitalCampaignReturnService.processRetreat(
-                    level,
-                    campaign,
-                    attackingCapital,
-                    defendingCapital
+            CapitalChronicleService.addEventWithoutHerald(
+                    level, defendingCapital, CapitalChronicleEventId.CAMPAIGN_RETREAT_ORDERED,
+                    player.getName().getString(), defendingName, attackingName
             );
 
-            String entry =
-                    player.getName().getString()
-                            + " sounded the horn within "
-                            + CapitalDiplomaticAgreementText.capitalName(
-                            level,
-                            defendingCapital
-                    )
-                            + ", ordering the campaign force to retreat.";
-            CapitalChronicleService.addEntry(
-                    level,
-                    attackingCapital,
-                    entry
-            );
-            CapitalChronicleService.addEntry(
-                    level,
-                    defendingCapital,
-                    entry
-            );
-            player.sendSystemMessage(Component.literal(
-                    "The horn recalled the campaign force. Surviving attackers are returning home."
-            ));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.campaign.retreat.self"));
+            notifyOtherPlayersInDefendingCapital(level, player, defendingCapital, attackingName);
             CapitalPlayerNotificationService.notifyPlayersInCapital(
-                    level,
-                    defendingCapital,
-                    Component.literal(
-                            "The attacking force has sounded a retreat."
-                    )
+                    level, attackingCapital,
+                    Component.translatable("mcacapitals.system.campaign.retreat.attacker", defendingName)
             );
             return;
+        }
+    }
+
+    private static void notifyOtherPlayersInDefendingCapital(
+            ServerLevel level,
+            ServerPlayer initiatingPlayer,
+            CapitalRecord defendingCapital,
+            String attackingName
+    ) {
+        for (ServerPlayer player : level.players()) {
+            if (player == null
+                    || player.getUUID().equals(initiatingPlayer.getUUID())
+                    || !player.isAlive()
+                    || player.isSpectator()
+                    || !CapitalPlayerNotificationService.isPlayerWithinCapital(level, defendingCapital, player)) {
+                continue;
+            }
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.system.campaign.retreat.defender",
+                    attackingName
+            ));
         }
     }
 }

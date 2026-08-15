@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.util;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
@@ -96,6 +97,18 @@ final class MCAVillageBridge {
         return name == null || name.isBlank() ? "Unknown Village" : name;
     }
 
+    static Component getVillageNameComponent(ServerLevel level, Integer villageId) {
+        Object village = villageId == null ? null : getVillageObject(level, villageId);
+        if (village == null) {
+            return Component.translatable("mcacapitals.system.common.unknown_village");
+        }
+
+        String name = MCAReflectionHelper.invokeString(village, "getName");
+        return name == null || name.isBlank()
+                ? Component.translatable("mcacapitals.system.common.unknown_village")
+                : Component.literal(name);
+    }
+
     static BlockPos getVillageCenter(ServerLevel level, Integer villageId) {
         Object village = villageId == null ? null : getVillageObject(level, villageId);
         if (village == null) {
@@ -145,6 +158,7 @@ final class MCAVillageBridge {
         if (village == null || buildingType == null || buildingType.isBlank()) {
             return 0;
         }
+
         return getBuildingsOfType(village, buildingType).size();
     }
 
@@ -256,6 +270,7 @@ final class MCAVillageBridge {
                 new Class<?>[] {ServerLevel.class},
                 level
         );
+
         if (residents instanceof Iterable<?> iterable) {
             for (Object value : iterable) {
                 if (!(value instanceof Entity entity)) {
@@ -264,9 +279,11 @@ final class MCAVillageBridge {
                 if (!MCAEntityBridge.isAliveMCAVillagerEntity(entity)) {
                     continue;
                 }
+
                 result.put(entity.getUUID(), entity.getName().getString());
             }
         }
+
         return result;
     }
 
@@ -288,6 +305,7 @@ final class MCAVillageBridge {
                 }
             }
         }
+
         return result;
     }
 
@@ -302,6 +320,7 @@ final class MCAVillageBridge {
                 new Class<?>[] {String.class},
                 buildingType
         );
+
         List<Object> result = new ArrayList<>();
         if (direct instanceof Stream<?> stream) {
             try {
@@ -311,6 +330,7 @@ final class MCAVillageBridge {
             }
             return result;
         }
+
         if (direct instanceof Iterable<?> iterable) {
             for (Object value : iterable) {
                 if (value != null) {
@@ -328,6 +348,7 @@ final class MCAVillageBridge {
                 }
             }
         }
+
         return result;
     }
 
@@ -361,6 +382,7 @@ final class MCAVillageBridge {
     private static AABB getBuildingBounds(Object building) {
         Object first = MCAReflectionHelper.invoke(building, "getPos0");
         Object second = MCAReflectionHelper.invoke(building, "getPos1");
+
         if (!(first instanceof Vec3i firstPos) || !(second instanceof Vec3i secondPos)) {
             BlockPos center = getBuildingCenter(building);
             return center == null ? null : new AABB(center);
@@ -372,6 +394,7 @@ final class MCAVillageBridge {
         int maxX = Math.max(firstPos.getX(), secondPos.getX()) + 1;
         int maxY = Math.max(firstPos.getY(), secondPos.getY()) + 1;
         int maxZ = Math.max(firstPos.getZ(), secondPos.getZ()) + 1;
+
         return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
     }
 }

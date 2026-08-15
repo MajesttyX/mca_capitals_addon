@@ -1,7 +1,11 @@
 package com.majesttyx.mcacapitals.dialogue;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEntry;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventType;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
@@ -51,13 +55,19 @@ final class CapitalDialogueChronicleLogic {
                 continue;
             }
 
-            String cleaned = CapitalDialogueTextLogic.sanitizeChronicleText(parsed.text());
-            CapitalDialogueEventModels.EventType type = classifyEvent(level, capital, cleaned);
-            if (type == CapitalDialogueEventModels.EventType.NONE) {
+            CapitalChronicleEventType type = parsed.semantic()
+                    ? parsed.type()
+                    : classifyEvent(level, capital, parsed.text().getString());
+            if (type == CapitalChronicleEventType.NONE) {
                 continue;
             }
 
-            result.add(new CapitalDialogueEventModels.ChronicleEvent(parsed.day(), cleaned, type));
+            result.add(new CapitalDialogueEventModels.ChronicleEvent(
+                    parsed.day(),
+                    parsed.text(),
+                    type,
+                    parsed.semantic()
+            ));
         }
 
         return result;
@@ -84,6 +94,16 @@ final class CapitalDialogueChronicleLogic {
             return null;
         }
 
+        CapitalChronicleEntry semantic = CapitalChronicleService.decodeSemanticEntry(entry);
+        if (semantic != null) {
+            return new CapitalDialogueEventModels.ChronicleEvent(
+                    semantic.day(),
+                    semantic.render(),
+                    semantic.type(),
+                    true
+            );
+        }
+
         String trimmed = entry.trim();
         if (!trimmed.startsWith("Day ")) {
             return null;
@@ -100,102 +120,114 @@ final class CapitalDialogueChronicleLogic {
             if (text.isEmpty()) {
                 return null;
             }
-            return new CapitalDialogueEventModels.ChronicleEvent(day, text, CapitalDialogueEventModels.EventType.NONE);
+            return new CapitalDialogueEventModels.ChronicleEvent(
+                    day,
+                    Component.literal(text),
+                    CapitalChronicleEventType.NONE,
+                    false
+            );
         } catch (NumberFormatException ignored) {
             return null;
         }
     }
 
-    static CapitalDialogueEventModels.EventType classifyEvent(String text) {
+    static CapitalChronicleEventType classifyEvent(String text) {
         return classifyEvent(null, null, text);
     }
 
-    static CapitalDialogueEventModels.EventType classifyEvent(ServerLevel level, CapitalRecord capital, String text) {
+    static CapitalChronicleEventType classifyEvent(ServerLevel level, CapitalRecord capital, String text) {
         String normalized = normalize(text);
 
         if (normalized.contains("was entered into the dynastic record")) {
             return isCurrentCrownChildBirth(level, capital, text)
-                    ? CapitalDialogueEventModels.EventType.CROWN_CHILD_BORN
-                    : CapitalDialogueEventModels.EventType.ROYAL_BIRTH;
+                    ? CapitalChronicleEventType.CROWN_CHILD_BORN
+                    : CapitalChronicleEventType.ROYAL_BIRTH;
         }
 
         if (normalized.contains("was named heir apparent") || normalized.contains("was named heir")) {
-            return CapitalDialogueEventModels.EventType.HEIR_APPARENT_NAMED;
+            return CapitalChronicleEventType.HEIR_APPARENT_NAMED;
         }
 
         if (normalized.contains("rose to capital status")
                 || normalized.contains("was acclaimed as king of")
                 || normalized.contains("was acclaimed as queen of")) {
-            return CapitalDialogueEventModels.EventType.CAPITAL_FOUNDED;
+            return CapitalChronicleEventType.CAPITAL_FOUNDED;
         }
 
         if (normalized.contains("was married to") || normalized.contains("were married in")) {
-            return CapitalDialogueEventModels.EventType.ROYAL_MARRIAGE;
+            return CapitalChronicleEventType.ROYAL_MARRIAGE;
         }
 
-        if (normalized.contains("mourning period in") && normalized.contains("came to an end")) {
-            return CapitalDialogueEventModels.EventType.MOURNING_ENDED;
+        if (normalized.contains("mourning period") && normalized.contains("came to an end")) {
+            return CapitalChronicleEventType.MOURNING_ENDED;
         }
 
-        if (normalized.contains("mourning was declared")
-                || normalized.contains("entered mourning")
-                || normalized.contains(" died")
-                || normalized.startsWith("died")) {
-            return CapitalDialogueEventModels.EventType.SOVEREIGN_DEATH;
+        if (normalized.contains("died")
+                && (normalized.contains("sovereign")
+                || normalized.contains("king")
+                || normalized.contains("queen")
+                || normalized.contains("court entered mourning"))) {
+            return CapitalChronicleEventType.SOVEREIGN_DEATH;
         }
 
-        if (normalized.contains("claimed the throne as")) {
-            return CapitalDialogueEventModels.EventType.THRONE_SEIZED;
+        if (normalized.contains("seized the throne") || normalized.contains("claimed the throne")) {
+            return CapitalChronicleEventType.THRONE_SEIZED;
         }
 
         if (normalized.contains("was disinherited")) {
-            return CapitalDialogueEventModels.EventType.DISINHERITED;
+            return CapitalChronicleEventType.DISINHERITED;
         }
 
         if (normalized.contains("was legitimized")) {
-            return CapitalDialogueEventModels.EventType.LEGITIMIZED;
+            return CapitalChronicleEventType.LEGITIMIZED;
         }
 
         if (normalized.contains("abdicated the throne")) {
-            return CapitalDialogueEventModels.EventType.ABDICATION;
+            return CapitalChronicleEventType.ABDICATION;
         }
 
-        if (normalized.contains("inherited the throne")) {
-            return CapitalDialogueEventModels.EventType.PEACEFUL_TRANSFER;
+        if (normalized.contains("inherited the throne")
+                || normalized.contains("peacefully transferred the crown")) {
+            return CapitalChronicleEventType.PEACEFUL_TRANSFER;
         }
 
         if (normalized.contains("was elevated to the ducal rank")
                 || normalized.contains("was raised to ducal rank")
-                || normalized.contains("was granted the ducal rank")) {
-            return CapitalDialogueEventModels.EventType.NEW_DUKE_OR_DUCHESS;
+                || normalized.contains("was granted the ducal rank")
+                || normalized.contains("was raised to the dignity of duchess")
+                || normalized.contains("was raised to the dignity of duke")) {
+            return CapitalChronicleEventType.NEW_DUKE_OR_DUCHESS;
         }
 
         if (normalized.contains("was appointed commander of the royal army")
-                || normalized.contains("was appointed commander of the royal guard")) {
-            return CapitalDialogueEventModels.EventType.LORD_COMMANDER_APPOINTED;
+                || normalized.contains("was appointed commander of the royal guard")
+                || normalized.contains("was appointed commander of the army")) {
+            return CapitalChronicleEventType.LORD_COMMANDER_APPOINTED;
         }
 
-        if (normalized.contains("was appointed hand of the")) {
-            return CapitalDialogueEventModels.EventType.HAND_APPOINTED;
+        if (normalized.contains("was appointed hand of the")
+                || normalized.contains("was appointed hand of the crown")) {
+            return CapitalChronicleEventType.HAND_APPOINTED;
         }
 
         if (normalized.contains("was appointed grand maester of")) {
-            return CapitalDialogueEventModels.EventType.GRAND_MAESTER_APPOINTED;
+            return CapitalChronicleEventType.GRAND_MAESTER_APPOINTED;
         }
 
-        if (normalized.contains("was appointed court herald of")) {
-            return CapitalDialogueEventModels.EventType.COURT_HERALD_APPOINTED;
+        if (normalized.contains("was appointed court herald of")
+                || normalized.contains("now serves as court herald of")) {
+            return CapitalChronicleEventType.COURT_HERALD_APPOINTED;
         }
 
         if (normalized.contains("was named to the royal guard of")) {
-            return CapitalDialogueEventModels.EventType.ROYAL_GUARD_APPOINTED;
+            return CapitalChronicleEventType.ROYAL_GUARD_APPOINTED;
         }
 
         if (normalized.contains("throne") || normalized.contains("crown") || normalized.contains("realm")) {
-            return CapitalDialogueEventModels.EventType.GENERIC_NOTABLE;
+            return CapitalChronicleEventType.GENERIC_NOTABLE;
         }
 
-        return CapitalDialogueEventModels.EventType.NONE;
+        return CapitalChronicleEventType.NONE;
     }
 
     private static boolean isCurrentCrownChildBirth(ServerLevel level, CapitalRecord capital, String text) {

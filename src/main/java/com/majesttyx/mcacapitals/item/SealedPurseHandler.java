@@ -1,30 +1,31 @@
 package com.majesttyx.mcacapitals.item;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalPlayerNotificationService;
 import com.majesttyx.mcacapitals.capital.CapitalPlayerWarrantService;
+import com.majesttyx.mcacapitals.capital.PlayerCapitalAllegianceService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
-import com.majesttyx.mcacapitals.capital.PlayerCapitalAllegianceService;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
-import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalJusticeDataAccess;
+import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalPlayerWarrantDataAccess;
+import com.majesttyx.mcacapitals.dialogue.CapitalDialogueSpeaker;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenSealedPurseCaseSelectionPacket;
 import com.majesttyx.mcacapitals.util.CapitalJusticeText;
 import com.majesttyx.mcacapitals.util.MCAExecutionBridge;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
@@ -36,48 +37,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-public final class SealedPurseHandler {
+public class SealedPurseHandler {
 
     private static final double BASE_SUCCESS_CHANCE = 25.0D;
     private static final double MAX_SUCCESS_CHANCE = 98.0D;
     private static final int MAX_SUCCESS_HEARTS = 200;
     private static final long PENDING_SELECTION_TICKS = 20L * 120L;
+
     private static final Map<UUID, PendingPurseGift> PENDING_GIFTS = new HashMap<>();
-
-    private SealedPurseHandler() {
-    }
-
-    public static InteractionResult handleEntityInteract(Player player, Entity target, InteractionHand hand) {
-        if (player == null || target == null || hand == null) {
-            return InteractionResult.PASS;
-        }
-
-        ItemStack stack = player.getItemInHand(hand);
-        if (stack.isEmpty() || !stack.is(ModItems.SEALED_PURSE.get())) {
-            return InteractionResult.PASS;
-        }
-        if (!MCAIntegrationBridge.isMCAVillagerEntity(target)) {
-            return InteractionResult.PASS;
-        }
-        if (player.level().isClientSide) {
-            return InteractionResult.SUCCESS;
-        }
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return InteractionResult.PASS;
-        }
-
-        return tryGiftSealedPurse(serverPlayer, target, stack)
-                ? InteractionResult.SUCCESS
-                : InteractionResult.PASS;
-    }
 
     public static boolean tryGiftSealedPurse(ServerPlayer player, Entity target, ItemStack giftedStack) {
         if (player == null || target == null || giftedStack == null || !giftedStack.is(ModItems.SEALED_PURSE.get())) {
             return false;
         }
+
         if (!(player.level() instanceof ServerLevel level)) {
             return false;
         }
+
         if (!MCAIntegrationBridge.isMCAVillagerEntity(target)) {
             return false;
         }
@@ -88,27 +65,29 @@ public final class SealedPurseHandler {
     private static boolean openGiftCaseSelection(ServerLevel level, ServerPlayer player, Entity target) {
         CapitalRecord capital = resolveMasterOfLawsCapital(target.getUUID());
         if (capital == null || capital.getState() != CapitalState.ACTIVE) {
-            player.sendSystemMessage(Component.literal("A Sealed Purse must be gifted to the Master of Laws."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.a_sealed_purse_must_be_gifted_to_the_master_of_laws"));
             MCAIntegrationBridge.stopInteracting(target);
             return true;
         }
+
         if (!CapitalPlayerNotificationService.isPlayerWithinCapital(level, capital, player)) {
-            player.sendSystemMessage(Component.literal("A Sealed Purse must be gifted within the capital's bounds."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.a_sealed_purse_must_be_gifted_within_the_capital_s_bounds"));
             MCAIntegrationBridge.stopInteracting(target);
             return true;
         }
 
         List<OpenSealedPurseCaseSelectionPacket.CaseEntry> cases = buildCases(level, capital);
         if (cases.isEmpty()) {
-            player.sendSystemMessage(Component.literal(
-                    target.getName().getString() + ": "
-                            + CapitalJusticeText.sealedPurseNoCases(level, target.getUUID())
+            player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(
+                    target,
+                    CapitalJusticeText.sealedPurseNoCases(level, target.getUUID())
             ));
             MCAIntegrationBridge.stopInteracting(target);
             return true;
         }
+
         if (!consumeSealedPurse(player)) {
-            player.sendSystemMessage(Component.literal("You need a Sealed Purse to gift the Master of Laws."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.you_need_a_sealed_purse_to_gift_the_master_of_laws"));
             MCAIntegrationBridge.stopInteracting(target);
             return true;
         }
@@ -119,22 +98,14 @@ public final class SealedPurseHandler {
             return true;
         }
 
-        PENDING_GIFTS.put(
-                player.getUUID(),
-                new PendingPurseGift(capital.getCapitalId(), level.getGameTime() + PENDING_SELECTION_TICKS)
-        );
+        PENDING_GIFTS.put(player.getUUID(), new PendingPurseGift(capital.getCapitalId(), level.getGameTime() + PENDING_SELECTION_TICKS));
 
-        String villageName = capital.getVillageId() == null
-                ? "this capital"
-                : MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        if (villageName == null || villageName.isBlank()) {
-            villageName = "this capital";
+        String villageName = capital.getVillageId() == null ? "" : MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        if (villageName == null) {
+            villageName = "";
         }
 
-        ModNetwork.sendToPlayer(
-                player,
-                new OpenSealedPurseCaseSelectionPacket(capital.getCapitalId(), villageName, cases)
-        );
+        ModNetwork.sendToPlayer(player, new OpenSealedPurseCaseSelectionPacket(capital.getCapitalId(), villageName, cases));
         MCAIntegrationBridge.stopInteracting(target);
         return true;
     }
@@ -146,20 +117,17 @@ public final class SealedPurseHandler {
 
         ServerLevel level = player.serverLevel();
         PendingPurseGift pending = PENDING_GIFTS.get(player.getUUID());
-        if (pending == null
-                || !pending.capitalId().equals(capitalId)
-                || level.getGameTime() > pending.expiresAtGameTime()) {
+        if (pending == null || !pending.capitalId().equals(capitalId) || level.getGameTime() > pending.expiresAtGameTime()) {
             PENDING_GIFTS.remove(player.getUUID());
-            player.sendSystemMessage(Component.literal(
-                    "You must gift the Sealed Purse directly to the Master of Laws."
-            ));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.you_must_gift_the_sealed_purse_directly_to_the_master_of_laws"));
             return false;
         }
 
         PENDING_GIFTS.remove(player.getUUID());
+
         CapitalRecord capital = CapitalManager.getCapital(capitalId);
         if (capital == null || capital.getState() != CapitalState.ACTIVE) {
-            player.sendSystemMessage(Component.literal("That capital no longer has a court to influence."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.that_capital_no_longer_has_a_court_to_influence"));
             return false;
         }
 
@@ -174,43 +142,32 @@ public final class SealedPurseHandler {
         ServerLevel level = player.serverLevel();
 
         if (capital.getMasterOfLaws() == null) {
-            player.sendSystemMessage(Component.literal(
-                    "This capital has no Master of Laws to receive the Sealed Purse."
-            ));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.this_capital_has_no_master_of_laws_to_receive_the_sealed_purse"));
             return false;
         }
 
-        Entity masterOfLaws = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(
-                level,
-                capital.getMasterOfLaws()
-        );
+        Entity masterOfLaws = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, capital.getMasterOfLaws());
         if (masterOfLaws == null || masterOfLaws.distanceToSqr(player) > 12.0D * 12.0D) {
-            player.sendSystemMessage(Component.literal(
-                    "You must remain near the Master of Laws while choosing the matter."
-            ));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.you_must_remain_near_the_master_of_laws_while_choosing_the_matter"));
             return false;
         }
+
         if (!CapitalPlayerNotificationService.isPlayerWithinCapital(level, capital, player)) {
-            player.sendSystemMessage(Component.literal("A Sealed Purse must be gifted within the capital's bounds."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.a_sealed_purse_must_be_gifted_within_the_capital_s_bounds"));
             return false;
         }
 
         if (!hasActiveCase(level, capital, targetId)) {
-            player.sendSystemMessage(Component.literal("That matter is no longer active."));
-            return false;
-        }
-        if (MCAExecutionBridge.isMarkedForExecution(level, targetId)) {
-            player.sendSystemMessage(Component.literal(
-                    CapitalJusticeText.sealedPurseFormalExecution(level, targetId)
-            ));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.that_matter_is_no_longer_active"));
             return false;
         }
 
-        int hearts = MCAIntegrationBridge.getHeartsWithPlayer(
-                level,
-                capital.getMasterOfLaws(),
-                player.getUUID()
-        );
+        if (MCAExecutionBridge.isMarkedForExecution(level, targetId)) {
+            player.sendSystemMessage(CapitalJusticeText.sealedPurseFormalExecution(level, targetId));
+            return false;
+        }
+
+        int hearts = MCAIntegrationBridge.getHeartsWithPlayer(level, capital.getMasterOfLaws(), player.getUUID());
         double chance = calculateSuccessChance(hearts);
         boolean success = level.random.nextDouble() * 100.0D < chance;
         String targetName = CapitalNameService.resolveDisplayName(level, capital, targetId);
@@ -225,39 +182,32 @@ public final class SealedPurseHandler {
                 : null;
 
         if (success) {
-            boolean cleared = CapitalJusticeDataAccess.clearJusticeCase(
-                    level,
-                    capital.getCapitalId(),
-                    targetId
-            );
+            boolean cleared = CapitalJusticeDataAccess.clearJusticeCase(level, capital.getCapitalId(), targetId);
             if (!cleared) {
-                player.sendSystemMessage(Component.literal(
-                        "The Sealed Purse was accepted, but the court records were already changed."
-                ));
+                player.sendSystemMessage(Component.translatable("mcacapitals.system.sealed_purse_handler.the_sealed_purse_was_accepted_but_the_court_records_were_already_chang"));
                 return true;
             }
 
             CapitalCrownJusticeService.recordPardonResolution(level, capital, targetId);
-            String line = CapitalJusticeText.sealedPurseSuccess(level, targetId, targetName);
-            CapitalChronicleService.addEntry(
+            Component line = CapitalJusticeText.sealedPurseSuccess(level, targetId, targetName);
+            CapitalChronicleService.addEvent(
                     level,
                     capital,
-                    "The matter concerning " + targetName + " disappeared from the court records."
+                    CapitalChronicleEventId.COURT_RECORD_REMOVED,
+                    targetName
             );
             CapitalDataAccess.markDirty(level);
-
             if (foreign && CapitalPlayerWarrantDataAccess.markCasePenalized(level, foreignCaseKey)) {
                 CapitalDiplomacyDataAccess.adjustRelationship(
                         level,
                         declaredCapital.getCapitalId(),
                         capital.getCapitalId(),
                         -15,
-                        "Successful foreign legal bribe",
+                        "mcacapitals.relationship_reason.foreign_legal_bribe_success",
                         declaredCapital.getCapitalId()
                 );
             }
-
-            player.sendSystemMessage(Component.literal(line));
+            player.sendSystemMessage(line);
             return true;
         }
 
@@ -267,16 +217,37 @@ public final class SealedPurseHandler {
                     declaredCapital.getCapitalId(),
                     capital.getCapitalId(),
                     -20,
-                    "Discovered failed foreign legal bribe",
+                    "mcacapitals.relationship_reason.foreign_legal_bribe_discovered",
                     declaredCapital.getCapitalId()
             );
-            CapitalPlayerWarrantService.orderToLeave(player, capital, foreignCaseKey);
+            CapitalPlayerWarrantService.orderToLeave(
+                    player,
+                    capital,
+                    foreignCaseKey
+            );
+        }
+        player.sendSystemMessage(CapitalJusticeText.sealedPurseFailure(level, targetId));
+        return true;
+    }
+
+    private static Component buildCaseStatusComponent(Set<String> statuses) {
+        MutableComponent result = Component.empty();
+        boolean first = true;
+
+        for (String status : statuses) {
+            if (!first) {
+                result.append(Component.literal(" / "));
+            }
+
+            result.append(
+                    Component.translatable(
+                            "mcacapitals.ui.sealed_purse.case_status." + status
+                    )
+            );
+            first = false;
         }
 
-        player.sendSystemMessage(Component.literal(
-                CapitalJusticeText.sealedPurseFailure(level, targetId)
-        ));
-        return true;
+        return result;
     }
 
     private static String buildForeignCaseKey(
@@ -287,46 +258,36 @@ public final class SealedPurseHandler {
         return capital.getCapitalId()
                 + "|" + targetId
                 + "|" + CapitalJusticeDataAccess.getArrestWarrantIssuedGameTime(
-                        level,
-                        capital.getCapitalId(),
-                        targetId
-                )
+                level,
+                capital.getCapitalId(),
+                targetId
+        )
                 + "|" + CapitalJusticeDataAccess.getDetentionStartDay(
-                        level,
-                        capital.getCapitalId(),
-                        targetId
-                )
+                level,
+                capital.getCapitalId(),
+                targetId
+        )
                 + "|" + CapitalJusticeDataAccess.getConfirmedCaseCount(
-                        level,
-                        capital.getCapitalId(),
-                        targetId
-                )
+                level,
+                capital.getCapitalId(),
+                targetId
+        )
                 + "|" + CapitalJusticeDataAccess.getPublicStatus(
-                        level,
-                        capital.getCapitalId(),
-                        targetId
-                ).name();
+                level,
+                capital.getCapitalId(),
+                targetId
+        ).name();
     }
 
-    private static List<OpenSealedPurseCaseSelectionPacket.CaseEntry> buildCases(
-            ServerLevel level,
-            CapitalRecord capital
-    ) {
+    private static List<OpenSealedPurseCaseSelectionPacket.CaseEntry> buildCases(ServerLevel level, CapitalRecord capital) {
         Map<UUID, Set<String>> statusesByTarget = new LinkedHashMap<>();
 
-        for (UUID targetId : CapitalJusticeDataAccess.getArrestWarrants(
-                level,
-                capital.getCapitalId()
-        )) {
-            statusesByTarget.computeIfAbsent(targetId, ignored -> new LinkedHashSet<>())
-                    .add("Arrest Warrant");
+        for (UUID targetId : CapitalJusticeDataAccess.getArrestWarrants(level, capital.getCapitalId())) {
+            statusesByTarget.computeIfAbsent(targetId, ignored -> new LinkedHashSet<>()).add("arrest_warrant");
         }
-        for (UUID targetId : CapitalJusticeDataAccess.getDetainedPrisoners(
-                level,
-                capital.getCapitalId()
-        )) {
-            statusesByTarget.computeIfAbsent(targetId, ignored -> new LinkedHashSet<>())
-                    .add("In Custody");
+
+        for (UUID targetId : CapitalJusticeDataAccess.getDetainedPrisoners(level, capital.getCapitalId())) {
+            statusesByTarget.computeIfAbsent(targetId, ignored -> new LinkedHashSet<>()).add("in_custody");
         }
 
         List<OpenSealedPurseCaseSelectionPacket.CaseEntry> cases = new ArrayList<>();
@@ -337,7 +298,7 @@ public final class SealedPurseHandler {
             }
 
             String name = CapitalNameService.resolveDisplayName(level, capital, targetId);
-            String status = String.join(" / ", entry.getValue());
+            Component status = buildCaseStatusComponent(entry.getValue());
             cases.add(new OpenSealedPurseCaseSelectionPacket.CaseEntry(targetId, name, status));
         }
 

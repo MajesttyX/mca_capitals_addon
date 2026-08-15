@@ -20,7 +20,8 @@ import java.lang.reflect.Field;
 )
 public abstract class VillagerExecutionAuthorityMixin {
 
-    private static final String EXECUTE_COMMAND = "execute";
+    private static final String EXECUTE_COMMAND =
+            "execute";
 
     @Inject(
             method = "handle(Lnet/minecraft/server/level/ServerPlayer;Ljava/lang/String;)Z",
@@ -33,38 +34,46 @@ public abstract class VillagerExecutionAuthorityMixin {
             String command,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        if (!EXECUTE_COMMAND.equals(rootCommand(command))) {
+        if (!EXECUTE_COMMAND.equals(
+                rootCommand(command)
+        )) {
             return;
         }
 
         Entity target = resolveEntity();
-        if (CapitalExecutionAuthorityService.mayIssueDirectExecution(
-                player,
-                target
-        )) {
+
+        if (CapitalExecutionAuthorityService
+                .mayIssueDirectExecution(
+                        player,
+                        target
+                )) {
             return;
         }
 
         if (player != null) {
             player.sendSystemMessage(
-                    Component.literal(
-                            "Only the reigning Sovereign of this capital may order an execution."
-                    ).withStyle(ChatFormatting.RED)
+                    Component.translatable("mcacapitals.system.villager_execution_authority_mixin.only_the_reigning_sovereign_of_this_capital_may_order_an_execution").withStyle(ChatFormatting.RED)
             );
         }
 
         cir.setReturnValue(true);
     }
 
-    private static String rootCommand(String command) {
+    private static String rootCommand(
+            String command
+    ) {
         if (command == null || command.isBlank()) {
             return "";
         }
 
         int separator = command.indexOf('.');
+
         return separator < 0
                 ? command
-                : command.substring(0, separator);
+                : command.substring(
+                0,
+                separator
+        );
     }
 
     private Entity resolveEntity() {
@@ -72,9 +81,15 @@ public abstract class VillagerExecutionAuthorityMixin {
 
         while (type != null) {
             try {
-                Field field = type.getDeclaredField("entity");
+                Field field =
+                        type.getDeclaredField(
+                                "entity"
+                        );
+
                 field.setAccessible(true);
+
                 Object value = field.get(this);
+
                 return value instanceof Entity entity
                         ? entity
                         : null;

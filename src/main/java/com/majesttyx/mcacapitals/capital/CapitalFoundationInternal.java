@@ -27,9 +27,7 @@ final class CapitalFoundationInternal {
         boolean oldPlayerSovereign = capital.isPlayerSovereign();
         UUID oldPlayerSovereignId = capital.getPlayerSovereignId();
 
-        String oldName = MCAIntegrationBridge.getEntityByUuid(level, oldSovereign) != null
-                ? MCAIntegrationBridge.getEntityByUuid(level, oldSovereign).getName().getString()
-                : oldSovereign.toString();
+        String oldName = CapitalChronicleIdentitySnapshot.name(level, capital, oldSovereign);
 
         Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
         HashMap<UUID, Boolean> oldRoyalChildFemale = new HashMap<>(capital.getRoyalChildFemale());
@@ -114,13 +112,16 @@ final class CapitalFoundationInternal {
         CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
         CapitalNameService.refreshCapitalNames(level, capital, refreshedResidents);
 
-        String successorName = MCAIntegrationBridge.getEntityByUuid(level, successor) != null
-                ? MCAIntegrationBridge.getEntityByUuid(level, successor).getName().getString()
-                : successor.toString();
+        String successorName = CapitalChronicleIdentitySnapshot.name(level, capital, successor);
 
-        CapitalChronicleService.addEntry(level, capital,
-                oldName + " abdicated the throne. " + successorName + " succeeded to rule "
-                        + MCAIntegrationBridge.getVillageName(level, capital.getVillageId()) + ".");
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.ABDICATION_SUCCESSOR,
+                oldName,
+                successorName,
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+        );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);

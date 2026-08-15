@@ -3,8 +3,8 @@ package com.majesttyx.mcacapitals.capital;
 import com.majesttyx.mcacapitals.data.CapitalAgreementDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.DiplomaticProposal;
-import com.majesttyx.mcacapitals.data.DiplomaticProposalStatus;
 import com.majesttyx.mcacapitals.data.DiplomaticProposalType;
+import com.majesttyx.mcacapitals.data.DiplomaticProposalStatus;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,24 +33,34 @@ final class CapitalDiplomaticProposalService {
             );
         }
 
-        ProposalContext context = validateProposal(player, ambassadorId, targetCapitalId, type);
+        ProposalContext context = validateProposal(
+                player,
+                ambassadorId,
+                targetCapitalId,
+                type
+        );
         if (!context.valid()) {
-            if (player != null) {
-                player.sendSystemMessage(Component.literal(context.failureMessage()));
-            }
+            sendFailure(player, context.failureMessage());
             return 0;
         }
 
+        long createdAt = context.level().getGameTime();
         DiplomaticProposal proposal = new DiplomaticProposal(
                 UUID.randomUUID(),
                 context.source().getCapitalId(),
                 context.target().getCapitalId(),
                 player.getUUID(),
-                CapitalDiplomaticAgreementValidation.getCurrentSovereignId(context.target()),
+                context.targetSovereignId(),
+                null,
                 type,
-                context.level().getGameTime()
+                createdAt,
+                CapitalDiplomaticDelayService.schedule(context.level()),
+                null,
+                null,
+                null,
+                null
         );
-        proposal.setAvailableAt(CapitalDiplomaticDelayService.schedule(context.level()));
+
         return dispatch(player, context, proposal);
     }
 
@@ -67,33 +77,37 @@ final class CapitalDiplomaticProposalService {
                 DiplomaticProposalType.ROYAL_BETROTHAL
         );
         if (!context.valid()) {
-            if (player != null) {
-                player.sendSystemMessage(Component.literal(context.failureMessage()));
-            }
-            return 0;
-        }
-        if (match == null) {
-            player.sendSystemMessage(Component.literal(
-                    "That royal match is no longer eligible."
-            ));
+            sendFailure(player, context.failureMessage());
             return 0;
         }
 
+        if (match == null) {
+            sendFailure(
+                    player,
+                    Component.translatable(
+                            "mcacapitals.diplomacy.royal_betrothal.validation.match_invalid"
+                    )
+            );
+            return 0;
+        }
+
+        long createdAt = context.level().getGameTime();
         DiplomaticProposal proposal = new DiplomaticProposal(
                 UUID.randomUUID(),
                 context.source().getCapitalId(),
                 context.target().getCapitalId(),
                 player.getUUID(),
-                CapitalDiplomaticAgreementValidation.getCurrentSovereignId(context.target()),
+                context.targetSovereignId(),
                 null,
                 DiplomaticProposalType.ROYAL_BETROTHAL,
-                context.level().getGameTime(),
+                createdAt,
+                CapitalDiplomaticDelayService.schedule(context.level()),
                 match.sourceRoyalId(),
                 match.targetRoyalId(),
                 match.relocatingRoyalId(),
                 match.destinationCapitalId()
         );
-        proposal.setAvailableAt(CapitalDiplomaticDelayService.schedule(context.level()));
+
         return dispatch(player, context, proposal);
     }
 
@@ -104,47 +118,39 @@ final class CapitalDiplomaticProposalService {
             DiplomaticProposalType type
     ) {
         if (player == null || ambassadorId == null || targetCapitalId == null || type == null) {
-            return ProposalContext.failure("That diplomatic proposal is invalid.");
+            return ProposalContext.failure(
+                    Component.translatable(
+                            "mcacapitals.diplomacy.validation.proposal_invalid"
+                    )
+            );
         }
+
         CapitalDiplomaticAgreementValidation.AudienceValidation audience =
                 CapitalDiplomaticAgreementValidation.validateAudience(player, ambassadorId);
         if (!audience.valid()) {
             return ProposalContext.failure(audience.failureMessage());
         }
+
         ServerLevel level = player.serverLevel();
         CapitalRecord source = audience.sourceCapital();
         CapitalRecord target = CapitalManager.getCapital(targetCapitalId);
-        String targetFailure = CapitalDiplomaticAgreementValidation.validateTarget(source, target);
+        Component targetFailure = CapitalDiplomaticAgreementValidation.validateTarget(source, target);
         if (targetFailure != null) {
             return ProposalContext.failure(targetFailure);
         }
-        if (CapitalAgreementDataAccess.findPendingBetween(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId()
-        ) != null) {
-            return ProposalContext.failure(
-                    "Only one diplomatic proposal may be pending between two capitals at a time."
-            );
-        }
-        if (CapitalDiplomaticAgreementValidation.getCurrentSovereignId(target) == null) {
-            return ProposalContext.failure(
-                    "The receiving capital has no sovereign able to answer this proposal."
-            );
-        }
 
         CapitalDiplomaticTruceService.refreshExpiredTruce(level, source, target);
-        int score = CapitalDiplomacyDataAccess.getRelationshipScore(
-                level,
-                source.getCapitalId(),
-                target.getCapitalId()
-        );
         CapitalDiplomaticState state = CapitalDiplomacyDataAccess.getDiplomaticState(
                 level,
                 source.getCapitalId(),
                 target.getCapitalId()
         );
-        String failure = CapitalDiplomaticAgreementValidation.validateProposal(
+        int score = CapitalDiplomacyDataAccess.getRelationshipScore(
+                level,
+                source.getCapitalId(),
+                target.getCapitalId()
+        );
+        Component proposalFailure = CapitalDiplomaticAgreementValidation.validateProposal(
                 level,
                 source,
                 target,
@@ -152,9 +158,32 @@ final class CapitalDiplomaticProposalService {
                 state,
                 score
         );
-        return failure == null
-                ? ProposalContext.success(level, source, target, type)
-                : ProposalContext.failure(failure);
+        if (proposalFailure != null) {
+            return ProposalContext.failure(proposalFailure);
+        }
+
+        if (CapitalAgreementDataAccess.findPendingBetween(
+                level,
+                source.getCapitalId(),
+                target.getCapitalId()
+        ) != null) {
+            return ProposalContext.failure(
+                    Component.translatable(
+                            "mcacapitals.diplomacy.validation.pending_between_capitals"
+                    )
+            );
+        }
+
+        UUID targetSovereignId = CapitalDiplomaticAgreementValidation.getCurrentSovereignId(target);
+        if (targetSovereignId == null) {
+            return ProposalContext.failure(
+                    Component.translatable(
+                            "mcacapitals.diplomacy.validation.no_sovereign_to_answer"
+                    )
+            );
+        }
+
+        return ProposalContext.success(level, source, target, targetSovereignId, type);
     }
 
     private static int dispatch(
@@ -163,22 +192,22 @@ final class CapitalDiplomaticProposalService {
             DiplomaticProposal proposal
     ) {
         CapitalAgreementDataAccess.addProposal(context.level(), proposal);
-        CapitalChronicleService.addEntry(
+        CapitalChronicleService.addEvent(
                 context.level(),
                 context.source(),
-                CapitalDiplomaticAgreementText.capitalizedWithIndefiniteArticle(
-                        context.type().getDisplayName()
-                )
-                        + " was dispatched to "
-                        + CapitalDiplomaticAgreementText.capitalName(
+                CapitalChronicleEventId.DIPLOMATIC_AGREEMENT_DISPATCHED,
+                CapitalChronicleService.translatable(
+                        "mcacapitals.chronicle.agreement_type." + context.type().getSerializedName()
+                ),
+                CapitalDiplomaticAgreementText.capitalName(
                         context.level(),
                         context.target()
                 )
-                        + "."
         );
-        player.sendSystemMessage(Component.literal(
+
+        player.sendSystemMessage(
                 CapitalDiplomaticDelayService.dispatchMessage()
-        ));
+        );
         return 1;
     }
 
@@ -189,6 +218,7 @@ final class CapitalDiplomaticProposalService {
         if (level == null || playerId == null) {
             return List.of();
         }
+
         List<DiplomaticProposal> result = new ArrayList<>();
         long now = level.getGameTime();
         for (DiplomaticProposal proposal :
@@ -198,6 +228,7 @@ final class CapitalDiplomaticProposalService {
                     || !proposal.isAwaitingPlayerResponse()) {
                 continue;
             }
+
             CapitalRecord target = CapitalManager.getCapital(proposal.getTargetCapitalId());
             if (target != null
                     && CapitalDiplomaticAuthorityService.mayExerciseSovereignAuthority(
@@ -208,25 +239,33 @@ final class CapitalDiplomaticProposalService {
                 result.add(proposal);
             }
         }
+
         result.sort(Comparator.comparingLong(DiplomaticProposal::getCreatedAt));
         return List.copyOf(result);
     }
 
-    static void processPendingProposal(ServerLevel level, DiplomaticProposal proposal) {
+    static void processPendingProposal(
+            ServerLevel level,
+            DiplomaticProposal proposal
+    ) {
         if (level == null || proposal == null) {
-            return;
-        }
-        if (!CapitalDiplomaticDelayService.isReady(level, proposal.getAvailableAt())) {
             return;
         }
 
         DiplomaticProposalStatus status = proposal.getStatus();
         if (status == DiplomaticProposalStatus.ACCEPTED_RESPONSE_IN_TRANSIT
                 || status == DiplomaticProposalStatus.REJECTED_RESPONSE_IN_TRANSIT) {
-            CapitalDiplomaticProposalResolutionService.resolveQueuedPlayerResponse(level, proposal);
+            if (level.getGameTime() >= proposal.getAvailableAt()) {
+                CapitalDiplomaticProposalResolutionService.resolveQueuedPlayerResponse(
+                        level,
+                        proposal
+                );
+            }
             return;
         }
-        if (status == DiplomaticProposalStatus.AWAITING_PLAYER_RESPONSE) {
+
+        if (status == DiplomaticProposalStatus.AWAITING_PLAYER_RESPONSE
+                || level.getGameTime() < proposal.getAvailableAt()) {
             return;
         }
 
@@ -239,29 +278,22 @@ final class CapitalDiplomaticProposalService {
                         level,
                         proposal,
                         source,
-                        "Proposal Undeliverable",
-                        "The proposed "
-                                + proposal.getType().getDisplayName()
-                                + " could not be delivered because the receiving capital no longer exists."
+                        Component.translatable(
+                                "mcacapitals.diplomacy.correspondence.undeliverable_title"
+                        ),
+                        Component.translatable(
+                                "mcacapitals.diplomacy.correspondence.undeliverable_message",
+                                proposal.getType().getDisplayComponent()
+                        )
                 );
             }
             return;
         }
 
-        UUID targetPlayerId = CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
-                level,
-                target
-        );
+        UUID targetPlayerId = CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(level, target);
         if (targetPlayerId != null) {
-            if (!proposal.wasNotifiedTo(targetPlayerId)
-                    || !proposal.isAwaitingPlayerResponse()) {
-                sendProposalToPlayer(
-                        level,
-                        proposal,
-                        source,
-                        target,
-                        targetPlayerId
-                );
+            if (!proposal.wasNotifiedTo(targetPlayerId)) {
+                sendProposalToPlayer(level, proposal, source, target, targetPlayerId);
             }
             return;
         }
@@ -290,25 +322,41 @@ final class CapitalDiplomaticProposalService {
         CapitalAgreementDataAccess.get(level).setDirty();
     }
 
+    private static void sendFailure(ServerPlayer player, Component message) {
+        if (player != null && message != null) {
+            player.sendSystemMessage(message);
+        }
+    }
+
     private record ProposalContext(
             boolean valid,
             ServerLevel level,
             CapitalRecord source,
             CapitalRecord target,
+            UUID targetSovereignId,
             DiplomaticProposalType type,
-            String failureMessage
+            Component failureMessage
     ) {
-        static ProposalContext success(
+        private static ProposalContext success(
                 ServerLevel level,
                 CapitalRecord source,
                 CapitalRecord target,
+                UUID targetSovereignId,
                 DiplomaticProposalType type
         ) {
-            return new ProposalContext(true, level, source, target, type, null);
+            return new ProposalContext(
+                    true,
+                    level,
+                    source,
+                    target,
+                    targetSovereignId,
+                    type,
+                    null
+            );
         }
 
-        static ProposalContext failure(String message) {
-            return new ProposalContext(false, null, null, null, null, message);
+        private static ProposalContext failure(Component message) {
+            return new ProposalContext(false, null, null, null, null, null, message);
         }
     }
 }

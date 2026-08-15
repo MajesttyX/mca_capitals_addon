@@ -23,8 +23,11 @@ import java.util.UUID;
 
 final class CapitalCampaignAssemblyService {
 
-    static final long ASSEMBLY_DURATION_TICKS = 20L * 20L;
-    static final long FORMATION_DURATION_TICKS = 20L * 5L;
+    static final long ASSEMBLY_DURATION_TICKS =
+            20L * 20L;
+
+    static final long FORMATION_DURATION_TICKS =
+            20L * 5L;
 
     private static final int MAX_TICKET_RADIUS = 6;
     private static final int MAX_PRIME_RADIUS = 2;
@@ -46,118 +49,224 @@ final class CapitalCampaignAssemblyService {
             CapitalRecord defendingCapital
     ) {
         Village attackingVillage =
-                CapitalCampaignEligibilityService.getVillage(level, attackingCapital);
-        Village defendingVillage =
-                CapitalCampaignEligibilityService.getVillage(level, defendingCapital);
+                CapitalCampaignEligibilityService
+                        .getVillage(
+                                level,
+                                attackingCapital
+                        );
 
-        if (attackingVillage == null || defendingVillage == null) {
-            return AssemblyResult.invalid("One of the campaign villages is unavailable.");
+        Village defendingVillage =
+                CapitalCampaignEligibilityService
+                        .getVillage(
+                                level,
+                                defendingCapital
+                        );
+
+        if (attackingVillage == null
+                || defendingVillage == null) {
+            return AssemblyResult.invalid(
+                    Component.translatable(
+                            "mcacapitals.system.campaign.village_unavailable"
+                    )
+            );
         }
 
-        PlayerValidation playerValidation = findInitiatingPlayer(
-                level,
-                campaign,
-                attackingCapital,
-                defendingVillage
-        );
+        PlayerValidation playerValidation =
+                findInitiatingPlayer(
+                        level,
+                        campaign,
+                        attackingCapital,
+                        defendingVillage
+                );
 
         if (playerValidation.invalid()) {
-            releaseSourceTicket(level, campaign, attackingCapital);
-            return AssemblyResult.invalid(playerValidation.failureMessage());
+            releaseSourceTicket(
+                    level,
+                    campaign,
+                    attackingCapital
+            );
+
+            return AssemblyResult.invalid(
+                    playerValidation.failureMessage()
+            );
         }
 
-        ServerPlayer player = playerValidation.player();
+        ServerPlayer player =
+                playerValidation.player();
 
         if (player == null) {
             if (campaign.hasAssemblyStarted()) {
-                releaseSourceTicket(level, campaign, attackingCapital);
-                campaign.resetAssembly();
-                CapitalCampaignDataAccess.get(level).setDirty();
+                releaseSourceTicket(
+                        level,
+                        campaign,
+                        attackingCapital
+                );
 
-                ServerPlayer initiatingPlayer = findOnlineInitiatingPlayer(level, campaign);
+                campaign.resetAssembly();
+
+                CapitalCampaignDataAccess
+                        .get(level)
+                        .setDirty();
+
+                ServerPlayer initiatingPlayer =
+                        findOnlineInitiatingPlayer(
+                                level,
+                                campaign
+                        );
+
                 if (initiatingPlayer != null) {
-                    initiatingPlayer.sendSystemMessage(Component.literal(
-                            "Campaign assembly was halted because you left the defending capital. Re-enter the capital to begin assembling again."
-                    ));
+                    initiatingPlayer.sendSystemMessage(
+                            Component.translatable("mcacapitals.system.capital_campaign_assembly_service.campaign_assembly_was_halted_because_you_left_the_defending_capital_re")
+                    );
                 }
             }
+
             return AssemblyResult.waiting();
         }
 
-        boolean startedNow = !campaign.hasAssemblyStarted();
+        boolean startedNow =
+                !campaign.hasAssemblyStarted();
+
         if (startedNow) {
-            campaign.beginAssembly(level.getGameTime());
-            CapitalCampaignDataAccess.get(level).setDirty();
-            player.sendSystemMessage(Component.literal(
-                    "Your campaign force is assembling, get to an open area and prepare to fight."
-            ));
+            campaign.beginAssembly(
+                    level.getGameTime()
+            );
+
+            CapitalCampaignDataAccess
+                    .get(level)
+                    .setDirty();
+
+            player.sendSystemMessage(
+                    Component.translatable("mcacapitals.system.capital_campaign_assembly_service.your_campaign_force_is_assembling_get_to_an_open_area_and_prepare_to_f")
+            );
         }
 
-        holdSourceTicket(level, campaign, attackingCapital);
-        if (startedNow) {
-            primeSourceVillageChunks(level, attackingVillage);
-        }
-
-        List<UUID> candidates = CapitalCampaignEligibilityService.findEligibleAttackers(
+        holdSourceTicket(
                 level,
-                attackingCapital,
-                campaign.getCampaignId()
+                campaign,
+                attackingCapital
         );
 
-        int raisedTarget = Math.min(
-                CapitalCampaignRecord.MAX_ATTACKERS,
-                Math.max(CapitalCampaignRecord.PREFERRED_ATTACKERS, candidates.size())
+        if (startedNow) {
+            primeSourceVillageChunks(
+                    level,
+                    attackingVillage
+            );
+        }
+
+        List<UUID> candidates =
+                CapitalCampaignEligibilityService
+                        .findEligibleAttackers(
+                                level,
+                                attackingCapital,
+                                campaign.getCampaignId()
+                        );
+
+        int raisedTarget =
+                Math.min(
+                        CapitalCampaignRecord.MAX_ATTACKERS,
+                        Math.max(
+                                CapitalCampaignRecord.PREFERRED_ATTACKERS,
+                                candidates.size()
+                        )
+                );
+
+        int previousTarget =
+                campaign.getTargetAttackerCount();
+
+        campaign.raiseTargetAttackerCount(
+                raisedTarget
         );
 
-        int previousTarget = campaign.getTargetAttackerCount();
-        campaign.raiseTargetAttackerCount(raisedTarget);
+        List<UUID> assembledIds =
+                assembleRoster(
+                        campaign,
+                        candidates
+                );
 
-        List<UUID> assembledIds = assembleRoster(campaign, candidates);
-        boolean rosterChanged = !assembledIds.isEmpty()
-                && !assembledIds.equals(campaign.getAttackerIds());
+        boolean rosterChanged =
+                !assembledIds.isEmpty()
+                        && !assembledIds.equals(
+                        campaign.getAttackerIds()
+                );
 
         if (rosterChanged) {
-            campaign.replaceAttackerIds(assembledIds);
+            campaign.replaceAttackerIds(
+                    assembledIds
+            );
         }
 
-        List<VillagerEntityMCA> assembledAttackers = getLoadedAttackers(level, assembledIds);
-        int assembledCount = assembledAttackers.size();
+        List<VillagerEntityMCA> assembledAttackers =
+                getLoadedAttackers(
+                        level,
+                        assembledIds
+                );
 
-        boolean reportChanged = campaign.getLastAssemblyReportedCount() != assembledCount;
+        int assembledCount =
+                assembledAttackers.size();
+
+        boolean reportChanged =
+                campaign.getLastAssemblyReportedCount()
+                        != assembledCount;
+
         if (reportChanged) {
-            campaign.markAssemblyReportedCount(assembledCount);
+            campaign.markAssemblyReportedCount(
+                    assembledCount
+            );
         }
 
-        if (previousTarget != campaign.getTargetAttackerCount()
+        if (previousTarget
+                != campaign.getTargetAttackerCount()
                 || rosterChanged
                 || reportChanged) {
-            CapitalCampaignDataAccess.get(level).setDirty();
+            CapitalCampaignDataAccess
+                    .get(level)
+                    .setDirty();
         }
 
-        long elapsed = level.getGameTime() - campaign.getAssemblyStartedAt();
+        long elapsed =
+                level.getGameTime()
+                        - campaign.getAssemblyStartedAt();
+
         if (elapsed < ASSEMBLY_DURATION_TICKS) {
             return AssemblyResult.waiting();
         }
 
-        releaseSourceTicket(level, campaign, attackingCapital);
+        releaseSourceTicket(
+                level,
+                campaign,
+                attackingCapital
+        );
 
         if (assembledAttackers.isEmpty()) {
             return AssemblyResult.invalid(
-                    "The campaign force could not assemble any eligible Guards or Archers. The planned attack was cancelled before war began."
+                    Component.translatable(
+                            "mcacapitals.system.campaign.assembly_no_eligible_attackers"
+                    )
             );
         }
 
-        String completionMessage = assembledCount >= campaign.getTargetAttackerCount()
-                ? "Campaign assembly is complete: " + assembledCount + " soldiers are ready to deploy."
-                : "Campaign assembly ended with " + assembledCount + " of the preferred "
-                + campaign.getTargetAttackerCount()
-                + " soldiers available. The attack will proceed with the assembled force.";
+        Component completionMessage =
+                assembledCount
+                        >= campaign.getTargetAttackerCount()
+                        ? Component.translatable(
+                                "mcacapitals.system.campaign.assembly_complete",
+                                assembledCount
+                        )
+                        : Component.translatable(
+                                "mcacapitals.system.campaign.assembly_partial",
+                                assembledCount,
+                                campaign.getTargetAttackerCount()
+                        );
 
         if (elapsed < ASSEMBLY_DURATION_TICKS + 10L) {
-            player.sendSystemMessage(Component.literal(completionMessage));
+            player.sendSystemMessage(completionMessage);
         }
 
-        return AssemblyResult.ready(player, assembledAttackers);
+        return AssemblyResult.ready(
+                player,
+                assembledAttackers
+        );
     }
 
     static ServerPlayer findFormationPlayer(
@@ -166,18 +275,28 @@ final class CapitalCampaignAssemblyService {
             CapitalRecord attackingCapital,
             CapitalRecord defendingCapital
     ) {
-        Village defendingVillage = CapitalCampaignEligibilityService.getVillage(level, defendingCapital);
+        Village defendingVillage =
+                CapitalCampaignEligibilityService
+                        .getVillage(
+                                level,
+                                defendingCapital
+                        );
+
         if (defendingVillage == null) {
             return null;
         }
 
-        PlayerValidation validation = findInitiatingPlayer(
-                level,
-                campaign,
-                attackingCapital,
-                defendingVillage
-        );
-        return validation.invalid() ? null : validation.player();
+        PlayerValidation validation =
+                findInitiatingPlayer(
+                        level,
+                        campaign,
+                        attackingCapital,
+                        defendingVillage
+                );
+
+        return validation.invalid()
+                ? null
+                : validation.player();
     }
 
     static void holdSourceTicket(
@@ -185,18 +304,31 @@ final class CapitalCampaignAssemblyService {
             CapitalCampaignRecord campaign,
             CapitalRecord attackingCapital
     ) {
-        Village village = CapitalCampaignEligibilityService.getVillage(level, attackingCapital);
+        Village village =
+                CapitalCampaignEligibilityService
+                        .getVillage(
+                                level,
+                                attackingCapital
+                        );
+
         if (village == null) {
             return;
         }
 
-        ChunkPos center = new ChunkPos(new BlockPos(village.getCenter()));
-        level.getChunkSource().addRegionTicket(
-                ASSEMBLY_TICKET,
-                center,
-                calculateTicketRadius(village),
-                campaign.getCampaignId()
-        );
+        ChunkPos center =
+                new ChunkPos(
+                        new BlockPos(
+                                village.getCenter()
+                        )
+                );
+
+        level.getChunkSource()
+                .addRegionTicket(
+                        ASSEMBLY_TICKET,
+                        center,
+                        calculateTicketRadius(village),
+                        campaign.getCampaignId()
+                );
     }
 
     static void releaseSourceTicket(
@@ -204,22 +336,37 @@ final class CapitalCampaignAssemblyService {
             CapitalCampaignRecord campaign,
             CapitalRecord attackingCapital
     ) {
-        if (level == null || campaign == null || attackingCapital == null) {
+        if (level == null
+                || campaign == null
+                || attackingCapital == null) {
             return;
         }
 
-        Village village = CapitalCampaignEligibilityService.getVillage(level, attackingCapital);
+        Village village =
+                CapitalCampaignEligibilityService
+                        .getVillage(
+                                level,
+                                attackingCapital
+                        );
+
         if (village == null) {
             return;
         }
 
-        ChunkPos center = new ChunkPos(new BlockPos(village.getCenter()));
-        level.getChunkSource().removeRegionTicket(
-                ASSEMBLY_TICKET,
-                center,
-                calculateTicketRadius(village),
-                campaign.getCampaignId()
-        );
+        ChunkPos center =
+                new ChunkPos(
+                        new BlockPos(
+                                village.getCenter()
+                        )
+                );
+
+        level.getChunkSource()
+                .removeRegionTicket(
+                        ASSEMBLY_TICKET,
+                        center,
+                        calculateTicketRadius(village),
+                        campaign.getCampaignId()
+                );
     }
 
     private static PlayerValidation findInitiatingPlayer(
@@ -228,25 +375,40 @@ final class CapitalCampaignAssemblyService {
             CapitalRecord attackingCapital,
             Village defendingVillage
     ) {
-        UUID initiatingPlayerId = campaign.getInitiatingPlayerId();
+        UUID initiatingPlayerId =
+                campaign.getInitiatingPlayerId();
+
         if (initiatingPlayerId == null) {
             return PlayerValidation.invalid(
-                    "The planned attack has no initiating player and cannot assemble."
+                    Component.translatable(
+                            "mcacapitals.system.campaign.no_initiating_player"
+                    )
             );
         }
 
-        if (!CapitalDiplomaticAuthorityService.mayExerciseSovereignAuthority(
-                level,
-                attackingCapital,
-                initiatingPlayerId
-        )) {
+        if (!CapitalDiplomaticAuthorityService
+                .mayExerciseSovereignAuthority(
+                        level,
+                        attackingCapital,
+                        initiatingPlayerId
+                )) {
             return PlayerValidation.invalid(
-                    "The player who planned this attack no longer has authority to command the capital's foreign affairs."
+                    Component.translatable(
+                            "mcacapitals.system.campaign.planner_lost_authority"
+                    )
             );
         }
 
-        ServerPlayer player = findOnlineInitiatingPlayer(level, campaign);
-        if (player == null || !defendingVillage.isWithinBorder(player)) {
+        ServerPlayer player =
+                findOnlineInitiatingPlayer(
+                        level,
+                        campaign
+                );
+
+        if (player == null
+                || !defendingVillage.isWithinBorder(
+                player
+        )) {
             return PlayerValidation.waiting();
         }
 
@@ -257,13 +419,18 @@ final class CapitalCampaignAssemblyService {
             ServerLevel level,
             CapitalCampaignRecord campaign
     ) {
-        if (campaign.getInitiatingPlayerId() == null) {
+        if (campaign.getInitiatingPlayerId()
+                == null) {
             return null;
         }
 
-        ServerPlayer player = level.getServer().getPlayerList().getPlayer(
-                campaign.getInitiatingPlayerId()
-        );
+        ServerPlayer player =
+                level.getServer()
+                        .getPlayerList()
+                        .getPlayer(
+                                campaign.getInitiatingPlayerId()
+                        );
+
         return player != null
                 && player.level() == level
                 && player.isAlive()
@@ -280,21 +447,29 @@ final class CapitalCampaignAssemblyService {
             return List.of();
         }
 
-        Set<UUID> candidateSet = Set.copyOf(candidates);
-        LinkedHashSet<UUID> selected = new LinkedHashSet<>();
+        Set<UUID> candidateSet =
+                Set.copyOf(candidates);
 
-        for (UUID currentId : campaign.getAttackerIds()) {
+        LinkedHashSet<UUID> selected =
+                new LinkedHashSet<>();
+
+        for (UUID currentId :
+                campaign.getAttackerIds()) {
             if (candidateSet.contains(currentId)) {
                 selected.add(currentId);
             }
-            if (selected.size() >= campaign.getTargetAttackerCount()) {
+
+            if (selected.size()
+                    >= campaign.getTargetAttackerCount()) {
                 break;
             }
         }
 
         for (UUID candidateId : candidates) {
             selected.add(candidateId);
-            if (selected.size() >= campaign.getTargetAttackerCount()) {
+
+            if (selected.size()
+                    >= campaign.getTargetAttackerCount()) {
                 break;
             }
         }
@@ -306,10 +481,15 @@ final class CapitalCampaignAssemblyService {
             ServerLevel level,
             List<UUID> attackerIds
     ) {
-        List<VillagerEntityMCA> result = new ArrayList<>();
+        List<VillagerEntityMCA> result =
+                new ArrayList<>();
 
         for (UUID attackerId : attackerIds) {
-            if (MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, attackerId)
+            if (MCAIntegrationBridge
+                    .findLoadedMCAVillagerByUuid(
+                            level,
+                            attackerId
+                    )
                     instanceof VillagerEntityMCA attacker
                     && attacker.isAlive()
                     && !attacker.isRemoved()) {
@@ -320,9 +500,18 @@ final class CapitalCampaignAssemblyService {
         return List.copyOf(result);
     }
 
-    private static int calculateTicketRadius(Village village) {
-        ChunkPos center = new ChunkPos(new BlockPos(village.getCenter()));
+    private static int calculateTicketRadius(
+            Village village
+    ) {
+        ChunkPos center =
+                new ChunkPos(
+                        new BlockPos(
+                                village.getCenter()
+                        )
+                );
+
         BoundingBox box = village.getBox();
+
         if (box == null) {
             return 2;
         }
@@ -333,27 +522,61 @@ final class CapitalCampaignAssemblyService {
         int maxChunkZ = Math.floorDiv(box.maxZ(), 16);
 
         int radius = Math.max(
-                Math.max(Math.abs(center.x - minChunkX), Math.abs(center.x - maxChunkX)),
-                Math.max(Math.abs(center.z - minChunkZ), Math.abs(center.z - maxChunkZ))
+                Math.max(
+                        Math.abs(center.x - minChunkX),
+                        Math.abs(center.x - maxChunkX)
+                ),
+                Math.max(
+                        Math.abs(center.z - minChunkZ),
+                        Math.abs(center.z - maxChunkZ)
+                )
         ) + 1;
 
-        return Math.max(1, Math.min(MAX_TICKET_RADIUS, radius));
+        return Math.max(
+                1,
+                Math.min(MAX_TICKET_RADIUS, radius)
+        );
     }
 
     private static void primeSourceVillageChunks(
             ServerLevel level,
             Village village
     ) {
-        ChunkPos center = new ChunkPos(new BlockPos(village.getCenter()));
-        int radius = Math.min(MAX_PRIME_RADIUS, calculateTicketRadius(village));
+        ChunkPos center =
+                new ChunkPos(
+                        new BlockPos(
+                                village.getCenter()
+                        )
+                );
 
-        for (int distance = 0; distance <= radius; distance++) {
-            for (int x = center.x - distance; x <= center.x + distance; x++) {
-                for (int z = center.z - distance; z <= center.z + distance; z++) {
-                    if (Math.max(Math.abs(x - center.x), Math.abs(z - center.z)) != distance) {
+        int radius = Math.min(
+                MAX_PRIME_RADIUS,
+                calculateTicketRadius(village)
+        );
+
+        for (int distance = 0;
+             distance <= radius;
+             distance++) {
+            for (int x = center.x - distance;
+                 x <= center.x + distance;
+                 x++) {
+                for (int z = center.z - distance;
+                     z <= center.z + distance;
+                     z++) {
+                    if (Math.max(
+                            Math.abs(x - center.x),
+                            Math.abs(z - center.z)
+                    ) != distance) {
                         continue;
                     }
-                    level.getChunkSource().getChunk(x, z, ChunkStatus.FULL, true);
+
+                    level.getChunkSource()
+                            .getChunk(
+                                    x,
+                                    z,
+                                    ChunkStatus.FULL,
+                                    true
+                            );
                 }
             }
         }
@@ -362,38 +585,79 @@ final class CapitalCampaignAssemblyService {
     record AssemblyResult(
             boolean ready,
             boolean invalid,
-            String failureMessage,
+            Component failureMessage,
             ServerPlayer player,
             List<VillagerEntityMCA> attackers
     ) {
+
         static AssemblyResult waiting() {
-            return new AssemblyResult(false, false, null, null, List.of());
+            return new AssemblyResult(
+                    false,
+                    false,
+                    null,
+                    null,
+                    List.of()
+            );
         }
 
-        static AssemblyResult ready(ServerPlayer player, List<VillagerEntityMCA> attackers) {
-            return new AssemblyResult(true, false, null, player, List.copyOf(attackers));
+        static AssemblyResult ready(
+                ServerPlayer player,
+                List<VillagerEntityMCA> attackers
+        ) {
+            return new AssemblyResult(
+                    true,
+                    false,
+                    null,
+                    player,
+                    List.copyOf(attackers)
+            );
         }
 
-        static AssemblyResult invalid(String message) {
-            return new AssemblyResult(false, true, message, null, List.of());
+        static AssemblyResult invalid(
+                Component message
+        ) {
+            return new AssemblyResult(
+                    false,
+                    true,
+                    message,
+                    null,
+                    List.of()
+            );
         }
     }
 
     private record PlayerValidation(
             ServerPlayer player,
             boolean invalid,
-            String failureMessage
+            Component failureMessage
     ) {
-        static PlayerValidation success(ServerPlayer player) {
-            return new PlayerValidation(player, false, null);
+
+        static PlayerValidation success(
+                ServerPlayer player
+        ) {
+            return new PlayerValidation(
+                    player,
+                    false,
+                    null
+            );
         }
 
         static PlayerValidation waiting() {
-            return new PlayerValidation(null, false, null);
+            return new PlayerValidation(
+                    null,
+                    false,
+                    null
+            );
         }
 
-        static PlayerValidation invalid(String message) {
-            return new PlayerValidation(null, true, message);
+        static PlayerValidation invalid(
+                Component message
+        ) {
+            return new PlayerValidation(
+                    null,
+                    true,
+                    message
+            );
         }
     }
 }

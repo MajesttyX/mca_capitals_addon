@@ -1,5 +1,8 @@
 package com.majesttyx.mcacapitals.dialogue;
 
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
+
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
@@ -31,7 +34,7 @@ final class CapitalPetitionBetrothalActions {
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = CapitalManager.getCapital(capitalId);
         if (capital == null) {
-            player.sendSystemMessage(Component.literal("That capital can no longer hear this petition."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_petition_betrothal_actions.that_capital_can_no_longer_hear_this_petition"));
             return false;
         }
 
@@ -54,14 +57,9 @@ final class CapitalPetitionBetrothalActions {
         }
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        String targetName = CapitalPetitionRequirements.buildBetrothalCandidateName(level, capital, targetId);
+        Component targetName = CapitalPetitionRequirements.buildBetrothalCandidateNameComponent(level, capital, targetId);
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                "By royal petition, " + targetName + " was promised to " + player.getName().getString()
-                        + " in " + villageName + "."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.BETROTHAL_PLAYER_PETITION, CapitalChronicleIdentitySnapshot.name(level, capital, targetId), player.getName().getString(), villageName);
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
@@ -76,14 +74,14 @@ final class CapitalPetitionBetrothalActions {
         }
 
         if (firstId.equals(secondId)) {
-            player.sendSystemMessage(Component.literal("You must choose two different villagers for a betrothal recommendation."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_petition_betrothal_actions.you_must_choose_two_different_villagers_for_a_betrothal_recommendation"));
             return false;
         }
 
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = CapitalManager.getCapital(capitalId);
         if (capital == null) {
-            player.sendSystemMessage(Component.literal("That capital can no longer hear this petition."));
+            player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_petition_betrothal_actions.that_capital_can_no_longer_hear_this_petition"));
             return false;
         }
 
@@ -110,15 +108,10 @@ final class CapitalPetitionBetrothalActions {
         }
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        String firstName = CapitalPetitionRequirements.buildBetrothalCandidateName(level, capital, firstId);
-        String secondName = CapitalPetitionRequirements.buildBetrothalCandidateName(level, capital, secondId);
+        Component firstName = CapitalPetitionRequirements.buildBetrothalCandidateNameComponent(level, capital, firstId);
+        Component secondName = CapitalPetitionRequirements.buildBetrothalCandidateNameComponent(level, capital, secondId);
 
-        CapitalChronicleService.addEntry(
-                level,
-                capital,
-                "By royal recommendation, " + firstName + " was promised to " + secondName
-                        + " in " + villageName + "."
-        );
+        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.BETROTHAL_ROYAL_RECOMMENDATION, CapitalChronicleIdentitySnapshot.name(level, capital, firstId), CapitalChronicleIdentitySnapshot.name(level, capital, secondId), villageName);
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);

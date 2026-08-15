@@ -17,118 +17,187 @@ final class CapitalDiplomaticGiftDispatchService {
     private CapitalDiplomaticGiftDispatchService() {
     }
 
-    static int dispatch(ServerPlayer player, UUID ambassadorId, UUID targetCapitalId) {
-        if (player == null || ambassadorId == null || targetCapitalId == null) {
+    static int dispatch(
+            ServerPlayer player,
+            UUID ambassadorId,
+            UUID targetCapitalId
+    ) {
+        if (player == null
+                || ambassadorId == null
+                || targetCapitalId == null) {
             return 0;
         }
 
-        Entity ambassadorEntity = player.serverLevel().getEntity(ambassadorId);
-        CapitalDiplomaticGiftValidation.Validation validation =
-                CapitalDiplomaticGiftValidation.validateAudience(
-                        player,
-                        ambassadorEntity,
-                        true
-                );
+        Entity ambassadorEntity =
+                player.serverLevel()
+                        .getEntity(ambassadorId);
+
+        CapitalDiplomaticGiftValidation
+                .Validation validation =
+                CapitalDiplomaticGiftValidation
+                        .validateAudience(
+                                player,
+                                ambassadorEntity,
+                                true
+                        );
+
         if (!validation.valid()) {
-            player.sendSystemMessage(Component.literal(validation.failureMessage()));
+            player.sendSystemMessage(
+                    validation.failureMessage()
+            );
+
             return 0;
         }
 
         ServerLevel level = player.serverLevel();
-        CapitalRecord sourceCapital = validation.sourceCapital();
-        CapitalRecord targetCapital = CapitalManager.getCapital(targetCapitalId);
+
+        CapitalRecord sourceCapital =
+                validation.sourceCapital();
+
+        CapitalRecord targetCapital =
+                CapitalManager.getCapital(
+                        targetCapitalId
+                );
+
         if (targetCapital == null
-                || targetCapital.getState() != CapitalState.ACTIVE
+                || targetCapital.getState()
+                != CapitalState.ACTIVE
                 || targetCapital.getCapitalId() == null
-                || targetCapital.getCapitalId().equals(sourceCapital.getCapitalId())) {
-            player.sendSystemMessage(Component.literal(
-                    "That capital is no longer available to receive a diplomatic package."
-            ));
+                || targetCapital.getCapitalId()
+                .equals(
+                        sourceCapital.getCapitalId()
+                )) {
+            player.sendSystemMessage(
+                    Component.translatable("mcacapitals.system.capital_diplomatic_gift_dispatch_service.that_capital_is_no_longer_available_to_receive_a_diplomatic_package")
+            );
+
             return 0;
         }
 
-        long cooldown = CapitalDiplomacyDataAccess.getGiftCooldownRemaining(
-                level,
-                sourceCapital.getCapitalId(),
-                targetCapital.getCapitalId()
-        );
+        long cooldown =
+                CapitalDiplomacyDataAccess
+                        .getGiftCooldownRemaining(
+                                level,
+                                sourceCapital.getCapitalId(),
+                                targetCapital.getCapitalId()
+                        );
+
         if (cooldown > 0L) {
-            player.sendSystemMessage(Component.literal(
-                    "Another package may be sent to "
-                            + CapitalDiplomaticGiftText.getCapitalName(level, targetCapital)
-                            + " in "
-                            + CapitalDiplomaticGiftText.formatDuration(cooldown)
-                            + "."
-            ));
+            player.sendSystemMessage(
+                    Component.translatable(
+                            "mcacapitals.diplomacy.gift.cooldown_message",
+                            CapitalDiplomaticGiftText.getCapitalNameComponent(
+                                    level,
+                                    targetCapital
+                            ),
+                            CapitalDiplomaticGiftText.formatDuration(cooldown)
+                    )
+            );
+
             return 0;
         }
 
-        CapitalDiplomaticGiftValidation.HeldPackage heldPackage =
-                CapitalDiplomaticGiftValidation.findHeldPackage(player);
+        CapitalDiplomaticGiftValidation
+                .HeldPackage heldPackage =
+                CapitalDiplomaticGiftValidation
+                        .findHeldPackage(player);
+
         if (heldPackage == null) {
-            player.sendSystemMessage(Component.literal(
-                    "Hold a filled Diplomatic Package in either hand."
-            ));
+            player.sendSystemMessage(
+                    Component.translatable("mcacapitals.system.capital_diplomatic_gift_dispatch_service.hold_a_filled_diplomatic_package_in_either_hand")
+            );
+
             return 0;
         }
 
-        List<ItemStack> contents = CapitalDiplomaticGiftValidation.readAndValidateContents(
-                heldPackage.stack()
-        );
+        List<ItemStack> contents =
+                CapitalDiplomaticGiftValidation
+                        .readAndValidateContents(
+                                heldPackage.stack()
+                        );
+
         if (contents.isEmpty()) {
-            player.sendSystemMessage(Component.literal(
-                    "The Diplomatic Package must contain at least one item."
-            ));
+            player.sendSystemMessage(
+                    Component.translatable("mcacapitals.system.capital_diplomatic_gift_dispatch_service.the_diplomatic_package_must_contain_at_least_one_item")
+            );
+
             return 0;
         }
 
-        CapitalGiftAppraisalService.GiftAppraisal appraisal =
-                CapitalGiftAppraisalService.appraise(player, targetCapital, contents);
+        CapitalGiftAppraisalService
+                .GiftAppraisal appraisal =
+                CapitalGiftAppraisalService.appraise(
+                        player,
+                        targetCapital,
+                        contents
+                );
+
         UUID recipientSovereignId =
-                CapitalDiplomaticGiftValidation.getCurrentSovereignId(targetCapital);
+                CapitalDiplomaticGiftValidation
+                        .getCurrentSovereignId(
+                                targetCapital
+                        );
 
-        DiplomaticShipment shipment = new DiplomaticShipment(
-                UUID.randomUUID(),
-                sourceCapital.getCapitalId(),
-                targetCapital.getCapitalId(),
-                player.getUUID(),
-                recipientSovereignId,
-                null,
-                level.getGameTime(),
-                CapitalDiplomaticDelayService.schedule(level),
-                appraisal.relationshipDelta(),
-                appraisal.description(),
-                DiplomaticShipmentStatus.DISPATCHED,
-                contents
-        );
-        CapitalDiplomacyDataAccess.addShipment(level, shipment);
-        CapitalDiplomacyDataAccess.beginGiftCooldown(
+        DiplomaticShipment shipment =
+                new DiplomaticShipment(
+                        UUID.randomUUID(),
+                        sourceCapital.getCapitalId(),
+                        targetCapital.getCapitalId(),
+                        player.getUUID(),
+                        recipientSovereignId,
+                        null,
+                        level.getGameTime(),
+                        CapitalDiplomaticDelayService.schedule(level),
+                        appraisal.relationshipDelta(),
+                        appraisal.appraisalId().serializedName(),
+                        DiplomaticShipmentStatus.DISPATCHED,
+                        contents
+                );
+
+        CapitalDiplomacyDataAccess.addShipment(
                 level,
-                sourceCapital.getCapitalId(),
-                targetCapital.getCapitalId()
+                shipment
         );
 
-        player.setItemInHand(heldPackage.hand(), ItemStack.EMPTY);
+        CapitalDiplomacyDataAccess
+                .beginGiftCooldown(
+                        level,
+                        sourceCapital.getCapitalId(),
+                        targetCapital.getCapitalId()
+                );
 
-        String sourceName = CapitalDiplomaticGiftText.getCapitalName(level, sourceCapital);
-        String targetName = CapitalDiplomaticGiftText.getCapitalName(level, targetCapital);
-        CapitalChronicleService.addEntry(
-                level,
-                sourceCapital,
-                "A diplomatic package was dispatched from "
-                        + sourceName
-                        + " to "
-                        + targetName
-                        + "."
+        player.setItemInHand(
+                heldPackage.hand(),
+                ItemStack.EMPTY
         );
-        player.sendSystemMessage(Component.literal(
-                ambassadorEntity.getName().getString()
-                        + ": The package has been dispatched to "
-                        + targetName
-                        + ". A response may arrive within one to five minutes. I judge it to be "
-                        + appraisal.description().toLowerCase()
-                        + "."
-        ));
+
+        String sourceName =
+                CapitalDiplomaticGiftText
+                        .getCapitalName(
+                                level,
+                                sourceCapital
+                        );
+
+        String targetName =
+                CapitalDiplomaticGiftText
+                        .getCapitalName(
+                                level,
+                                targetCapital
+                        );
+
+        CapitalChronicleService.addEvent(level, sourceCapital, CapitalChronicleEventId.DIPLOMATIC_PACKAGE_DISPATCHED, sourceName, targetName);
+
+        player.sendSystemMessage(
+                Component.translatable(
+                        "mcacapitals.diplomacy.gift.dispatch_message",
+                        ambassadorEntity.getName(),
+                        CapitalDiplomaticGiftText.getCapitalNameComponent(level, targetCapital),
+                        CapitalGiftAppraisalService.appraisalLowerComponent(
+                                appraisal.appraisalId()
+                        )
+                )
+        );
+
         return 1;
     }
 }

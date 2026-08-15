@@ -1,0 +1,17 @@
+{
+  "silent": true,
+  "auto": true,
+  "answers": [
+    {
+      "name": "crown_child_born",
+      "priority": 0,
+      "results": [
+        {
+          "actions": {
+            "next": "mcacapitals_runtime_mcacapitals_chat_news_crown_child_born"
+          }
+        }
+      ]
+    }
+  ]
+}

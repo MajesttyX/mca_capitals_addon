@@ -5,6 +5,7 @@ import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.conczin.mca.server.world.data.Village;
 import net.conczin.mca.server.world.data.VillageManager;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.Comparator;
@@ -29,7 +30,7 @@ final class CapitalCampaignEligibilityService {
                 || attackingCapital.getCapitalId() == null
                 || defendingCapital.getCapitalId() == null) {
             return Validation.failure(
-                    "The campaign capitals are unavailable."
+                    Component.translatable("mcacapitals.war.validation.campaign_capitals_unavailable")
             );
         }
 
@@ -40,7 +41,7 @@ final class CapitalCampaignEligibilityService {
                         initiatingPlayerId
                 )) {
             return Validation.failure(
-                    "Only the player sovereign, or the player Hand serving a villager sovereign, may plan an attack."
+                    Component.translatable("mcacapitals.war.validation.attack_authority")
             );
         }
 
@@ -48,22 +49,16 @@ final class CapitalCampaignEligibilityService {
                 defendingCapital.getCapitalId()
         )) {
             return Validation.failure(
-                    "A capital cannot attack itself."
+                    Component.translatable("mcacapitals.war.validation.self_attack")
             );
         }
-
-        CapitalDiplomaticTruceService.refreshExpiredTruce(
-                level,
-                attackingCapital,
-                defendingCapital
-        );
 
         if (attackingCapital.getState()
                 != CapitalState.ACTIVE
                 || defendingCapital.getState()
                 != CapitalState.ACTIVE) {
             return Validation.failure(
-                    "Both capitals must be active before an attack can be planned."
+                    Component.translatable("mcacapitals.war.validation.both_active")
             );
         }
 
@@ -80,7 +75,7 @@ final class CapitalCampaignEligibilityService {
                 )
                 .isEmpty()) {
             return Validation.failure(
-                    "Attacks can begin only when both capitals are in the same loaded dimension."
+                    Component.translatable("mcacapitals.war.validation.same_loaded_dimension")
             );
         }
 
@@ -90,7 +85,7 @@ final class CapitalCampaignEligibilityService {
                         attackingCapital.getCapitalId()
                 ) != null) {
             return Validation.failure(
-                    "The attacking capital is already involved in an active campaign."
+                    Component.translatable("mcacapitals.war.validation.attacker_campaign_active")
             );
         }
 
@@ -100,7 +95,7 @@ final class CapitalCampaignEligibilityService {
                         defendingCapital.getCapitalId()
                 ) != null) {
             return Validation.failure(
-                    "The defending capital is already involved in an active campaign."
+                    Component.translatable("mcacapitals.war.validation.defender_campaign_active")
             );
         }
 
@@ -113,7 +108,7 @@ final class CapitalCampaignEligibilityService {
 
         if (attackers.isEmpty()) {
             return Validation.failure(
-                    "The attacking capital has no eligible ordinary Guards or Archers currently available to pledge to a campaign."
+                    Component.translatable("mcacapitals.war.validation.no_eligible_attackers")
             );
         }
 
@@ -198,7 +193,8 @@ final class CapitalCampaignEligibilityService {
                         )
                 )
                 .limit(
-                        CapitalCampaignRecord.MAX_ATTACKERS
+                        CapitalCampaignRecord
+                                .MAX_ATTACKERS
                 )
                 .toList();
     }
@@ -223,7 +219,7 @@ final class CapitalCampaignEligibilityService {
     record Validation(
             boolean valid,
             List<UUID> attackers,
-            String failureMessage
+            Component failureMessage
     ) {
 
         static Validation success(
@@ -237,7 +233,7 @@ final class CapitalCampaignEligibilityService {
         }
 
         static Validation failure(
-                String message
+                Component message
         ) {
             return new Validation(
                     false,

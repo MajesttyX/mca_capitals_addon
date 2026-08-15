@@ -3,15 +3,120 @@ package com.majesttyx.mcacapitals.capital;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalRelationKey;
 import com.majesttyx.mcacapitals.data.CapitalRelationRecord;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.Map;
 
 final class CapitalDiplomaticTruceService {
 
-    static final long TRUCE_DURATION_TICKS = 48000L;
+    static final long TRUCE_DURATION_TICKS =
+            48000L;
 
     private CapitalDiplomaticTruceService() {
+    }
+
+    static void expireTruces(ServerLevel level) {
+        if (level == null) {
+            return;
+        }
+
+        long currentTime = level.getGameTime();
+
+        for (Map.Entry<
+                CapitalRelationKey,
+                CapitalRelationRecord
+                > entry :
+                CapitalDiplomacyDataAccess
+                        .get(level)
+                        .getRelationshipsSnapshot()
+                        .entrySet()) {
+            CapitalRelationRecord relation =
+                    entry.getValue();
+
+            if (relation == null
+                    || relation.getDiplomaticState()
+                    != CapitalDiplomaticState.TRUCE
+                    || relation.getTruceUntil() <= 0L
+                    || relation.getTruceUntil()
+                    > currentTime) {
+                continue;
+            }
+
+            CapitalRecord first =
+                    CapitalManager.getCapital(
+                            entry.getKey().first()
+                    );
+
+            CapitalRecord second =
+                    CapitalManager.getCapital(
+                            entry.getKey().second()
+                    );
+
+            CapitalDiplomacyDataAccess.setDiplomaticState(
+                    level,
+                    entry.getKey().first(),
+                    entry.getKey().second(),
+                    CapitalDiplomaticState.PEACE,
+                    0L
+            );
+
+            if (first == null || second == null) {
+                continue;
+            }
+
+            String firstName =
+                    CapitalDiplomaticAgreementText.capitalName(
+                            level,
+                            first
+                    );
+
+            String secondName =
+                    CapitalDiplomaticAgreementText.capitalName(
+                            level,
+                            second
+                    );
+
+            CapitalChronicleService.addEvent(
+                    level,
+                    first,
+                    CapitalChronicleEventId.TRUCE_EXPIRED,
+                    firstName,
+                    secondName
+            );
+
+            CapitalChronicleService.addEvent(
+                    level,
+                    second,
+                    CapitalChronicleEventId.TRUCE_EXPIRED,
+                    firstName,
+                    secondName
+            );
+
+            notifyCurrentPlayerSovereign(
+                    level,
+                    first,
+                    Component.translatable(
+                            "mcacapitals.diplomacy.truce.expired_title"
+                    ),
+                    Component.translatable(
+                            "mcacapitals.diplomacy.truce.expired_message",
+                            secondName
+                    )
+            );
+
+            notifyCurrentPlayerSovereign(
+                    level,
+                    second,
+                    Component.translatable(
+                            "mcacapitals.diplomacy.truce.expired_title"
+                    ),
+                    Component.translatable(
+                            "mcacapitals.diplomacy.truce.expired_message",
+                            firstName
+                    )
+            );
+        }
     }
 
     static void refreshExpiredTruce(
@@ -27,58 +132,43 @@ final class CapitalDiplomaticTruceService {
             return;
         }
 
-        CapitalRelationRecord relation = CapitalDiplomacyDataAccess.getRelationshipsSnapshot(level)
-                .get(CapitalRelationKey.of(first.getCapitalId(), second.getCapitalId()));
-        if (relation == null
-                || relation.getDiplomaticState() != CapitalDiplomaticState.TRUCE
-                || relation.getTruceUntil() <= 0L
-                || level.getGameTime() < relation.getTruceUntil()) {
-            return;
+        CapitalRelationRecord relation =
+                CapitalDiplomacyDataAccess.getOrCreateRelationship(
+                        level,
+                        first.getCapitalId(),
+                        second.getCapitalId()
+                );
+
+        if (relation != null
+                && relation.getDiplomaticState()
+                == CapitalDiplomaticState.TRUCE
+                && relation.getTruceUntil() > 0L
+                && relation.getTruceUntil()
+                <= level.getGameTime()) {
+            CapitalDiplomacyDataAccess.setDiplomaticState(
+                    level,
+                    first.getCapitalId(),
+                    second.getCapitalId(),
+                    CapitalDiplomaticState.PEACE,
+                    0L
+            );
         }
-
-        CapitalDiplomacyDataAccess.setDiplomaticState(
-                level,
-                first.getCapitalId(),
-                second.getCapitalId(),
-                CapitalDiplomaticState.PEACE,
-                0L
-        );
-
-        String entry = "The truce between "
-                + CapitalDiplomaticAgreementText.capitalName(level, first)
-                + " and "
-                + CapitalDiplomaticAgreementText.capitalName(level, second)
-                + " expired.";
-        CapitalChronicleService.addEntry(level, first, entry);
-        CapitalChronicleService.addEntry(level, second, entry);
     }
 
-    static void expireTruces(ServerLevel level) {
-        if (level == null) {
-            return;
-        }
-        for (Map.Entry<CapitalRelationKey, CapitalRelationRecord> entry :
-                CapitalDiplomacyDataAccess.getRelationshipsSnapshot(level).entrySet()) {
-            CapitalRelationRecord relation = entry.getValue();
-            if (relation == null
-                    || relation.getDiplomaticState() != CapitalDiplomaticState.TRUCE
-                    || relation.getTruceUntil() <= 0L
-                    || level.getGameTime() < relation.getTruceUntil()) {
-                continue;
-            }
-            CapitalRecord first = CapitalManager.getCapital(entry.getKey().first());
-            CapitalRecord second = CapitalManager.getCapital(entry.getKey().second());
-            if (first != null && second != null) {
-                refreshExpiredTruce(level, first, second);
-            } else {
-                CapitalDiplomacyDataAccess.setDiplomaticState(
-                        level,
-                        entry.getKey().first(),
-                        entry.getKey().second(),
-                        CapitalDiplomaticState.PEACE,
-                        0L
-                );
-            }
+    private static void notifyCurrentPlayerSovereign(
+            ServerLevel level,
+            CapitalRecord capital,
+            Component title,
+            Component message
+    ) {
+        if (capital.getPlayerSovereignId() != null) {
+            CapitalDiplomaticAgreementCorrespondenceService
+                    .sendNotice(
+                            level,
+                            capital.getPlayerSovereignId(),
+                            title,
+                            message
+                    );
         }
     }
 }
