@@ -23,6 +23,10 @@ public final class CapitalSuccessionDecreeService {
         UUID previousPlayerSovereignId = capital.getPlayerSovereignId();
 
         String previousName = CapitalChronicleIdentitySnapshot.name(level, capital, previousSovereign);
+        CapitalChronicleEntry.Argument previousTitle =
+                CapitalChronicleIdentitySnapshot.title(level, capital, previousSovereign);
+        CapitalChronicleEntry.Argument previousStyle =
+                CapitalChronicleIdentitySnapshot.style(level, capital, previousSovereign);
         String targetName = CapitalChronicleIdentitySnapshot.name(level, capital, targetId);
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
@@ -56,7 +60,11 @@ public final class CapitalSuccessionDecreeService {
                 CapitalChronicleEventId.SUCCESSION_DECREE_TRANSFER,
                 previousName,
                 villageName,
-                targetName
+                targetName,
+                previousTitle,
+                previousStyle,
+                CapitalChronicleIdentitySnapshot.title(level, capital, targetId),
+                CapitalChronicleIdentitySnapshot.style(level, capital, targetId)
         );
 
         CapitalManager.putCapital(capital);
@@ -75,6 +83,10 @@ public final class CapitalSuccessionDecreeService {
         UUID targetId = targetPlayer.getUUID();
 
         String previousName = CapitalChronicleIdentitySnapshot.name(level, capital, previousSovereign);
+        CapitalChronicleEntry.Argument previousTitle =
+                CapitalChronicleIdentitySnapshot.title(level, capital, previousSovereign);
+        CapitalChronicleEntry.Argument previousStyle =
+                CapitalChronicleIdentitySnapshot.style(level, capital, previousSovereign);
         String targetName = targetPlayer.getName().getString();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
@@ -117,7 +129,11 @@ public final class CapitalSuccessionDecreeService {
                 CapitalChronicleEventId.SUCCESSION_DECREE_TRANSFER,
                 previousName,
                 villageName,
-                targetName
+                targetName,
+                previousTitle,
+                previousStyle,
+                CapitalChronicleIdentitySnapshot.title(level, capital, targetId),
+                CapitalChronicleIdentitySnapshot.style(level, capital, targetId)
         );
 
         CapitalManager.putCapital(capital);

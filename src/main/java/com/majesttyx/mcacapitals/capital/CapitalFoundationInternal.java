@@ -28,6 +28,10 @@ final class CapitalFoundationInternal {
         UUID oldPlayerSovereignId = capital.getPlayerSovereignId();
 
         String oldName = CapitalChronicleIdentitySnapshot.name(level, capital, oldSovereign);
+        CapitalChronicleEntry.Argument oldTitle =
+                CapitalChronicleIdentitySnapshot.title(level, capital, oldSovereign);
+        CapitalChronicleEntry.Argument oldStyle =
+                CapitalChronicleIdentitySnapshot.style(level, capital, oldSovereign);
 
         Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
         HashMap<UUID, Boolean> oldRoyalChildFemale = new HashMap<>(capital.getRoyalChildFemale());
@@ -120,7 +124,11 @@ final class CapitalFoundationInternal {
                 CapitalChronicleEventId.ABDICATION_SUCCESSOR,
                 oldName,
                 successorName,
-                MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                oldTitle,
+                oldStyle,
+                CapitalChronicleIdentitySnapshot.title(level, capital, successor),
+                CapitalChronicleIdentitySnapshot.style(level, capital, successor)
         );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());

@@ -275,7 +275,20 @@ final class CapitalPetitionTitleActions {
         PlayerCapitalTitleService.grantTitle(level, capital, player.getUUID(), granted);
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.LORD_ELEVATED, player.getName().getString(), CapitalChronicleIdentitySnapshot.genderedTitle("lord", female ? com.majesttyx.mcacapitals.dialogue.CapitalDialogueGenderResolver.ResolvedGender.FEMALE : com.majesttyx.mcacapitals.dialogue.CapitalDialogueGenderResolver.ResolvedGender.MALE), villageName);
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.LORD_ELEVATED,
+                player.getName().getString(),
+                CapitalChronicleIdentitySnapshot.genderedTitle(
+                        "lord",
+                        female
+                                ? CapitalDialogueGenderResolver.ResolvedGender.FEMALE
+                                : CapitalDialogueGenderResolver.ResolvedGender.MALE
+                ),
+                villageName,
+                CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
+        );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
@@ -347,7 +360,20 @@ final class CapitalPetitionTitleActions {
         PlayerCapitalTitleService.grantTitle(level, capital, player.getUUID(), granted);
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.DUKE_ELEVATED, player.getName().getString(), CapitalChronicleIdentitySnapshot.genderedTitle("duke", female ? com.majesttyx.mcacapitals.dialogue.CapitalDialogueGenderResolver.ResolvedGender.FEMALE : com.majesttyx.mcacapitals.dialogue.CapitalDialogueGenderResolver.ResolvedGender.MALE), villageName);
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.DUKE_ELEVATED,
+                player.getName().getString(),
+                CapitalChronicleIdentitySnapshot.genderedTitle(
+                        "duke",
+                        female
+                                ? CapitalDialogueGenderResolver.ResolvedGender.FEMALE
+                                : CapitalDialogueGenderResolver.ResolvedGender.MALE
+                ),
+                villageName,
+                CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
+        );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
