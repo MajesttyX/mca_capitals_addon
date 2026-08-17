@@ -3,6 +3,7 @@ package com.majesttyx.mcacapitals.client;
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import forge.net.mca.Config;
 import forge.net.mca.entity.VillagerEntityMCA;
 import forge.net.mca.entity.ai.MoveState;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -18,8 +19,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -60,36 +59,18 @@ public final class CapitalNameTagHandler {
     }
 
     private static boolean shouldRenderMcaNameTags(Entity entity) {
-        try {
-            Class<?> configClass = Class.forName("forge.net.mca.Config");
-            Method getInstance = configClass.getMethod("getInstance");
-            Object config = getInstance.invoke(null);
-            if (config == null) {
-                return true;
-            }
+        Config config = Config.getInstance();
+        if (!config.showNameTags) {
+            return false;
+        }
 
-            Field showNameTags = config.getClass().getField("showNameTags");
-            Object showNameTagsValue = showNameTags.get(config);
-            if (showNameTagsValue instanceof Boolean booleanValue && !booleanValue) {
-                return false;
-            }
-
-            Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player == null) {
-                return true;
-            }
-
-            Field nameTagDistance = config.getClass().getField("nameTagDistance");
-            Object nameTagDistanceValue = nameTagDistance.get(config);
-            if (!(nameTagDistanceValue instanceof Number numberValue)) {
-                return true;
-            }
-
-            double distance = numberValue.doubleValue();
-            return minecraft.player.distanceToSqr(entity) < distance * distance;
-        } catch (Throwable ignored) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
             return true;
         }
+
+        double distance = config.nameTagDistance;
+        return minecraft.player.distanceToSqr(entity) < distance * distance;
     }
 
     public static boolean shouldUseCustomNameTag(
