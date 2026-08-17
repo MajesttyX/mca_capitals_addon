@@ -269,12 +269,14 @@ public record CapitalChronicleEntry(
         );
     }
 
-    public Component renderHerald() {
+    public Component renderHeraldVariant(int variant) {
         if (heraldKey.isBlank()) {
             return null;
         }
+
+        int normalizedVariant = Math.max(1, Math.min(3, variant));
         return Component.translatable(
-                heraldKey,
+                heraldKey + ".0" + normalizedVariant,
                 componentArguments()
         );
     }

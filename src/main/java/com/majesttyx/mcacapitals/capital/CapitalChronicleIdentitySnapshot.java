@@ -88,6 +88,31 @@ public final class CapitalChronicleIdentitySnapshot {
         );
     }
 
+    public static CapitalChronicleEntry.Argument style(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID entityId
+    ) {
+        CapitalTitleOfficeIdentityResolver.TitleIdentity title =
+                CapitalTitleOfficeIdentityResolver.resolveTitle(level, capital, entityId);
+        CapitalDialogueGenderResolver.ResolvedGender gender =
+                CapitalDialogueGenderResolver.resolve(level, capital, entityId);
+
+        String key = switch (title) {
+            case HIGH_SOVEREIGN, SOVEREIGN, SOVEREIGN_CONSORT, SOVEREIGN_DOWAGER ->
+                    "mcacapitals.dynamic.style.majesty." + genderPath(gender);
+            case CROWN_HEIR, ROYAL_CHILD, PRINCE_CONSORT, DOWAGER_PRINCE ->
+                    "mcacapitals.dynamic.style.royal_highness." + genderPath(gender);
+            case DUKE, DOWAGER_DUKE ->
+                    "mcacapitals.dynamic.style.grace." + genderPath(gender);
+            default -> null;
+        };
+
+        return key == null
+                ? title(level, capital, entityId)
+                : CapitalChronicleEntry.Argument.translatable(key);
+    }
+
     public static CapitalChronicleEntry.Argument office(
             ServerLevel level,
             CapitalRecord capital,

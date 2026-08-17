@@ -150,7 +150,11 @@ public class CapitalCourtBuilder {
                         capital,
                         CapitalChronicleEventId.ROYAL_MARRIAGE,
                         sovereignName,
-                        consortName
+                        consortName,
+                        CapitalChronicleIdentitySnapshot.title(level, capital, sovereign),
+                        CapitalChronicleIdentitySnapshot.style(level, capital, sovereign),
+                        CapitalChronicleIdentitySnapshot.title(level, capital, newConsort),
+                        CapitalChronicleIdentitySnapshot.style(level, capital, newConsort)
                 );
             }
         }
@@ -215,7 +219,11 @@ public class CapitalCourtBuilder {
                     capital,
                     CapitalChronicleEventId.ROYAL_MARRIAGE,
                     sovereignName,
-                    consortName
+                    consortName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, sovereign),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, sovereign),
+                    CapitalChronicleIdentitySnapshot.title(level, capital, validConsort),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, validConsort)
             );
         }
     }
@@ -623,7 +631,9 @@ public class CapitalCourtBuilder {
                                 ? CapitalChronicleEventId.CROWN_CHILD_RECORDED
                                 : CapitalChronicleEventId.ROYAL_CHILD_RECORDED,
                         name,
-                        MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                        MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                        CapitalChronicleIdentitySnapshot.title(level, capital, childId),
+                        CapitalChronicleIdentitySnapshot.style(level, capital, childId)
                 );
             }
         }

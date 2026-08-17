@@ -96,7 +96,9 @@ public final class CapitalNaturalDukedomService {
                 level,
                 capital,
                 CapitalChronicleEventId.NATURAL_DUKEDOM,
-                name
+                name,
+                CapitalChronicleIdentitySnapshot.title(level, capital, candidate),
+                CapitalChronicleIdentitySnapshot.style(level, capital, candidate)
         );
 
         CapitalDataAccess.markDirty(level);

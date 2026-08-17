@@ -56,6 +56,15 @@ public class CapitalCourtWatcher {
         String oldHeirName = oldHeir == null
                 ? null
                 : stripKnownTitles(resolveBaseName(level, capital, oldHeir));
+        CapitalChronicleEntry.Argument oldConsortTitle = oldConsort == null
+                ? null
+                : CapitalChronicleIdentitySnapshot.title(level, capital, oldConsort);
+        CapitalChronicleEntry.Argument oldDowagerTitle = oldDowager == null
+                ? null
+                : CapitalChronicleIdentitySnapshot.title(level, capital, oldDowager);
+        CapitalChronicleEntry.Argument oldHeirTitle = oldHeir == null
+                ? null
+                : CapitalChronicleIdentitySnapshot.title(level, capital, oldHeir);
         cleanupSubordinateDowagers(level, capital);
         recordRoyalMarriageEntries(level, capital, resolvedResidents);
 
@@ -84,15 +93,12 @@ public class CapitalCourtWatcher {
                         deceasedName
                 );
 
-                CapitalChronicleEntry.Argument deceasedTitle =
-                        CapitalChronicleIdentitySnapshot.title(level, capital, oldConsort);
-
                 CapitalChronicleService.addEvent(
                         level,
                         capital,
                         CapitalChronicleEventId.SOVEREIGN_DEATH_MOURNING,
                         deceasedName,
-                        deceasedTitle
+                        oldConsortTitle
                 );
             }
 
@@ -111,15 +117,12 @@ public class CapitalCourtWatcher {
                         deceasedName
                 );
 
-                CapitalChronicleEntry.Argument deceasedTitle =
-                        CapitalChronicleIdentitySnapshot.title(level, capital, oldDowager);
-
                 CapitalChronicleService.addEvent(
                         level,
                         capital,
                         CapitalChronicleEventId.SOVEREIGN_DEATH_MOURNING,
                         deceasedName,
-                        deceasedTitle
+                        oldDowagerTitle
                 );
             }
 
@@ -136,15 +139,12 @@ public class CapitalCourtWatcher {
                             deceasedName
                     );
 
-                    CapitalChronicleEntry.Argument deceasedTitle =
-                            CapitalChronicleIdentitySnapshot.title(level, capital, oldHeir);
-
                     CapitalChronicleService.addEvent(
                             level,
                             capital,
                             CapitalChronicleEventId.SOVEREIGN_DEATH_MOURNING,
                             deceasedName,
-                            deceasedTitle
+                            oldHeirTitle
                     );
                 }
 
