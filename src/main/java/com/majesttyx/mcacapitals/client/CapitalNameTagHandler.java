@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.client;
 
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import fabric.net.mca.Config;
 import fabric.net.mca.entity.VillagerEntityMCA;
 import fabric.net.mca.entity.ai.MoveState;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -32,6 +33,10 @@ public final class CapitalNameTagHandler {
         if (entity == null
                 || !MCAIntegrationBridge
                 .isMCAVillagerEntity(entity)) {
+            return false;
+        }
+
+        if (!shouldRenderMcaNameTags(entity)) {
             return false;
         }
 
@@ -74,6 +79,10 @@ public final class CapitalNameTagHandler {
 
         if (!MCAIntegrationBridge
                 .isMCAVillagerEntity(entity)) {
+            return false;
+        }
+
+        if (!shouldRenderMcaNameTags(entity)) {
             return false;
         }
 
@@ -128,6 +137,21 @@ public final class CapitalNameTagHandler {
         );
 
         return true;
+    }
+
+    private static boolean shouldRenderMcaNameTags(Entity entity) {
+        Config config = Config.getInstance();
+        if (!config.showNameTags) {
+            return false;
+        }
+
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return true;
+        }
+
+        double distance = config.nameTagDistance;
+        return minecraft.player.distanceToSqr(entity) < distance * distance;
     }
 
     private static boolean isWithinRenderDistance(
