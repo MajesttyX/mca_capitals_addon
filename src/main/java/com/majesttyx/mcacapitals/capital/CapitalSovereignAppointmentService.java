@@ -45,7 +45,8 @@ final class CapitalSovereignAppointmentService {
                     CapitalChronicleEventId.SOVEREIGN_ACCLAIMED,
                     name,
                     CapitalChronicleIdentitySnapshot.title(level, capital, villagerId),
-                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, villagerId)
             );
         }
 
@@ -100,7 +101,8 @@ final class CapitalSovereignAppointmentService {
                     CapitalChronicleEventId.THRONE_CLAIMED,
                     name,
                     CapitalChronicleIdentitySnapshot.title(level, capital, playerId),
-                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, playerId)
             );
         }
 

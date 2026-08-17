@@ -188,7 +188,17 @@ public class CapitalCourtBuilder {
                 String sovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
                 String consortName = CapitalChronicleIdentitySnapshot.name(level, capital, newConsort);
 
-                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, sovereignName, consortName);
+                CapitalChronicleService.addEvent(
+                        level,
+                        capital,
+                        CapitalChronicleEventId.ROYAL_MARRIAGE,
+                        sovereignName,
+                        consortName,
+                        CapitalChronicleIdentitySnapshot.title(level, capital, sovereign),
+                        CapitalChronicleIdentitySnapshot.style(level, capital, sovereign),
+                        CapitalChronicleIdentitySnapshot.title(level, capital, newConsort),
+                        CapitalChronicleIdentitySnapshot.style(level, capital, newConsort)
+                );
             }
         }
 
@@ -247,7 +257,17 @@ public class CapitalCourtBuilder {
             String sovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
             String consortName = CapitalChronicleIdentitySnapshot.name(level, capital, validConsort);
 
-            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, sovereignName, consortName);
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.ROYAL_MARRIAGE,
+                    sovereignName,
+                    consortName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, sovereign),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, sovereign),
+                    CapitalChronicleIdentitySnapshot.title(level, capital, validConsort),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, validConsort)
+            );
         }
     }
 
@@ -675,7 +695,17 @@ public class CapitalCourtBuilder {
         for (UUID childId : newRoyalChildren) {
             if (!oldRoyalChildren.contains(childId)) {
                 String name = resolveName(level, childId);
-                CapitalChronicleService.addEvent(level, capital, childId.equals(capital.getHeir()) ? CapitalChronicleEventId.CROWN_CHILD_RECORDED : CapitalChronicleEventId.ROYAL_CHILD_RECORDED, name, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+                CapitalChronicleService.addEvent(
+                        level,
+                        capital,
+                        childId.equals(capital.getHeir())
+                                ? CapitalChronicleEventId.CROWN_CHILD_RECORDED
+                                : CapitalChronicleEventId.ROYAL_CHILD_RECORDED,
+                        name,
+                        MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                        CapitalChronicleIdentitySnapshot.title(level, capital, childId),
+                        CapitalChronicleIdentitySnapshot.style(level, capital, childId)
+                );
             }
         }
     }

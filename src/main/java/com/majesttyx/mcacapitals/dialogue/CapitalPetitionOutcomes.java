@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
+import com.majesttyx.mcacapitals.capital.CapitalChronicleEntry;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
@@ -41,6 +42,12 @@ final class CapitalPetitionOutcomes {
         Object formerSovereignName = formerSovereignId == null
                 ? CapitalChronicleService.translatable("mcacapitals.chronicle.identity.vacant_throne")
                 : CapitalChronicleIdentitySnapshot.name(level, capital, formerSovereignId);
+        CapitalChronicleEntry.Argument formerSovereignTitle = formerSovereignId == null
+                ? CapitalChronicleService.translatable("mcacapitals.dynamic.title.none")
+                : CapitalChronicleIdentitySnapshot.title(level, capital, formerSovereignId);
+        CapitalChronicleEntry.Argument formerSovereignStyle = formerSovereignId == null
+                ? CapitalChronicleService.translatable("mcacapitals.dynamic.title.none")
+                : CapitalChronicleIdentitySnapshot.style(level, capital, formerSovereignId);
         String playerName = player.getName().getString();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
         boolean female = MCAIntegrationBridge.isPlayerFemale(level, player);
@@ -74,7 +81,9 @@ final class CapitalPetitionOutcomes {
                     capital,
                     CapitalChronicleEventId.THRONE_SEIZED_VACANT_DEPOSITION,
                     playerName,
-                    villageName
+                    villageName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, player.getUUID()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
             );
         } else {
             CapitalChronicleService.addEvent(
@@ -83,7 +92,11 @@ final class CapitalPetitionOutcomes {
                     CapitalChronicleEventId.THRONE_SEIZED_BY_FORCE,
                     playerName,
                     villageName,
-                    formerSovereignName
+                    formerSovereignName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, player.getUUID()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID()),
+                    formerSovereignTitle,
+                    formerSovereignStyle
             );
         }
 
@@ -108,6 +121,10 @@ final class CapitalPetitionOutcomes {
 
     static void peacefulTransferByPetition(ServerLevel level, CapitalRecord capital, ServerPlayer player, UUID formerSovereignId) {
         String formerSovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, formerSovereignId);
+        CapitalChronicleEntry.Argument formerSovereignTitle =
+                CapitalChronicleIdentitySnapshot.title(level, capital, formerSovereignId);
+        CapitalChronicleEntry.Argument formerSovereignStyle =
+                CapitalChronicleIdentitySnapshot.style(level, capital, formerSovereignId);
         String playerName = player.getName().getString();
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
         boolean female = MCAIntegrationBridge.isPlayerFemale(level, player);
@@ -132,7 +149,11 @@ final class CapitalPetitionOutcomes {
                 CapitalChronicleEventId.PETITION_PEACEFUL_TRANSFER,
                 formerSovereignName,
                 playerName,
-                villageName
+                villageName,
+                formerSovereignTitle,
+                formerSovereignStyle,
+                CapitalChronicleIdentitySnapshot.title(level, capital, player.getUUID()),
+                CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
         );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());

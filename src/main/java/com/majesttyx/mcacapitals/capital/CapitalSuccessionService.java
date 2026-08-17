@@ -40,6 +40,10 @@ public class CapitalSuccessionService {
         boolean oldConsortFemale = capital.isConsortFemale();
 
         String deadName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
+        CapitalChronicleEntry.Argument deadTitle =
+                CapitalChronicleIdentitySnapshot.title(level, capital, sovereign);
+        CapitalChronicleEntry.Argument deadStyle =
+                CapitalChronicleIdentitySnapshot.style(level, capital, sovereign);
 
         Set<UUID> oldRoyalChildren = new LinkedHashSet<>(capital.getRoyalChildren());
         Map<UUID, Boolean> oldRoyalChildFemale = new LinkedHashMap<>(capital.getRoyalChildFemale());
@@ -68,9 +72,28 @@ public class CapitalSuccessionService {
 
                 String dowagerName = CapitalChronicleIdentitySnapshot.name(level, capital, oldConsort);
 
-                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.SOVEREIGN_DIED_CONSORT_SURVIVES, deadName, dowagerName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+                CapitalChronicleService.addEvent(
+                        level,
+                        capital,
+                        CapitalChronicleEventId.SOVEREIGN_DIED_CONSORT_SURVIVES,
+                        deadName,
+                        dowagerName,
+                        MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                        deadTitle,
+                        deadStyle,
+                        CapitalChronicleIdentitySnapshot.title(level, capital, oldConsort),
+                        CapitalChronicleIdentitySnapshot.style(level, capital, oldConsort)
+                );
             } else {
-                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.SOVEREIGN_DIED_NO_SUCCESSOR, deadName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+                CapitalChronicleService.addEvent(
+                        level,
+                        capital,
+                        CapitalChronicleEventId.SOVEREIGN_DIED_NO_SUCCESSOR,
+                        deadName,
+                        MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                        deadTitle,
+                        deadStyle
+                );
             }
 
             capital.getRoyalChildren().clear();
@@ -156,11 +179,37 @@ public class CapitalSuccessionService {
         CapitalRoyalHouseholdService.refreshDynasticHousehold(capital);
 
         String successorName = CapitalChronicleIdentitySnapshot.name(level, capital, successor);
+        CapitalChronicleEntry.Argument successorTitle =
+                CapitalChronicleIdentitySnapshot.title(level, capital, successor);
+        CapitalChronicleEntry.Argument successorStyle =
+                CapitalChronicleIdentitySnapshot.style(level, capital, successor);
 
         if (successorWasManualHeir) {
-            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.SOVEREIGN_DIED_HEIR_INHERITED, deadName, successorName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.SOVEREIGN_DIED_HEIR_INHERITED,
+                    deadName,
+                    successorName,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    deadTitle,
+                    deadStyle,
+                    successorTitle,
+                    successorStyle
+            );
         } else {
-            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.SOVEREIGN_DIED_SUCCESSOR_INHERITED, deadName, successorName, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.SOVEREIGN_DIED_SUCCESSOR_INHERITED,
+                    deadName,
+                    successorName,
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    deadTitle,
+                    deadStyle,
+                    successorTitle,
+                    successorStyle
+            );
         }
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
