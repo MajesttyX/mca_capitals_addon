@@ -20,7 +20,7 @@ public abstract class PregnancyBirthIdentityMixin {
     private VillagerEntityMCA mother;
 
     @Inject(
-            method = "createChild(Lforge/net/mca/entity/ai/relationship/Gender;Lforge/net/mca/entity/VillagerEntityMCA;)Lforge/net/mca/entity/VillagerEntityMCA;",
+            method = "createChild(Lforge/net/conczin/mca/entity/ai/relationship/Gender;Lforge/net/conczin/mca/entity/VillagerEntityMCA;)Lforge/net/conczin/mca/entity/VillagerEntityMCA;",
             at = @At("RETURN"),
             remap = false
     )

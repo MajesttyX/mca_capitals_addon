@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MayorConstraintCapitalAuthorityMixin {
 
     @Inject(
-            method = "test(Lforge/net/mca/entity/VillagerLike;Lnet/minecraft/server/level/ServerPlayer;)Z",
+            method = "test(Lforge/net/conczin/mca/entity/VillagerLike;Lnet/minecraft/server/level/ServerPlayer;)Z",
             at = @At("HEAD"),
             cancellable = true,
             remap = false

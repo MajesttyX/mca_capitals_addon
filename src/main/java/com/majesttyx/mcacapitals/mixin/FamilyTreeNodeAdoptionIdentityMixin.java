@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class FamilyTreeNodeAdoptionIdentityMixin {
 
     @Inject(
-            method = "assignParent(Lforge/net/mca/server/world/data/FamilyTreeNode;)Z",
+            method = "assignParent(Lforge/net/conczin/mca/server/world/data/FamilyTreeNode;)Z",
             at = @At("RETURN"),
             remap = false,
             require = 0
