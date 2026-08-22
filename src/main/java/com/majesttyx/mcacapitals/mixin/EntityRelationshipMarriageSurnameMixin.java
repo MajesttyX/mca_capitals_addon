@@ -1,17 +1,17 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.identity.MarriageSurnameService;
-import forge.net.mca.advancement.criterion.CriterionMCA;
-import forge.net.mca.entity.ai.BreedableRelationship;
-import forge.net.mca.entity.ai.relationship.EntityRelationship;
-import forge.net.mca.entity.ai.relationship.RelationshipState;
+import forge.net.conczin.mca.advancement.criterion.CriterionMCA;
+import forge.net.conczin.mca.entity.ai.BreedableRelationship;
+import forge.net.conczin.mca.entity.ai.relationship.EntityRelationship;
+import forge.net.conczin.mca.entity.ai.relationship.RelationshipState;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.entity.ai.BreedableRelationship", remap = false)
+@Mixin(targets = "forge.net.conczin.mca.entity.ai.BreedableRelationship", remap = false)
 public abstract class EntityRelationshipMarriageSurnameMixin {
 
     public void marry(Entity spouse) {

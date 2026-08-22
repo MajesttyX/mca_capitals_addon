@@ -1,12 +1,12 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import forge.net.mca.cobalt.network.NetworkHandler;
-import forge.net.mca.entity.VillagerEntityMCA;
-import forge.net.mca.network.s2c.InteractionDialogueQuestionResponse;
-import forge.net.mca.network.s2c.InteractionDialogueResponse;
-import forge.net.mca.resources.Dialogues;
-import forge.net.mca.resources.data.dialogue.Question;
+import forge.net.conczin.mca.cobalt.network.NetworkHandler;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.network.s2c.InteractionDialogueQuestionResponse;
+import forge.net.conczin.mca.network.s2c.InteractionDialogueResponse;
+import forge.net.conczin.mca.resources.Dialogues;
+import forge.net.conczin.mca.resources.data.dialogue.Question;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

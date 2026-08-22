@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.network.c2s.GetInteractDataRequest", remap = false)
+@Mixin(targets = "forge.net.conczin.mca.network.c2s.GetInteractDataRequest", remap = false)
 public abstract class GetInteractDataRequestIdentityMixin {
 
     @Shadow(remap = false)

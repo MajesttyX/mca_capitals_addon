@@ -1,8 +1,8 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.capital.CapitalCampaignCombatService;
-import forge.net.mca.entity.VillagerEntityMCA;
-import forge.net.mca.entity.ai.brain.VillagerTasksMCA;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.entity.ai.brain.VillagerTasksMCA;
 import net.minecraft.server.level.ServerLevel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

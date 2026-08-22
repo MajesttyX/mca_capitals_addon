@@ -3,7 +3,7 @@ package com.majesttyx.mcacapitals.capital;
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.data.CapitalCampaignDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
-import forge.net.mca.server.world.data.VillageManager;
+import forge.net.conczin.mca.server.world.data.VillageManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;

@@ -20,7 +20,7 @@ import java.lang.reflect.Field;
 
 @Pseudo
 @Mixin(
-        targets = "forge.net.mca.entity.interaction.EntityCommandHandler",
+        targets = "forge.net.conczin.mca.entity.interaction.EntityCommandHandler",
         remap = false
 )
 public class VillagerCommandHandlerMixin {

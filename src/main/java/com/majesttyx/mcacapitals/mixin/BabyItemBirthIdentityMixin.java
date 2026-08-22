@@ -1,7 +1,7 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.identity.PlayerHouseIdentityService;
-import forge.net.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.item.BabyItem", remap = false)
+@Mixin(targets = "forge.net.conczin.mca.item.BabyItem", remap = false)
 public abstract class BabyItemBirthIdentityMixin {
 
     @Inject(

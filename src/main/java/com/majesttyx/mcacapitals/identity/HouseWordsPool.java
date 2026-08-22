@@ -29,7 +29,7 @@ final class HouseWordsPool {
 
     static final String UNASSIGNED = "UNASSIGNED";
 
-    private static final ResourceLocation HOUSE_WORDS = new ResourceLocation(
+    private static final ResourceLocation HOUSE_WORDS = ResourceLocation.fromNamespaceAndPath(
             MCACapitals.MODID,
             "house_words/house_words.json"
     );

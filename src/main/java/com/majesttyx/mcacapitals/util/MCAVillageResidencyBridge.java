@@ -1,8 +1,8 @@
 package com.majesttyx.mcacapitals.util;
 
-import forge.net.mca.entity.VillagerEntityMCA;
-import forge.net.mca.server.world.data.Village;
-import forge.net.mca.server.world.data.VillageManager;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.server.world.data.Village;
+import forge.net.conczin.mca.server.world.data.VillageManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 

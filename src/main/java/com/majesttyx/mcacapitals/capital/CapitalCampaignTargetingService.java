@@ -2,8 +2,8 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import forge.net.mca.entity.VillagerEntityMCA;
-import forge.net.mca.entity.ai.MemoryModuleTypeMCA;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.entity.ai.MemoryModuleTypeMCA;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;

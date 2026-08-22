@@ -24,7 +24,7 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.server.world.data.PlayerSaveData", remap = false)
+@Mixin(targets = "forge.net.conczin.mca.server.world.data.PlayerSaveData", remap = false)
 public class PlayerSaveDataMarriageMixin {
 
     @Inject(

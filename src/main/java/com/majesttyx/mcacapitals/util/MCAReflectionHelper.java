@@ -17,19 +17,19 @@ import java.util.stream.Stream;
 final class MCAReflectionHelper {
 
     static final String[] MCA_VILLAGER_CLASSES = new String[] {
-            "forge.net.mca.entity.VillagerEntityMCA"
+            "forge.net.conczin.mca.entity.VillagerEntityMCA"
     };
 
     static final String[] MCA_FAMILY_TREE_CLASSES = new String[] {
-            "forge.net.mca.server.world.data.FamilyTree"
+            "forge.net.conczin.mca.server.world.data.FamilyTree"
     };
 
     static final String[] MCA_VILLAGE_MANAGER_CLASSES = new String[] {
-            "forge.net.mca.server.world.data.VillageManager"
+            "forge.net.conczin.mca.server.world.data.VillageManager"
     };
 
     static final String[] MCA_CLOTHING_LIST_CLASSES = new String[] {
-            "forge.net.mca.resources.ClothingList"
+            "forge.net.conczin.mca.resources.ClothingList"
     };
 
     private static final Set<String> WARNED_KEYS = ConcurrentHashMap.newKeySet();

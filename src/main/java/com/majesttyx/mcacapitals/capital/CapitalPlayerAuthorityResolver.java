@@ -2,7 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
-import forge.net.mca.resources.Rank;
+import forge.net.conczin.mca.resources.Rank;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 

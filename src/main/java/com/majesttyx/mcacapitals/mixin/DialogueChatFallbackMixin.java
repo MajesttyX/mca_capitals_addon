@@ -26,7 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.resources.data.dialogue.Actions", remap = false)
+@Mixin(targets = "forge.net.conczin.mca.resources.data.dialogue.Actions", remap = false)
 public abstract class DialogueChatFallbackMixin {
 
     private static final String MCA_CHAT_TOPIC = "chat.topic";

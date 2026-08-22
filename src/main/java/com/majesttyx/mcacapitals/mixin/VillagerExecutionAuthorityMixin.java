@@ -15,7 +15,7 @@ import java.lang.reflect.Field;
 
 @Pseudo
 @Mixin(
-        targets = "forge.net.mca.entity.interaction.VillagerCommandHandler",
+        targets = "forge.net.conczin.mca.entity.interaction.VillagerCommandHandler",
         remap = false
 )
 public abstract class VillagerExecutionAuthorityMixin {

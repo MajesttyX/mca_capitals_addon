@@ -5,7 +5,7 @@ import com.majesttyx.mcacapitals.data.CapitalCampaignDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalCampaignPhase;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import forge.net.mca.server.world.data.Village;
+import forge.net.conczin.mca.server.world.data.Village;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;

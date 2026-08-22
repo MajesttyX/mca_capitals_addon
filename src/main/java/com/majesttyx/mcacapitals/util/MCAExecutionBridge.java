@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 public final class MCAExecutionBridge {
 
     private static final String[] PROFESSION_CLASS_NAMES = {
-            "forge.net.mca.ProfessionsMCA"
+            "forge.net.conczin.mca.ProfessionsMCA"
     };
     private MCAExecutionBridge() {
     }

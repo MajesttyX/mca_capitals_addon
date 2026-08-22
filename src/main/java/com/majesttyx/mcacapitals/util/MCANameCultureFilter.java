@@ -2,7 +2,7 @@ package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.config.MCACapitalsConfig;
-import forge.net.mca.resources.Names;
+import forge.net.conczin.mca.resources.Names;
 
 import java.util.LinkedHashSet;
 import java.util.List;

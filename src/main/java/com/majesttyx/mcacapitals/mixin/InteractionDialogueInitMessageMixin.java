@@ -1,7 +1,7 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.capital.CapitalSovereignDeclarationPromptService;
-import forge.net.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Final;
@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @Pseudo
 @Mixin(
-        targets = "forge.net.mca.network.c2s.InteractionDialogueInitMessage",
+        targets = "forge.net.conczin.mca.network.c2s.InteractionDialogueInitMessage",
         remap = false
 )
 public abstract class InteractionDialogueInitMessageMixin {

@@ -1,13 +1,13 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.MCACapitals;
-import forge.net.mca.entity.VillagerEntityMCA;
-import forge.net.mca.entity.ai.Genetics;
-import forge.net.mca.entity.ai.relationship.Gender;
-import forge.net.mca.server.world.data.FamilyTree;
-import forge.net.mca.server.world.data.FamilyTreeNode;
-import forge.net.mca.server.world.data.PlayerSaveData;
-import forge.net.mca.network.NbtDataMessage;
+import com.majesttyx.mcacapitals.util.ModDataKeys;
+import forge.net.conczin.mca.entity.ai.Genetics;
+import forge.net.conczin.mca.entity.ai.relationship.Gender;
+import forge.net.conczin.mca.server.world.data.FamilyTree;
+import forge.net.conczin.mca.server.world.data.FamilyTreeNode;
+import forge.net.conczin.mca.server.world.data.PlayerSaveData;
+import forge.net.conczin.mca.network.NbtDataMessage;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.network.c2s.VillagerEditorSyncRequest", remap = false)
+@Mixin(targets = "forge.net.conczin.mca.network.c2s.VillagerEditorSyncRequest", remap = false)
 public abstract class PlayerEditorGenderSyncMixin {
 
     @Shadow(remap = false)
@@ -64,14 +64,14 @@ public abstract class PlayerEditorGenderSyncMixin {
                     ? new CompoundTag()
                     : entityData.copy();
             CompoundTag mcaData = normalized.contains(
-                    VillagerEntityMCA.MCA_DATA_KEY,
+                    ModDataKeys.MCA_DATA_KEY,
                     Tag.TAG_COMPOUND
             )
-                    ? normalized.getCompound(VillagerEntityMCA.MCA_DATA_KEY)
+                    ? normalized.getCompound(ModDataKeys.MCA_DATA_KEY)
                     : new CompoundTag();
 
             Genetics.writeGender(mcaData, gender);
-            normalized.put(VillagerEntityMCA.MCA_DATA_KEY, mcaData);
+            normalized.put(ModDataKeys.MCA_DATA_KEY, mcaData);
 
             saveData.setEntityData(normalized);
             saveData.setEntityDataSet(true);
@@ -105,10 +105,10 @@ public abstract class PlayerEditorGenderSyncMixin {
         }
 
         CompoundTag mcaData = data.contains(
-                VillagerEntityMCA.MCA_DATA_KEY,
+                ModDataKeys.MCA_DATA_KEY,
                 Tag.TAG_COMPOUND
         )
-                ? data.getCompound(VillagerEntityMCA.MCA_DATA_KEY)
+                ? data.getCompound(ModDataKeys.MCA_DATA_KEY)
                 : data;
 
         Gender gender = Genetics.readGender(mcaData);

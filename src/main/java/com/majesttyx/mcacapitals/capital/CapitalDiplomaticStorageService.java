@@ -1,8 +1,8 @@
 package com.majesttyx.mcacapitals.capital;
 
-import forge.net.mca.server.world.data.Building;
-import forge.net.mca.server.world.data.Village;
-import forge.net.mca.server.world.data.VillageManager;
+import forge.net.conczin.mca.server.world.data.Building;
+import forge.net.conczin.mca.server.world.data.Village;
+import forge.net.conczin.mca.server.world.data.VillageManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;

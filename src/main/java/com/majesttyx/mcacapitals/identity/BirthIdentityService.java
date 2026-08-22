@@ -351,7 +351,7 @@ public final class BirthIdentityService {
         }
 
         String[] classNames = new String[] {
-                "forge.net.mca.entity.ai.relationship.EntityRelationship"
+                "forge.net.conczin.mca.entity.ai.relationship.EntityRelationship"
         };
 
         for (String className : classNames) {

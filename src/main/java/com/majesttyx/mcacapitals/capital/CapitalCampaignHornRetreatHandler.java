@@ -5,7 +5,7 @@ import com.majesttyx.mcacapitals.data.CapitalCampaignDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalCampaignEndReason;
 import com.majesttyx.mcacapitals.data.CapitalCampaignPhase;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
-import forge.net.mca.server.world.data.Village;
+import forge.net.conczin.mca.server.world.data.Village;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.reflect.Field;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.entity.ai.BreedableRelationship", remap = false)
+@Mixin(targets = "forge.net.conczin.mca.entity.ai.BreedableRelationship", remap = false)
 public class BreedableRelationshipGiftMixin {
 
     @Inject(

@@ -102,7 +102,7 @@ final class MCAClothingBridge {
 
     private static boolean existsInCustomClothingManager(String clothesId) {
         String[] classNames = new String[] {
-                "forge.net.mca.server.world.data.CustomClothingManager"
+                "forge.net.conczin.mca.server.world.data.CustomClothingManager"
         };
 
         Class<?> managerClass = MCAReflectionHelper.resolveAnyClass(classNames);

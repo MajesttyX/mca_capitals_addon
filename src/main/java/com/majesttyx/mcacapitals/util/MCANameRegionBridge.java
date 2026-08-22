@@ -1,7 +1,7 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.MCACapitals;
-import forge.net.mca.resources.Names;
+import forge.net.conczin.mca.resources.Names;
 import net.minecraft.world.entity.Entity;
 
 import java.util.Locale;

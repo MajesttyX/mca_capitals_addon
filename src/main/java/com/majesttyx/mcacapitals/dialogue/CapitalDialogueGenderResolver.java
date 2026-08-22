@@ -1,10 +1,10 @@
 package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
-import forge.net.mca.entity.VillagerEntityMCA;
-import forge.net.mca.entity.ai.relationship.Gender;
-import forge.net.mca.server.world.data.FamilyTree;
-import forge.net.mca.server.world.data.PlayerSaveData;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.entity.ai.relationship.Gender;
+import forge.net.conczin.mca.server.world.data.FamilyTree;
+import forge.net.conczin.mca.server.world.data.PlayerSaveData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -82,9 +82,9 @@ public final class CapitalDialogueGenderResolver {
         }
 
         try {
-            Optional<forge.net.mca.server.world.data.FamilyTreeNode> node =
+            Optional<forge.net.conczin.mca.server.world.data.FamilyTreeNode> node =
                     FamilyTree.get(level).getOrEmpty(entityId);
-            return node.map(forge.net.mca.server.world.data.FamilyTreeNode::gender)
+            return node.map(forge.net.conczin.mca.server.world.data.FamilyTreeNode::gender)
                     .orElse(Gender.UNASSIGNED);
         } catch (Throwable ignored) {
             return Gender.UNASSIGNED;

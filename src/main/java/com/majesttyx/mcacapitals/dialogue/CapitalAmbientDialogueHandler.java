@@ -8,7 +8,7 @@ import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import forge.net.mca.entity.ai.Messenger;
+import forge.net.conczin.mca.entity.ai.Messenger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;

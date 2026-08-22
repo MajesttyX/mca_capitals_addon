@@ -3,8 +3,8 @@ package com.majesttyx.mcacapitals.mixin;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalPlayerAuthorityResolver;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
-import forge.net.mca.resources.Rank;
-import forge.net.mca.server.world.data.Village;
+import forge.net.conczin.mca.resources.Rank;
+import forge.net.conczin.mca.server.world.data.Village;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.Set;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.resources.Tasks", remap = false)
+@Mixin(targets = "forge.net.conczin.mca.resources.Tasks", remap = false)
 public abstract class TasksCapitalRankMixin {
 
     @Inject(method = "getRank", at = @At("HEAD"), cancellable = true, remap = false)

@@ -100,7 +100,7 @@ final class CapitalAmbientConversationDefinitions {
     }
 
     private static List<Definition> load(ResourceManager resourceManager, Context context) {
-        ResourceLocation location = new ResourceLocation(
+        ResourceLocation location = ResourceLocation.fromNamespaceAndPath(
                 MCACapitals.MODID,
                 "talk_of_the_town/" + context.path() + ".json"
         );

@@ -1,12 +1,11 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.MCACapitals;
-import forge.net.mca.entity.VillagerEntityMCA;
-import forge.net.mca.entity.ai.Genetics;
-import forge.net.mca.entity.ai.relationship.Gender;
-import forge.net.mca.server.world.data.FamilyTree;
-import forge.net.mca.server.world.data.FamilyTreeNode;
-import forge.net.mca.server.world.data.PlayerSaveData;
+import forge.net.conczin.mca.entity.ai.Genetics;
+import forge.net.conczin.mca.entity.ai.relationship.Gender;
+import forge.net.conczin.mca.server.world.data.FamilyTree;
+import forge.net.conczin.mca.server.world.data.FamilyTreeNode;
+import forge.net.conczin.mca.server.world.data.PlayerSaveData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
@@ -163,14 +162,14 @@ final class MCAPlayerBridge {
                 ? new CompoundTag()
                 : entityData.copy();
         CompoundTag mcaData = normalized.contains(
-                VillagerEntityMCA.MCA_DATA_KEY,
+                ModDataKeys.MCA_DATA_KEY,
                 Tag.TAG_COMPOUND
         )
-                ? normalized.getCompound(VillagerEntityMCA.MCA_DATA_KEY)
+                ? normalized.getCompound(ModDataKeys.MCA_DATA_KEY)
                 : new CompoundTag();
 
         Genetics.writeGender(mcaData, gender);
-        normalized.put(VillagerEntityMCA.MCA_DATA_KEY, mcaData);
+        normalized.put(ModDataKeys.MCA_DATA_KEY, mcaData);
 
         saveData.setEntityData(normalized);
         saveData.setEntityDataSet(true);
@@ -212,10 +211,10 @@ final class MCAPlayerBridge {
         }
 
         return entityData.contains(
-                VillagerEntityMCA.MCA_DATA_KEY,
+                ModDataKeys.MCA_DATA_KEY,
                 Tag.TAG_COMPOUND
         )
-                ? entityData.getCompound(VillagerEntityMCA.MCA_DATA_KEY)
+                ? entityData.getCompound(ModDataKeys.MCA_DATA_KEY)
                 : entityData;
     }
 

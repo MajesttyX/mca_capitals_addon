@@ -1,8 +1,8 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.capital.CapitalExecutionAuthorityService;
-import forge.net.mca.entity.VillagerLike;
-import forge.net.mca.entity.interaction.Constraint;
+import forge.net.conczin.mca.entity.VillagerLike;
+import forge.net.conczin.mca.entity.interaction.Constraint;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;

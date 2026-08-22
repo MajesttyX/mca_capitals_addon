@@ -17,7 +17,7 @@ public class ModNetwork {
     private static boolean registered = false;
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            new ResourceLocation(MCACapitals.MODID, "main"),
+            ResourceLocation.fromNamespaceAndPath(MCACapitals.MODID, "main"),
             () -> PROTOCOL_VERSION,
             PROTOCOL_VERSION::equals,
             PROTOCOL_VERSION::equals

@@ -1,9 +1,9 @@
 package com.majesttyx.mcacapitals.capital;
 
-import forge.net.mca.entity.VillagerEntityMCA;
-import forge.net.mca.entity.interaction.gifts.GiftType;
-import forge.net.mca.resources.data.analysis.IntAnalysis;
-import forge.net.mca.resources.data.SerializablePair;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.entity.interaction.gifts.GiftType;
+import forge.net.conczin.mca.resources.data.analysis.IntAnalysis;
+import forge.net.conczin.mca.resources.data.SerializablePair;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

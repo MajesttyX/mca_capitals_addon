@@ -2,10 +2,10 @@ package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import forge.net.mca.entity.VillagerEntityMCA;
-import forge.net.mca.entity.ai.Messenger;
-import forge.net.mca.entity.ai.relationship.Personality;
-import forge.net.mca.server.world.data.PlayerSaveData;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.entity.ai.Messenger;
+import forge.net.conczin.mca.entity.ai.relationship.Personality;
+import forge.net.conczin.mca.server.world.data.PlayerSaveData;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.Pseudo;
 import java.util.Locale;
 
 @Pseudo
-@Mixin(targets = "forge.net.mca.entity.VillagerEntityMCA", remap = false)
+@Mixin(targets = "forge.net.conczin.mca.entity.VillagerEntityMCA", remap = false)
 public abstract class MessengerCapitalDialogueMixin {
 
     public MutableComponent getTranslatable(Player target, String phraseId, Object... params) {
