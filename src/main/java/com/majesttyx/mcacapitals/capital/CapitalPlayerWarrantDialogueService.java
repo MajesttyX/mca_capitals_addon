@@ -1,6 +1,6 @@
 package com.majesttyx.mcacapitals.capital;
 
-import fabric.net.mca.entity.VillagerEntityMCA;
+import fabric.net.conczin.mca.entity.VillagerEntityMCA;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 

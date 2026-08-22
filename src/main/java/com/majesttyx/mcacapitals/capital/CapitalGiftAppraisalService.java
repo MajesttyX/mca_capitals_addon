@@ -1,9 +1,9 @@
 package com.majesttyx.mcacapitals.capital;
 
-import fabric.net.mca.entity.VillagerEntityMCA;
-import fabric.net.mca.entity.interaction.gifts.GiftType;
-import fabric.net.mca.resources.data.analysis.IntAnalysis;
-import fabric.net.mca.resources.data.SerializablePair;
+import fabric.net.conczin.mca.entity.VillagerEntityMCA;
+import fabric.net.conczin.mca.entity.interaction.gifts.GiftType;
+import fabric.net.conczin.mca.resources.data.analysis.IntAnalysis;
+import fabric.net.conczin.mca.resources.data.SerializablePair;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

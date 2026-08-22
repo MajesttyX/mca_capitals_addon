@@ -1,8 +1,8 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.capital.CapitalCampaignCombatService;
-import fabric.net.mca.entity.VillagerEntityMCA;
-import fabric.net.mca.entity.ai.brain.VillagerTasksMCA;
+import fabric.net.conczin.mca.entity.VillagerEntityMCA;
+import fabric.net.conczin.mca.entity.ai.brain.VillagerTasksMCA;
 import net.minecraft.server.level.ServerLevel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class VillagerTasksMCACampaignCombatMixin {
 
     @Inject(
-            method = "guardTooHurt(Lfabric/net/mca/entity/VillagerEntityMCA;)Z",
+            method = "guardTooHurt(Lfabric/net/conczin/mca/entity/VillagerEntityMCA;)Z",
             at = @At("HEAD"),
             cancellable = true,
             remap = false

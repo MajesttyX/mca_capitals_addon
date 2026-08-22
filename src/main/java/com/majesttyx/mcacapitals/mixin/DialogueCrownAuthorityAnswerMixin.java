@@ -11,7 +11,7 @@ import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import fabric.net.mca.entity.VillagerEntityMCA;
+import fabric.net.conczin.mca.entity.VillagerEntityMCA;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,7 +26,7 @@ import java.util.UUID;
 
 @Pseudo
 @Mixin(
-        targets = "fabric.net.mca.resources.data.dialogue.Question",
+        targets = "fabric.net.conczin.mca.resources.data.dialogue.Question",
         remap = false
 )
 public abstract class DialogueCrownAuthorityAnswerMixin {

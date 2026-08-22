@@ -16,7 +16,7 @@ import java.lang.reflect.Field;
 
 @Pseudo
 @Mixin(
-        targets = "fabric.net.mca.entity.ai.BreedableRelationship",
+        targets = "fabric.net.conczin.mca.entity.ai.BreedableRelationship",
         remap = false
 )
 public class SealedPurseGiftMixin {

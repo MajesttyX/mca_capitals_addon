@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Map;
 
 @Pseudo
-@Mixin(targets = "fabric.net.mca.resources.Names", remap = false)
+@Mixin(targets = "fabric.net.conczin.mca.resources.Names", remap = false)
 public class NamesRegionFilterMixin {
 
     @Inject(

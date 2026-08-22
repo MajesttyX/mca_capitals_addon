@@ -315,7 +315,7 @@ public final class MarriageSurnameService {
         }
 
         String[] classNames = new String[] {
-            "fabric.net.mca.entity.ai.relationship.EntityRelationship"
+            "fabric.net.conczin.mca.entity.ai.relationship.EntityRelationship"
         };
 
         for (String className : classNames) {

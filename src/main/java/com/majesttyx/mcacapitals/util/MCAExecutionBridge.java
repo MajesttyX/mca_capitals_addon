@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 
 public final class MCAExecutionBridge {
     private static final String[] PROFESSION_CLASS_NAMES = {
-            "fabric.net.mca.ProfessionsMCA"
+            "fabric.net.conczin.mca.ProfessionsMCA"
     };
 
     private MCAExecutionBridge() {

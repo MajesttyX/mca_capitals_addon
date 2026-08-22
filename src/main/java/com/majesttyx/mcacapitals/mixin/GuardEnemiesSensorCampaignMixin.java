@@ -1,8 +1,8 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.capital.CapitalCampaignService;
-import fabric.net.mca.entity.VillagerEntityMCA;
-import fabric.net.mca.entity.ai.brain.sensor.GuardEnemiesSensor;
+import fabric.net.conczin.mca.entity.VillagerEntityMCA;
+import fabric.net.conczin.mca.entity.ai.brain.sensor.GuardEnemiesSensor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;

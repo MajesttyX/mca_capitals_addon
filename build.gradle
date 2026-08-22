@@ -58,7 +58,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
     modImplementation "dev.architectury:architectury-fabric:${architectury_version}"
 
-    modImplementation files("libs/minecraft-comes-alive-${mca_version}-universal.jar")
+    modImplementation "net.conczin.mca:mca:${mca_version}"
 }
 
 processResources {

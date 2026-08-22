@@ -1,8 +1,8 @@
 package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.MCACapitals;
-import fabric.net.mca.MCA;
-import fabric.net.mca.entity.VillagerEntityMCA;
+import fabric.net.conczin.mca.MCA;
+import fabric.net.conczin.mca.entity.VillagerEntityMCA;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 

@@ -3,8 +3,8 @@ package com.majesttyx.mcacapitals.mixin;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalPlayerAuthorityResolver;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
-import fabric.net.mca.server.world.data.Village;
-import fabric.net.mca.server.world.data.VillageManager;
+import fabric.net.conczin.mca.server.world.data.Village;
+import fabric.net.conczin.mca.server.world.data.VillageManager;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
-@Mixin(targets = "fabric.net.mca.network.c2s.SaveVillageMessage", remap = false)
+@Mixin(targets = "fabric.net.conczin.mca.network.c2s.SaveVillageMessage", remap = false)
 public abstract class SaveVillageMessageCapitalAuthorityMixin {
 
     @Shadow(remap = false)

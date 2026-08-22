@@ -2,9 +2,9 @@ package com.majesttyx.mcacapitals.client;
 
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import fabric.net.mca.Config;
-import fabric.net.mca.entity.VillagerEntityMCA;
-import fabric.net.mca.entity.ai.MoveState;
+import fabric.net.conczin.mca.Config;
+import fabric.net.conczin.mca.entity.VillagerEntityMCA;
+import fabric.net.conczin.mca.entity.ai.MoveState;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;

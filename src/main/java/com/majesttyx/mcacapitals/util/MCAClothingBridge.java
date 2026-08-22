@@ -102,7 +102,7 @@ final class MCAClothingBridge {
 
     private static boolean existsInCustomClothingManager(String clothesId) {
         String[] classNames = new String[] {
-                "fabric.net.mca.server.world.data.CustomClothingManager"
+                "fabric.net.conczin.mca.server.world.data.CustomClothingManager"
         };
 
         Class<?> managerClass = MCAReflectionHelper.resolveAnyClass(classNames);

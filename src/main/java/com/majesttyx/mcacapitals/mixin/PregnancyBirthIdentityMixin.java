@@ -1,8 +1,8 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.identity.BirthIdentityService;
-import fabric.net.mca.entity.VillagerEntityMCA;
-import fabric.net.mca.entity.ai.relationship.Gender;
+import fabric.net.conczin.mca.entity.VillagerEntityMCA;
+import fabric.net.conczin.mca.entity.ai.relationship.Gender;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Pseudo
-@Mixin(targets = "fabric.net.mca.entity.ai.Pregnancy", remap = false)
+@Mixin(targets = "fabric.net.conczin.mca.entity.ai.Pregnancy", remap = false)
 public abstract class PregnancyBirthIdentityMixin {
 
     @Shadow
@@ -20,7 +20,7 @@ public abstract class PregnancyBirthIdentityMixin {
     private VillagerEntityMCA mother;
 
     @Inject(
-            method = "createChild(Lfabric/net/mca/entity/ai/relationship/Gender;Lfabric/net/mca/entity/VillagerEntityMCA;)Lfabric/net/mca/entity/VillagerEntityMCA;",
+            method = "createChild(Lfabric/net/conczin/mca/entity/ai/relationship/Gender;Lfabric/net/conczin/mca/entity/VillagerEntityMCA;)Lfabric/net/conczin/mca/entity/VillagerEntityMCA;",
             at = @At("RETURN"),
             remap = false
     )

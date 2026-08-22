@@ -7,7 +7,7 @@ import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.client.BlueprintAuthorityClientCache;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.MCAReputationBridge;
-import fabric.net.mca.server.world.data.Village;
+import fabric.net.conczin.mca.server.world.data.Village;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;

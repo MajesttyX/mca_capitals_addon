@@ -1,11 +1,11 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.MCACapitals;
-import fabric.net.mca.entity.ai.relationship.Gender;
-import fabric.net.mca.network.NbtDataMessage;
-import fabric.net.mca.server.world.data.FamilyTree;
-import fabric.net.mca.server.world.data.FamilyTreeNode;
-import fabric.net.mca.server.world.data.PlayerSaveData;
+import fabric.net.conczin.mca.entity.ai.relationship.Gender;
+import fabric.net.conczin.mca.network.NbtDataMessage;
+import fabric.net.conczin.mca.server.world.data.FamilyTree;
+import fabric.net.conczin.mca.server.world.data.FamilyTreeNode;
+import fabric.net.conczin.mca.server.world.data.PlayerSaveData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Final;
@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 @Pseudo
-@Mixin(targets = "fabric.net.mca.network.c2s.VillagerEditorSyncRequest", remap = false)
+@Mixin(targets = "fabric.net.conczin.mca.network.c2s.VillagerEditorSyncRequest", remap = false)
 public abstract class PlayerEditorGenderSyncMixin {
 
     @Shadow(remap = false)

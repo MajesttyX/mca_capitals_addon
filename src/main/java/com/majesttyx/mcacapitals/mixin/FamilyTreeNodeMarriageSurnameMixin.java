@@ -10,11 +10,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
-@Mixin(targets = "fabric.net.mca.server.world.data.FamilyTreeNode", remap = false)
+@Mixin(targets = "fabric.net.conczin.mca.server.world.data.FamilyTreeNode", remap = false)
 public class FamilyTreeNodeMarriageSurnameMixin {
 
     @Inject(
-            method = "updatePartner(Lnet/minecraft/class_1297;Lfabric/net/mca/entity/ai/relationship/RelationshipState;)V",
+            method = "updatePartner(Lnet/minecraft/class_1297;Lfabric/net/conczin/mca/entity/ai/relationship/RelationshipState;)V",
             at = @At("TAIL"),
             remap = false,
             require = 0

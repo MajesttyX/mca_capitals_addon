@@ -3,7 +3,7 @@ package com.majesttyx.mcacapitals.mixin;
 import com.majesttyx.mcacapitals.capital.CapitalRankRequirements;
 import com.majesttyx.mcacapitals.client.BlueprintAuthorityClientCache;
 import com.majesttyx.mcacapitals.network.SyncBlueprintAuthorityPacket;
-import fabric.net.mca.server.world.data.Village;
+import fabric.net.conczin.mca.server.world.data.Village;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Pseudo
-@Mixin(targets = "fabric.net.mca.client.gui.BlueprintScreen", remap = false)
+@Mixin(targets = "fabric.net.conczin.mca.client.gui.BlueprintScreen", remap = false)
 public abstract class BlueprintScreenCapitalAuthorityMixin {
 
     @Shadow

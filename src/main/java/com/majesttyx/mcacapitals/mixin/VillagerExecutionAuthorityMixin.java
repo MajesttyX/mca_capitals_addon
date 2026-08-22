@@ -15,7 +15,7 @@ import java.lang.reflect.Field;
 
 @Pseudo
 @Mixin(
-        targets = "fabric.net.mca.entity.interaction.VillagerCommandHandler",
+        targets = "fabric.net.conczin.mca.entity.interaction.VillagerCommandHandler",
         remap = false
 )
 public abstract class VillagerExecutionAuthorityMixin {

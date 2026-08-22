@@ -12,11 +12,11 @@ import java.util.UUID;
 final class MCAPlayerBridge {
 
     private static final String[] MCA_PLAYER_SAVE_DATA_CLASSES = new String[] {
-            "fabric.net.mca.server.world.data.PlayerSaveData"
+            "fabric.net.conczin.mca.server.world.data.PlayerSaveData"
     };
 
     private static final String[] MCA_GENDER_CLASSES = new String[] {
-            "fabric.net.mca.entity.ai.relationship.Gender"
+            "fabric.net.conczin.mca.entity.ai.relationship.Gender"
     };
 
     private MCAPlayerBridge() {
@@ -91,7 +91,7 @@ final class MCAPlayerBridge {
 
     private static String resolveMessengerName(ServerPlayer player) {
         String[] classNames = new String[] {
-                "fabric.net.mca.entity.ai.Messenger"
+                "fabric.net.conczin.mca.entity.ai.Messenger"
         };
 
         for (String className : classNames) {

@@ -2,12 +2,12 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import fabric.net.mca.entity.VillagerEntityMCA;
-import fabric.net.mca.cobalt.network.NetworkHandler;
-import fabric.net.mca.network.s2c.InteractionDialogueResponse;
-import fabric.net.mca.resources.Dialogues;
-import fabric.net.mca.resources.data.dialogue.Answer;
-import fabric.net.mca.resources.data.dialogue.Question;
+import fabric.net.conczin.mca.entity.VillagerEntityMCA;
+import fabric.net.conczin.mca.cobalt.network.NetworkHandler;
+import fabric.net.conczin.mca.network.s2c.InteractionDialogueResponse;
+import fabric.net.conczin.mca.resources.Dialogues;
+import fabric.net.conczin.mca.resources.data.dialogue.Answer;
+import fabric.net.conczin.mca.resources.data.dialogue.Question;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

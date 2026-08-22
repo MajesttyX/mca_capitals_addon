@@ -3,8 +3,8 @@ package com.majesttyx.mcacapitals.capital;
 import com.majesttyx.mcacapitals.data.CapitalCampaignDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import fabric.net.mca.server.world.data.Village;
-import fabric.net.mca.server.world.data.VillageManager;
+import fabric.net.conczin.mca.server.world.data.Village;
+import fabric.net.conczin.mca.server.world.data.VillageManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
