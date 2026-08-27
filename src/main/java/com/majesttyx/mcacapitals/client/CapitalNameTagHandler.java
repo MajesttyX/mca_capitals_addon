@@ -289,11 +289,9 @@ public final class CapitalNameTagHandler {
     }
 
     private static Component titledName(Component title, Component name) {
-        return Component.translatable(
-                "mcacapitals.dynamic.name.titled",
-                title,
-                name
-        );
+        return title.copy()
+                .append(Component.literal(" "))
+                .append(name);
     }
 
     private static Component visibleCourtOfficeLine(
