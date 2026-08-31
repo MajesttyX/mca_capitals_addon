@@ -23,13 +23,7 @@ final class MCAEntityBridge {
             return null;
         }
 
-        for (Entity entity : level.getEntities().getAll()) {
-            if (entityId.equals(entity.getUUID())) {
-                return entity;
-            }
-        }
-
-        return null;
+        return level.getEntity(entityId);
     }
 
     static Entity getEntityByUuid(ServerLevel level, UUID entityId) {

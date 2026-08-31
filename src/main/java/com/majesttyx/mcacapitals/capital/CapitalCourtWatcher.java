@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.util.MCAFamilyBridge;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -231,7 +232,7 @@ public class CapitalCourtWatcher {
                     residents != null && residents.contains(currentSpouse);
 
             boolean spouseIsPlayer =
-                    !MCAIntegrationBridge.isMCAVillager(level, currentSpouse);
+                    MCAFamilyBridge.isPlayerFamilyNode(level, currentSpouse);
 
             if (!spouseIsResident && !spouseIsPlayer) {
                 continue;
@@ -355,6 +356,7 @@ public class CapitalCourtWatcher {
             CapitalRecord capital,
             Set<UUID> residents
     ) {
+        Set<UUID> safeResidents = residents == null ? Set.of() : residents;
         StringBuilder sb = new StringBuilder();
 
         sb.append("capital=")
@@ -421,7 +423,7 @@ public class CapitalCourtWatcher {
                 .append(capital.getDowagerDukeSources())
                 .append('|');
 
-        Set<UUID> watchSet = new HashSet<>(residents);
+        Set<UUID> watchSet = new HashSet<>(safeResidents);
 
         if (capital.getSovereign() != null) {
             watchSet.add(capital.getSovereign());
@@ -452,61 +454,19 @@ public class CapitalCourtWatcher {
             sb.append(entityId).append(':');
 
             sb.append("resident=")
-                    .append(residents.contains(entityId))
-                    .append(',');
-
-            sb.append("isMCA=")
-                    .append(
-                            MCAIntegrationBridge.isMCAVillager(
-                                    level,
-                                    entityId
-                            )
-                    )
+                    .append(safeResidents.contains(entityId))
                     .append(',');
 
             sb.append("hasFamilyNode=")
-                    .append(
-                            MCAIntegrationBridge.hasFamilyNode(
-                                    level,
-                                    entityId
-                            )
-                    )
+                    .append(MCAIntegrationBridge.hasFamilyNode(level, entityId))
                     .append(',');
 
-            sb.append("isFemale=")
-                    .append(
-                            MCAIntegrationBridge.isFemale(
-                                    level,
-                                    entityId
-                            )
-                    )
+            sb.append("deceased=")
+                    .append(MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId))
                     .append(',');
 
-            sb.append("isAlive=")
-                    .append(
-                            MCAIntegrationBridge.isAliveAdultOrChildVillager(
-                                    level,
-                                    entityId
-                            )
-                    )
-                    .append(',');
-
-            sb.append("isGuard=")
-                    .append(
-                            MCAIntegrationBridge.isMCAGuard(
-                                    level,
-                                    entityId
-                            )
-                    )
-                    .append(',');
-
-            sb.append("isMaster=")
-                    .append(
-                            MCAIntegrationBridge.isMasterProfessionVillager(
-                                    level,
-                                    entityId
-                            )
-                    )
+            sb.append("isPlayer=")
+                    .append(MCAFamilyBridge.isPlayerFamilyNode(level, entityId))
                     .append(',');
 
             UUID spouse =
@@ -534,8 +494,11 @@ public class CapitalCourtWatcher {
                 id
         );
 
-        return entity != null
-                && (!entity.isAlive() || entity.isRemoved());
+        if (entity != null) {
+            return !entity.isAlive() || entity.isRemoved();
+        }
+
+        return MCAIntegrationBridge.isFamilyNodeDeceased(level, id);
     }
 
     private static String resolveDisplayName(

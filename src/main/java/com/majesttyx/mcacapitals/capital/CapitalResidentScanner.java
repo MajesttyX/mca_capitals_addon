@@ -149,14 +149,14 @@ public class CapitalResidentScanner {
                         .getAll();
 
         for (Entity entity : allEntities) {
-            UUID entityId =
-                    entity.getUUID();
+            if (entity == null
+                    || !MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
+                continue;
+            }
 
-            if (MCAIntegrationBridge.isMCAVillager(
-                    level,
-                    entityId
-            )
-                    && !isAwaitingAsylum(
+            UUID entityId = entity.getUUID();
+
+            if (!isAwaitingAsylum(
                     level,
                     entityId
             )) {

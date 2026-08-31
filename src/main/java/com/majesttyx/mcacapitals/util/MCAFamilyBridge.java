@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-final class MCAFamilyBridge {
+public final class MCAFamilyBridge {
 
     private MCAFamilyBridge() {
     }
@@ -28,6 +28,16 @@ final class MCAFamilyBridge {
         }
 
         Object value = MCAReflectionHelper.invoke(nodeOpt.get(), "isDeceased");
+        return value instanceof Boolean b && b;
+    }
+
+    public static boolean isPlayerFamilyNode(ServerLevel level, UUID entityId) {
+        Optional<Object> nodeOpt = getFamilyNode(level, entityId);
+        if (nodeOpt.isEmpty()) {
+            return false;
+        }
+
+        Object value = MCAReflectionHelper.invoke(nodeOpt.get(), "isPlayer");
         return value instanceof Boolean b && b;
     }
 

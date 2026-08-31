@@ -44,9 +44,15 @@ public final class CapitalHeraldService {
             if (newHerald != null) {
                 capital.setHerald(newHerald);
                 capital.setHeraldFemale(MCAIntegrationBridge.isFemale(level, newHerald));
-                capital.setHeraldDisplayName(resolveBaseName(level, newHerald));
+                capital.setHeraldDisplayName(resolveBaseName(level, capital, newHerald));
                 if (announceAppointment) {
-                    CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.COURT_HERALD_APPOINTED, resolveRawName(level, newHerald), MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+                    CapitalChronicleService.addEvent(
+                            level,
+                            capital,
+                            CapitalChronicleEventId.COURT_HERALD_APPOINTED,
+                            resolveBaseName(level, capital, newHerald),
+                            MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                    );
                 }
                 changed = true;
             }
@@ -66,98 +72,46 @@ public final class CapitalHeraldService {
             return office;
         }
 
-        Entity herald = MCAIntegrationBridge.getEntityByUuid(level, capital.getHerald());
+        UUID heraldId = capital.getHerald();
+        Entity herald = MCAIntegrationBridge.getEntityByUuid(level, heraldId);
         if (herald != null) {
-            String baseName = resolveBaseNameFromCurrentName(herald.getName().getString(), capital.getHerald().toString());
+            String baseName = resolveBaseName(level, capital, heraldId);
             capital.setHeraldDisplayName(baseName);
-            return Component.translatable(
-                    "mcacapitals.dynamic.name.titled",
-                    office,
-                    Component.literal(baseName)
-            );
+            return titledName(office, baseName);
         }
 
         String storedName = capital.getHeraldDisplayName();
         if (storedName != null && !storedName.isBlank()) {
-            return Component.translatable(
-                    "mcacapitals.dynamic.name.titled",
-                    office,
-                    Component.literal(storedName.trim())
-            );
+            return titledName(office, storedName.trim());
         }
 
         return office;
     }
 
-    private static String resolveRawName(ServerLevel level, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        return entity != null ? entity.getName().getString() : entityId.toString();
+    private static Component titledName(Component office, String baseName) {
+        return office.copy()
+                .append(Component.literal(" "))
+                .append(Component.literal(baseName == null ? "" : baseName));
     }
 
-    private static String resolveBaseName(ServerLevel level, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        return resolveBaseNameFromCurrentName(entity != null ? entity.getName().getString() : null, entityId.toString());
-    }
-
-    private static String resolveBaseNameFromCurrentName(String currentName, String fallback) {
-        if (currentName == null || currentName.isBlank()) {
-            return fallback;
+    private static String resolveBaseName(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        if (level == null || entityId == null) {
+            return entityId == null ? "Unknown" : entityId.toString();
         }
 
-        String result = currentName.trim();
-        String[] prefixes = {
-                "Court Herald",
-                "High Queen",
-                "High King",
-                "Queen Consort",
-                "King Consort",
-                "Dowager Queen",
-                "Dowager King",
-                "Heir Apparent",
-                "Crown Princess",
-                "Crown Prince",
-                "Dowager Princess",
-                "Dowager Prince",
-                "Princess Consort",
-                "Prince Consort",
-                "Hand of the Queen",
-                "Hand of the King",
-                "Grand Maester",
-                "Maester",
-                "Lord Commander",
-                "Commander",
-                "Dowager Duchess",
-                "Dowager Duke",
-                "Duchess",
-                "Duke",
-                "Lady",
-                "Lord",
-                "Dame",
-                "Sir",
-                "Princess",
-                "Prince",
-                "Queen",
-                "King"
-        };
+        String resolved = CapitalNameService.resolveDisplayName(level, capital, entityId);
+        if (resolved != null && !resolved.isBlank()) {
+            return resolved.trim();
+        }
 
-        boolean stripped;
-        do {
-            stripped = false;
-            for (String prefix : prefixes) {
-                if (result.equals(prefix)) {
-                    result = "";
-                    stripped = true;
-                    break;
-                }
-                String titledPrefix = prefix + " ";
-                if (result.startsWith(titledPrefix)) {
-                    result = result.substring(titledPrefix.length()).trim();
-                    stripped = true;
-                    break;
-                }
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
+        if (entity != null && entity.getName() != null) {
+            String fallback = entity.getName().getString();
+            if (fallback != null && !fallback.isBlank()) {
+                return fallback.trim();
             }
-        } while (stripped);
+        }
 
-        return result.isBlank() ? fallback : result;
+        return entityId.toString();
     }
 }

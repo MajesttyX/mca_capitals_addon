@@ -4,7 +4,6 @@ import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -254,7 +253,9 @@ public class CapitalRoyalGuardService {
                         : "mcacapitals.dynamic.title.knight.male"
         );
 
-        Component baseName = Component.literal(resolveBaseName(level, guardId));
+        Component baseName = Component.literal(
+                CapitalNameService.resolveDisplayName(level, capital, guardId)
+        );
 
         return Component.translatable(
                 capital.isSovereignFemale()
@@ -263,76 +264,6 @@ public class CapitalRoyalGuardService {
                 title,
                 baseName
         );
-    }
-
-
-    private static String resolveBaseName(ServerLevel level, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-
-        if (entity == null) {
-            return entityId.toString();
-        }
-
-        String currentName = entity.getName().getString();
-
-        currentName = currentName
-                .replace(" of the Kingsguard", "")
-                .replace(" of the Queensguard", "")
-                .trim();
-
-        String[] prefixes = {
-                "High Queen ",
-                "High King ",
-                "Dowager Queen ",
-                "Dowager King ",
-                "Queen Consort ",
-                "King Consort ",
-                "Heir Apparent ",
-                "Crown Princess ",
-                "Crown Prince ",
-                "Dowager Princess ",
-                "Dowager Prince ",
-                "Princess Consort ",
-                "Prince Consort ",
-                "Hand of the Queen ",
-                "Hand of the King ",
-                "Grand Maester ",
-                "Master of Laws ",
-                "Maester ",
-                "Court Herald ",
-                "Ambassador ",
-                "Princess ",
-                "Prince ",
-                "Lord Commander ",
-                "Dowager Duchess ",
-                "Dowager Duke ",
-                "Duchess ",
-                "Duke ",
-                "Lady ",
-                "Lord ",
-                "Dame ",
-                "Sir ",
-                "Queen ",
-                "King "
-        };
-
-        boolean changed = true;
-
-        while (changed) {
-            changed = false;
-
-            for (String prefix : prefixes) {
-                if (currentName.startsWith(prefix)) {
-                    currentName = currentName.substring(prefix.length()).trim();
-                    changed = true;
-                    break;
-                }
-            }
-        }
-
-        return currentName.isBlank()
-                ? entityId.toString()
-                : currentName;
     }
 
     private static boolean isValidRoyalGuard(
@@ -489,5 +420,4 @@ public class CapitalRoyalGuardService {
 
         return MCAIntegrationBridge.isMCAGuard(level, villagerId);
     }
-
 }
