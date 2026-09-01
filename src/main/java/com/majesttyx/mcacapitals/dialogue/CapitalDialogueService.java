@@ -140,6 +140,17 @@ public class CapitalDialogueService {
             return null;
         }
 
+        String managedRuntimeKey = managedRuntimeKeyFromPhrase(phraseKey);
+        if (managedRuntimeKey != null) {
+            return CapitalDialogueRuntime.formatManagedRuntimeComponent(
+                    managedRuntimeKey,
+                    player,
+                    villagerEntity,
+                    level,
+                    capital
+            );
+        }
+
         String bucket = MCA_PHRASE_BUCKETS.get(phraseKey);
         if (bucket == null) {
             return null;
@@ -158,6 +169,22 @@ public class CapitalDialogueService {
                 capital
         );
     }
+    private static String managedRuntimeKeyFromPhrase(String phraseKey) {
+        if (CapitalDialogueRuntime.isManagedRuntimeKey(phraseKey)) {
+            return phraseKey;
+        }
+
+        String dialoguePrefix = "dialogue.";
+        if (phraseKey.startsWith(dialoguePrefix)) {
+            String candidate = phraseKey.substring(dialoguePrefix.length());
+            if (CapitalDialogueRuntime.isManagedRuntimeKey(candidate)) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
     private static Map<String, String> buildMcaPhraseBuckets() {
         Map<String, String> buckets = new HashMap<>();
 
@@ -207,7 +234,7 @@ public class CapitalDialogueService {
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 
     private static CapitalDialogueEventModels.ChronicleEvent pickEventForVillager(
@@ -383,4 +410,9 @@ public class CapitalDialogueService {
         private CapitalChronicleEventType lastEventType = null;
         private long lastEventDay = Long.MIN_VALUE;
     }
+
+    static void clearRuntimeState() {
+        VILLAGER_NEWS_STATE.clear();
+    }
+
 }

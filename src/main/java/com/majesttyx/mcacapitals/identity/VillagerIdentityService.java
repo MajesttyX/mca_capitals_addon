@@ -138,7 +138,7 @@ public final class VillagerIdentityService {
             return false;
         }
 
-        CapitalRecord capital = knownCapital != null ? knownCapital : CapitalManager.getCapitalForVillage(villageId);
+        CapitalRecord capital = knownCapital != null ? knownCapital : CapitalManager.getCapitalForVillage(level, villageId);
         String villageName = MCAIntegrationBridge.getVillageName(level, villageId);
         String capitalName = capital == null ? "" : MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 

@@ -45,6 +45,7 @@ import com.majesttyx.mcacapitals.util.CapitalPetitionCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalEscortCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.majesttyx.mcacapitals.util.CapitalTestCommands;
+import com.majesttyx.mcacapitals.util.MCAResidentStateSnapshotHandler;
 import com.majesttyx.mcacapitals.util.RoyalScepterCommands;
 import com.majesttyx.mcacapitals.util.RoyalScepterOfficeCommands;
 import com.majesttyx.mcacapitals.util.SuccessionDecreeCommands;
@@ -159,6 +160,10 @@ public class MCACapitals {
 
         MinecraftForge.EVENT_BUS.register(
                 new CapitalLifecycleHandler()
+        );
+
+        MinecraftForge.EVENT_BUS.register(
+                new MCAResidentStateSnapshotHandler()
         );
 
         MinecraftForge.EVENT_BUS.addListener(

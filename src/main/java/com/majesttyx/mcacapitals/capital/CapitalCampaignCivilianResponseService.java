@@ -586,4 +586,12 @@ final class CapitalCampaignCivilianResponseService {
                 campaignId
         );
     }
+
+    public static void clearRuntimeState() {
+        CAMPAIGN_RINGERS.clear();
+        RUNG_CAMPAIGNS.clear();
+        CAMPAIGN_RESPONDERS.clear();
+        ORIGINAL_MOVE_STATES.clear();
+    }
+
 }

@@ -68,6 +68,7 @@ public final class CapitalExecutionAuthorityService {
                 );
 
         return CapitalManager.getCapitalByVillageId(
+                level,
                 villageId
         );
     }

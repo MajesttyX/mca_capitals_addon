@@ -39,7 +39,7 @@ public final class CapitalDiplomaticStorageService {
 
         StorageTarget target = findVillage(
                 contextLevel,
-                capital.getVillageId()
+                capital
         );
 
         return target != null
@@ -67,12 +67,12 @@ public final class CapitalDiplomaticStorageService {
 
         StorageTarget firstTarget = findVillage(
                 contextLevel,
-                firstCapital.getVillageId()
+                firstCapital
         );
 
         StorageTarget secondTarget = findVillage(
                 contextLevel,
-                secondCapital.getVillageId()
+                secondCapital
         );
 
         if (firstTarget == null || secondTarget == null) {
@@ -172,11 +172,11 @@ public final class CapitalDiplomaticStorageService {
 
         StorageTarget source = findVillage(
                 contextLevel,
-                losingCapital.getVillageId()
+                losingCapital
         );
         StorageTarget destination = findVillage(
                 contextLevel,
-                winningCapital.getVillageId()
+                winningCapital
         );
         if (source == null || destination == null) {
             return ReparationsResult.failure();
@@ -475,40 +475,45 @@ public final class CapitalDiplomaticStorageService {
 
     private static StorageTarget findVillage(
             ServerLevel contextLevel,
-            int villageId
+            CapitalRecord capital
     ) {
-        Village local =
-                VillageManager.get(contextLevel)
-                        .getOrEmpty(villageId)
-                        .orElse(null);
-
-        if (local != null) {
-            return new StorageTarget(
-                    contextLevel,
-                    local
-            );
+        if (contextLevel == null || capital == null || capital.getVillageId() == null) {
+            return null;
         }
 
-        for (ServerLevel level :
-                contextLevel.getServer()
-                        .getAllLevels()) {
+        ServerLevel capitalLevel = CapitalManager.getCapitalLevel(contextLevel.getServer(), capital);
+        if (capitalLevel != null) {
+            Village village = VillageManager.get(capitalLevel)
+                    .getOrEmpty(capital.getVillageId())
+                    .orElse(null);
+            return village == null ? null : new StorageTarget(capitalLevel, village);
+        }
+
+        return findLegacyVillage(contextLevel, capital.getVillageId());
+    }
+
+    private static StorageTarget findLegacyVillage(
+            ServerLevel contextLevel,
+            int villageId
+    ) {
+        Village local = VillageManager.get(contextLevel)
+                .getOrEmpty(villageId)
+                .orElse(null);
+        if (local != null) {
+            return new StorageTarget(contextLevel, local);
+        }
+
+        for (ServerLevel level : contextLevel.getServer().getAllLevels()) {
             if (level == contextLevel) {
                 continue;
             }
-
-            Village village =
-                    VillageManager.get(level)
-                            .getOrEmpty(villageId)
-                            .orElse(null);
-
+            Village village = VillageManager.get(level)
+                    .getOrEmpty(villageId)
+                    .orElse(null);
             if (village != null) {
-                return new StorageTarget(
-                        level,
-                        village
-                );
+                return new StorageTarget(level, village);
             }
         }
-
         return null;
     }
 

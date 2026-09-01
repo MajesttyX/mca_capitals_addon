@@ -157,6 +157,18 @@ public class BetrothalDecreeHandler {
             UUID firstId = pair.first();
             UUID secondId = pair.second();
 
+            PendingVillagerBetrothalSavedData.RoyalEscortRecord escort =
+                    PendingVillagerBetrothalAccess
+                            .getRoyalEscort(
+                                    level,
+                                    firstId,
+                                    secondId
+                            );
+
+            if (!shouldProcessPairInLevel(level, firstId, secondId, escort)) {
+                continue;
+            }
+
             if (shouldClearPendingPair(level, firstId, secondId)) {
                 PendingVillagerBetrothalAccess.removePendingBetrothal(level, firstId, secondId);
                 continue;
@@ -192,18 +204,11 @@ public class BetrothalDecreeHandler {
                     secondVillageId
             )
                     || CapitalManager.getCapitalByVillageId(
+                    level,
                     firstVillageId
             ) == null) {
                 continue;
             }
-
-            PendingVillagerBetrothalSavedData.RoyalEscortRecord escort =
-                    PendingVillagerBetrothalAccess
-                            .getRoyalEscort(
-                                    level,
-                                    firstId,
-                                    secondId
-                            );
 
             if (escort != null
                     && CapitalDiplomacyDataAccess
@@ -236,6 +241,29 @@ public class BetrothalDecreeHandler {
 
             PendingVillagerBetrothalAccess.removePendingBetrothal(level, firstId, secondId);
         }
+    }
+
+    private boolean shouldProcessPairInLevel(
+            ServerLevel level,
+            UUID firstId,
+            UUID secondId,
+            PendingVillagerBetrothalSavedData.RoyalEscortRecord escort
+    ) {
+        if (level == null || firstId == null || secondId == null) {
+            return false;
+        }
+
+        if (escort != null) {
+            CapitalRecord destination = CapitalManager.getCapital(escort.destinationCapitalId());
+            return destination != null && CapitalManager.isCapitalInLevel(destination, level);
+        }
+
+        Integer firstVillageId = MCAIntegrationBridge.getVillageIdForResident(level, firstId);
+        Integer secondVillageId = MCAIntegrationBridge.getVillageIdForResident(level, secondId);
+
+        return firstVillageId != null
+                && firstVillageId.equals(secondVillageId)
+                && CapitalManager.getCapitalByVillageId(level, firstVillageId) != null;
     }
 
     private boolean shouldClearPendingPair(ServerLevel level, UUID firstId, UUID secondId) {
@@ -296,7 +324,7 @@ public class BetrothalDecreeHandler {
             return;
         }
 
-        CapitalRecord capital = CapitalManager.getCapitalByVillageId(firstVillageId);
+        CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, firstVillageId);
         if (capital == null) {
             return;
         }

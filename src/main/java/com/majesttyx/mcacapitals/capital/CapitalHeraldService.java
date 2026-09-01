@@ -89,9 +89,11 @@ public final class CapitalHeraldService {
     }
 
     private static Component titledName(Component office, String baseName) {
-        return office.copy()
-                .append(Component.literal(" "))
-                .append(Component.literal(baseName == null ? "" : baseName));
+        return Component.translatable(
+                "mcacapitals.dynamic.name.titled",
+                office,
+                Component.literal(baseName == null ? "" : baseName)
+        );
     }
 
     private static String resolveBaseName(ServerLevel level, CapitalRecord capital, UUID entityId) {

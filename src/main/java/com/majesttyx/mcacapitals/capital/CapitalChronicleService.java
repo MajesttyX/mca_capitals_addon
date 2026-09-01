@@ -550,4 +550,9 @@ public class CapitalChronicleService {
 
     private record HeraldAnnouncement(long gameTime, String signature) {
     }
+
+    public static void clearRuntimeState() {
+        LAST_HERALD_ANNOUNCEMENTS.clear();
+    }
+
 }

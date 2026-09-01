@@ -368,4 +368,9 @@ public class SealedPurseHandler {
 
     private record PendingPurseGift(UUID capitalId, long expiresAtGameTime) {
     }
+
+    public static void clearRuntimeState() {
+        PENDING_GIFTS.clear();
+    }
+
 }

@@ -83,6 +83,11 @@ public final class CapitalPoliticalDialogueService {
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
+
+    static void clearRuntimeState() {
+        POLITICAL_CHAT_COOLDOWNS.clear();
+    }
+
 }

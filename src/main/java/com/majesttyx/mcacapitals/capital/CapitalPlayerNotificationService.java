@@ -16,7 +16,11 @@ public final class CapitalPlayerNotificationService {
     }
 
     public static void notifyPlayersInCapital(ServerLevel level, CapitalRecord capital, Component message) {
-        if (level == null || capital == null || capital.getVillageId() == null || message == null) {
+        if (level == null
+                || capital == null
+                || capital.getVillageId() == null
+                || message == null
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return;
         }
 
@@ -32,7 +36,11 @@ public final class CapitalPlayerNotificationService {
     }
 
     public static boolean isPlayerWithinCapital(ServerLevel level, CapitalRecord capital, ServerPlayer player) {
-        if (level == null || capital == null || capital.getVillageId() == null || player == null) {
+        if (level == null
+                || capital == null
+                || capital.getVillageId() == null
+                || player == null
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return false;
         }
 

@@ -105,26 +105,28 @@ public class RoyalCharterItem extends Item {
             return;
         }
 
+        ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
+
         CompoundTag tag = ModItemStackData.hasCustomData(stack)
                 ? ModItemStackData.getCustomData(stack)
                 : new CompoundTag();
 
         tag.putString(ModDataKeys.CAPITAL_ID, capital.getCapitalId().toString());
         tag.putInt(ModDataKeys.VILLAGE_ID, capital.getVillageId());
-        tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+        tag.putString(ModDataKeys.VILLAGE_NAME, MCAIntegrationBridge.getVillageName(capitalLevel, capital.getVillageId()));
 
         ListTag candidates = new ListTag();
-        MCAIntegrationBridge.getVillageResidentNames(level, capital.getVillageId()).entrySet().stream()
+        MCAIntegrationBridge.getVillageResidentNames(capitalLevel, capital.getVillageId()).entrySet().stream()
                 .sorted(Comparator
                         .comparing(
-                                (Map.Entry<UUID, String> entry) -> resolveCandidateName(level, entry.getKey(), entry.getValue()),
+                                (Map.Entry<UUID, String> entry) -> resolveCandidateName(capitalLevel, entry.getKey(), entry.getValue()),
                                 String.CASE_INSENSITIVE_ORDER
                         )
                         .thenComparing(entry -> entry.getKey().toString()))
                 .forEach(entry -> addCandidate(
                         candidates,
                         entry.getKey(),
-                        resolveCandidateName(level, entry.getKey(), entry.getValue())
+                        resolveCandidateName(capitalLevel, entry.getKey(), entry.getValue())
                 ));
 
         tag.put(ModDataKeys.CANDIDATES, candidates);

@@ -492,4 +492,9 @@ public final class CapitalAmbassadorService {
             );
         }
     }
+
+    public static void clearRuntimeCache() {
+        AMBASSADOR_CACHE.clear();
+    }
+
 }

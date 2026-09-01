@@ -57,7 +57,7 @@ public abstract class SaveVillageMessageCapitalAuthorityMixin {
             ServerPlayer player,
             Village village
     ) {
-        CapitalRecord capital = CapitalManager.getCapitalByVillageId(village.getId());
+        CapitalRecord capital = CapitalManager.getCapitalByVillageId(player.serverLevel(), village.getId());
         CapitalPlayerAuthorityResolver.ResolvedAuthority authority =
                 CapitalPlayerAuthorityResolver.resolve(player.serverLevel(), capital, player.getUUID());
 

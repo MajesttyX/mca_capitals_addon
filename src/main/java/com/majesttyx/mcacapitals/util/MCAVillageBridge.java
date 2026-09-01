@@ -225,39 +225,34 @@ final class MCAVillageBridge {
             return Collections.emptyMap();
         }
 
+        Map<UUID, String> savedNames =
+                getSavedVillageResidentNames(
+                        village
+                );
+
         Map<UUID, String> loadedResidents =
                 getLoadedVillageResidentNames(
                         level,
                         village
                 );
 
-        if (!loadedResidents.isEmpty()) {
-            return loadedResidents;
-        }
-
-        Map<UUID, String> savedNames =
-                getSavedVillageResidentNames(
-                        village
-                );
-
-        if (!savedNames.isEmpty()) {
-            return savedNames;
-        }
-
-        Map<UUID, String> fallback =
+        Map<UUID, String> result =
                 new LinkedHashMap<>();
+
+        result.putAll(savedNames);
+        result.putAll(loadedResidents);
 
         for (UUID residentId :
                 getVillageResidents(village)) {
             if (residentId != null) {
-                fallback.put(
+                result.putIfAbsent(
                         residentId,
                         residentId.toString()
                 );
             }
         }
 
-        return fallback;
+        return result;
     }
 
     static int countBuildingsOfType(

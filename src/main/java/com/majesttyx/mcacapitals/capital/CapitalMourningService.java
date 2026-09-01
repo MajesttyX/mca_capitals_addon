@@ -341,4 +341,10 @@ public class CapitalMourningService {
         }
         return normalized;
     }
+
+    public static void clearRuntimeState() {
+        PENDING_MOURNING_APPLICATION_TICKS.clear();
+        LOGGED_MOURNING_APPLICATION_FAILURES.clear();
+    }
+
 }

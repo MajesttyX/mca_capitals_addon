@@ -20,13 +20,13 @@ import java.lang.reflect.Field;
 
 @Pseudo
 @Mixin(
-        targets = "forge.net.conczin.mca.entity.interaction.EntityCommandHandler",
+        targets = "forge.net.conczin.mca.entity.interaction.VillagerCommandHandler",
         remap = false
 )
 public class VillagerCommandHandlerMixin {
 
     @Inject(
-            method = "handle",
+            method = "handle(Lnet/minecraft/server/level/ServerPlayer;Ljava/lang/String;)Z",
             at = @At("HEAD"),
             cancellable = true,
             remap = false
@@ -44,7 +44,7 @@ public class VillagerCommandHandlerMixin {
         Entity entity = resolveEntity();
 
         MCACapitals.LOGGER.info(
-                "[MCACapitals] EntityCommandHandler.handle intercepted. command='{}', entity='{}', player='{}'",
+                "[MCACapitals] VillagerCommandHandler.handle intercepted. command='{}', entity='{}', player='{}'",
                 command,
                 entity != null
                         ? entity.getName().getString()

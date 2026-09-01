@@ -29,7 +29,7 @@ public abstract class TasksCapitalRankMixin {
             return;
         }
 
-        CapitalRecord capital = CapitalManager.getCapitalByVillageId(village.getId());
+        CapitalRecord capital = CapitalManager.getCapitalByVillageId(player.serverLevel(), village.getId());
         cir.setReturnValue(CapitalPlayerAuthorityResolver.resolveCompatibilityRank(
                 player.serverLevel(),
                 capital,

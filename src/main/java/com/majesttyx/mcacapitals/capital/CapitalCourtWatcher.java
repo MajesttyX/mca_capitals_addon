@@ -4,7 +4,6 @@ import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAFamilyBridge;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 import java.util.HashMap;
@@ -50,13 +49,13 @@ public class CapitalCourtWatcher {
 
         String oldConsortName = oldConsort == null
                 ? null
-                : stripKnownTitles(resolveBaseName(level, capital, oldConsort));
+                : CapitalChronicleIdentitySnapshot.name(level, capital, oldConsort);
         String oldDowagerName = oldDowager == null
                 ? null
-                : stripKnownTitles(resolveBaseName(level, capital, oldDowager));
+                : CapitalChronicleIdentitySnapshot.name(level, capital, oldDowager);
         String oldHeirName = oldHeir == null
                 ? null
-                : stripKnownTitles(resolveBaseName(level, capital, oldHeir));
+                : CapitalChronicleIdentitySnapshot.name(level, capital, oldHeir);
         CapitalChronicleEntry.Argument oldConsortTitle = oldConsort == null
                 ? null
                 : CapitalChronicleIdentitySnapshot.title(level, capital, oldConsort);
@@ -85,7 +84,7 @@ public class CapitalCourtWatcher {
                     && capital.getConsort() == null
                     && isConfirmedDead(level, oldConsort)) {
                 String deceasedName = oldConsortName == null
-                        ? stripKnownTitles(resolveBaseName(level, capital, oldConsort))
+                        ? CapitalChronicleIdentitySnapshot.name(level, capital, oldConsort)
                         : oldConsortName;
 
                 CapitalMourningService.startMourning(
@@ -106,7 +105,7 @@ public class CapitalCourtWatcher {
             if (oldDowager != null
                     && isConfirmedDead(level, oldDowager)) {
                 String deceasedName = oldDowagerName == null
-                        ? stripKnownTitles(resolveBaseName(level, capital, oldDowager))
+                        ? CapitalChronicleIdentitySnapshot.name(level, capital, oldDowager)
                         : oldDowagerName;
 
                 capital.setDowager(null);
@@ -131,7 +130,7 @@ public class CapitalCourtWatcher {
                 if (oldHeir != null
                         && isConfirmedDead(level, oldHeir)) {
                     String deceasedName = oldHeirName == null
-                            ? stripKnownTitles(resolveBaseName(level, capital, oldHeir))
+                            ? CapitalChronicleIdentitySnapshot.name(level, capital, oldHeir)
                             : oldHeirName;
 
                     CapitalMourningService.startMourning(
@@ -501,97 +500,6 @@ public class CapitalCourtWatcher {
         return MCAIntegrationBridge.isFamilyNodeDeceased(level, id);
     }
 
-    private static String resolveDisplayName(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID id
-    ) {
-        if (id == null) {
-            return "Unknown";
-        }
-
-        String baseName =
-                stripKnownTitles(
-                        resolveBaseName(level, capital, id)
-                );
-
-        String title =
-                CapitalTitleResolver.getDisplayTitleForEntity(
-                        level,
-                        id
-                );
-
-        if (title == null
-                || title.isBlank()
-                || "Commoner".equalsIgnoreCase(title)
-                || "None".equalsIgnoreCase(title)) {
-            return baseName;
-        }
-
-        CapitalRecord sourceCapital =
-                CapitalTitleResolver.findCapitalForEntity(
-                        level,
-                        id
-                );
-
-        if (sourceCapital != null
-                && sourceCapital.isRoyalGuard(id)
-                && ("Sir".equals(title) || "Dame".equals(title))) {
-            String suffix = sourceCapital.isSovereignFemale()
-                    ? " of the Queensguard"
-                    : " of the Kingsguard";
-
-            return title + " " + baseName + suffix;
-        }
-
-        return title + " " + baseName;
-    }
-
-    private static String resolveBaseName(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID id
-    ) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(
-                level,
-                id
-        );
-
-        if (entity != null) {
-            String name = entity.getName().getString();
-
-            if (name != null && !name.isBlank()) {
-                return name;
-            }
-        }
-
-        if (capital != null
-                && capital.isPlayerConsort()
-                && id.equals(capital.getPlayerConsortId())) {
-            String storedName = capital.getPlayerConsortName();
-
-            if (storedName != null && !storedName.isBlank()) {
-                return storedName;
-            }
-        }
-
-        ServerPlayer player =
-                level.getServer()
-                        .getPlayerList()
-                        .getPlayer(id);
-
-        if (player != null) {
-            String profileName =
-                    player.getGameProfile().getName();
-
-            if (profileName != null && !profileName.isBlank()) {
-                return profileName;
-            }
-        }
-
-        return "Unknown";
-    }
-
     private static boolean hasMarriageEntry(
             CapitalRecord capital,
             String nobleName,
@@ -606,50 +514,5 @@ public class CapitalCourtWatcher {
         );
     }
 
-    private static String stripKnownTitles(String name) {
-        if (name == null || name.isBlank()) {
-            return "Unnamed";
-        }
 
-        String result = name.trim();
-
-        String[] knownTitles = {
-                "High Queen",
-                "High King",
-                "Dowager Queen",
-                "Dowager King",
-                "Queen Consort",
-                "King Consort",
-                "Heir Apparent",
-                "Crown Princess",
-                "Crown Prince",
-                "Dowager Princess",
-                "Dowager Prince",
-                "Princess Consort",
-                "Prince Consort",
-                "Princess",
-                "Prince",
-                "Dowager Duchess",
-                "Dowager Duke",
-                "Duchess",
-                "Duke",
-                "Commander",
-                "Lady",
-                "Lord",
-                "Dame",
-                "Sir",
-                "Queen",
-                "King"
-        };
-
-        for (String knownTitle : knownTitles) {
-            String prefix = knownTitle + " ";
-
-            if (result.startsWith(prefix)) {
-                return result.substring(prefix.length()).trim();
-            }
-        }
-
-        return result;
-    }
 }

@@ -27,6 +27,9 @@ final class CapitalSavedDataWriter {
             if (capital.getVillageId() != null) {
                 capitalTag.putInt(CapitalSavedData.KEY_VILLAGE_ID, capital.getVillageId());
             }
+            if (capital.getVillageDimensionId() != null) {
+                capitalTag.putString(CapitalSavedData.KEY_VILLAGE_DIMENSION, capital.getVillageDimensionId());
+            }
 
             if (capital.getState() != null) {
                 capitalTag.putString(CapitalSavedData.KEY_STATE, capital.getState().name());

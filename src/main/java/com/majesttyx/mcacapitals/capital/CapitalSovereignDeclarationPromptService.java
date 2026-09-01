@@ -70,13 +70,12 @@ public final class CapitalSovereignDeclarationPromptService {
             return;
         }
 
-        Component promptText = Component.literal(
-                "Before we continue, will you declare for "
-                        + CapitalDiplomaticAgreementText.capitalName(
+        Component promptText = Component.translatable(
+                "dialogue.mcacapitals_declaration_prompt.question",
+                CapitalDiplomaticAgreementText.capitalNameComponent(
                         player.serverLevel(),
                         capital
                 )
-                        + "?"
         );
 
         NetworkHandler.sendToPlayer(
@@ -211,7 +210,7 @@ public final class CapitalSovereignDeclarationPromptService {
         );
 
         CapitalRecord capital =
-                CapitalManager.getCapitalByVillageId(villageId);
+                CapitalManager.getCapitalByVillageId(level, villageId);
 
         return capital != null
                 && capital.getState() == CapitalState.ACTIVE

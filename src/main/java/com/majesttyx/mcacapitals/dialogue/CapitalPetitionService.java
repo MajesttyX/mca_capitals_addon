@@ -236,6 +236,6 @@ public final class CapitalPetitionService {
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 }

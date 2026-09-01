@@ -1,6 +1,9 @@
 package com.majesttyx.mcacapitals.capital;
 
+import com.majesttyx.mcacapitals.identity.VillagerIdentitySyncService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
+import forge.net.conczin.mca.entity.VillagerLike;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.level.ServerLevel;
@@ -18,7 +21,6 @@ public final class CapitalNameService {
             "mcacapitals.dynamic.name.royal_guard.kingsguard";
     private static final String QUEENSGUARD_NAME_KEY =
             "mcacapitals.dynamic.name.royal_guard.queensguard";
-
 
     private CapitalNameService() {
     }
@@ -79,32 +81,8 @@ public final class CapitalNameService {
                 continue;
             }
 
-            Component currentCustomName = entity.getCustomName();
-            String baseName = recoverBaseNameFromCapitalsWrapper(currentCustomName);
-
-            if (!isUsableBaseName(baseName)) {
-                if (currentCustomName == null) {
-                    String currentName = entity.getName().getString();
-                    if (isUsableBaseName(currentName)) {
-                        baseName = currentName.trim();
-                    }
-                } else {
-                    String currentName = currentCustomName.getString();
-                    if (isUsableBaseName(currentName)) {
-                        baseName = currentName.trim();
-                    }
-                }
-            }
-
-            if (!isUsableBaseName(baseName)) {
-                continue;
-            }
-
-            Component plainName = Component.literal(baseName.trim());
-            if (!plainName.equals(currentCustomName)) {
-                entity.setCustomName(plainName);
-                entity.setCustomNameVisible(true);
-            }
+            repairLegacyCapitalsName(entity);
+            VillagerIdentitySyncService.syncToNearbyPlayers(level, entity);
         }
     }
 
@@ -122,8 +100,9 @@ public final class CapitalNameService {
         }
 
         if (capital != null && capital.getVillageId() != null) {
+            ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
             String savedName = MCAIntegrationBridge
-                    .getVillageResidentNames(level, capital.getVillageId())
+                    .getVillageResidentNames(capitalLevel, capital.getVillageId())
                     .get(entityId);
             if (isUsableBaseName(savedName)) {
                 return savedName.trim();
@@ -147,8 +126,9 @@ public final class CapitalNameService {
         }
 
         if (capital != null && capital.getVillageId() != null) {
+            ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
             String savedName = MCAIntegrationBridge
-                    .getVillageResidentNames(level, capital.getVillageId())
+                    .getVillageResidentNames(capitalLevel, capital.getVillageId())
                     .get(entityId);
             if (isUsableBaseName(savedName)) {
                 return Component.literal(savedName.trim());
@@ -158,23 +138,55 @@ public final class CapitalNameService {
         return Component.literal(entityId.toString());
     }
 
+    /**
+     * Repairs only names that Capitals itself previously stored as one of its
+     * structured translatable title wrappers. Arbitrary/custom MCA names are
+     * deliberately left untouched.
+     */
+    public static boolean repairLegacyCapitalsName(Entity entity) {
+        if (!(entity instanceof VillagerEntityMCA villager)) {
+            return false;
+        }
+
+        Component customName = villager.getCustomName();
+        String recoveredName = recoverBaseNameFromCapitalsWrapper(customName);
+        if (!isUsableBaseName(recoveredName)) {
+            return false;
+        }
+
+        String baseName = recoveredName.trim();
+        String canonicalName = villager.getTrackedValue(VillagerLike.VILLAGER_NAME);
+        if (!baseName.equals(canonicalName)) {
+            villager.setName(baseName);
+        }
+
+        // Replace only a known legacy Capitals wrapper with the recovered base
+        // name. VillagerEntityMCA#setCustomName(non-null) also writes MCA's
+        // canonical citizen name, but at this point that value is deliberately
+        // the same literal base name. This keeps vanilla/MCA getName() readers
+        // correct while Capitals titles remain presentation-only Components.
+        villager.setCustomName(Component.literal(baseName));
+        return true;
+    }
+
     private static String resolveBaseName(Entity entity) {
         if (entity == null) {
             return null;
         }
 
+        if (entity instanceof VillagerEntityMCA villager) {
+            repairLegacyCapitalsName(villager);
+
+            String canonicalName = villager.getTrackedValue(VillagerLike.VILLAGER_NAME);
+            if (isUsableBaseName(canonicalName)) {
+                return canonicalName.trim();
+            }
+        }
+
         Component customName = entity.getCustomName();
         String recoveredName = recoverBaseNameFromCapitalsWrapper(customName);
         if (isUsableBaseName(recoveredName)) {
-            String baseName = recoveredName.trim();
-            Component plainName = Component.literal(baseName);
-
-            if (!plainName.equals(customName)) {
-                entity.setCustomName(plainName);
-                entity.setCustomNameVisible(true);
-            }
-
-            return baseName;
+            return recoveredName.trim();
         }
 
         if (customName != null) {
@@ -244,6 +256,7 @@ public final class CapitalNameService {
                 && !KINGSGUARD_NAME_KEY.equals(value)
                 && !QUEENSGUARD_NAME_KEY.equals(value);
     }
+
     static String normalizeBaseName(String name) {
         if (!isUsableBaseName(name)) {
             return "";
@@ -251,5 +264,4 @@ public final class CapitalNameService {
 
         return name.trim();
     }
-
 }

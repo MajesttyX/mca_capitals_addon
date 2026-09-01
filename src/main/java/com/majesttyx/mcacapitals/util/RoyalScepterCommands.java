@@ -223,7 +223,7 @@ public final class RoyalScepterCommands {
             return null;
         }
 
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 
     private static boolean rejectAmbassador(

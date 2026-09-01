@@ -137,7 +137,7 @@ public class SuccessionDecreeItem extends Item {
             return null;
         }
 
-        CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId.get());
+        CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId.get());
         if (capital == null) {
             return null;
         }

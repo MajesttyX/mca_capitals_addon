@@ -1,5 +1,8 @@
 package com.majesttyx.mcacapitals.identity;
 
+import com.majesttyx.mcacapitals.capital.CapitalNameService;
+import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.house.PlayerHouseRecord;
 import com.majesttyx.mcacapitals.house.PlayerHouseService;
 import com.majesttyx.mcacapitals.item.ModItems;
@@ -12,7 +15,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.Locale;
 import java.util.UUID;
 
 public final class DecreeOfTheHouseService {
@@ -31,7 +33,7 @@ public final class DecreeOfTheHouseService {
         return new OpenDecreeOfTheHousePacket(
                 target.getUUID(),
                 false,
-                getDisplayFirstNameOnly(target),
+                getDisplayFirstNameOnly(level, target),
                 identity.currentSurname(),
                 identity.hasFoundedHouse(),
                 identity.houseName(),
@@ -230,12 +232,21 @@ public final class DecreeOfTheHouseService {
         }
     }
 
-    private static String getDisplayFirstNameOnly(Entity target) {
-        if (target == null || target.getName() == null) {
+    private static String getDisplayFirstNameOnly(ServerLevel level, Entity target) {
+        if (level == null || target == null) {
             return "";
         }
 
-        return stripFormattingAndKnownTitlePrefixes(target.getName().getString());
+        CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(
+                level,
+                target.getUUID()
+        );
+
+        return CapitalNameService.resolveDisplayName(
+                level,
+                capital,
+                target.getUUID()
+        );
     }
 
     private static ItemStack findHeldDecree(ServerPlayer player) {
@@ -316,50 +327,4 @@ public final class DecreeOfTheHouseService {
         return normalized.matches("[A-Za-z][A-Za-z '\\-,]*");
     }
 
-    private static String stripFormattingAndKnownTitlePrefixes(String value) {
-        String normalized = normalizeNamePart(value);
-        if (normalized.isBlank()) {
-            return "";
-        }
-
-        String lower = normalized.toLowerCase(Locale.ROOT);
-
-        String[] prefixes = new String[] {
-                "high queen ",
-                "high king ",
-                "dowager queen ",
-                "dowager king ",
-                "queen consort ",
-                "king consort ",
-                "crown princess ",
-                "crown prince ",
-                "princess consort ",
-                "prince consort ",
-                "dowager princess ",
-                "dowager prince ",
-                "hand of the queen ",
-                "hand of the king ",
-                "grand maester ",
-                "court herald ",
-                "lord commander ",
-                "princess ",
-                "prince ",
-                "duchess ",
-                "duke ",
-                "lady ",
-                "lord ",
-                "dame ",
-                "sir ",
-                "queen ",
-                "king "
-        };
-
-        for (String prefix : prefixes) {
-            if (lower.startsWith(prefix)) {
-                return normalized.substring(prefix.length()).trim();
-            }
-        }
-
-        return normalized;
-    }
 }

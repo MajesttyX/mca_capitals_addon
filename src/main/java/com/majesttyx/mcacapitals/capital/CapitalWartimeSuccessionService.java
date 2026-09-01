@@ -11,6 +11,7 @@ import com.majesttyx.mcacapitals.data.CapitalInterregnumRecord;
 import com.majesttyx.mcacapitals.data.CapitalRelationKey;
 import com.majesttyx.mcacapitals.data.CapitalRelationRecord;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
+import com.majesttyx.mcacapitals.util.CapitalHardcoreDeathTracker;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -54,16 +55,19 @@ public final class CapitalWartimeSuccessionService {
         }
 
         UUID sovereignId = capital.getSovereign();
+        boolean confirmedHardcorePlayerDeath = sovereignId != null
+                && capital.isPlayerSovereign()
+                && CapitalHardcoreDeathTracker.isConfirmedDead(level, sovereignId);
 
         if (sovereignId == null
                 || isSurvivalPlayerSovereignDeath(
                 level,
                 capital
         )
-                || isValidLivingSovereign(
+                || (!confirmedHardcorePlayerDeath && isValidLivingSovereign(
                 level,
                 sovereignId
-        )
+        ))
                 || !isMilitaryCrisis(
                 level,
                 capital
@@ -483,13 +487,7 @@ public final class CapitalWartimeSuccessionService {
         );
 
         if (entity != null) {
-            String baseName = CapitalNameService.resolveDisplayName(
-                    level,
-                    capital,
-                    deposedSovereignId
-            );
-            entity.setCustomName(net.minecraft.network.chat.Component.literal(baseName));
-            entity.setCustomNameVisible(true);
+            CapitalNameService.repairLegacyCapitalsName(entity);
         }
     }
 

@@ -119,7 +119,7 @@ public class CapitalChronicleItem extends Item {
         Optional<Integer> lastSeenVillageId = MCAIntegrationBridge.getLastSeenVillageId(level, player);
         if (lastSeenVillageId.isPresent()) {
             Integer villageId = lastSeenVillageId.get();
-            CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId);
+            CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId);
 
             if (capital != null && MCAIntegrationBridge.isPlayerInVillage(level, player, villageId)) {
                 return capital;
@@ -128,7 +128,8 @@ public class CapitalChronicleItem extends Item {
 
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             Integer villageId = capital.getVillageId();
-            if (villageId == null) {
+            if (villageId == null
+                    || !CapitalManager.isCapitalInLevel(capital, level)) {
                 continue;
             }
 
@@ -148,7 +149,8 @@ public class CapitalChronicleItem extends Item {
 
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             Integer villageId = capital.getVillageId();
-            if (villageId == null) {
+            if (villageId == null
+                    || !CapitalManager.isCapitalInLevel(capital, level)) {
                 continue;
             }
 

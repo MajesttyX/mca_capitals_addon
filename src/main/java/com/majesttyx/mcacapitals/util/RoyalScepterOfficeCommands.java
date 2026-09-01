@@ -322,6 +322,7 @@ public final class RoyalScepterOfficeCommands {
         }
 
         return CapitalManager.getCapitalByVillageId(
+                level,
                 villageId
         );
     }

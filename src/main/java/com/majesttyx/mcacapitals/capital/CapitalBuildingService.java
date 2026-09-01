@@ -43,8 +43,9 @@ public final class CapitalBuildingService {
             return Collections.emptyList();
         }
 
+        ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
         return MCAIntegrationBridge.getBuildingBoundsOfType(
-                level,
+                capitalLevel,
                 capital.getVillageId(),
                 PRISON
         );
@@ -55,8 +56,9 @@ public final class CapitalBuildingService {
             return Collections.emptyList();
         }
 
+        ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
         return MCAIntegrationBridge.getBuildingCentersOfType(
-                level,
+                capitalLevel,
                 capital.getVillageId(),
                 PRISON
         );
@@ -75,8 +77,9 @@ public final class CapitalBuildingService {
             return 0;
         }
 
+        ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
         return MCAIntegrationBridge.countBuildingsOfType(
-                level,
+                capitalLevel,
                 capital.getVillageId(),
                 buildingType
         );

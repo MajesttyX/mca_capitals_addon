@@ -8,9 +8,13 @@ import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import forge.net.conczin.mca.Config;
+import forge.net.conczin.mca.cobalt.network.NetworkHandler;
 import forge.net.conczin.mca.entity.ai.Messenger;
+import forge.net.conczin.mca.network.s2c.VillagerMessage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -89,7 +93,8 @@ public class CapitalAmbientDialogueHandler {
     private void tickCapital(ServerLevel level, CapitalRecord capital, long gameTime) {
         if (capital == null
                 || capital.getState() != CapitalState.ACTIVE
-                || capital.getVillageId() == null) {
+                || capital.getVillageId() == null
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return;
         }
 
@@ -701,10 +706,26 @@ public class CapitalAmbientDialogueHandler {
             Entity speaker,
             Component line
     ) {
-        Component message = CapitalDialogueSpeaker.formatVillagerSpeech(
-                speaker,
-                line
-        );
+        if (speaker instanceof Messenger messenger) {
+            MutableComponent content = line.copy();
+            content = messenger.transformMessage(content);
+
+            MutableComponent prefix = Component.literal(Config.getInstance().villagerChatPrefix)
+                    .append(speaker.getDisplayName())
+                    .append(": ");
+
+            for (ServerPlayer player : level.players()) {
+                if (player.distanceTo(speaker) <= PLAYER_HEAR_RADIUS) {
+                    NetworkHandler.sendToPlayer(
+                            new VillagerMessage(prefix.copy(), content.copy(), speaker.getUUID()),
+                            player
+                    );
+                }
+            }
+            return;
+        }
+
+        Component message = CapitalDialogueSpeaker.formatVillagerSpeech(speaker, line);
         for (ServerPlayer player : level.players()) {
             if (player.distanceTo(speaker) <= PLAYER_HEAR_RADIUS) {
                 player.sendSystemMessage(message);

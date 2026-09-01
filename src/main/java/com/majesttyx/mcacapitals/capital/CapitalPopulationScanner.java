@@ -102,6 +102,7 @@ public class CapitalPopulationScanner {
                 qualifyingVillageIds) {
             if (CapitalManager
                     .hasCapitalForVillageId(
+                            level,
                             villageId
                     )) {
                 continue;
@@ -122,6 +123,7 @@ public class CapitalPopulationScanner {
                     CapitalState.PENDING
             );
 
+            capital.setVillageDimensionId(CapitalManager.getDimensionId(level));
             CapitalManager.putCapital(capital);
 
             CapitalCourtWatcher.clearFingerprint(
@@ -164,6 +166,8 @@ public class CapitalPopulationScanner {
                                 level,
                                 capital.getCapitalId()
                         );
+
+        MCAIntegrationBridge.captureLoadedResidentStates(level, residents);
 
         VillagerIdentityService
                 .ensureResidents(
@@ -254,6 +258,10 @@ public class CapitalPopulationScanner {
             ServerLevel level,
             CapitalRecord capital
     ) {
+        if (!CapitalManager.isCapitalInLevel(capital, level)) {
+            return true;
+        }
+
         return capital.getVillageId() != null
                 && !MCAIntegrationBridge
                 .hasVillage(
@@ -681,6 +689,10 @@ public class CapitalPopulationScanner {
                 CapitalManager
                         .getAllCapitalsSnapshot()
                         .values()) {
+            if (!CapitalManager.isCapitalInLevel(capital, level)) {
+                continue;
+            }
+
             if (capital.getVillageId() == null) {
                 Integer resolvedVillageId = null;
 
@@ -704,41 +716,26 @@ public class CapitalPopulationScanner {
                 }
 
                 if (resolvedVillageId != null) {
-                    capital.setVillageId(
-                            resolvedVillageId
-                    );
-
+                    capital.setVillageId(resolvedVillageId);
+                    capital.setVillageDimensionId(CapitalManager.getDimensionId(level));
                     changed = true;
                 }
             }
         }
 
-        Map<Integer, CapitalRecord>
-                preferredByVillage =
-                new HashMap<>();
+        Map<String, CapitalRecord> preferredByVillage = new HashMap<>();
 
-        for (CapitalRecord capital :
-                CapitalManager
-                        .getAllCapitalRecords()) {
-            Integer villageId =
-                    capital.getVillageId();
-
-            if (villageId == null) {
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            Integer villageId = capital.getVillageId();
+            if (villageId == null || !CapitalManager.isCapitalInLevel(capital, level)) {
                 continue;
             }
 
-            CapitalRecord existing =
-                    preferredByVillage.get(villageId);
+            String key = CapitalManager.getDimensionId(level) + "|" + villageId;
+            CapitalRecord existing = preferredByVillage.get(key);
 
-            if (existing == null
-                    || isPreferred(
-                    capital,
-                    existing
-            )) {
-                preferredByVillage.put(
-                        villageId,
-                        capital
-                );
+            if (existing == null || isPreferred(capital, existing)) {
+                preferredByVillage.put(key, capital);
             }
         }
 
@@ -746,28 +743,19 @@ public class CapitalPopulationScanner {
                 CapitalManager
                         .getAllCapitalsSnapshot()
                         .values()) {
-            Integer villageId =
-                    capital.getVillageId();
-
-            if (villageId == null) {
+            Integer villageId = capital.getVillageId();
+            if (villageId == null || !CapitalManager.isCapitalInLevel(capital, level)) {
                 continue;
             }
 
-            CapitalRecord preferred =
-                    preferredByVillage.get(villageId);
+            String key = CapitalManager.getDimensionId(level) + "|" + villageId;
+            CapitalRecord preferred = preferredByVillage.get(key);
 
-            if (preferred != null
-                    && preferred != capital) {
-                CapitalSystemCleanupService
-                        .removeCapital(
-                                level,
-                                capital.getCapitalId()
-                        );
-
+            if (preferred != null && preferred != capital) {
+                CapitalSystemCleanupService.removeCapital(level, capital.getCapitalId());
                 changed = true;
             }
         }
-
 
         return changed;
     }

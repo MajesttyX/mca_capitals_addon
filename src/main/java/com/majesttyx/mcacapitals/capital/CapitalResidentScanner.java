@@ -124,7 +124,8 @@ public class CapitalResidentScanner {
                 );
 
         if (capital != null
-                && capital.getVillageId() != null) {
+                && capital.getVillageId() != null
+                && CapitalManager.isCapitalInLevel(capital, level)) {
             residents.addAll(
                     MCAIntegrationBridge
                             .getVillageResidents(

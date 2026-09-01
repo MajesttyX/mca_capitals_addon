@@ -32,7 +32,10 @@ final class CapitalTradeProfileService {
             return List.of();
         }
 
-        ServerLevel villageLevel = findVillageLevel(contextLevel, capital.getVillageId());
+        ServerLevel villageLevel = CapitalManager.getCapitalLevel(contextLevel.getServer(), capital);
+        if (villageLevel == null) {
+            villageLevel = findVillageLevel(contextLevel, capital.getVillageId());
+        }
         if (villageLevel == null) {
             return List.of();
         }
