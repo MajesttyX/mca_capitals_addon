@@ -12,6 +12,7 @@ import com.majesttyx.mcacapitals.config.MCACapitalsConfig;
 import com.majesttyx.mcacapitals.dialogue.CapitalAmbientDialogueHandler;
 import com.majesttyx.mcacapitals.item.BetrothalDecreeHandler;
 import com.majesttyx.mcacapitals.item.DeclarationOfAbdicationHandler;
+import com.majesttyx.mcacapitals.item.DeclarationOfSeparationHandler;
 import com.majesttyx.mcacapitals.item.DecreeOfTheHouseHandler;
 import com.majesttyx.mcacapitals.item.LegitimizationDecreeHandler;
 import com.majesttyx.mcacapitals.item.ModCreativeTabs;
@@ -79,77 +80,25 @@ public class MCACapitals {
                 ModNetwork::register
         );
 
-        NeoForge.EVENT_BUS.register(
-                new CapitalPopulationScanner()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new CapitalExileDiscoveryHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new CapitalPrisonerHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new CapitalPlayerLegalHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new CapitalAmbientDialogueHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new CapitalDiplomaticShipmentProcessor()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new CapitalAmbassadorUrgentMatterHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new CapitalDiplomaticAgreementProcessor()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new CapitalTradeExchangeProcessor()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new RoyalScepterHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new RoyalDisinheritanceHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new LegitimizationDecreeHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new DeclarationOfAbdicationHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new BetrothalDecreeHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new SuccessionDecreeHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new DecreeOfTheHouseHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new RoyalPardonHandler()
-        );
-
-        NeoForge.EVENT_BUS.register(
-                new CapitalLifecycleHandler()
-        );
+        NeoForge.EVENT_BUS.register(new CapitalPopulationScanner());
+        NeoForge.EVENT_BUS.register(new CapitalExileDiscoveryHandler());
+        NeoForge.EVENT_BUS.register(new CapitalPrisonerHandler());
+        NeoForge.EVENT_BUS.register(new CapitalPlayerLegalHandler());
+        NeoForge.EVENT_BUS.register(new CapitalAmbientDialogueHandler());
+        NeoForge.EVENT_BUS.register(new CapitalDiplomaticShipmentProcessor());
+        NeoForge.EVENT_BUS.register(new CapitalAmbassadorUrgentMatterHandler());
+        NeoForge.EVENT_BUS.register(new CapitalDiplomaticAgreementProcessor());
+        NeoForge.EVENT_BUS.register(new CapitalTradeExchangeProcessor());
+        NeoForge.EVENT_BUS.register(new RoyalScepterHandler());
+        NeoForge.EVENT_BUS.register(new RoyalDisinheritanceHandler());
+        NeoForge.EVENT_BUS.register(new LegitimizationDecreeHandler());
+        NeoForge.EVENT_BUS.register(new DeclarationOfAbdicationHandler());
+        NeoForge.EVENT_BUS.register(new BetrothalDecreeHandler());
+        NeoForge.EVENT_BUS.register(new SuccessionDecreeHandler());
+        NeoForge.EVENT_BUS.register(new DecreeOfTheHouseHandler());
+        NeoForge.EVENT_BUS.register(new DeclarationOfSeparationHandler());
+        NeoForge.EVENT_BUS.register(new RoyalPardonHandler());
+        NeoForge.EVENT_BUS.register(new CapitalLifecycleHandler());
 
         NeoForge.EVENT_BUS.addListener(
                 this::registerCommands
@@ -159,88 +108,26 @@ public class MCACapitals {
     private void registerCommands(
             RegisterCommandsEvent event
     ) {
-        CapitalTestCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalIdentityCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalHouseCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalHouseFoundationCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalDebugCommands.register(
-                event.getDispatcher()
-        );
-
-        AbdicationPromptCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalFoundingCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalCharterCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalLawCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalJusticeCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalOathsCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalRoyalGuardCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalPetitionCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalDiplomaticGiftCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalAmbassadorUrgentMatterCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalDiplomaticResponseCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalDiplomaticAgreementCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalRoyalEscortCommands.register(
-                event.getDispatcher()
-        );
-
-        CapitalDiplomaticProposalResponseCommands.register(
-                event.getDispatcher()
-        );
-
-        RoyalScepterCommands.register(
-                event.getDispatcher()
-        );
-
-        SuccessionDecreeCommands.register(
-                event.getDispatcher()
-        );
+        CapitalTestCommands.register(event.getDispatcher());
+        CapitalIdentityCommands.register(event.getDispatcher());
+        CapitalHouseCommands.register(event.getDispatcher());
+        CapitalHouseFoundationCommands.register(event.getDispatcher());
+        CapitalDebugCommands.register(event.getDispatcher());
+        AbdicationPromptCommands.register(event.getDispatcher());
+        CapitalFoundingCommands.register(event.getDispatcher());
+        CapitalCharterCommands.register(event.getDispatcher());
+        CapitalLawCommands.register(event.getDispatcher());
+        CapitalJusticeCommands.register(event.getDispatcher());
+        CapitalOathsCommands.register(event.getDispatcher());
+        CapitalRoyalGuardCommands.register(event.getDispatcher());
+        CapitalPetitionCommands.register(event.getDispatcher());
+        CapitalDiplomaticGiftCommands.register(event.getDispatcher());
+        CapitalAmbassadorUrgentMatterCommands.register(event.getDispatcher());
+        CapitalDiplomaticResponseCommands.register(event.getDispatcher());
+        CapitalDiplomaticAgreementCommands.register(event.getDispatcher());
+        CapitalRoyalEscortCommands.register(event.getDispatcher());
+        CapitalDiplomaticProposalResponseCommands.register(event.getDispatcher());
+        RoyalScepterCommands.register(event.getDispatcher());
+        SuccessionDecreeCommands.register(event.getDispatcher());
     }
 }

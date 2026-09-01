@@ -58,6 +58,13 @@ public class ModItems {
                     DecreeOfTheHouseItem::new
             );
 
+    public static final DeferredItem<HouseLedgerItem>
+            HOUSE_LEDGER =
+            ITEMS.register(
+                    "house_ledger",
+                    HouseLedgerItem::new
+            );
+
     public static final DeferredItem<RoyalCharterItem>
             ROYAL_CHARTER =
             ITEMS.register(
@@ -70,6 +77,13 @@ public class ModItems {
             ITEMS.register(
                     "capital_chronicle",
                     CapitalChronicleItem::new
+            );
+
+    public static final DeferredItem<BookOfHousesItem>
+            BOOK_OF_HOUSES =
+            ITEMS.register(
+                    "book_of_houses",
+                    BookOfHousesItem::new
             );
 
     public static final DeferredItem<SealedPurseItem>

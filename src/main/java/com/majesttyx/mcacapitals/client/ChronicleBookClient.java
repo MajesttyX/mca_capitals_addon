@@ -14,6 +14,11 @@ import net.minecraft.world.item.component.WrittenBookContent;
 
 public class ChronicleBookClient {
 
+    private static final String BOOK_KIND_KEY =
+            "mcacapitals_book_kind";
+    private static final String BOOK_KIND_HOUSES =
+            "houses";
+
     private ChronicleBookClient() {
     }
 
@@ -28,30 +33,99 @@ public class ChronicleBookClient {
             return;
         }
 
-        localizeBookMetadata(bookToOpen);
-        minecraft.setScreen(new BookViewScreen(BookViewScreen.BookAccess.fromItem(bookToOpen)));
+        boolean houseBook =
+                isBookOfHouses(bookToOpen);
+
+        if (!houseBook) {
+            localizeBookMetadata(bookToOpen);
+        }
+
+        BookViewScreen.BookAccess access =
+                BookViewScreen.BookAccess.fromItem(
+                        bookToOpen
+                );
+
+        if (access == null) {
+            return;
+        }
+
+        Component screenTitle =
+                houseBook
+                        ? Component.translatable(
+                                "item.mcacapitals.book_of_houses"
+                        )
+                        : Component.translatable(
+                                "item.mcacapitals.capital_chronicle"
+                        );
+
+        minecraft.setScreen(
+                new DoublePageBookScreen(
+                        access,
+                        screenTitle,
+                        !houseBook
+                )
+        );
+    }
+
+    private static boolean isBookOfHouses(
+            ItemStack bookStack
+    ) {
+        CompoundTag data =
+                ModItemStackData.getCustomData(
+                        bookStack
+                );
+
+        return BOOK_KIND_HOUSES.equals(
+                data.getString(
+                        BOOK_KIND_KEY
+                )
+        );
     }
 
     private static void localizeBookMetadata(ItemStack bookStack) {
-        WrittenBookContent content = bookStack.get(DataComponents.WRITTEN_BOOK_CONTENT);
+        WrittenBookContent content =
+                bookStack.get(
+                        DataComponents.WRITTEN_BOOK_CONTENT
+                );
+
         if (content == null) {
             return;
         }
 
-        CompoundTag data = ModItemStackData.getCustomData(bookStack);
-        String storedCapitalName = data.getString(ModDataKeys.VILLAGE_NAME);
-        Component capitalName = storedCapitalName == null
-                || storedCapitalName.isBlank()
-                || "Unknown Village".equals(storedCapitalName)
-                || "Unknown Capital".equals(storedCapitalName)
-                ? Component.translatable("mcacapitals.chronicle.unknown_capital")
-                : Component.literal(storedCapitalName);
+        CompoundTag data =
+                ModItemStackData.getCustomData(
+                        bookStack
+                );
+
+        String storedCapitalName =
+                data.getString(
+                        ModDataKeys.VILLAGE_NAME
+                );
+
+        Component capitalName =
+                storedCapitalName == null
+                        || storedCapitalName.isBlank()
+                        || "Unknown Village".equals(
+                                storedCapitalName
+                        )
+                        || "Unknown Capital".equals(
+                                storedCapitalName
+                        )
+                        ? Component.translatable(
+                                "mcacapitals.chronicle.unknown_capital"
+                        )
+                        : Component.literal(
+                                storedCapitalName
+                        );
 
         String title = Component.translatable(
                 "mcacapitals.chronicle.book.title",
                 capitalName
         ).getString();
-        String author = Component.translatable("mcacapitals.chronicle.book.author").getString();
+
+        String author = Component.translatable(
+                "mcacapitals.chronicle.book.author"
+        ).getString();
 
         bookStack.set(
                 DataComponents.WRITTEN_BOOK_CONTENT,

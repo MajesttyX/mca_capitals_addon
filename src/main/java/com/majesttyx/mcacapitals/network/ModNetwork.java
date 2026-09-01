@@ -69,6 +69,12 @@ public class ModNetwork {
         );
 
         registrar.playToClient(
+                OpenDeclarationOfSeparationPacket.TYPE,
+                OpenDeclarationOfSeparationPacket.STREAM_CODEC,
+                OpenDeclarationOfSeparationPacket::handle
+        );
+
+        registrar.playToClient(
                 SyncVillagerIdentityPacket.TYPE,
                 SyncVillagerIdentityPacket.STREAM_CODEC,
                 SyncVillagerIdentityPacket::handle
@@ -85,105 +91,94 @@ public class ModNetwork {
                 SubmitDecreeOfTheHousePacket.STREAM_CODEC,
                 SubmitDecreeOfTheHousePacket::handle
         );
+
+        registrar.playToServer(
+                SubmitDeclarationOfSeparationPacket.TYPE,
+                SubmitDeclarationOfSeparationPacket.STREAM_CODEC,
+                SubmitDeclarationOfSeparationPacket::handle
+        );
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             OpenCapitalChroniclePacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             OpenAmbassadorCommunicationPacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             OpenBetrothalSelectionPacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             OpenAccusationSelectionPacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             OpenSealedPurseCaseSelectionPacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             OpenRoyalCharterDecisionPacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             OpenPlayerHouseSetupPacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             OpenDecreeOfTheHousePacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    public static void sendToPlayer(
+            ServerPlayer player,
+            OpenDeclarationOfSeparationPacket packet
+    ) {
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             SyncVillagerIdentityPacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
     }
 
     public static void sendToPlayer(
             ServerPlayer player,
             SyncBlueprintAuthorityPacket packet
     ) {
-        PacketDistributor.sendToPlayer(
-                player,
-                packet
-        );
+        PacketDistributor.sendToPlayer(player, packet);
+    }
+
+    public static void sendToServer(
+            SubmitDeclarationOfSeparationPacket packet
+    ) {
+        PacketDistributor.sendToServer(packet);
     }
 }
