@@ -93,7 +93,11 @@ public final class CapitalNameService {
 
         Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
         if (entity != null) {
-            String baseName = resolveBaseName(entity);
+            String baseName = stripCurrentResolvedTitlePrefix(
+                    level,
+                    entityId,
+                    resolveBaseName(entity)
+            );
             if (isUsableBaseName(baseName)) {
                 return baseName.trim();
             }
@@ -101,9 +105,13 @@ public final class CapitalNameService {
 
         if (capital != null && capital.getVillageId() != null) {
             ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
-            String savedName = MCAIntegrationBridge
-                    .getVillageResidentNames(capitalLevel, capital.getVillageId())
-                    .get(entityId);
+            String savedName = stripCurrentResolvedTitlePrefix(
+                    capitalLevel,
+                    entityId,
+                    MCAIntegrationBridge
+                            .getVillageResidentNames(capitalLevel, capital.getVillageId())
+                            .get(entityId)
+            );
             if (isUsableBaseName(savedName)) {
                 return savedName.trim();
             }
@@ -119,7 +127,11 @@ public final class CapitalNameService {
 
         Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
         if (entity != null) {
-            String baseName = resolveBaseName(entity);
+            String baseName = stripCurrentResolvedTitlePrefix(
+                    level,
+                    entityId,
+                    resolveBaseName(entity)
+            );
             if (isUsableBaseName(baseName)) {
                 return Component.literal(baseName.trim());
             }
@@ -127,9 +139,13 @@ public final class CapitalNameService {
 
         if (capital != null && capital.getVillageId() != null) {
             ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
-            String savedName = MCAIntegrationBridge
-                    .getVillageResidentNames(capitalLevel, capital.getVillageId())
-                    .get(entityId);
+            String savedName = stripCurrentResolvedTitlePrefix(
+                    capitalLevel,
+                    entityId,
+                    MCAIntegrationBridge
+                            .getVillageResidentNames(capitalLevel, capital.getVillageId())
+                            .get(entityId)
+            );
             if (isUsableBaseName(savedName)) {
                 return Component.literal(savedName.trim());
             }
@@ -200,6 +216,53 @@ public final class CapitalNameService {
         return isUsableBaseName(currentName)
                 ? currentName.trim()
                 : null;
+    }
+
+    /**
+     * MCA 1.20.1 mirrors setCustomName(...).getString() into its
+     * canonical villager name. Older Capitals releases stored the rendered
+     * title wrapper as the custom name, so worlds upgraded from those releases
+     * can retain a flattened value such as "Prince Name" as MCA's base name.
+     *
+     * 1.3.5 renders titles separately. Strip only the villager's CURRENT,
+     * resolved, localized Capitals title from the display-time base name. This
+     * prevents "Prince Prince Name" without hard-coding English title strings
+     * or destructively renaming arbitrary MCA/custom names in saved data.
+     */
+    private static String stripCurrentResolvedTitlePrefix(
+            ServerLevel level,
+            UUID entityId,
+            String name
+    ) {
+        if (level == null || entityId == null || !isUsableBaseName(name)) {
+            return name;
+        }
+
+        CapitalTitleResolver.ResolvedTitleId titleId =
+                CapitalTitleResolver.getResolvedTitleIdForEntity(level, entityId);
+        if (titleId == CapitalTitleResolver.ResolvedTitleId.NONE
+                || titleId == CapitalTitleResolver.ResolvedTitleId.COMMONER) {
+            return name.trim();
+        }
+
+        Component title = CapitalTitleResolver.getDisplayTitleComponentForEntity(level, entityId);
+        if (title == null) {
+            return name.trim();
+        }
+
+        String titleText = title.getString();
+        if (titleText == null || titleText.isBlank()) {
+            return name.trim();
+        }
+
+        String result = name.trim();
+        String prefix = titleText.trim() + " ";
+
+        while (result.startsWith(prefix) && result.length() > prefix.length()) {
+            result = result.substring(prefix.length()).trim();
+        }
+
+        return result.isBlank() ? name.trim() : result;
     }
 
     private static String recoverBaseNameFromCapitalsWrapper(Component component) {
