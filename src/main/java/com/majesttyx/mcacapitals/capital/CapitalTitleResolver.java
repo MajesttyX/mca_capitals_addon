@@ -398,15 +398,26 @@ public class CapitalTitleResolver {
         if (capital == null) {
             return false;
         }
-        if (capital.getPlayerSovereignId() != null) {
-            return MCAIntegrationBridge.isFemale(level, capital.getPlayerSovereignId());
+
+        UUID sovereignId = capital.getPlayerSovereignId() != null
+                ? capital.getPlayerSovereignId()
+                : capital.getSovereign();
+        java.util.Optional<Boolean> mcaGender = MCAIntegrationBridge.getFemaleIfKnown(level, sovereignId);
+        if (mcaGender.isPresent()) {
+            return mcaGender.get();
         }
+
         return capital.isSovereignFemale();
     }
 
     private static boolean isFemaleForTitle(ServerLevel level, CapitalRecord capital, UUID entityId) {
         if (entityId == null || capital == null) {
             return false;
+        }
+
+        java.util.Optional<Boolean> mcaGender = MCAIntegrationBridge.getFemaleIfKnown(level, entityId);
+        if (mcaGender.isPresent()) {
+            return mcaGender.get();
         }
 
         if (entityId.equals(capital.getSovereign())) {

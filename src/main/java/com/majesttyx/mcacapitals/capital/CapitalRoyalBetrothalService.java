@@ -849,7 +849,8 @@ public final class CapitalRoyalBetrothalService {
                     || destination.getState()
                     != CapitalState.ACTIVE
                     || destination.getVillageId()
-                    == null) {
+                    == null
+                    || !CapitalManager.isCapitalInLevel(destination, level)) {
                 continue;
             }
 
@@ -912,12 +913,6 @@ public final class CapitalRoyalBetrothalService {
                     )) {
                 continue;
             }
-
-            MCAIntegrationBridge.forceVillageResidency(
-                    level,
-                    record.relocatingRoyalId(),
-                    destination.getVillageId()
-            );
 
             if (!PendingVillagerBetrothalAccess
                     .completeRoyalEscort(

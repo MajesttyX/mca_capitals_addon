@@ -34,28 +34,14 @@ final class CapitalCourtApplier {
         capital.setConsort(newConsort);
         capital.setConsortFemale(newConsortFemale);
 
-        if (newConsort != null
-                && capital.isRoyalGuard(newConsort)) {
+        if (newConsort != null && capital.isRoyalGuard(newConsort)) {
             capital.removeRoyalGuard(newConsort);
         }
 
-        if (newConsort != null
-                && !MCAIntegrationBridge.isMCAVillager(
-                level,
-                newConsort
-        )) {
+        if (newConsort != null && MCAIntegrationBridge.isPlayerIdentity(level, newConsort)) {
             capital.setPlayerConsort(true);
-
-            capital.setPlayerConsortId(
-                    newConsort
-            );
-
-            capital.setPlayerConsortName(
-                    CapitalFoundationInternal.resolvePlayerName(
-                            level,
-                            newConsort
-                    )
-            );
+            capital.setPlayerConsortId(newConsort);
+            capital.setPlayerConsortName(CapitalFoundationInternal.resolvePlayerName(level, newConsort));
         } else {
             capital.setPlayerConsort(false);
             capital.setPlayerConsortId(null);
@@ -64,152 +50,56 @@ final class CapitalCourtApplier {
 
         capital.getRoyalChildren().clear();
         capital.getRoyalChildFemale().clear();
-
         for (UUID childId : newRoyalChildren) {
-            capital.getRoyalChildren()
-                    .add(childId);
-
-            capital.getRoyalChildFemale()
-                    .put(
-                            childId,
-                            newRoyalChildFemale
-                                    .getOrDefault(
-                                            childId,
-                                            false
-                                    )
-                    );
+            capital.getRoyalChildren().add(childId);
+            capital.getRoyalChildFemale().put(childId, newRoyalChildFemale.getOrDefault(childId, false));
         }
 
-        capital.getPrinceConsortSources()
-                .clear();
-
-        capital.getPrinceConsortFemale()
-                .clear();
-
-        for (Map.Entry<UUID, UUID> entry :
-                newPrinceConsortSources
-                        .entrySet()) {
-            capital.getPrinceConsortSources()
-                    .put(
-                            entry.getKey(),
-                            entry.getValue()
-                    );
-
-            capital.getPrinceConsortFemale()
-                    .put(
-                            entry.getKey(),
-                            newPrinceConsortFemale
-                                    .getOrDefault(
-                                            entry.getKey(),
-                                            false
-                                    )
-                    );
+        capital.getPrinceConsortSources().clear();
+        capital.getPrinceConsortFemale().clear();
+        for (Map.Entry<UUID, UUID> entry : newPrinceConsortSources.entrySet()) {
+            capital.getPrinceConsortSources().put(entry.getKey(), entry.getValue());
+            capital.getPrinceConsortFemale().put(entry.getKey(), newPrinceConsortFemale.getOrDefault(entry.getKey(), false));
         }
 
         capital.getDukes().clear();
         capital.getDukeFemale().clear();
-
         for (UUID dukeId : newDukes) {
-            capital.getDukes()
-                    .add(dukeId);
-
-            capital.getDukeFemale()
-                    .put(
-                            dukeId,
-                            newDukeFemale
-                                    .getOrDefault(
-                                            dukeId,
-                                            false
-                                    )
-                    );
+            capital.getDukes().add(dukeId);
+            capital.getDukeFemale().put(dukeId, newDukeFemale.getOrDefault(dukeId, false));
         }
 
-        capital.getMarriageDukeSources()
-                .clear();
-
-        capital.getMarriageDukeFemale()
-                .clear();
-
-        for (Map.Entry<UUID, UUID> entry :
-                newMarriageDukeSources
-                        .entrySet()) {
-            capital.getMarriageDukeSources()
-                    .put(
-                            entry.getKey(),
-                            entry.getValue()
-                    );
-
-            capital.getMarriageDukeFemale()
-                    .put(
-                            entry.getKey(),
-                            newMarriageDukeFemale
-                                    .getOrDefault(
-                                            entry.getKey(),
-                                            false
-                                    )
-                    );
+        capital.getMarriageDukeSources().clear();
+        capital.getMarriageDukeFemale().clear();
+        for (Map.Entry<UUID, UUID> entry : newMarriageDukeSources.entrySet()) {
+            capital.getMarriageDukeSources().put(entry.getKey(), entry.getValue());
+            capital.getMarriageDukeFemale().put(entry.getKey(), newMarriageDukeFemale.getOrDefault(entry.getKey(), false));
         }
 
         capital.getLords().clear();
         capital.getLordFemale().clear();
-
         for (UUID lordId : newLords) {
-            capital.getLords()
-                    .add(lordId);
-
-            capital.getLordFemale()
-                    .put(
-                            lordId,
-                            newLordFemale
-                                    .getOrDefault(
-                                            lordId,
-                                            false
-                                    )
-                    );
+            capital.getLords().add(lordId);
+            capital.getLordFemale().put(lordId, newLordFemale.getOrDefault(lordId, false));
         }
 
         capital.getKnights().clear();
         capital.getKnightFemale().clear();
-
         for (UUID knightId : newKnights) {
-            capital.getKnights()
-                    .add(knightId);
-
-            capital.getKnightFemale()
-                    .put(
-                            knightId,
-                            newKnightFemale
-                                    .getOrDefault(
-                                            knightId,
-                                            false
-                                    )
-                    );
+            capital.getKnights().add(knightId);
+            capital.getKnightFemale().put(knightId, newKnightFemale.getOrDefault(knightId, false));
         }
 
         capital.setHeir(newHeir);
-
         if (newHeir != null) {
-            boolean heirFemale =
-                    newRoyalChildFemale
-                            .getOrDefault(
-                                    newHeir,
-                                    MCAIntegrationBridge.isFemale(
-                                            level,
-                                            newHeir
-                                    )
-                            );
-
-            capital.setHeirFemale(
-                    heirFemale
-            );
+            boolean heirFemale = newRoyalChildFemale.getOrDefault(newHeir, MCAIntegrationBridge.isFemale(level, newHeir));
+            capital.setHeirFemale(heirFemale);
         } else {
             capital.setHeirFemale(false);
         }
 
         if (capital.getSovereign() != null) {
-            capital.setState(
-                    CapitalState.ACTIVE
-            );
+            capital.setState(CapitalState.ACTIVE);
         }
     }
 }

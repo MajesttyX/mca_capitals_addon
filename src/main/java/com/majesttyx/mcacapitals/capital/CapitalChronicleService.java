@@ -372,13 +372,13 @@ public class CapitalChronicleService {
             return;
         }
 
-        Component announcement = entry.renderHerald();
-        if (announcement == null) {
+        String signature = entry.heraldKey() + ':' + entry.dedupeKey();
+        if (!reserveHeraldAnnouncement(level, capital, signature)) {
             return;
         }
 
-        String signature = entry.heraldKey() + ':' + entry.dedupeKey();
-        if (!reserveHeraldAnnouncement(level, capital, signature)) {
+        Component announcement = entry.renderHeraldVariant(1 + level.random.nextInt(3));
+        if (announcement == null) {
             return;
         }
 
@@ -567,4 +567,9 @@ public class CapitalChronicleService {
 
     private record HeraldAnnouncement(long gameTime, String signature) {
     }
+
+    public static void clearRuntimeState() {
+        LAST_HERALD_ANNOUNCEMENTS.clear();
+    }
+
 }

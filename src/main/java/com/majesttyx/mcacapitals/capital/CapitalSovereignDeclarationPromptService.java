@@ -68,7 +68,7 @@ public final class CapitalSovereignDeclarationPromptService {
 
         Component prompt = Component.translatable(
                 QUESTION_TEXT_KEY,
-                CapitalDiplomaticAgreementText.capitalName(
+                CapitalDiplomaticAgreementText.capitalNameComponent(
                         player.serverLevel(),
                         capital
                 )
@@ -181,7 +181,7 @@ public final class CapitalSovereignDeclarationPromptService {
                 level,
                 villager.getUUID()
         );
-        CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId);
+        CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId);
         return capital != null && capital.getState() == CapitalState.ACTIVE
                 ? capital
                 : null;

@@ -29,6 +29,9 @@ final class CapitalSavedDataReader {
                     : null;
 
             CapitalRecord capital = new CapitalRecord(capitalId, villageId);
+            if (capitalTag.contains(CapitalSavedData.KEY_VILLAGE_DIMENSION)) {
+                capital.setVillageDimensionId(capitalTag.getString(CapitalSavedData.KEY_VILLAGE_DIMENSION));
+            }
 
             if (capitalTag.contains(CapitalSavedData.KEY_STATE)) {
                 try {
@@ -159,6 +162,7 @@ final class CapitalSavedDataReader {
                 capital.setMasterOfLaws(capitalTag.getUUID(CapitalSavedData.KEY_MASTER_OF_LAWS));
             }
             capital.setMasterOfLawsFemale(capitalTag.getBoolean(CapitalSavedData.KEY_MASTER_OF_LAWS_FEMALE));
+
             if (capitalTag.hasUUID(CapitalSavedData.KEY_LAST_CROWN_STANDING_SOVEREIGN)) {
                 capital.setLastCrownStandingSovereign(capitalTag.getUUID(CapitalSavedData.KEY_LAST_CROWN_STANDING_SOVEREIGN));
             }
@@ -231,6 +235,7 @@ final class CapitalSavedDataReader {
             if (!tag.hasUUID(CapitalSavedData.KEY_ID) || !tag.contains(CapitalSavedData.KEY_STANDING)) {
                 continue;
             }
+
             try {
                 capital.setCrownStanding(
                         tag.getUUID(CapitalSavedData.KEY_ID),

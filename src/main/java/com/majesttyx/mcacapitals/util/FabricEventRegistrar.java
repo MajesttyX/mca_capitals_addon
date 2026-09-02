@@ -1,6 +1,10 @@
 package com.majesttyx.mcacapitals.util;
 
 import com.majesttyx.mcacapitals.capital.CapitalAmbassadorUrgentMatterHandler;
+import com.majesttyx.mcacapitals.item.DeclarationOfSeparationHandler;
+import com.majesttyx.mcacapitals.house.CapitalHouseRegistryTicker;
+import com.majesttyx.mcacapitals.event.CapitalHouseDeathEvents;
+import com.majesttyx.mcacapitals.capital.CapitalAmbassadorCooldownResetService;
 import com.majesttyx.mcacapitals.capital.CapitalCampaignCombatDamageHandler;
 import com.majesttyx.mcacapitals.capital.CapitalCampaignCombatTickHandler;
 import com.majesttyx.mcacapitals.capital.CapitalCampaignProcessor;
@@ -87,6 +91,14 @@ public final class FabricEventRegistrar {
                             serverLevel
                     );
 
+                    CapitalHouseRegistryTicker.onLevelTick(
+                            serverLevel
+                    );
+
+                    CapitalAmbassadorCooldownResetService.onLevelTick(
+                            serverLevel
+                    );
+
                     CapitalCampaignProcessor.onLevelTick(
                             serverLevel
                     );
@@ -160,6 +172,10 @@ public final class FabricEventRegistrar {
                         )
         );
 
+        ServerEntityEvents.ENTITY_UNLOAD.register(
+                MCAResidentStateSnapshotHandler::onEntityUnload
+        );
+
         EntityTrackingEvents.START_TRACKING.register(
                 VillagerIdentityTrackingSyncHandler::onStartTracking
         );
@@ -177,6 +193,10 @@ public final class FabricEventRegistrar {
                     CapitalDeathEvents.onLivingDeath(
                             entity,
                             damageSource
+                    );
+
+                    CapitalHouseDeathEvents.onLivingDeath(
+                            entity
                     );
                 }
         );
@@ -213,6 +233,17 @@ public final class FabricEventRegistrar {
 
                     result =
                             DecreeOfTheHouseHandler.handleEntityInteract(
+                                    player,
+                                    entity,
+                                    hand
+                            );
+
+                    if (result != InteractionResult.PASS) {
+                        return result;
+                    }
+
+                    result =
+                            DeclarationOfSeparationHandler.handleEntityInteract(
                                     player,
                                     entity,
                                     hand

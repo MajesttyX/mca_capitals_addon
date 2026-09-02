@@ -70,12 +70,7 @@ public final class CapitalAsylumService {
                 refugeeId
         );
 
-        if (!MCAIntegrationBridge.leaveHome(
-                level,
-                refugeeId
-        )) {
-            return false;
-        }
+        villager.getResidency().leaveHome();
 
         CapitalRefugeeRecord record =
                 CapitalRefugeeDataAccess.markExiled(
@@ -384,6 +379,7 @@ public final class CapitalAsylumService {
 
         boolean alreadyResidentOfTarget =
                 isTargetVillage(
+                        level,
                         currentHome,
                         targetCapital
                 );
@@ -408,22 +404,7 @@ public final class CapitalAsylumService {
                 return 0;
             }
 
-            if (!MCAIntegrationBridge.forceVillageResidency(
-                    level,
-                    refugeeId,
-                    targetCapital.getVillageId()
-            )) {
-                MCAIntegrationBridge.leaveHome(
-                        level,
-                        refugeeId
-                );
-
-                player.sendSystemMessage(
-                        Component.translatable("mcacapitals.system.capital_asylum_service.the_refugee_could_not_be_assigned_to_this_capital_s_mca_village")
-                );
-
-                return 0;
-            }
+            villager.getResidency().seekHome();
 
             boolean joinedTarget =
                     villager.getResidency()
@@ -431,6 +412,7 @@ public final class CapitalAsylumService {
                             .map(
                                     home ->
                                             isTargetVillage(
+                                                    level,
                                                     home,
                                                     targetCapital
                                             )
@@ -438,10 +420,7 @@ public final class CapitalAsylumService {
                             .orElse(false);
 
             if (!joinedTarget) {
-                MCAIntegrationBridge.leaveHome(
-                        level,
-                        refugeeId
-                );
+                villager.getResidency().leaveHome();
 
                 player.sendSystemMessage(
                         Component.translatable("mcacapitals.system.capital_asylum_service.the_refugee_could_not_be_assigned_to_this_capital_s_mca_village")
@@ -465,10 +444,8 @@ public final class CapitalAsylumService {
                         targetCapital.getCapitalId()
                 )) {
             if (assignedHomeHere) {
-                MCAIntegrationBridge.leaveHome(
-                        level,
-                        refugeeId
-                );
+                villager.getResidency()
+                        .leaveHome();
             }
 
             player.sendSystemMessage(
@@ -793,6 +770,7 @@ public final class CapitalAsylumService {
 
         return currentHome == null
                 || isTargetVillage(
+                level,
                 currentHome,
                 targetCapital
         );
@@ -827,7 +805,8 @@ public final class CapitalAsylumService {
             return null;
         }
 
-        return VillageManager.get(level)
+        ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
+        return VillageManager.get(capitalLevel)
                 .getOrEmpty(
                         capital.getVillageId()
                 )
@@ -835,15 +814,15 @@ public final class CapitalAsylumService {
     }
 
     private static boolean isTargetVillage(
+            ServerLevel level,
             Village village,
             CapitalRecord targetCapital
     ) {
         return village != null
                 && targetCapital != null
-                && targetCapital.getVillageId()
-                != null
-                && village.getId()
-                == targetCapital.getVillageId();
+                && targetCapital.getVillageId() != null
+                && CapitalManager.isCapitalInLevel(targetCapital, level)
+                && village.getId() == targetCapital.getVillageId();
     }
 
     private static MutableComponent clickable(

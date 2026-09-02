@@ -21,7 +21,7 @@ import java.lang.reflect.Field;
 @Pseudo
 @Mixin(
         targets =
-                "net.conczin.mca.entity.interaction.EntityCommandHandler",
+                "net.conczin.mca.entity.interaction.VillagerCommandHandler",
         remap = false
 )
 public class VillagerCommandHandlerMixin {
@@ -48,7 +48,7 @@ public class VillagerCommandHandlerMixin {
                 resolveEntity();
 
         MCACapitals.LOGGER.info(
-                "[MCACapitals] EntityCommandHandler.handle intercepted. command='{}', entity='{}', player='{}'",
+                "[MCACapitals] VillagerCommandHandler.handle intercepted. command='{}', entity='{}', player='{}'",
                 command,
                 entity != null
                         ? entity.getName()

@@ -3,11 +3,11 @@ package com.majesttyx.mcacapitals.identity;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import com.majesttyx.mcacapitals.util.EntityPersistentData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
-import com.majesttyx.mcacapitals.util.EntityPersistentData;
 
 import java.util.Locale;
 import java.util.Set;
@@ -79,14 +79,12 @@ public final class VillagerIdentityService {
         }
 
         int changed = 0;
-
         for (UUID residentId : residents) {
             Entity entity = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, residentId);
             if (ensureAssigned(level, entity, capital)) {
                 changed++;
             }
         }
-
         return changed;
     }
 
@@ -137,7 +135,7 @@ public final class VillagerIdentityService {
             return false;
         }
 
-        CapitalRecord capital = knownCapital != null ? knownCapital : CapitalManager.getCapitalForVillage(villageId);
+        CapitalRecord capital = knownCapital != null ? knownCapital : CapitalManager.getCapitalForVillage(level, villageId);
         String villageName = MCAIntegrationBridge.getVillageName(level, villageId);
         String capitalName = capital == null ? "" : MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
@@ -260,6 +258,27 @@ public final class VillagerIdentityService {
         return true;
     }
 
+    private static boolean assignSurname(ServerLevel level, Entity entity, String surname, SurnameSource source, boolean onlyIfMissingBirthSurname) {
+        if (!canStoreIdentity(level, entity)) {
+            return false;
+        }
+
+        surname = normalizeSurname(surname);
+        if (surname.isBlank()) {
+            return false;
+        }
+
+        CompoundTag identity = getIdentityTag(entity);
+        if (!onlyIfMissingBirthSurname || !hasNonBlankString(identity, BIRTH_SURNAME)) {
+            identity.putString(BIRTH_SURNAME, surname);
+        }
+        identity.putString(CURRENT_SURNAME, surname);
+        identity.putString(SURNAME_SOURCE, (source == null ? SurnameSource.DEBUG : source).name());
+        identity.putLong(SURNAME_SET_AT_GAME_TIME, level == null ? 0L : level.getGameTime());
+        saveIdentityTag(entity, identity);
+        return true;
+    }
+
     public static void clearOrigin(Entity entity) {
         if (entity == null) {
             return;
@@ -351,7 +370,6 @@ public final class VillagerIdentityService {
         if (entity == null) {
             return "";
         }
-
         return getStringOrEmpty(getIdentityTag(entity), CURRENT_SURNAME);
     }
 
@@ -359,7 +377,6 @@ public final class VillagerIdentityService {
         if (entity == null) {
             return "";
         }
-
         return getStringOrEmpty(getIdentityTag(entity), BIRTH_SURNAME);
     }
 
@@ -367,7 +384,6 @@ public final class VillagerIdentityService {
         if (entity == null) {
             return "";
         }
-
         return getStringOrEmpty(getIdentityTag(entity), ORIGIN_VILLAGE_NAME);
     }
 
@@ -377,7 +393,6 @@ public final class VillagerIdentityService {
         }
 
         VillagerIdentityData data = getIdentity(entity);
-
         return "Name=" + entity.getName().getString()
                 + ", UUID=" + entity.getUUID()
                 + ", Origin=" + blankAsUnset(data.originVillageName())
@@ -398,35 +413,6 @@ public final class VillagerIdentityService {
     public static boolean isValidDebugSurname(String surname) {
         surname = normalizeSurname(surname);
         return !surname.isBlank() && !surname.contains("§") && surname.length() <= 40;
-    }
-
-    private static boolean assignSurname(
-            ServerLevel level,
-            Entity entity,
-            String surname,
-            SurnameSource source,
-            boolean onlyIfMissingBirthSurname
-    ) {
-        if (!canStoreIdentity(level, entity)) {
-            return false;
-        }
-
-        surname = normalizeSurname(surname);
-        if (surname.isBlank()) {
-            return false;
-        }
-
-        CompoundTag identity = getIdentityTag(entity);
-
-        if (!onlyIfMissingBirthSurname || !hasNonBlankString(identity, BIRTH_SURNAME)) {
-            identity.putString(BIRTH_SURNAME, surname);
-        }
-
-        identity.putString(CURRENT_SURNAME, surname);
-        identity.putString(SURNAME_SOURCE, (source == null ? SurnameSource.DEBUG : source).name());
-        identity.putLong(SURNAME_SET_AT_GAME_TIME, level == null ? 0L : level.getGameTime());
-        saveIdentityTag(entity, identity);
-        return true;
     }
 
     private static boolean canStoreIdentity(ServerLevel level, Entity entity) {
@@ -493,13 +479,11 @@ public final class VillagerIdentityService {
 
     private static CompoundTag getIdentityTag(Entity entity) {
         CompoundTag persistent = EntityPersistentData.get(entity);
-
         if (!persistent.contains(IDENTITY_TAG)) {
             CompoundTag identity = new CompoundTag();
             persistent.put(IDENTITY_TAG, identity);
             return identity;
         }
-
         return persistent.getCompound(IDENTITY_TAG);
     }
 

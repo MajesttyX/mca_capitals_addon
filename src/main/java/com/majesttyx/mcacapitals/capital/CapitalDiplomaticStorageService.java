@@ -39,7 +39,7 @@ public final class CapitalDiplomaticStorageService {
 
         StorageTarget target = findVillage(
                 contextLevel,
-                capital.getVillageId()
+                capital
         );
 
         return target != null
@@ -67,12 +67,12 @@ public final class CapitalDiplomaticStorageService {
 
         StorageTarget firstTarget = findVillage(
                 contextLevel,
-                firstCapital.getVillageId()
+                firstCapital
         );
 
         StorageTarget secondTarget = findVillage(
                 contextLevel,
-                secondCapital.getVillageId()
+                secondCapital
         );
 
         if (firstTarget == null || secondTarget == null) {
@@ -172,39 +172,27 @@ public final class CapitalDiplomaticStorageService {
 
         StorageTarget source = findVillage(
                 contextLevel,
-                losingCapital.getVillageId()
+                losingCapital
         );
-
         StorageTarget destination = findVillage(
                 contextLevel,
-                winningCapital.getVillageId()
+                winningCapital
         );
-
         if (source == null || destination == null) {
             return ReparationsResult.failure();
         }
 
-        List<StorageOffer> offers = collectOffers(
-                source,
-                selectionSeed
-        );
-
-        List<StorageOffer> selected =
-                new ArrayList<>();
-
-        List<ItemStack> transferred =
-                new ArrayList<>();
+        List<StorageOffer> offers = collectOffers(source, selectionSeed);
+        List<StorageOffer> selected = new ArrayList<>();
+        List<ItemStack> transferred = new ArrayList<>();
 
         for (StorageOffer offer : offers) {
             if (selected.size() >= 3) {
                 break;
             }
-
             if (offer.isStillValid()) {
                 selected.add(offer);
-                transferred.add(
-                        offer.exportStack()
-                );
+                transferred.add(offer.exportStack());
             }
         }
 
@@ -216,26 +204,16 @@ public final class CapitalDiplomaticStorageService {
             offer.removeExportedItems();
         }
 
-        if (!queueDelivery(
-                destination,
-                transferred
-        )) {
-            for (int index = 0;
-                 index < selected.size();
-                 index++) {
-                selected.get(index)
-                        .restoreExportedItems(
-                                transferred.get(index)
-                        );
+        if (!queueDelivery(destination, transferred)) {
+            for (int index = 0; index < selected.size(); index++) {
+                selected.get(index).restoreExportedItems(
+                        transferred.get(index)
+                );
             }
-
             return ReparationsResult.failure();
         }
 
-        return new ReparationsResult(
-                true,
-                List.copyOf(transferred)
-        );
+        return new ReparationsResult(true, List.copyOf(transferred));
     }
 
     private static List<StorageOffer> collectOffers(
@@ -498,40 +476,45 @@ public final class CapitalDiplomaticStorageService {
 
     private static StorageTarget findVillage(
             ServerLevel contextLevel,
-            int villageId
+            CapitalRecord capital
     ) {
-        Village local =
-                VillageManager.get(contextLevel)
-                        .getOrEmpty(villageId)
-                        .orElse(null);
-
-        if (local != null) {
-            return new StorageTarget(
-                    contextLevel,
-                    local
-            );
+        if (contextLevel == null || capital == null || capital.getVillageId() == null) {
+            return null;
         }
 
-        for (ServerLevel level :
-                contextLevel.getServer()
-                        .getAllLevels()) {
+        ServerLevel capitalLevel = CapitalManager.getCapitalLevel(contextLevel.getServer(), capital);
+        if (capitalLevel != null) {
+            Village village = VillageManager.get(capitalLevel)
+                    .getOrEmpty(capital.getVillageId())
+                    .orElse(null);
+            return village == null ? null : new StorageTarget(capitalLevel, village);
+        }
+
+        return findLegacyVillage(contextLevel, capital.getVillageId());
+    }
+
+    private static StorageTarget findLegacyVillage(
+            ServerLevel contextLevel,
+            int villageId
+    ) {
+        Village local = VillageManager.get(contextLevel)
+                .getOrEmpty(villageId)
+                .orElse(null);
+        if (local != null) {
+            return new StorageTarget(contextLevel, local);
+        }
+
+        for (ServerLevel level : contextLevel.getServer().getAllLevels()) {
             if (level == contextLevel) {
                 continue;
             }
-
-            Village village =
-                    VillageManager.get(level)
-                            .getOrEmpty(villageId)
-                            .orElse(null);
-
+            Village village = VillageManager.get(level)
+                    .getOrEmpty(villageId)
+                    .orElse(null);
             if (village != null) {
-                return new StorageTarget(
-                        level,
-                        village
-                );
+                return new StorageTarget(level, village);
             }
         }
-
         return null;
     }
 
@@ -540,10 +523,7 @@ public final class CapitalDiplomaticStorageService {
             List<ItemStack> transferredItems
     ) {
         private static ReparationsResult failure() {
-            return new ReparationsResult(
-                    false,
-                    List.of()
-            );
+            return new ReparationsResult(false, List.of());
         }
     }
 
@@ -553,7 +533,8 @@ public final class CapitalDiplomaticStorageService {
             ItemStack secondExport
     ) {
 
-        private static TradeExchangeResult failure() {
+        private static TradeExchangeResult
+        failure() {
             return new TradeExchangeResult(
                     false,
                     ItemStack.EMPTY,

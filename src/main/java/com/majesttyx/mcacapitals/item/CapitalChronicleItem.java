@@ -95,6 +95,7 @@ public class CapitalChronicleItem extends Item {
 
         CapitalRecord nearbyCapital = CapitalManager.getAllCapitalRecords().stream()
                 .filter(capital -> capital.getVillageId() != null)
+                .filter(capital -> CapitalManager.isCapitalInLevel(capital, player.serverLevel()))
                 .filter(capital -> MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId()) != null)
                 .min(Comparator.comparingDouble(capital -> {
                     var center = MCAIntegrationBridge.getVillageCenter(player.serverLevel(), capital.getVillageId());

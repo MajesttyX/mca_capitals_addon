@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import com.majesttyx.mcacapitals.util.MCAPersistentPersonBridge;
 import com.majesttyx.mcacapitals.util.MCARelationshipBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,17 +21,23 @@ final class CapitalCourtMarriageResolver {
             return null;
         }
 
-        UUID villagerSpouse = findActualVillagerSpouse(level, personId);
-        if (villagerSpouse != null) {
-            return villagerSpouse;
+        UUID recordedSpouse = MCAIntegrationBridge.getSpouse(level, personId);
+        if (recordedSpouse != null
+                && MCAPersistentPersonBridge.hasCurrentMarriage(level, personId, recordedSpouse)) {
+            if (MCAPersistentPersonBridge.isKnownVillager(level, recordedSpouse)) {
+                if (!MCAIntegrationBridge.isFamilyNodeDeceased(level, recordedSpouse)) {
+                    return recordedSpouse;
+                }
+                return null;
+            }
+
+            if (MCAPersistentPersonBridge.isKnownPlayer(level, recordedSpouse)) {
+                return recordedSpouse;
+            }
         }
 
         ServerPlayer playerSpouse = findActualPlayerSpouse(level, personId);
-        if (playerSpouse != null) {
-            return playerSpouse.getUUID();
-        }
-
-        return null;
+        return playerSpouse != null ? playerSpouse.getUUID() : null;
     }
 
     static UUID findActualVillagerSpouse(ServerLevel level, UUID personId) {
@@ -39,15 +46,18 @@ final class CapitalCourtMarriageResolver {
         }
 
         UUID spouse = MCAIntegrationBridge.getSpouse(level, personId);
-        if (spouse == null) {
+        if (spouse == null
+                || !MCAPersistentPersonBridge.hasCurrentMarriage(level, personId, spouse)
+                || !MCAPersistentPersonBridge.isKnownVillager(level, spouse)
+                || MCAIntegrationBridge.isFamilyNodeDeceased(level, spouse)) {
             return null;
         }
 
-        if (!MCAIntegrationBridge.isMCAVillager(level, spouse)) {
-            return null;
-        }
-
-        if (!CapitalCourtBuilder.isValidRelationshipPerson(level, spouse)) {
+        Entity loaded = MCAIntegrationBridge.getEntityByUuid(level, spouse);
+        if (loaded != null
+                && (!MCAIntegrationBridge.isMCAVillagerEntity(loaded)
+                || !loaded.isAlive()
+                || loaded.isRemoved())) {
             return null;
         }
 
@@ -73,9 +83,15 @@ final class CapitalCourtMarriageResolver {
             return null;
         }
 
-        UUID villagerSpouse = MCAIntegrationBridge.getSpouse(level, personId);
-        if (villagerSpouse != null && MCAIntegrationBridge.isMCAVillager(level, villagerSpouse)) {
-            return null;
+        UUID recordedSpouse = MCAIntegrationBridge.getSpouse(level, personId);
+        if (recordedSpouse != null
+                && MCAPersistentPersonBridge.hasCurrentMarriage(level, personId, recordedSpouse)) {
+            if (MCAPersistentPersonBridge.isKnownVillager(level, recordedSpouse)) {
+                return null;
+            }
+            if (MCAPersistentPersonBridge.isKnownPlayer(level, recordedSpouse)) {
+                return level.getServer().getPlayerList().getPlayer(recordedSpouse);
+            }
         }
 
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
@@ -92,18 +108,19 @@ final class CapitalCourtMarriageResolver {
             return "Unknown";
         }
 
-        UUID villagerSpouse = findActualVillagerSpouse(level, personId);
-        if (villagerSpouse != null) {
-            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, villagerSpouse);
-            if (entity != null) {
-                return entity.getName().getString();
-            }
+        UUID spouseId = findActualSpouse(level, personId);
+        if (spouseId == null) {
             return "Unknown";
         }
 
-        ServerPlayer playerSpouse = findActualPlayerSpouse(level, personId);
-        if (playerSpouse != null) {
-            return playerSpouse.getGameProfile().getName();
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, spouseId);
+        if (entity != null) {
+            return entity.getName().getString();
+        }
+
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(spouseId);
+        if (player != null) {
+            return player.getGameProfile().getName();
         }
 
         return "Unknown";
@@ -114,17 +131,8 @@ final class CapitalCourtMarriageResolver {
             return false;
         }
 
-        UUID villagerSpouse = findActualVillagerSpouse(level, sourceId);
-        if (villagerSpouse != null) {
-            return villagerSpouse.equals(spouseId);
-        }
-
-        ServerPlayer playerSpouse = findActualPlayerSpouse(level, sourceId);
-        if (playerSpouse != null) {
-            return playerSpouse.getUUID().equals(spouseId);
-        }
-
-        return false;
+        UUID actualSpouse = findActualSpouse(level, sourceId);
+        return spouseId.equals(actualSpouse);
     }
 
     static void collectMarriageDukeSources(

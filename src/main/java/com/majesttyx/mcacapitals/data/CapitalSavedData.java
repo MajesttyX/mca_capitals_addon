@@ -16,6 +16,7 @@ public class CapitalSavedData extends SavedData {
 
     static final String KEY_CAPITAL_ID = "CapitalId";
     static final String KEY_VILLAGE_ID = "VillageId";
+    static final String KEY_VILLAGE_DIMENSION = "VillageDimension";
     static final String KEY_STATE = "State";
 
     static final String KEY_SOVEREIGN = "Sovereign";

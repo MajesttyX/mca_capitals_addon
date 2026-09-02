@@ -54,6 +54,10 @@ public final class VillagerIdentityClientCache {
         IDENTITIES.remove(villagerId);
     }
 
+    public static void clearAll() {
+        IDENTITIES.clear();
+    }
+
     public record ClientVillagerIdentity(
             UUID villagerId,
             Component originVillageName,

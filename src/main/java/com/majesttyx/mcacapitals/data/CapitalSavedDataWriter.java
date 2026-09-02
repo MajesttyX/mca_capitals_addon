@@ -27,6 +27,9 @@ final class CapitalSavedDataWriter {
             if (capital.getVillageId() != null) {
                 capitalTag.putInt(CapitalSavedData.KEY_VILLAGE_ID, capital.getVillageId());
             }
+            if (capital.getVillageDimensionId() != null) {
+                capitalTag.putString(CapitalSavedData.KEY_VILLAGE_DIMENSION, capital.getVillageDimensionId());
+            }
 
             if (capital.getState() != null) {
                 capitalTag.putString(CapitalSavedData.KEY_STATE, capital.getState().name());
@@ -147,6 +150,7 @@ final class CapitalSavedDataWriter {
                 capitalTag.putUUID(CapitalSavedData.KEY_MASTER_OF_LAWS, capital.getMasterOfLaws());
             }
             capitalTag.putBoolean(CapitalSavedData.KEY_MASTER_OF_LAWS_FEMALE, capital.isMasterOfLawsFemale());
+
             if (capital.getLastCrownStandingSovereign() != null) {
                 capitalTag.putUUID(CapitalSavedData.KEY_LAST_CROWN_STANDING_SOVEREIGN, capital.getLastCrownStandingSovereign());
             }
@@ -211,6 +215,7 @@ final class CapitalSavedDataWriter {
             if (entry.getKey() == null || entry.getValue() == null) {
                 continue;
             }
+
             CompoundTag tag = new CompoundTag();
             tag.putUUID(CapitalSavedData.KEY_ID, entry.getKey());
             tag.putString(CapitalSavedData.KEY_STANDING, entry.getValue().name());

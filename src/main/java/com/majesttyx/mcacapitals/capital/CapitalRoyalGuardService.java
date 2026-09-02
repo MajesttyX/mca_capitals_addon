@@ -4,7 +4,6 @@ import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -20,7 +19,11 @@ public class CapitalRoyalGuardService {
     private CapitalRoyalGuardService() {
     }
 
-    public static boolean tickRoyalGuards(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+    public static boolean tickRoyalGuards(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents
+    ) {
         boolean changed = false;
 
         changed |= handleSovereignChange(level, capital);
@@ -67,20 +70,31 @@ public class CapitalRoyalGuardService {
         return changed;
     }
 
-    public static boolean clearRoyalGuardsForTransfer(ServerLevel level, CapitalRecord capital) {
+    public static boolean clearRoyalGuardsForTransfer(
+            ServerLevel level,
+            CapitalRecord capital
+    ) {
         if (level == null || capital == null) {
             return false;
         }
 
-        if (capital.getRoyalGuards().isEmpty() && capital.getRoyalGuardLiege() == null) {
+        if (capital.getRoyalGuards().isEmpty()
+                && capital.getRoyalGuardLiege() == null) {
             return false;
         }
 
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String villageName = MCAIntegrationBridge.getVillageName(
+                level,
+                capital.getVillageId()
+        );
         boolean changed = false;
 
         for (UUID guardId : new ArrayList<>(capital.getRoyalGuards())) {
-            String guardName = CapitalChronicleIdentitySnapshot.name(level, capital, guardId);
+            String guardName = CapitalChronicleIdentitySnapshot.name(
+                    level,
+                    capital,
+                    guardId
+            );
             capital.removeRoyalGuard(guardId);
 
             CapitalChronicleService.addEvent(
@@ -120,9 +134,14 @@ public class CapitalRoyalGuardService {
             result.add(residentId);
         }
 
-        result.sort(Comparator
-                .comparing((UUID id) -> !CapitalCrownJusticeService.isRecognizedFriend(level, capital, id))
-                .thenComparing(UUID::toString));
+        result.sort(
+                Comparator
+                        .comparing(
+                                (UUID id) -> !CapitalCrownJusticeService
+                                        .isRecognizedFriend(level, capital, id)
+                        )
+                        .thenComparing(UUID::toString)
+        );
         return result;
     }
 
@@ -157,8 +176,15 @@ public class CapitalRoyalGuardService {
                 capital.getRoyalGuardLiege()
         );
 
-        String guardName = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        String guardName = CapitalChronicleIdentitySnapshot.name(
+                level,
+                capital,
+                villagerId
+        );
+        String villageName = MCAIntegrationBridge.getVillageName(
+                level,
+                capital.getVillageId()
+        );
 
         CapitalChronicleService.addEvent(
                 level,
@@ -168,10 +194,16 @@ public class CapitalRoyalGuardService {
                 villageName
         );
 
-        Set<UUID> residents =
-                CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
+        Set<UUID> residents = CapitalResidentScanner.scanResidents(
+                level,
+                capital.getCapitalId()
+        );
 
-        CapitalHeraldService.refreshHeraldAfterStatusChange(level, capital, residents);
+        CapitalHeraldService.refreshHeraldAfterStatusChange(
+                level,
+                capital,
+                residents
+        );
         CapitalNameService.refreshCapitalNames(level, capital, residents);
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
@@ -223,8 +255,15 @@ public class CapitalRoyalGuardService {
             CapitalRecord capital,
             UUID guardId
     ) {
-        String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        String name = CapitalChronicleIdentitySnapshot.name(level, capital, guardId);
+        String villageName = MCAIntegrationBridge.getVillageName(
+                level,
+                capital.getVillageId()
+        );
+        String name = CapitalChronicleIdentitySnapshot.name(
+                level,
+                capital,
+                guardId
+        );
 
         CapitalChronicleService.addEvent(
                 level,
@@ -240,7 +279,11 @@ public class CapitalRoyalGuardService {
             CapitalRecord capital,
             UUID guardId
     ) {
-        return buildRoyalGuardDisplayNameComponent(level, capital, guardId).getString();
+        return buildRoyalGuardDisplayNameComponent(
+                level,
+                capital,
+                guardId
+        ).getString();
     }
 
     public static Component buildRoyalGuardDisplayNameComponent(
@@ -254,7 +297,12 @@ public class CapitalRoyalGuardService {
                         : "mcacapitals.dynamic.title.knight.male"
         );
 
-        Component baseName = Component.literal(resolveBaseName(level, guardId));
+        String resolvedBaseName = CapitalNameService.resolveDisplayName(
+                level,
+                capital,
+                guardId
+        );
+        Component baseName = Component.literal(resolvedBaseName);
 
         return Component.translatable(
                 capital.isSovereignFemale()
@@ -263,76 +311,6 @@ public class CapitalRoyalGuardService {
                 title,
                 baseName
         );
-    }
-
-
-    private static String resolveBaseName(ServerLevel level, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-
-        if (entity == null) {
-            return entityId.toString();
-        }
-
-        String currentName = entity.getName().getString();
-
-        currentName = currentName
-                .replace(" of the Kingsguard", "")
-                .replace(" of the Queensguard", "")
-                .trim();
-
-        String[] prefixes = {
-                "High Queen ",
-                "High King ",
-                "Dowager Queen ",
-                "Dowager King ",
-                "Queen Consort ",
-                "King Consort ",
-                "Heir Apparent ",
-                "Crown Princess ",
-                "Crown Prince ",
-                "Dowager Princess ",
-                "Dowager Prince ",
-                "Princess Consort ",
-                "Prince Consort ",
-                "Hand of the Queen ",
-                "Hand of the King ",
-                "Grand Maester ",
-                "Master of Laws ",
-                "Maester ",
-                "Court Herald ",
-                "Ambassador ",
-                "Princess ",
-                "Prince ",
-                "Lord Commander ",
-                "Dowager Duchess ",
-                "Dowager Duke ",
-                "Duchess ",
-                "Duke ",
-                "Lady ",
-                "Lord ",
-                "Dame ",
-                "Sir ",
-                "Queen ",
-                "King "
-        };
-
-        boolean changed = true;
-
-        while (changed) {
-            changed = false;
-
-            for (String prefix : prefixes) {
-                if (currentName.startsWith(prefix)) {
-                    currentName = currentName.substring(prefix.length()).trim();
-                    changed = true;
-                    break;
-                }
-            }
-        }
-
-        return currentName.isBlank()
-                ? entityId.toString()
-                : currentName;
     }
 
     private static boolean isValidRoyalGuard(
@@ -417,7 +395,11 @@ public class CapitalRoyalGuardService {
             return false;
         }
 
-        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(level, capital, villagerId)) {
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(
+                level,
+                capital,
+                villagerId
+        )) {
             return false;
         }
 
@@ -489,5 +471,4 @@ public class CapitalRoyalGuardService {
 
         return MCAIntegrationBridge.isMCAGuard(level, villagerId);
     }
-
 }

@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CapitalMourningService {
+
     private static final long MOURNING_CLOTHING_DELAY_TICKS = 100L;
     private static final Map<UUID, Long> PENDING_MOURNING_APPLICATION_TICKS = new HashMap<>();
     private static final Set<String> LOGGED_MOURNING_APPLICATION_FAILURES = new HashSet<>();
@@ -33,17 +34,17 @@ public class CapitalMourningService {
         capital.setMourningEndDay(Math.max(capital.getMourningEndDay(), endDay));
 
         if (!wasActive) {
+            PENDING_MOURNING_APPLICATION_TICKS.put(
+                    capital.getCapitalId(),
+                    level.getGameTime() + MOURNING_CLOTHING_DELAY_TICKS
+            );
+
             CapitalChronicleService.addEvent(
                     level,
                     capital,
                     CapitalChronicleEventId.MOURNING_DECLARED,
                     MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
                     deceasedName
-            );
-
-            PENDING_MOURNING_APPLICATION_TICKS.put(
-                    capital.getCapitalId(),
-                    level.getGameTime() + MOURNING_CLOTHING_DELAY_TICKS
             );
         } else {
             applyMourning(level, capital);
@@ -84,17 +85,14 @@ public class CapitalMourningService {
         clearMourningFailureLogs(capital);
 
         Map<UUID, String> originals = capital.getMourningOriginalClothes();
-
         for (Map.Entry<UUID, String> entry : originals.entrySet()) {
             UUID villagerId = entry.getKey();
             Entity entity = MCAIntegrationBridge.getEntityByUuid(level, villagerId);
-
             if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
                 continue;
             }
 
             String original = entry.getValue();
-
             if (original == null || original.isBlank()) {
                 MCAIntegrationBridge.randomizeClothes(level, villagerId);
                 continue;
@@ -108,16 +106,13 @@ public class CapitalMourningService {
                 continue;
             }
 
-            if (!sameClothingId(beforeRestore, afterRestore)
-                    && afterRestore != null
-                    && !afterRestore.isBlank()) {
+            if (!sameClothingId(beforeRestore, afterRestore) && afterRestore != null && !afterRestore.isBlank()) {
                 continue;
             }
 
             if (MCAIntegrationBridge.clothingExists(original)) {
                 MCAIntegrationBridge.setClothes(level, villagerId, original);
                 afterRestore = MCAIntegrationBridge.getClothes(level, villagerId);
-
                 if (sameClothingId(original, afterRestore)) {
                     continue;
                 }
@@ -141,25 +136,17 @@ public class CapitalMourningService {
     }
 
     private static void applyMourning(ServerLevel level, CapitalRecord capital) {
-        Set<UUID> targets = new java.util.LinkedHashSet<>(
-                CapitalResidentScanner.scanResidents(
-                        level,
-                        capital.getCapitalId()
-                )
-        );
+        Set<UUID> targets = new java.util.LinkedHashSet<>(CapitalResidentScanner.scanResidents(level, capital.getCapitalId()));
 
         if (capital.getSovereign() != null) {
             targets.add(capital.getSovereign());
         }
-
         if (capital.getConsort() != null) {
             targets.add(capital.getConsort());
         }
-
         if (capital.getDowager() != null) {
             targets.add(capital.getDowager());
         }
-
         if (capital.getHeir() != null) {
             targets.add(capital.getHeir());
         }
@@ -171,7 +158,6 @@ public class CapitalMourningService {
 
         for (UUID residentId : targets) {
             Entity entity = MCAIntegrationBridge.getEntityByUuid(level, residentId);
-
             if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
                 continue;
             }
@@ -183,107 +169,37 @@ public class CapitalMourningService {
                             || residentId.equals(capital.getHeir())
                             || capital.isRoyalChild(residentId);
 
-            if (!explicitRoyalTarget
-                    && !MCAIntegrationBridge.isTeenOrAdultVillager(
-                    level,
-                    residentId
-            )) {
+            if (!explicitRoyalTarget && !MCAIntegrationBridge.isTeenOrAdultVillager(level, residentId)) {
                 continue;
             }
 
-            String targetClothes = pickMourningClothes(
-                    level,
-                    capital,
-                    residentId
-            );
-
-            if (targetClothes == null
-                    || !MCAIntegrationBridge.clothingExists(targetClothes)) {
-                logMourningApplicationFailure(
-                        level,
-                        capital,
-                        residentId,
-                        entity,
-                        targetClothes,
-                        null,
-                        null,
-                        false,
-                        "target clothing does not exist"
-                );
+            String targetClothes = pickMourningClothes(level, capital, residentId);
+            if (targetClothes == null || !MCAIntegrationBridge.clothingExists(targetClothes)) {
+                logMourningApplicationFailure(level, capital, residentId, entity, targetClothes, null, null, false, "target clothing does not exist");
                 continue;
             }
 
-            String currentClothes =
-                    MCAIntegrationBridge.getClothes(
-                            level,
-                            residentId
-                    );
-
-            if (sameClothingId(
-                    targetClothes,
-                    currentClothes
-            )) {
-                clearMourningFailureLog(
-                        capital,
-                        residentId,
-                        targetClothes
-                );
+            String currentClothes = MCAIntegrationBridge.getClothes(level, residentId);
+            if (sameClothingId(targetClothes, currentClothes)) {
+                clearMourningFailureLog(capital, residentId, targetClothes);
                 continue;
             }
 
-            capital.getMourningOriginalClothes()
-                    .putIfAbsent(
-                            residentId,
-                            currentClothes
-                    );
+            capital.getMourningOriginalClothes().putIfAbsent(residentId, currentClothes);
 
-            boolean accepted =
-                    MCAIntegrationBridge.setClothes(
-                            level,
-                            residentId,
-                            targetClothes
-                    );
+            boolean accepted = MCAIntegrationBridge.setClothes(level, residentId, targetClothes);
+            String afterApply = MCAIntegrationBridge.getClothes(level, residentId);
 
-            String afterApply =
-                    MCAIntegrationBridge.getClothes(
-                            level,
-                            residentId
-                    );
-
-            if (sameClothingId(
-                    targetClothes,
-                    afterApply
-            )) {
-                clearMourningFailureLog(
-                        capital,
-                        residentId,
-                        targetClothes
-                );
+            if (sameClothingId(targetClothes, afterApply)) {
+                clearMourningFailureLog(capital, residentId, targetClothes);
                 continue;
             }
 
-            boolean retryAccepted =
-                    MCAIntegrationBridge.setClothes(
-                            level,
-                            residentId,
-                            targetClothes
-                    );
+            boolean retryAccepted = MCAIntegrationBridge.setClothes(level, residentId, targetClothes);
+            String afterRetry = MCAIntegrationBridge.getClothes(level, residentId);
 
-            String afterRetry =
-                    MCAIntegrationBridge.getClothes(
-                            level,
-                            residentId
-                    );
-
-            if (sameClothingId(
-                    targetClothes,
-                    afterRetry
-            )) {
-                clearMourningFailureLog(
-                        capital,
-                        residentId,
-                        targetClothes
-                );
+            if (sameClothingId(targetClothes, afterRetry)) {
+                clearMourningFailureLog(capital, residentId, targetClothes);
                 continue;
             }
 
@@ -301,64 +217,34 @@ public class CapitalMourningService {
         }
     }
 
-    private static String pickMourningClothes(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID villagerId
-    ) {
-        boolean female =
-                MCAIntegrationBridge.isFemale(
-                        level,
-                        villagerId
-                );
+    private static String pickMourningClothes(ServerLevel level, CapitalRecord capital, UUID villagerId) {
+        boolean female = MCAIntegrationBridge.isFemale(level, villagerId);
 
-        if (isRoyalTier(
-                capital,
-                villagerId
-        )) {
+        if (isRoyalTier(capital, villagerId)) {
             return buildPath(
-                    female
-                            ? MourningClothingPaths.FEMALE_ROYAL_PREFIX
-                            : MourningClothingPaths.MALE_ROYAL_PREFIX,
-                    female
-                            ? MourningClothingPaths.FEMALE_ROYAL_COUNT
-                            : MourningClothingPaths.MALE_ROYAL_COUNT,
+                    female ? MourningClothingPaths.FEMALE_ROYAL_PREFIX : MourningClothingPaths.MALE_ROYAL_PREFIX,
+                    female ? MourningClothingPaths.FEMALE_ROYAL_COUNT : MourningClothingPaths.MALE_ROYAL_COUNT,
                     villagerId
             );
         }
 
-        if (isNobleTier(
-                capital,
-                villagerId
-        )) {
+        if (isNobleTier(capital, villagerId)) {
             return buildPath(
-                    female
-                            ? MourningClothingPaths.FEMALE_NOBLE_PREFIX
-                            : MourningClothingPaths.MALE_NOBLE_PREFIX,
-                    female
-                            ? MourningClothingPaths.FEMALE_NOBLE_COUNT
-                            : MourningClothingPaths.MALE_NOBLE_COUNT,
+                    female ? MourningClothingPaths.FEMALE_NOBLE_PREFIX : MourningClothingPaths.MALE_NOBLE_PREFIX,
+                    female ? MourningClothingPaths.FEMALE_NOBLE_COUNT : MourningClothingPaths.MALE_NOBLE_COUNT,
                     villagerId
             );
         }
 
         return buildPath(
-                female
-                        ? MourningClothingPaths.FEMALE_COMMONER_PREFIX
-                        : MourningClothingPaths.MALE_COMMONER_PREFIX,
-                female
-                        ? MourningClothingPaths.FEMALE_COMMONER_COUNT
-                        : MourningClothingPaths.MALE_COMMONER_COUNT,
+                female ? MourningClothingPaths.FEMALE_COMMONER_PREFIX : MourningClothingPaths.MALE_COMMONER_PREFIX,
+                female ? MourningClothingPaths.FEMALE_COMMONER_COUNT : MourningClothingPaths.MALE_COMMONER_COUNT,
                 villagerId
         );
     }
 
-    private static boolean isRoyalTier(
-            CapitalRecord capital,
-            UUID villagerId
-    ) {
-        return villagerId != null
-                && (
+    private static boolean isRoyalTier(CapitalRecord capital, UUID villagerId) {
+        return villagerId != null && (
                 villagerId.equals(capital.getSovereign())
                         || villagerId.equals(capital.getConsort())
                         || villagerId.equals(capital.getDowager())
@@ -367,31 +253,16 @@ public class CapitalMourningService {
         );
     }
 
-    private static boolean isNobleTier(
-            CapitalRecord capital,
-            UUID villagerId
-    ) {
-        return villagerId != null
-                && (
+    private static boolean isNobleTier(CapitalRecord capital, UUID villagerId) {
+        return villagerId != null && (
                 capital.isDuke(villagerId)
                         || capital.isLord(villagerId)
         );
     }
 
-    private static String buildPath(
-            String prefix,
-            int count,
-            UUID villagerId
-    ) {
-        int variant =
-                Math.floorMod(
-                        villagerId.hashCode(),
-                        count
-                );
-
-        return prefix
-                + variant
-                + ".png";
+    private static String buildPath(String prefix, int count, UUID villagerId) {
+        int variant = Math.floorMod(villagerId.hashCode(), count);
+        return prefix + variant + ".png";
     }
 
     private static void logMourningApplicationFailure(
@@ -405,49 +276,23 @@ public class CapitalMourningService {
             boolean setAccepted,
             String reason
     ) {
-        if (capital == null
-                || villagerId == null) {
+        if (capital == null || villagerId == null) {
             return;
         }
 
-        String key =
-                mourningFailureKey(
-                        capital,
-                        villagerId,
-                        targetClothes
-                );
-
-        if (!LOGGED_MOURNING_APPLICATION_FAILURES.add(
-                key
-        )) {
+        String key = mourningFailureKey(capital, villagerId, targetClothes);
+        if (!LOGGED_MOURNING_APPLICATION_FAILURES.add(key)) {
             return;
         }
 
         MCACapitals.LOGGER.warn(
                 "[MCACapitals] Mourning clothing did not apply. capital='{}', villager='{}', title='{}', female={}, royalTier={}, nobleTier={}, target='{}', before='{}', after='{}', setAccepted={}, reason='{}'",
-                MCAIntegrationBridge.getVillageName(
-                        level,
-                        capital.getVillageId()
-                ),
-                entity != null
-                        ? entity.getName().getString()
-                        : villagerId.toString(),
-                CapitalTitleResolver.getDisplayTitleForEntity(
-                        level,
-                        villagerId
-                ),
-                MCAIntegrationBridge.isFemale(
-                        level,
-                        villagerId
-                ),
-                isRoyalTier(
-                        capital,
-                        villagerId
-                ),
-                isNobleTier(
-                        capital,
-                        villagerId
-                ),
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                entity != null ? entity.getName().getString() : villagerId.toString(),
+                CapitalTitleResolver.getDisplayTitleForEntity(level, villagerId),
+                MCAIntegrationBridge.isFemale(level, villagerId),
+                isRoyalTier(capital, villagerId),
+                isNobleTier(capital, villagerId),
                 targetClothes,
                 before,
                 after,
@@ -456,66 +301,29 @@ public class CapitalMourningService {
         );
     }
 
-    private static void clearMourningFailureLog(
-            CapitalRecord capital,
-            UUID villagerId,
-            String targetClothes
-    ) {
-        if (capital == null
-                || villagerId == null) {
+    private static void clearMourningFailureLog(CapitalRecord capital, UUID villagerId, String targetClothes) {
+        if (capital == null || villagerId == null) {
             return;
         }
 
-        LOGGED_MOURNING_APPLICATION_FAILURES.remove(
-                mourningFailureKey(
-                        capital,
-                        villagerId,
-                        targetClothes
-                )
-        );
+        LOGGED_MOURNING_APPLICATION_FAILURES.remove(mourningFailureKey(capital, villagerId, targetClothes));
     }
 
-    private static void clearMourningFailureLogs(
-            CapitalRecord capital
-    ) {
+    private static void clearMourningFailureLogs(CapitalRecord capital) {
         if (capital == null) {
             return;
         }
 
-        String prefix =
-                capital.getCapitalId()
-                        + ":";
-
-        LOGGED_MOURNING_APPLICATION_FAILURES.removeIf(
-                key ->
-                        key.startsWith(prefix)
-        );
+        String prefix = capital.getCapitalId() + ":";
+        LOGGED_MOURNING_APPLICATION_FAILURES.removeIf(key -> key.startsWith(prefix));
     }
 
-    private static String mourningFailureKey(
-            CapitalRecord capital,
-            UUID villagerId,
-            String targetClothes
-    ) {
-        return capital.getCapitalId()
-                + ":"
-                + villagerId
-                + ":"
-                + (
-                targetClothes == null
-                        ? "null"
-                        : normalizeClothingId(
-                        targetClothes
-                )
-        );
+    private static String mourningFailureKey(CapitalRecord capital, UUID villagerId, String targetClothes) {
+        return capital.getCapitalId() + ":" + villagerId + ":" + (targetClothes == null ? "null" : normalizeClothingId(targetClothes));
     }
 
-    private static boolean sameClothingId(
-            String a,
-            String b
-    ) {
-        if (a == null
-                || b == null) {
+    private static boolean sameClothingId(String a, String b) {
+        if (a == null || b == null) {
             return false;
         }
 
@@ -523,30 +331,20 @@ public class CapitalMourningService {
             return true;
         }
 
-        return normalizeClothingId(a)
-                .equals(
-                        normalizeClothingId(b)
-                );
+        return normalizeClothingId(a).equals(normalizeClothingId(b));
     }
 
-    private static String normalizeClothingId(
-            String value
-    ) {
-        String normalized =
-                value.trim()
-                        .replace(
-                                '\\',
-                                '/'
-                        );
-
+    private static String normalizeClothingId(String value) {
+        String normalized = value.trim().replace('\\', '/');
         if (normalized.endsWith(".png")) {
-            normalized =
-                    normalized.substring(
-                            0,
-                            normalized.length() - 4
-                    );
+            normalized = normalized.substring(0, normalized.length() - 4);
         }
-
         return normalized;
     }
+
+    public static void clearRuntimeState() {
+        PENDING_MOURNING_APPLICATION_TICKS.clear();
+        LOGGED_MOURNING_APPLICATION_FAILURES.clear();
+    }
+
 }

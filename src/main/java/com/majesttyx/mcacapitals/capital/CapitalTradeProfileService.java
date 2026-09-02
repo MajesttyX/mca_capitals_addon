@@ -32,10 +32,10 @@ final class CapitalTradeProfileService {
             return List.of();
         }
 
-        ServerLevel villageLevel = findVillageLevel(
-                contextLevel,
-                capital.getVillageId()
-        );
+        ServerLevel villageLevel = CapitalManager.getCapitalLevel(contextLevel.getServer(), capital);
+        if (villageLevel == null) {
+            villageLevel = findVillageLevel(contextLevel, capital.getVillageId());
+        }
         if (villageLevel == null) {
             return List.of();
         }
@@ -65,21 +65,11 @@ final class CapitalTradeProfileService {
                 break;
             }
 
-            int maximum = Math.min(
-                    16,
-                    selected.getDefaultMaxStackSize()
-            );
+            int maximum = Math.min(16, selected.getDefaultMaxStackSize());
             int count = maximum <= 1
                     ? 1
-                    : 2 + random.nextInt(
-                    Math.max(1, maximum - 1)
-            );
-            shipment.add(
-                    new ItemStack(
-                            selected,
-                            Math.min(16, count)
-                    )
-            );
+                    : 2 + random.nextInt(Math.max(1, maximum - 1));
+            shipment.add(new ItemStack(selected, Math.min(16, count)));
             available.remove(selected);
         }
 
@@ -91,24 +81,13 @@ final class CapitalTradeProfileService {
             CapitalRecord capital,
             Map<Item, Integer> weights
     ) {
-        BlockPos center = MCAIntegrationBridge.getVillageCenter(
-                level,
-                capital.getVillageId()
-        );
+        BlockPos center = MCAIntegrationBridge.getVillageCenter(level, capital.getVillageId());
         String biome = level.getBiome(center)
                 .unwrapKey()
-                .map(key -> key.location()
-                        .getPath()
-                        .toLowerCase(Locale.ROOT))
+                .map(key -> key.location().getPath().toLowerCase(Locale.ROOT))
                 .orElse("");
 
-        if (containsAny(
-                biome,
-                "desert",
-                "badlands",
-                "eroded_badlands",
-                "wooded_badlands"
-        )) {
+        if (containsAny(biome, "desert", "badlands", "eroded_badlands", "wooded_badlands")) {
             add(weights, Items.SAND, 10);
             add(weights, Items.RED_SAND, 8);
             add(weights, Items.CACTUS, 10);
@@ -121,14 +100,7 @@ final class CapitalTradeProfileService {
             add(weights, Items.LEATHER, 5);
             add(weights, Items.WHEAT, 5);
         }
-        if (containsAny(
-                biome,
-                "taiga",
-                "grove",
-                "snowy",
-                "frozen",
-                "ice_spikes"
-        )) {
+        if (containsAny(biome, "taiga", "grove", "snowy", "frozen", "ice_spikes")) {
             add(weights, Items.SPRUCE_LOG, 12);
             add(weights, Items.SPRUCE_PLANKS, 8);
             add(weights, Items.SWEET_BERRIES, 10);
@@ -167,27 +139,14 @@ final class CapitalTradeProfileService {
             add(weights, Items.RED_MUSHROOM, 6);
             add(weights, Items.BROWN_MUSHROOM, 6);
         }
-        if (containsAny(
-                biome,
-                "ocean",
-                "river",
-                "beach",
-                "shore"
-        )) {
+        if (containsAny(biome, "ocean", "river", "beach", "shore")) {
             add(weights, Items.COD, 10);
             add(weights, Items.SALMON, 10);
             add(weights, Items.KELP, 10);
             add(weights, Items.DRIED_KELP, 7);
             add(weights, Items.PRISMARINE_SHARD, 3);
         }
-        if (containsAny(
-                biome,
-                "plains",
-                "meadow",
-                "forest",
-                "flower_forest",
-                "sunflower"
-        )) {
+        if (containsAny(biome, "plains", "meadow", "forest", "flower_forest", "sunflower")) {
             add(weights, Items.OAK_LOG, 10);
             add(weights, Items.APPLE, 7);
             add(weights, Items.WHEAT, 9);
@@ -201,15 +160,8 @@ final class CapitalTradeProfileService {
             CapitalRecord capital,
             Map<Item, Integer> weights
     ) {
-        for (UUID residentId : MCAIntegrationBridge.getVillageResidents(
-                level,
-                capital.getVillageId()
-        )) {
-            String describedProfession =
-                    MCAIntegrationBridge.describeProfession(
-                            level,
-                            residentId
-                    );
+        for (UUID residentId : MCAIntegrationBridge.getVillageResidents(level, capital.getVillageId())) {
+            String describedProfession = MCAIntegrationBridge.describeProfession(level, residentId);
             String profession = describedProfession == null
                     ? ""
                     : describedProfession.toLowerCase(Locale.ROOT);
@@ -227,8 +179,7 @@ final class CapitalTradeProfileService {
                 add(weights, Items.COOKED_COD, 4);
                 add(weights, Items.STRING, 3);
             }
-            if (profession.contains("fletcher")
-                    || profession.contains("archer")) {
+            if (profession.contains("fletcher") || profession.contains("archer")) {
                 add(weights, Items.ARROW, 7);
                 add(weights, Items.FLINT, 5);
                 add(weights, Items.BOW, 2);
@@ -329,11 +280,7 @@ final class CapitalTradeProfileService {
             Item third,
             int thirdWeight
     ) {
-        int count = MCAIntegrationBridge.countBuildingsOfType(
-                level,
-                villageId,
-                buildingType
-        );
+        int count = MCAIntegrationBridge.countBuildingsOfType(level, villageId, buildingType);
         if (count <= 0) {
             return;
         }
@@ -342,10 +289,7 @@ final class CapitalTradeProfileService {
         add(weights, third, thirdWeight * count);
     }
 
-    private static ServerLevel findVillageLevel(
-            ServerLevel contextLevel,
-            int villageId
-    ) {
+    private static ServerLevel findVillageLevel(ServerLevel contextLevel, int villageId) {
         if (MCAIntegrationBridge.hasVillage(contextLevel, villageId)) {
             return contextLevel;
         }
@@ -357,10 +301,7 @@ final class CapitalTradeProfileService {
         return null;
     }
 
-    private static Item selectWeighted(
-            Map<Item, Integer> weights,
-            RandomSource random
-    ) {
+    private static Item selectWeighted(Map<Item, Integer> weights, RandomSource random) {
         int total = 0;
         for (int weight : weights.values()) {
             total += Math.max(0, weight);
@@ -379,20 +320,13 @@ final class CapitalTradeProfileService {
         return null;
     }
 
-    private static void add(
-            Map<Item, Integer> weights,
-            Item item,
-            int weight
-    ) {
+    private static void add(Map<Item, Integer> weights, Item item, int weight) {
         if (item != null && weight > 0) {
             weights.merge(item, weight, Integer::sum);
         }
     }
 
-    private static boolean containsAny(
-            String value,
-            String... fragments
-    ) {
+    private static boolean containsAny(String value, String... fragments) {
         for (String fragment : fragments) {
             if (value.contains(fragment)) {
                 return true;

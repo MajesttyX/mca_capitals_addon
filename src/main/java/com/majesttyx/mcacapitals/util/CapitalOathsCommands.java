@@ -633,7 +633,7 @@ public final class CapitalOathsCommands {
     private static CapitalRecord resolveCapitalForTargetOrPlayer(ServerLevel level, ServerPlayer player, Entity target) {
         if (level != null && target != null) {
             Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, target.getUUID());
-            CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId);
+            CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId);
             if (capital != null) {
                 return capital;
             }
@@ -648,7 +648,7 @@ public final class CapitalOathsCommands {
 
         Optional<Integer> villageId = MCAIntegrationBridge.getLastSeenVillageId(level, player);
         if (villageId.isPresent()) {
-            CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId.get());
+            CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId.get());
             if (capital != null) {
                 return capital;
             }

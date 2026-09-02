@@ -12,6 +12,7 @@ public class CapitalRecord {
 
     final UUID capitalId;
     Integer villageId;
+    String villageDimensionId;
     CapitalState state;
 
     final CapitalRecordIdentityState identity = new CapitalRecordIdentityState();
@@ -42,6 +43,16 @@ public class CapitalRecord {
 
     public void setVillageId(Integer villageId) {
         this.villageId = villageId;
+    }
+
+    public String getVillageDimensionId() {
+        return villageDimensionId;
+    }
+
+    public void setVillageDimensionId(String villageDimensionId) {
+        this.villageDimensionId = villageDimensionId == null || villageDimensionId.isBlank()
+                ? null
+                : villageDimensionId;
     }
 
     public CapitalState getState() {

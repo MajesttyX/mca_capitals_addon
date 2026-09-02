@@ -171,7 +171,7 @@ final class CapitalPetitionTitleActions {
         UUID previousHand = capital.getHand();
 
         if (previousHand != null && !previousHand.equals(player.getUUID())) {
-            String formerName = resolveName(level, previousHand);
+            String formerName = CapitalChronicleIdentitySnapshot.name(level, capital, previousHand);
             if (!formerName.isBlank()) {
                 CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.OFFICE_RELIEVED, formerName, CapitalChronicleIdentitySnapshot.handOffice(level, capital), villageName);
             }
@@ -199,22 +199,6 @@ final class CapitalPetitionTitleActions {
                 officeName,
                 villageName
         );
-    }
-
-    private static String resolveName(ServerLevel level, UUID entityId) {
-        if (entityId == null) {
-            return "";
-        }
-
-        if (level.getServer() != null) {
-            ServerPlayer onlinePlayer = level.getServer().getPlayerList().getPlayer(entityId);
-            if (onlinePlayer != null) {
-                return onlinePlayer.getName().getString();
-            }
-        }
-
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        return entity != null ? entity.getName().getString() : entityId.toString();
     }
 
     static void handleLordPetition(
@@ -275,7 +259,20 @@ final class CapitalPetitionTitleActions {
         PlayerCapitalTitleService.grantTitle(level, capital, player.getUUID(), granted);
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.LORD_ELEVATED, player.getName().getString(), CapitalChronicleIdentitySnapshot.genderedTitle("lord", female ? com.majesttyx.mcacapitals.dialogue.CapitalDialogueGenderResolver.ResolvedGender.FEMALE : com.majesttyx.mcacapitals.dialogue.CapitalDialogueGenderResolver.ResolvedGender.MALE), villageName);
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.LORD_ELEVATED,
+                player.getName().getString(),
+                CapitalChronicleIdentitySnapshot.genderedTitle(
+                        "lord",
+                        female
+                                ? CapitalDialogueGenderResolver.ResolvedGender.FEMALE
+                                : CapitalDialogueGenderResolver.ResolvedGender.MALE
+                ),
+                villageName,
+                CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
+        );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
@@ -347,7 +344,20 @@ final class CapitalPetitionTitleActions {
         PlayerCapitalTitleService.grantTitle(level, capital, player.getUUID(), granted);
 
         String villageName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
-        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.DUKE_ELEVATED, player.getName().getString(), CapitalChronicleIdentitySnapshot.genderedTitle("duke", female ? com.majesttyx.mcacapitals.dialogue.CapitalDialogueGenderResolver.ResolvedGender.FEMALE : com.majesttyx.mcacapitals.dialogue.CapitalDialogueGenderResolver.ResolvedGender.MALE), villageName);
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.DUKE_ELEVATED,
+                player.getName().getString(),
+                CapitalChronicleIdentitySnapshot.genderedTitle(
+                        "duke",
+                        female
+                                ? CapitalDialogueGenderResolver.ResolvedGender.FEMALE
+                                : CapitalDialogueGenderResolver.ResolvedGender.MALE
+                ),
+                villageName,
+                CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
+        );
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);

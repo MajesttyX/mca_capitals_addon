@@ -223,7 +223,7 @@ public final class RoyalScepterCommands {
             return null;
         }
 
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 
     private static boolean rejectAmbassador(
@@ -345,7 +345,15 @@ public final class RoyalScepterCommands {
 
         String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
-        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.HEIR_APPARENT_NAMED, name, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.HEIR_APPARENT_NAMED,
+                name,
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                CapitalChronicleIdentitySnapshot.title(level, capital, villagerId),
+                CapitalChronicleIdentitySnapshot.style(level, capital, villagerId)
+        );
 
         return 1;
     }
@@ -845,7 +853,15 @@ public final class RoyalScepterCommands {
 
         String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
-        CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.DUCAL_ELEVATED, name, MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+        CapitalChronicleService.addEvent(
+                level,
+                capital,
+                CapitalChronicleEventId.DUCAL_ELEVATED,
+                name,
+                MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                CapitalChronicleIdentitySnapshot.title(level, capital, villagerId),
+                CapitalChronicleIdentitySnapshot.style(level, capital, villagerId)
+        );
 
         return 1;
     }

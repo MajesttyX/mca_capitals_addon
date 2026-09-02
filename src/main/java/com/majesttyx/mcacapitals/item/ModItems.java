@@ -34,6 +34,12 @@ public class ModItems {
     public static final Supplier<Item> CAPITAL_CHRONICLE =
             register("capital_chronicle", CapitalChronicleItem::new);
 
+    public static final Supplier<Item> BOOK_OF_HOUSES =
+            register("book_of_houses", BookOfHousesItem::new);
+
+    public static final Supplier<Item> HOUSE_LEDGER =
+            register("house_ledger", HouseLedgerItem::new);
+
     public static final Supplier<Item> DECREE_OF_THE_HOUSE =
             register("decree_of_the_house", DecreeOfTheHouseItem::new);
 

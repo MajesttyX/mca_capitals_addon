@@ -20,9 +20,11 @@ public abstract class SaveVillageMessageCapitalAuthorityMixin {
     @Inject(method = "handleServer", at = @At("HEAD"), cancellable = true, remap = false)
     private void mcacapitals$enforceCapitalAuthority(ServerPlayer player, CallbackInfo ci) {
         ci.cancel();
+
         if (player == null) {
             return;
         }
+
         SaveVillageMessage message = (SaveVillageMessage) (Object) this;
         VillageManager.get(player.serverLevel())
                 .getOrEmpty(message.id())
@@ -34,17 +36,20 @@ public abstract class SaveVillageMessageCapitalAuthorityMixin {
             SaveVillageMessage message,
             Village village
     ) {
-        CapitalRecord capital = CapitalManager.getCapitalByVillageId(village.getId());
+        CapitalRecord capital = CapitalManager.getCapitalByVillageId(player.serverLevel(), village.getId());
         CapitalPlayerAuthorityResolver.ResolvedAuthority authority =
                 CapitalPlayerAuthorityResolver.resolve(player.serverLevel(), capital, player.getUUID());
+
         if (Float.compare(village.getTaxes(), message.taxes()) != 0
                 && authority.has(CapitalPlayerAuthorityResolver.Permission.CHANGE_TAXES)) {
             village.setTaxes(message.taxes());
         }
+
         if (Float.compare(village.getPopulationThreshold(), message.populationThreshold()) != 0
                 && authority.has(CapitalPlayerAuthorityResolver.Permission.CHANGE_BIRTH_POLICY)) {
             village.setPopulationThreshold(message.populationThreshold());
         }
+
         if (Float.compare(village.getMarriageThreshold(), message.marriageThreshold()) != 0
                 && authority.has(CapitalPlayerAuthorityResolver.Permission.CHANGE_MARRIAGE_POLICY)) {
             village.setMarriageThreshold(message.marriageThreshold());

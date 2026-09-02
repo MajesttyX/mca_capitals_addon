@@ -51,7 +51,7 @@ public class CapitalAmbientDialogueHandler {
     private final Map<UUID, ParticipantState> participantStates = new HashMap<>();
     private MinecraftServer activeServer;
 
-    public void onLevelTick(ServerLevel level) {
+        public void onLevelTick(ServerLevel level) {
         if (level == null) {
             return;
         }
@@ -82,7 +82,8 @@ public class CapitalAmbientDialogueHandler {
     private void tickCapital(ServerLevel level, CapitalRecord capital, long gameTime) {
         if (capital == null
                 || capital.getState() != CapitalState.ACTIVE
-                || capital.getVillageId() == null) {
+                || capital.getVillageId() == null
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return;
         }
 

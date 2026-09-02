@@ -27,6 +27,12 @@ import com.majesttyx.mcacapitals.util.CapitalTestCommands;
 import com.majesttyx.mcacapitals.util.RoyalScepterCommands;
 import com.majesttyx.mcacapitals.util.SuccessionDecreeCommands;
 import com.mojang.logging.LogUtils;
+import com.majesttyx.mcacapitals.util.CapitalRuntimeStateReset;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.slf4j.Logger;
@@ -43,6 +49,20 @@ public class MCACapitals implements ModInitializer {
         ModCreativeTabs.register();
         ModNetwork.registerServerReceivers();
         FabricEventRegistrar.register();
+
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(
+                new SimpleSynchronousResourceReloadListener() {
+                    @Override
+                    public ResourceLocation getFabricId() {
+                        return ResourceLocation.fromNamespaceAndPath(MODID, "runtime_cache_reset");
+                    }
+
+                    @Override
+                    public void onResourceManagerReload(ResourceManager resourceManager) {
+                        CapitalRuntimeStateReset.clearResourceCaches();
+                    }
+                }
+        );
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             CapitalTestCommands.register(dispatcher);

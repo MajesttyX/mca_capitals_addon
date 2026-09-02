@@ -64,6 +64,8 @@ final class CapitalCampaignEligibilityService {
 
         if (attackingCapital.getVillageId() == null
                 || defendingCapital.getVillageId() == null
+                || !CapitalManager.isCapitalInLevel(attackingCapital, level)
+                || !CapitalManager.isCapitalInLevel(defendingCapital, level)
                 || VillageManager.get(level)
                 .getOrEmpty(
                         attackingCapital.getVillageId()
@@ -206,6 +208,10 @@ final class CapitalCampaignEligibilityService {
         if (level == null
                 || capital == null
                 || capital.getVillageId() == null) {
+            return null;
+        }
+
+        if (!CapitalManager.isCapitalInLevel(capital, level)) {
             return null;
         }
 

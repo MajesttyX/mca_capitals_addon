@@ -115,4 +115,10 @@ public class AbdicationPromptManager {
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
         );
     }
+
+    public static void clearAll() {
+        PENDING_CAPITALS.clear();
+        PENDING_STAGES.clear();
+    }
+
 }

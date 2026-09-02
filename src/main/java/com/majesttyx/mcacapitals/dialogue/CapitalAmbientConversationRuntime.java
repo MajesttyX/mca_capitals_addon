@@ -216,4 +216,10 @@ final class CapitalAmbientConversationRuntime {
         private String lastConversationKey = "";
         private int lastIndex = -1;
     }
+
+    static void clearRuntimeState() {
+        LAST_RESPONSE_STATE.clear();
+        WARNED_MISSING_FRIENDLY_KEYS.clear();
+    }
+
 }

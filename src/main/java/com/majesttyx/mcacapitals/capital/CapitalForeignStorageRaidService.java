@@ -240,7 +240,8 @@ public final class CapitalForeignStorageRaidService {
         if (level == null
                 || capital == null
                 || capital.getVillageId() == null
-                || player == null) {
+                || player == null
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return false;
         }
         for (AABB bounds : com.majesttyx.mcacapitals.util.MCAIntegrationBridge
@@ -278,7 +279,8 @@ public final class CapitalForeignStorageRaidService {
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital == null
                     || capital.getState() != CapitalState.ACTIVE
-                    || capital.getVillageId() == null) {
+                    || capital.getVillageId() == null
+                    || !CapitalManager.isCapitalInLevel(capital, level)) {
                 continue;
             }
             for (AABB bounds : com.majesttyx.mcacapitals.util.MCAIntegrationBridge
@@ -332,4 +334,9 @@ public final class CapitalForeignStorageRaidService {
             return new StorageSnapshot(null, List.of());
         }
     }
+
+    public static void clearRuntimeState() {
+        ACTIVE_INCIDENTS.clear();
+    }
+
 }

@@ -49,7 +49,9 @@ final class HouseWordsPool {
             "RELAXED",
             "ANXIOUS",
             "PEACEFUL",
-            "UPBEAT"
+            "UPBEAT",
+            "CONFIDENT",
+            "PEPPY"
     );
 
     private static Map<String, List<String>> cachedHouseWords;
@@ -82,6 +84,7 @@ final class HouseWordsPool {
             if (bucket.equals(preferred) || bucket.equals(UNASSIGNED)) {
                 continue;
             }
+
             if (!usedBucketsInCapital.contains(bucket)) {
                 capitalFreshBuckets.add(bucket);
             }
@@ -97,6 +100,7 @@ final class HouseWordsPool {
             if (bucket.equals(preferred) || bucket.equals(UNASSIGNED)) {
                 continue;
             }
+
             anyOtherBuckets.add(bucket);
         }
 
@@ -219,6 +223,7 @@ final class HouseWordsPool {
         for (String bucket : PERSONALITY_BUCKET_ORDER) {
             buckets.put(bucket, Collections.emptyList());
         }
+
         return Collections.unmodifiableMap(buckets);
     }
 
@@ -227,7 +232,13 @@ final class HouseWordsPool {
             return UNASSIGNED;
         }
 
-        String normalized = value.trim().toUpperCase(Locale.ROOT);
+        String normalized = value.trim();
+        int namespaceSeparator = normalized.indexOf(':');
+        if (namespaceSeparator >= 0 && namespaceSeparator < normalized.length() - 1) {
+            normalized = normalized.substring(namespaceSeparator + 1);
+        }
+
+        normalized = normalized.toUpperCase(Locale.ROOT);
         return PERSONALITY_BUCKET_ORDER.contains(normalized) ? normalized : UNASSIGNED;
     }
 

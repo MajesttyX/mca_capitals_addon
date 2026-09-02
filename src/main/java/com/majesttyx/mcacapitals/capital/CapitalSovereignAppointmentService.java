@@ -36,7 +36,6 @@ final class CapitalSovereignAppointmentService {
         }
 
         if (!villagerId.equals(previous)) {
-            String title = female ? "Queen" : "King";
             String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
             CapitalChronicleService.addEvent(
@@ -45,7 +44,8 @@ final class CapitalSovereignAppointmentService {
                     CapitalChronicleEventId.SOVEREIGN_ACCLAIMED,
                     name,
                     CapitalChronicleIdentitySnapshot.title(level, capital, villagerId),
-                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, villagerId)
             );
         }
 
@@ -91,7 +91,6 @@ final class CapitalSovereignAppointmentService {
         }
 
         if (!playerId.equals(previous)) {
-            String title = female ? "Queen" : "King";
             String name = CapitalChronicleIdentitySnapshot.name(level, capital, playerId);
 
             CapitalChronicleService.addEvent(
@@ -100,7 +99,8 @@ final class CapitalSovereignAppointmentService {
                     CapitalChronicleEventId.THRONE_CLAIMED,
                     name,
                     CapitalChronicleIdentitySnapshot.title(level, capital, playerId),
-                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                    MCAIntegrationBridge.getVillageName(level, capital.getVillageId()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, playerId)
             );
         }
 

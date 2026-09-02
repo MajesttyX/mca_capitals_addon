@@ -269,12 +269,22 @@ public record CapitalChronicleEntry(
         );
     }
 
-    public Component renderHerald() {
+    public Component renderHeraldVariant(int variant) {
         if (heraldKey.isBlank()) {
             return null;
         }
+
+        // Some older royal-marriage entries contain only the two names, while
+        // the Herald variants require title/style snapshots as arguments 3-6.
+        // Keep those saved entries localized without exposing raw %n$s tokens.
+        if (CapitalChronicleEventId.ROYAL_MARRIAGE.heraldKey().equals(heraldKey)
+                && arguments.size() < 6) {
+            return render();
+        }
+
+        int normalizedVariant = Math.max(1, Math.min(3, variant));
         return Component.translatable(
-                heraldKey,
+                heraldKey + ".0" + normalizedVariant,
                 componentArguments()
         );
     }

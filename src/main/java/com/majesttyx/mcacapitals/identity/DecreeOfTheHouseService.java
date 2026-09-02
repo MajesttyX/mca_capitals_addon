@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.identity;
 
+import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
@@ -17,7 +18,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 
 import java.util.LinkedHashSet;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,12 +34,13 @@ public final class DecreeOfTheHouseService {
         }
 
         VillagerIdentityService.ensureAssigned(level, target);
+        HouseRevisionService.applyLatestRevision(level, target);
         VillagerIdentityData identity = VillagerIdentityService.getIdentity(target);
 
         return new OpenDecreeOfTheHousePacket(
                 target.getUUID(),
                 false,
-                getDisplayFirstNameOnly(target),
+                getDisplayFirstNameOnly(level, target),
                 identity.currentSurname(),
                 identity.hasFoundedHouse(),
                 identity.houseName(),
@@ -104,6 +105,7 @@ public final class DecreeOfTheHouseService {
         }
 
         VillagerIdentityService.ensureAssigned(level, target);
+        HouseRevisionService.applyLatestRevision(level, target);
 
         VillagerIdentityData before = VillagerIdentityService.getIdentity(target);
         boolean establishedHouse = before.hasFoundedHouse();
@@ -239,6 +241,11 @@ public final class DecreeOfTheHouseService {
                 before.houseFoundedInCapitalName()
         );
 
+        HouseRevisionService.recordRevision(
+                level,
+                VillagerIdentityService.getIdentity(target),
+                newHouseWords
+        );
         VillagerIdentitySyncService.syncToNearbyPlayers(level, target);
     }
 
@@ -250,6 +257,13 @@ public final class DecreeOfTheHouseService {
     ) {
         String associatedHouseName = targetBefore.houseName();
         String associatedSurname = targetBefore.currentSurname();
+
+        /*
+         * Persist the House-level revision first. Loaded relatives are updated
+         * immediately below; unloaded members receive the same revision when
+         * they next become a scanned resident or open the Decree editor.
+         */
+        HouseRevisionService.recordRevision(level, targetBefore, newHouseWords);
 
         CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(level, target.getUUID());
         Set<Entity> affected = collectLoadedAssociatedHouseMembers(
@@ -281,6 +295,7 @@ public final class DecreeOfTheHouseService {
                 houseName = associatedHouseName;
             }
 
+            HouseRevisionService.recordRevision(level, memberIdentity, newHouseWords);
             VillagerIdentityService.clearHouse(member);
 
             VillagerIdentityService.foundHouse(
@@ -391,12 +406,13 @@ public final class DecreeOfTheHouseService {
                 || (!normalizedAssociatedSurname.isBlank() && normalizedCurrentSurname.equals(normalizedAssociatedSurname));
     }
 
-    private static String getDisplayFirstNameOnly(Entity target) {
-        if (target == null || target.getName() == null) {
+    private static String getDisplayFirstNameOnly(ServerLevel level, Entity target) {
+        if (level == null || target == null) {
             return "";
         }
 
-        return stripFormattingAndKnownTitlePrefixes(target.getName().getString());
+        CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(level, target.getUUID());
+        return CapitalNameService.resolveDisplayName(level, capital, target.getUUID());
     }
 
     private static ItemStack findHeldDecree(ServerPlayer player) {
@@ -483,52 +499,5 @@ public final class DecreeOfTheHouseService {
         }
 
         return normalized.matches("[A-Za-z][A-Za-z '\\-,]*");
-    }
-
-    private static String stripFormattingAndKnownTitlePrefixes(String value) {
-        String normalized = normalizeNamePart(value);
-        if (normalized.isBlank()) {
-            return "";
-        }
-
-        String lower = normalized.toLowerCase(Locale.ROOT);
-
-        String[] prefixes = new String[] {
-                "high queen ",
-                "high king ",
-                "dowager queen ",
-                "dowager king ",
-                "queen consort ",
-                "king consort ",
-                "crown princess ",
-                "crown prince ",
-                "princess consort ",
-                "prince consort ",
-                "dowager princess ",
-                "dowager prince ",
-                "hand of the queen ",
-                "hand of the king ",
-                "grand maester ",
-                "court herald ",
-                "lord commander ",
-                "princess ",
-                "prince ",
-                "duchess ",
-                "duke ",
-                "lady ",
-                "lord ",
-                "dame ",
-                "sir ",
-                "queen ",
-                "king "
-        };
-
-        for (String prefix : prefixes) {
-            if (lower.startsWith(prefix)) {
-                return normalized.substring(prefix.length()).trim();
-            }
-        }
-
-        return normalized;
     }
 }

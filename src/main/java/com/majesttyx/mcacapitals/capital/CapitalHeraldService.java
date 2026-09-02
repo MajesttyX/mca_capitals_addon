@@ -4,7 +4,6 @@ import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 
 import java.util.Set;
 import java.util.UUID;
@@ -22,7 +21,12 @@ public final class CapitalHeraldService {
         return tickHerald(level, capital, residents, true);
     }
 
-    public static boolean tickHerald(ServerLevel level, CapitalRecord capital, Set<UUID> residents, boolean announceAppointment) {
+    public static boolean tickHerald(
+            ServerLevel level,
+            CapitalRecord capital,
+            Set<UUID> residents,
+            boolean announceAppointment
+    ) {
         if (level == null || capital == null || residents == null) {
             return false;
         }
@@ -44,9 +48,18 @@ public final class CapitalHeraldService {
             if (newHerald != null) {
                 capital.setHerald(newHerald);
                 capital.setHeraldFemale(MCAIntegrationBridge.isFemale(level, newHerald));
-                capital.setHeraldDisplayName(resolveBaseName(level, newHerald));
+
+                String baseName = CapitalNameService.resolveDisplayName(level, capital, newHerald);
+                capital.setHeraldDisplayName(baseName);
+
                 if (announceAppointment) {
-                    CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.COURT_HERALD_APPOINTED, resolveRawName(level, newHerald), MCAIntegrationBridge.getVillageName(level, capital.getVillageId()));
+                    CapitalChronicleService.addEvent(
+                            level,
+                            capital,
+                            CapitalChronicleEventId.COURT_HERALD_APPOINTED,
+                            baseName,
+                            MCAIntegrationBridge.getVillageName(level, capital.getVillageId())
+                    );
                 }
                 changed = true;
             }
@@ -66,19 +79,20 @@ public final class CapitalHeraldService {
             return office;
         }
 
-        Entity herald = MCAIntegrationBridge.getEntityByUuid(level, capital.getHerald());
-        if (herald != null) {
-            String baseName = resolveBaseNameFromCurrentName(herald.getName().getString(), capital.getHerald().toString());
-            capital.setHeraldDisplayName(baseName);
+        UUID heraldId = capital.getHerald();
+        String baseName = CapitalNameService.resolveDisplayName(level, capital, heraldId);
+
+        if (isUsableStoredName(baseName, heraldId)) {
+            capital.setHeraldDisplayName(baseName.trim());
             return Component.translatable(
                     "mcacapitals.dynamic.name.titled",
                     office,
-                    Component.literal(baseName)
+                    Component.literal(baseName.trim())
             );
         }
 
         String storedName = capital.getHeraldDisplayName();
-        if (storedName != null && !storedName.isBlank()) {
+        if (isUsableStoredName(storedName, heraldId)) {
             return Component.translatable(
                     "mcacapitals.dynamic.name.titled",
                     office,
@@ -89,75 +103,12 @@ public final class CapitalHeraldService {
         return office;
     }
 
-    private static String resolveRawName(ServerLevel level, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        return entity != null ? entity.getName().getString() : entityId.toString();
-    }
-
-    private static String resolveBaseName(ServerLevel level, UUID entityId) {
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        return resolveBaseNameFromCurrentName(entity != null ? entity.getName().getString() : null, entityId.toString());
-    }
-
-    private static String resolveBaseNameFromCurrentName(String currentName, String fallback) {
-        if (currentName == null || currentName.isBlank()) {
-            return fallback;
+    private static boolean isUsableStoredName(String name, UUID entityId) {
+        if (name == null || name.isBlank()) {
+            return false;
         }
 
-        String result = currentName.trim();
-        String[] prefixes = {
-                "Court Herald",
-                "High Queen",
-                "High King",
-                "Queen Consort",
-                "King Consort",
-                "Dowager Queen",
-                "Dowager King",
-                "Heir Apparent",
-                "Crown Princess",
-                "Crown Prince",
-                "Dowager Princess",
-                "Dowager Prince",
-                "Princess Consort",
-                "Prince Consort",
-                "Hand of the Queen",
-                "Hand of the King",
-                "Grand Maester",
-                "Maester",
-                "Lord Commander",
-                "Commander",
-                "Dowager Duchess",
-                "Dowager Duke",
-                "Duchess",
-                "Duke",
-                "Lady",
-                "Lord",
-                "Dame",
-                "Sir",
-                "Princess",
-                "Prince",
-                "Queen",
-                "King"
-        };
-
-        boolean stripped;
-        do {
-            stripped = false;
-            for (String prefix : prefixes) {
-                if (result.equals(prefix)) {
-                    result = "";
-                    stripped = true;
-                    break;
-                }
-                String titledPrefix = prefix + " ";
-                if (result.startsWith(titledPrefix)) {
-                    result = result.substring(titledPrefix.length()).trim();
-                    stripped = true;
-                    break;
-                }
-            }
-        } while (stripped);
-
-        return result.isBlank() ? fallback : result;
+        String value = name.trim();
+        return entityId == null || !entityId.toString().equals(value);
     }
 }

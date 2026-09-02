@@ -34,6 +34,13 @@ public final class ModNetwork {
         );
 
         ServerPlayNetworking.registerGlobalReceiver(
+                SubmitDeclarationOfSeparationPacket.TYPE,
+                (packet, context) -> context.server().execute(
+                        () -> SubmitDeclarationOfSeparationPacket.handle(packet, context.player())
+                )
+        );
+
+        ServerPlayNetworking.registerGlobalReceiver(
                 SelectSealedPurseCasePacket.TYPE,
                 (packet, context) -> context.server().execute(
                         () -> SelectSealedPurseCasePacket.handle(packet, context.player())
@@ -50,6 +57,10 @@ public final class ModNetwork {
         PayloadTypeRegistry.playC2S().register(
                 SubmitDecreeOfTheHousePacket.TYPE,
                 SubmitDecreeOfTheHousePacket.CODEC
+        );
+        PayloadTypeRegistry.playC2S().register(
+                SubmitDeclarationOfSeparationPacket.TYPE,
+                SubmitDeclarationOfSeparationPacket.CODEC
         );
         PayloadTypeRegistry.playC2S().register(
                 SelectSealedPurseCasePacket.TYPE,
@@ -79,6 +90,10 @@ public final class ModNetwork {
         PayloadTypeRegistry.playS2C().register(
                 OpenDecreeOfTheHousePacket.TYPE,
                 OpenDecreeOfTheHousePacket.CODEC
+        );
+        PayloadTypeRegistry.playS2C().register(
+                OpenDeclarationOfSeparationPacket.TYPE,
+                OpenDeclarationOfSeparationPacket.CODEC
         );
         PayloadTypeRegistry.playS2C().register(
                 SyncVillagerIdentityPacket.TYPE,
@@ -145,6 +160,13 @@ public final class ModNetwork {
                 OpenDecreeOfTheHousePacket.TYPE,
                 (packet, context) -> context.client().execute(
                         () -> OpenDecreeOfTheHousePacket.handle(packet)
+                )
+        );
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                OpenDeclarationOfSeparationPacket.TYPE,
+                (packet, context) -> context.client().execute(
+                        () -> OpenDeclarationOfSeparationPacket.handle(packet)
                 )
         );
 
