@@ -260,7 +260,17 @@ public class CapitalCourtWatcher {
                     );
 
             if (!hasMarriageEntry(capital, nobleName, spouseName)) {
-                CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, nobleName, spouseName);
+                CapitalChronicleService.addEvent(
+                        level,
+                        capital,
+                        CapitalChronicleEventId.ROYAL_MARRIAGE,
+                        nobleName,
+                        spouseName,
+                        CapitalChronicleIdentitySnapshot.title(level, capital, nobleId),
+                        CapitalChronicleIdentitySnapshot.style(level, capital, nobleId),
+                        CapitalChronicleIdentitySnapshot.title(level, capital, currentSpouse),
+                        CapitalChronicleIdentitySnapshot.style(level, capital, currentSpouse)
+                );
             }
         }
 

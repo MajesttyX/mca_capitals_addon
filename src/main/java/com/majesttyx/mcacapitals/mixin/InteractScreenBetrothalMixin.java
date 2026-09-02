@@ -23,7 +23,7 @@ public abstract class InteractScreenBetrothalMixin {
 
     @Unique
     private static final ResourceLocation MCACAPITALS_BETROTHAL_DECREE_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath("mcacapitals", "textures/item/betrothal_decree.png");
+            new ResourceLocation("mcacapitals", "textures/item/betrothal_decree.png");
 
     @Unique
     private static final int MCACAPITALS_SLOT_X = 23;

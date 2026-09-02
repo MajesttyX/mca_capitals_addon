@@ -17,7 +17,7 @@ public class ModNetwork {
     private static boolean registered = false;
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            ResourceLocation.fromNamespaceAndPath(MCACapitals.MODID, "main"),
+            new ResourceLocation(MCACapitals.MODID, "main"),
             () -> PROTOCOL_VERSION,
             PROTOCOL_VERSION::equals,
             PROTOCOL_VERSION::equals
@@ -105,6 +105,15 @@ public class ModNetwork {
 
         CHANNEL.registerMessage(
                 nextId++,
+                OpenDeclarationOfSeparationPacket.class,
+                OpenDeclarationOfSeparationPacket::encode,
+                OpenDeclarationOfSeparationPacket::decode,
+                OpenDeclarationOfSeparationPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
                 SyncVillagerIdentityPacket.class,
                 SyncVillagerIdentityPacket::encode,
                 SyncVillagerIdentityPacket::decode,
@@ -127,6 +136,15 @@ public class ModNetwork {
                 SubmitDecreeOfTheHousePacket::encode,
                 SubmitDecreeOfTheHousePacket::decode,
                 SubmitDecreeOfTheHousePacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+
+        CHANNEL.registerMessage(
+                nextId++,
+                SubmitDeclarationOfSeparationPacket.class,
+                SubmitDeclarationOfSeparationPacket::encode,
+                SubmitDeclarationOfSeparationPacket::decode,
+                SubmitDeclarationOfSeparationPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
 
@@ -165,11 +183,19 @@ public class ModNetwork {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
+    public static void sendToPlayer(ServerPlayer player, OpenDeclarationOfSeparationPacket packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
     public static void sendToPlayer(ServerPlayer player, SyncVillagerIdentityPacket packet) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     public static void sendToPlayer(ServerPlayer player, SyncBlueprintAuthorityPacket packet) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static void sendToServer(SubmitDeclarationOfSeparationPacket packet) {
+        CHANNEL.sendToServer(packet);
     }
 }

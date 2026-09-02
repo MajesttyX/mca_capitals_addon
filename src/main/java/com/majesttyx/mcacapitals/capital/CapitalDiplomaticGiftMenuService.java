@@ -37,7 +37,9 @@ final class CapitalDiplomaticGiftMenuService {
             if (player != null) {
                 sendMessage(
                         player,
-                        Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                        Component.translatable(
+                                "mcacapitals.ui.diplomatic_gifts.title"
+                        ),
                         validation.failureMessage()
                 );
             }
@@ -59,7 +61,9 @@ final class CapitalDiplomaticGiftMenuService {
 
             sendMessage(
                     player,
-                    Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomatic_gifts.title"
+                    ),
                     Component.translatable(
                             "mcacapitals.ui.diplomatic_gifts.need_filled_package",
                             ambassadorEntity.getName()
@@ -82,7 +86,9 @@ final class CapitalDiplomaticGiftMenuService {
 
             sendMessage(
                     player,
-                    Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomatic_gifts.title"
+                    ),
                     Component.translatable(
                             "mcacapitals.ui.diplomatic_gifts.package_empty",
                             ambassadorEntity.getName()
@@ -143,7 +149,9 @@ final class CapitalDiplomaticGiftMenuService {
         if (targets.isEmpty()) {
             sendMessage(
                     player,
-                    Component.translatable("mcacapitals.ui.diplomatic_gifts.title"),
+                    Component.translatable(
+                            "mcacapitals.ui.diplomatic_gifts.title"
+                    ),
                     Component.translatable(
                             "mcacapitals.ui.diplomatic_gifts.no_targets",
                             ambassadorEntity.getName()
@@ -183,9 +191,14 @@ final class CapitalDiplomaticGiftMenuService {
                                     target
                             );
 
-            Component targetNameComponent = targetName.isBlank()
-                    ? Component.translatable("mcacapitals.diplomacy.unknown_capital")
-                    : Component.literal(targetName);
+            Component targetNameComponent =
+                    targetName.isBlank()
+                            ? Component.translatable(
+                                    "mcacapitals.diplomacy.unknown_capital"
+                            )
+                            : Component.literal(
+                                    targetName
+                            );
 
             Component relationship =
                     CapitalRelationshipBand
@@ -195,13 +208,12 @@ final class CapitalDiplomaticGiftMenuService {
             boolean enabled =
                     cooldown <= 0L;
 
-            Component cooldownText =
+            Component statusText =
                     enabled
-                            ? Component.translatable("mcacapitals.ui.diplomatic_gifts.ready")
-                            : Component.translatable(
-                                    "mcacapitals.ui.diplomatic_gifts.available_in",
-                                    CapitalDiplomaticGiftText.formatDuration(cooldown)
-                            );
+                            ? Component.translatable(
+                                    "mcacapitals.ui.diplomatic_gifts.ready"
+                            )
+                            : Component.empty();
 
             entries.add(
                     new OpenAmbassadorCommunicationPacket.Entry(
@@ -211,7 +223,7 @@ final class CapitalDiplomaticGiftMenuService {
                                     relationship,
                                     score
                             ),
-                            cooldownText,
+                            statusText,
                             Component.empty(),
                             Component.translatable(
                                     "mcacapitals.ui.diplomatic_gifts.send_to",
@@ -222,9 +234,7 @@ final class CapitalDiplomaticGiftMenuService {
                                     + " "
                                     + target.getCapitalId(),
                             enabled,
-                            enabled
-                                    ? Component.empty()
-                                    : cooldownText
+                            Component.empty()
                     )
             );
         }
@@ -232,10 +242,15 @@ final class CapitalDiplomaticGiftMenuService {
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
-                        OpenAmbassadorCommunicationPacket.Mode.GIFT_DESTINATIONS,
-                        Component.translatable("mcacapitals.ui.diplomatic_gifts.send_title"),
+                        OpenAmbassadorCommunicationPacket.Mode
+                                .GIFT_DESTINATIONS,
+                        Component.translatable(
+                                "mcacapitals.ui.diplomatic_gifts.send_title"
+                        ),
                         ambassadorEntity.getName(),
-                        Component.translatable("mcacapitals.ui.diplomatic_gifts.choose_target"),
+                        Component.translatable(
+                                "mcacapitals.ui.diplomatic_gifts.choose_target"
+                        ),
                         "",
                         entries,
                         List.of()
@@ -253,7 +268,8 @@ final class CapitalDiplomaticGiftMenuService {
         ModNetwork.sendToPlayer(
                 player,
                 new OpenAmbassadorCommunicationPacket(
-                        OpenAmbassadorCommunicationPacket.Mode.MESSAGE,
+                        OpenAmbassadorCommunicationPacket.Mode
+                                .MESSAGE,
                         title,
                         Component.empty(),
                         message,

@@ -19,7 +19,7 @@ import java.util.List;
 public class RoyalCharterVillagerListScreen extends CapitalNoBlurScreen {
 
     private static final ResourceLocation BACKGROUND =
-            ResourceLocation.fromNamespaceAndPath("mcacapitals", "textures/gui/declaration_paper.png");
+            new ResourceLocation("mcacapitals", "textures/gui/declaration_paper.png");
 
     private static final int BG_WIDTH = 160;
     private static final int BG_HEIGHT = 160;

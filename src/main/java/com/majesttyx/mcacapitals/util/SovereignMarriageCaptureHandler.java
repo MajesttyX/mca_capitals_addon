@@ -75,7 +75,11 @@ public class SovereignMarriageCaptureHandler {
                     capital,
                     CapitalChronicleEventId.ROYAL_MARRIAGE,
                     sovereignName,
-                    playerName
+                    playerName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, sovereign.getUUID()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, sovereign.getUUID()),
+                    CapitalChronicleIdentitySnapshot.title(level, capital, player.getUUID()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, player.getUUID())
             );
         }
 

@@ -12,6 +12,7 @@ import com.majesttyx.mcacapitals.config.MCACapitalsConfig;
 import com.majesttyx.mcacapitals.dialogue.CapitalAmbientDialogueHandler;
 import com.majesttyx.mcacapitals.item.BetrothalDecreeHandler;
 import com.majesttyx.mcacapitals.item.DeclarationOfAbdicationHandler;
+import com.majesttyx.mcacapitals.item.DeclarationOfSeparationHandler;
 import com.majesttyx.mcacapitals.item.DecreeOfTheHouseHandler;
 import com.majesttyx.mcacapitals.item.LegitimizationDecreeHandler;
 import com.majesttyx.mcacapitals.item.ModCreativeTabs;
@@ -152,6 +153,10 @@ public class MCACapitals {
 
         MinecraftForge.EVENT_BUS.register(
                 new DecreeOfTheHouseHandler()
+        );
+
+        MinecraftForge.EVENT_BUS.register(
+                new DeclarationOfSeparationHandler()
         );
 
         MinecraftForge.EVENT_BUS.register(

@@ -25,7 +25,7 @@ import java.util.UUID;
 
 final class SurnamePool {
 
-    private static final ResourceLocation COMMON_SURNAMES = ResourceLocation.fromNamespaceAndPath(
+    private static final ResourceLocation COMMON_SURNAMES = new ResourceLocation(
             MCACapitals.MODID,
             "surnames/common_surnames.json"
     );
@@ -89,7 +89,7 @@ final class SurnamePool {
             return cached;
         }
 
-        ResourceLocation location = ResourceLocation.fromNamespaceAndPath(
+        ResourceLocation location = new ResourceLocation(
                 MCACapitals.MODID,
                 String.format(CULTURE_SURNAME_PATH, cultureBucket)
         );

@@ -36,6 +36,9 @@ public class ModItems {
     public static final RegistryObject<Item> CAPITAL_CHRONICLE =
             ITEMS.register("capital_chronicle", CapitalChronicleItem::new);
 
+    public static final RegistryObject<Item> BOOK_OF_HOUSES =
+            ITEMS.register("book_of_houses", BookOfHousesItem::new);
+
     public static final RegistryObject<Item> SEALED_PURSE =
             ITEMS.register("sealed_purse", SealedPurseItem::new);
 
@@ -47,6 +50,9 @@ public class ModItems {
 
     public static final RegistryObject<Item> DECREE_OF_THE_HOUSE =
             ITEMS.register("decree_of_the_house", DecreeOfTheHouseItem::new);
+
+    public static final RegistryObject<Item> HOUSE_LEDGER =
+            ITEMS.register("house_ledger", HouseLedgerItem::new);
 
     public static final RegistryObject<Item> RED_ROYAL_SEAL =
             ITEMS.register("red_royal_seal", RoyalSealItem::new);
