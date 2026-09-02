@@ -17,7 +17,9 @@ public class ModNetwork {
     public static final ResourceLocation OPEN_ROYAL_CHARTER_DECISION = new ResourceLocation(MCACapitals.MODID, "open_royal_charter_decision");
     public static final ResourceLocation OPEN_PLAYER_HOUSE_SETUP = new ResourceLocation(MCACapitals.MODID, "open_player_house_setup");
     public static final ResourceLocation OPEN_DECREE_OF_THE_HOUSE = new ResourceLocation(MCACapitals.MODID, "open_decree_of_the_house");
+    public static final ResourceLocation OPEN_DECLARATION_OF_SEPARATION = new ResourceLocation(MCACapitals.MODID, "open_declaration_of_separation");
     public static final ResourceLocation SUBMIT_DECREE_OF_THE_HOUSE = new ResourceLocation(MCACapitals.MODID, "submit_decree_of_the_house");
+    public static final ResourceLocation SUBMIT_DECLARATION_OF_SEPARATION = new ResourceLocation(MCACapitals.MODID, "submit_declaration_of_separation");
     public static final ResourceLocation SYNC_VILLAGER_IDENTITY = new ResourceLocation(MCACapitals.MODID, "sync_villager_identity");
     public static final ResourceLocation SYNC_BLUEPRINT_AUTHORITY = new ResourceLocation(MCACapitals.MODID, "sync_blueprint_authority");
     public static final ResourceLocation OPEN_AMBASSADOR_COMMUNICATION = new ResourceLocation(MCACapitals.MODID, "open_ambassador_communication");
@@ -39,6 +41,11 @@ public class ModNetwork {
         ServerPlayNetworking.registerGlobalReceiver(SELECT_SEALED_PURSE_CASE, (server, player, handler, buffer, responseSender) -> {
             SelectSealedPurseCasePacket packet = SelectSealedPurseCasePacket.decode(buffer);
             server.execute(() -> SelectSealedPurseCasePacket.handle(packet, player));
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(SUBMIT_DECLARATION_OF_SEPARATION, (server, player, handler, buffer, responseSender) -> {
+            SubmitDeclarationOfSeparationPacket packet = SubmitDeclarationOfSeparationPacket.decode(buffer);
+            server.execute(() -> SubmitDeclarationOfSeparationPacket.handle(packet, player));
         });
     }
 
@@ -67,6 +74,11 @@ public class ModNetwork {
         ClientPlayNetworking.registerGlobalReceiver(OPEN_DECREE_OF_THE_HOUSE, (client, handler, buffer, responseSender) -> {
             OpenDecreeOfTheHousePacket packet = OpenDecreeOfTheHousePacket.decode(buffer);
             client.execute(() -> OpenDecreeOfTheHousePacket.handle(packet));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(OPEN_DECLARATION_OF_SEPARATION, (client, handler, buffer, responseSender) -> {
+            OpenDeclarationOfSeparationPacket packet = OpenDeclarationOfSeparationPacket.decode(buffer);
+            client.execute(() -> OpenDeclarationOfSeparationPacket.handle(packet));
         });
 
         ClientPlayNetworking.registerGlobalReceiver(SYNC_VILLAGER_IDENTITY, (client, handler, buffer, responseSender) -> {
@@ -115,6 +127,10 @@ public class ModNetwork {
         sendToPlayer(player, OPEN_DECREE_OF_THE_HOUSE, buffer -> OpenDecreeOfTheHousePacket.encode(packet, buffer));
     }
 
+    public static void sendToPlayer(ServerPlayer player, OpenDeclarationOfSeparationPacket packet) {
+        sendToPlayer(player, OPEN_DECLARATION_OF_SEPARATION, buffer -> OpenDeclarationOfSeparationPacket.encode(packet, buffer));
+    }
+
     public static void sendToPlayer(ServerPlayer player, SyncVillagerIdentityPacket packet) {
         sendToPlayer(player, SYNC_VILLAGER_IDENTITY, buffer -> SyncVillagerIdentityPacket.encode(packet, buffer));
     }
@@ -149,6 +165,13 @@ public class ModNetwork {
     }
 
     @Environment(EnvType.CLIENT)
+    public static void sendToServer(SubmitDeclarationOfSeparationPacket packet) {
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        SubmitDeclarationOfSeparationPacket.encode(packet, buffer);
+        ClientPlayNetworking.send(SUBMIT_DECLARATION_OF_SEPARATION, buffer);
+    }
+
+    @Environment(EnvType.CLIENT)
     public static void sendToServer(SelectSealedPurseCasePacket packet) {
         FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
         SelectSealedPurseCasePacket.encode(packet, buffer);
@@ -165,6 +188,11 @@ public class ModNetwork {
 
         @Environment(EnvType.CLIENT)
         public void sendToServer(SubmitDecreeOfTheHousePacket packet) {
+            ModNetwork.sendToServer(packet);
+        }
+
+        @Environment(EnvType.CLIENT)
+        public void sendToServer(SubmitDeclarationOfSeparationPacket packet) {
             ModNetwork.sendToServer(packet);
         }
 

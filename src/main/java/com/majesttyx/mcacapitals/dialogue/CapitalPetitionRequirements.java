@@ -35,16 +35,11 @@ final class CapitalPetitionRequirements {
 
     static int countMasterProfessionVillagers(ServerLevel level, Set<UUID> residents) {
         int count = 0;
-        if (level == null || residents == null || residents.isEmpty()) {
-            return count;
-        }
-
         for (UUID residentId : residents) {
             if (MCAIntegrationBridge.isMasterProfessionVillager(level, residentId)) {
                 count++;
             }
         }
-
         return count;
     }
 
@@ -56,7 +51,11 @@ final class CapitalPetitionRequirements {
         CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(level, villagerEntity.getUUID());
         if (capital == null) {
             Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerEntity.getUUID());
-            capital = CapitalManager.getCapitalByVillageId(villageId);
+            capital = CapitalManager.getCapitalByVillageId(level, villageId);
+        }
+
+        if (capital == null) {
+            return null;
         }
 
         return capital;
@@ -77,10 +76,6 @@ final class CapitalPetitionRequirements {
     }
 
     static boolean hasAdvancement(ServerPlayer player, ResourceLocation advancementId) {
-        if (player == null || advancementId == null || player.server == null) {
-            return false;
-        }
-
         Advancement advancement = player.server.getAdvancements().getAdvancement(advancementId);
         if (advancement == null) {
             return false;
@@ -92,47 +87,43 @@ final class CapitalPetitionRequirements {
 
     static List<OpenBetrothalSelectionPacket.Candidate> collectPlayerBetrothalCandidates(ServerLevel level, CapitalRecord capital) {
         List<OpenBetrothalSelectionPacket.Candidate> result = new ArrayList<>();
-        if (level == null || capital == null) {
-            return result;
-        }
-
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
 
         for (UUID residentId : residents) {
             if (!isPlayerBetrothalCandidate(level, capital, residentId)) {
                 continue;
             }
-
             result.add(new OpenBetrothalSelectionPacket.Candidate(
                     residentId,
                     buildBetrothalCandidateNameComponent(level, capital, residentId)
             ));
         }
 
-        result.sort(Comparator.comparing(candidate -> candidate.name().getString(), String.CASE_INSENSITIVE_ORDER));
+        result.sort(Comparator.comparing(
+                candidate -> candidate.name().getString(),
+                String.CASE_INSENSITIVE_ORDER
+        ));
         return result;
     }
 
     static List<OpenBetrothalSelectionPacket.Candidate> collectRecommendedBetrothalCandidates(ServerLevel level, CapitalRecord capital) {
         List<OpenBetrothalSelectionPacket.Candidate> result = new ArrayList<>();
-        if (level == null || capital == null) {
-            return result;
-        }
-
         Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
 
         for (UUID residentId : residents) {
             if (!isRecommendedBetrothalCandidate(level, capital, residentId)) {
                 continue;
             }
-
             result.add(new OpenBetrothalSelectionPacket.Candidate(
                     residentId,
                     buildBetrothalCandidateNameComponent(level, capital, residentId)
             ));
         }
 
-        result.sort(Comparator.comparing(candidate -> candidate.name().getString(), String.CASE_INSENSITIVE_ORDER));
+        result.sort(Comparator.comparing(
+                candidate -> candidate.name().getString(),
+                String.CASE_INSENSITIVE_ORDER
+        ));
         return result;
     }
 
@@ -185,7 +176,11 @@ final class CapitalPetitionRequirements {
         }
 
         if (titleId == CapitalTitleResolver.ResolvedTitleId.ROYAL_GUARD) {
-            return CapitalRoyalGuardService.buildRoyalGuardDisplayNameComponent(level, capital, entityId);
+            return CapitalRoyalGuardService.buildRoyalGuardDisplayNameComponent(
+                    level,
+                    capital,
+                    entityId
+            );
         }
 
         return Component.translatable(

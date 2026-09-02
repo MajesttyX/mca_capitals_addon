@@ -223,7 +223,7 @@ public final class RoyalScepterCommands {
             return null;
         }
 
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 
     private static boolean rejectAmbassador(
@@ -631,6 +631,16 @@ public final class RoyalScepterCommands {
             return 0;
         }
 
+        if (!CapitalCommanderService.isEligibleVillagerCommander(
+                level,
+                capital,
+                villagerId,
+                residents
+        )) {
+            source.sendFailure(Component.translatable("mcacapitals.system.royal_scepter_commands.that_villager_is_not_eligible_to_serve_as_commander_of_the_army"));
+            return 0;
+        }
+
         UUID previousVillagerCommander = capital.getCommander();
 
         UUID previousPlayerCommander =
@@ -760,6 +770,7 @@ public final class RoyalScepterCommands {
         }
 
         CapitalDataAccess.markDirty(level);
+
         return 1;
     }
 

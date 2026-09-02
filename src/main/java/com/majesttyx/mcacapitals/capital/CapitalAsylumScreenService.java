@@ -338,6 +338,7 @@ public final class CapitalAsylumScreenService {
 
         return currentHome == null
                 || targetCapital.getVillageId() != null
+                && CapitalManager.isCapitalInLevel(targetCapital, level)
                 && currentHome.getId()
                 == targetCapital.getVillageId();
     }
@@ -368,7 +369,8 @@ public final class CapitalAsylumScreenService {
             return null;
         }
 
-        return VillageManager.get(level)
+        ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
+        return VillageManager.get(capitalLevel)
                 .getOrEmpty(
                         capital.getVillageId()
                 )

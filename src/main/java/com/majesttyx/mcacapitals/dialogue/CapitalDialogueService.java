@@ -23,7 +23,6 @@ public class CapitalDialogueService {
 
     private static final long NEWS_BRANCH_COOLDOWN_TICKS = 20L * 60L;
     private static final long SAME_EVENT_COOLDOWN_TICKS = 20L * 60L * 4L;
-
     private static final int MCA_PHRASE_CAPITAL_LINE_CHANCE = 55;
 
     private static final Set<String> MCA_GREET_RANK_KEYS = Set.of(
@@ -50,15 +49,16 @@ public class CapitalDialogueService {
         UUID villagerId = villagerEntity.getUUID();
 
         CapitalRecord capital = resolveCapital(level, villagerId);
-        if (capital == null || capital.getChronicleEntries().isEmpty()) {
+        if (capital == null
+                || capital.getState() != CapitalState.ACTIVE
+                || capital.getChronicleEntries().isEmpty()) {
             return null;
         }
 
         VillagerNewsState state = VILLAGER_NEWS_STATE.computeIfAbsent(villagerId, ignored -> new VillagerNewsState());
         long now = level.getGameTime();
 
-        if (state.lastNewsSpokenTick != Long.MIN_VALUE
-                && now - state.lastNewsSpokenTick < NEWS_BRANCH_COOLDOWN_TICKS) {
+        if (now - state.lastNewsSpokenTick < NEWS_BRANCH_COOLDOWN_TICKS) {
             return null;
         }
 
@@ -95,7 +95,7 @@ public class CapitalDialogueService {
 
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = resolveCapital(level, villagerEntity.getUUID());
-        if (capital == null) {
+        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
             return null;
         }
 
@@ -118,7 +118,7 @@ public class CapitalDialogueService {
 
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = resolveCapital(level, villagerEntity.getUUID());
-        if (capital == null) {
+        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
             return null;
         }
 
@@ -136,8 +136,19 @@ public class CapitalDialogueService {
 
         ServerLevel level = player.serverLevel();
         CapitalRecord capital = resolveCapital(level, villagerEntity.getUUID());
-        if (capital == null) {
+        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
             return null;
+        }
+
+        String managedRuntimeKey = managedRuntimeKeyFromPhrase(phraseKey);
+        if (managedRuntimeKey != null) {
+            return CapitalDialogueRuntime.formatManagedRuntimeComponent(
+                    managedRuntimeKey,
+                    player,
+                    villagerEntity,
+                    level,
+                    capital
+            );
         }
 
         String bucket = MCA_PHRASE_BUCKETS.get(phraseKey);
@@ -158,6 +169,22 @@ public class CapitalDialogueService {
                 capital
         );
     }
+    private static String managedRuntimeKeyFromPhrase(String phraseKey) {
+        if (CapitalDialogueRuntime.isManagedRuntimeKey(phraseKey)) {
+            return phraseKey;
+        }
+
+        String dialoguePrefix = "dialogue.";
+        if (phraseKey.startsWith(dialoguePrefix)) {
+            String candidate = phraseKey.substring(dialoguePrefix.length());
+            if (CapitalDialogueRuntime.isManagedRuntimeKey(candidate)) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
     private static Map<String, String> buildMcaPhraseBuckets() {
         Map<String, String> buckets = new HashMap<>();
 
@@ -207,7 +234,7 @@ public class CapitalDialogueService {
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 
     private static CapitalDialogueEventModels.ChronicleEvent pickEventForVillager(
@@ -229,7 +256,6 @@ public class CapitalDialogueService {
 
         boolean sameEventStillCooling =
                 state.lastEventType != null
-                        && state.lastNewsSpokenTick != Long.MIN_VALUE
                         && now - state.lastNewsSpokenTick < SAME_EVENT_COOLDOWN_TICKS;
 
         if (sameEventStillCooling) {
@@ -384,4 +410,9 @@ public class CapitalDialogueService {
         private CapitalChronicleEventType lastEventType = null;
         private long lastEventDay = Long.MIN_VALUE;
     }
+
+    static void clearRuntimeState() {
+        VILLAGER_NEWS_STATE.clear();
+    }
+
 }

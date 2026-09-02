@@ -82,6 +82,34 @@ public class CapitalCommanderService {
         return changed;
     }
 
+    public static boolean isEligibleVillagerCommander(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID villagerId,
+            Set<UUID> residents
+    ) {
+        if (level == null
+                || capital == null
+                || villagerId == null
+                || residents == null) {
+            return false;
+        }
+
+        if (!CapitalCommanderSelection.isEligibleForNewCommander(
+                level,
+                capital
+        )) {
+            return false;
+        }
+
+        return CapitalCommanderSelection.isEligibleCandidate(
+                level,
+                capital,
+                villagerId,
+                residents
+        );
+    }
+
     public static UUID getPlayerCommander(ServerLevel level, CapitalRecord capital) {
         return PlayerCapitalTitleService.getCommanderHolder(level, capital);
     }

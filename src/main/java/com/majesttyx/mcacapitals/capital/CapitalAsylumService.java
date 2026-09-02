@@ -70,12 +70,7 @@ public final class CapitalAsylumService {
                 refugeeId
         );
 
-        if (!MCAIntegrationBridge.leaveHome(
-                level,
-                refugeeId
-        )) {
-            return false;
-        }
+        villager.getResidency().leaveHome();
 
         CapitalRefugeeRecord record =
                 CapitalRefugeeDataAccess.markExiled(
@@ -265,237 +260,6 @@ public final class CapitalAsylumService {
         return 1;
     }
 
-    public static boolean processNpcAsylum(
-            ServerLevel level
-    ) {
-        if (level == null) {
-            return false;
-        }
-
-        boolean changed = false;
-
-        for (CapitalRecord targetCapital :
-                CapitalManager.getAllCapitalRecords()) {
-            if (!isNpcAsylumCapital(
-                    level,
-                    targetCapital
-            )) {
-                continue;
-            }
-
-            Village targetVillage =
-                    getVillage(
-                            level,
-                            targetCapital
-                    );
-
-            if (targetVillage == null) {
-                continue;
-            }
-
-            for (CapitalRefugeeRecord record :
-                    CapitalRefugeeDataAccess.getAwaitingAsylum(
-                            level
-                    )) {
-                if (record == null
-                        || record.getOriginCapitalId().equals(
-                        targetCapital.getCapitalId()
-                )) {
-                    continue;
-                }
-
-                Entity entity =
-                        MCAIntegrationBridge.findLoadedMCAVillagerByUuid(
-                                level,
-                                record.getRefugeeId()
-                        );
-
-                if (!(entity instanceof VillagerEntityMCA villager)
-                        || !villager.isAlive()
-                        || villager.isRemoved()
-                        || !MCAIntegrationBridge.isTeenOrAdultVillager(
-                        level,
-                        record.getRefugeeId()
-                )
-                        || !targetVillage.isWithinBorder(
-                        villager
-                )) {
-                    continue;
-                }
-
-                Village currentHome =
-                        villager.getResidency()
-                                .getHomeVillage()
-                                .orElse(null);
-
-                boolean alreadyResidentOfTarget =
-                        isTargetVillage(
-                                currentHome,
-                                targetCapital
-                        );
-
-                if (currentHome != null
-                        && !alreadyResidentOfTarget) {
-                    continue;
-                }
-
-                boolean assignedHomeHere = false;
-
-                if (!alreadyResidentOfTarget) {
-                    if (!targetVillage.hasSpace()) {
-                        continue;
-                    }
-
-                    if (!MCAIntegrationBridge.forceVillageResidency(
-                            level,
-                            record.getRefugeeId(),
-                            targetCapital.getVillageId()
-                    )) {
-                        MCAIntegrationBridge.leaveHome(
-                                level,
-                                record.getRefugeeId()
-                        );
-                        continue;
-                    }
-
-                    boolean joinedTarget =
-                            villager.getResidency()
-                                    .getHomeVillage()
-                                    .map(
-                                            home ->
-                                                    isTargetVillage(
-                                                            home,
-                                                            targetCapital
-                                                    )
-                                    )
-                                    .orElse(false);
-
-                    if (!joinedTarget) {
-                        MCAIntegrationBridge.leaveHome(
-                                level,
-                                record.getRefugeeId()
-                        );
-                        continue;
-                    }
-
-                    assignedHomeHere = true;
-                }
-
-                UUID refugeeId =
-                        record.getRefugeeId();
-
-                removeTrustedOffices(
-                        level,
-                        refugeeId
-                );
-
-                if (!CapitalRefugeeDataAccess.grantAsylum(
-                        level,
-                        refugeeId,
-                        targetCapital.getCapitalId()
-                )) {
-                    if (assignedHomeHere) {
-                        MCAIntegrationBridge.leaveHome(
-                                level,
-                                refugeeId
-                        );
-                    }
-                    continue;
-                }
-
-                targetCapital.setCrownStanding(
-                        refugeeId,
-                        CrownStanding.FRIEND_OF_CROWN
-                );
-
-                CapitalJusticeDataAccess.setPublicStatus(
-                        level,
-                        targetCapital.getCapitalId(),
-                        refugeeId,
-                        CapitalPublicCrownStatus.RECOGNIZED_FRIEND
-                );
-
-                CapitalResidentScanner.clearCache(
-                        level
-                );
-
-                CapitalDataAccess.markDirty(
-                        level
-                );
-
-                CapitalNameService.refreshCapitalNames(
-                        level,
-                        targetCapital,
-                        CapitalResidentScanner.scanResidents(
-                                level,
-                                targetCapital.getCapitalId()
-                        )
-                );
-
-                VillagerIdentitySyncService.syncToNearbyPlayers(
-                        level,
-                        villager
-                );
-
-                String refugeeName =
-                        villager.getName().getString();
-
-                String targetName =
-                        CapitalDiplomaticAgreementText.capitalName(
-                                level,
-                                targetCapital
-                        );
-
-                CapitalChronicleService.addEvent(
-                        level,
-                        targetCapital,
-                        CapitalChronicleEventId.ASYLUM_GRANTED_DESTINATION,
-                        refugeeName,
-                        record.getOriginCapitalName(),
-                        targetName
-                );
-
-                applyOriginCapitalConsequences(
-                        level,
-                        targetCapital,
-                        record,
-                        refugeeId,
-                        refugeeName,
-                        targetName
-                );
-
-                changed = true;
-            }
-        }
-
-        return changed;
-    }
-
-    private static boolean isNpcAsylumCapital(
-            ServerLevel level,
-            CapitalRecord capital
-    ) {
-        return level != null
-                && capital != null
-                && capital.getState() == CapitalState.ACTIVE
-                && capital.getCapitalId() != null
-                && capital.getVillageId() != null
-                && capital.getPlayerSovereignId() == null
-                && capital.getSovereign() != null
-                && CapitalDiplomaticAuthorityService.getPlayerDecisionMaker(
-                level,
-                capital
-        ) == null
-                && CapitalBuildingService.hasAmbassadorBuildings(
-                level,
-                capital
-        )
-                && CapitalAmbassadorService.getAmbassador(
-                level,
-                capital
-        ) != null;
-    }
-
     public static int grantAsylum(
             ServerPlayer player,
             UUID ambassadorId,
@@ -524,19 +288,6 @@ public final class CapitalAsylumService {
 
         CapitalRecord targetCapital =
                 audience.sourceCapital();
-
-        if (!CapitalDiplomaticAuthorityService.mayExerciseSovereignAuthority(
-                level,
-                targetCapital,
-                player.getUUID()
-        )) {
-            player.sendSystemMessage(
-                    Component.translatable(
-                            "mcacapitals.ui.asylum.only_sovereign_or_hand"
-                    )
-            );
-            return 0;
-        }
 
         CapitalRefugeeRecord record =
                 CapitalRefugeeDataAccess.getRecord(
@@ -628,6 +379,7 @@ public final class CapitalAsylumService {
 
         boolean alreadyResidentOfTarget =
                 isTargetVillage(
+                        level,
                         currentHome,
                         targetCapital
                 );
@@ -652,22 +404,7 @@ public final class CapitalAsylumService {
                 return 0;
             }
 
-            if (!MCAIntegrationBridge.forceVillageResidency(
-                    level,
-                    refugeeId,
-                    targetCapital.getVillageId()
-            )) {
-                MCAIntegrationBridge.leaveHome(
-                        level,
-                        refugeeId
-                );
-
-                player.sendSystemMessage(
-                        Component.translatable("mcacapitals.system.capital_asylum_service.the_refugee_could_not_be_assigned_to_this_capital_s_mca_village")
-                );
-
-                return 0;
-            }
+            villager.getResidency().seekHome();
 
             boolean joinedTarget =
                     villager.getResidency()
@@ -675,6 +412,7 @@ public final class CapitalAsylumService {
                             .map(
                                     home ->
                                             isTargetVillage(
+                                                    level,
                                                     home,
                                                     targetCapital
                                             )
@@ -682,10 +420,7 @@ public final class CapitalAsylumService {
                             .orElse(false);
 
             if (!joinedTarget) {
-                MCAIntegrationBridge.leaveHome(
-                        level,
-                        refugeeId
-                );
+                villager.getResidency().leaveHome();
 
                 player.sendSystemMessage(
                         Component.translatable("mcacapitals.system.capital_asylum_service.the_refugee_could_not_be_assigned_to_this_capital_s_mca_village")
@@ -709,10 +444,8 @@ public final class CapitalAsylumService {
                         targetCapital.getCapitalId()
                 )) {
             if (assignedHomeHere) {
-                MCAIntegrationBridge.leaveHome(
-                        level,
-                        refugeeId
-                );
+                villager.getResidency()
+                        .leaveHome();
             }
 
             player.sendSystemMessage(
@@ -1037,6 +770,7 @@ public final class CapitalAsylumService {
 
         return currentHome == null
                 || isTargetVillage(
+                level,
                 currentHome,
                 targetCapital
         );
@@ -1071,7 +805,8 @@ public final class CapitalAsylumService {
             return null;
         }
 
-        return VillageManager.get(level)
+        ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
+        return VillageManager.get(capitalLevel)
                 .getOrEmpty(
                         capital.getVillageId()
                 )
@@ -1079,15 +814,15 @@ public final class CapitalAsylumService {
     }
 
     private static boolean isTargetVillage(
+            ServerLevel level,
             Village village,
             CapitalRecord targetCapital
     ) {
         return village != null
                 && targetCapital != null
-                && targetCapital.getVillageId()
-                != null
-                && village.getId()
-                == targetCapital.getVillageId();
+                && targetCapital.getVillageId() != null
+                && CapitalManager.isCapitalInLevel(targetCapital, level)
+                && village.getId() == targetCapital.getVillageId();
     }
 
     private static MutableComponent clickable(

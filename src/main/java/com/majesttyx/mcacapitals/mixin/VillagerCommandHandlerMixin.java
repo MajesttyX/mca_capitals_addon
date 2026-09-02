@@ -1,9 +1,9 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.MCACapitals;
-import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticAgreementService;
 import com.majesttyx.mcacapitals.capital.CapitalDiplomaticGiftService;
+import com.majesttyx.mcacapitals.capital.CapitalCrownJusticeService;
 import com.majesttyx.mcacapitals.capital.CapitalForeignAffairsService;
 import com.majesttyx.mcacapitals.capital.CapitalPlayerWarrantDialogueService;
 import com.majesttyx.mcacapitals.capital.CapitalSovereignDeclarationPromptService;
@@ -20,135 +20,84 @@ import java.lang.reflect.Field;
 
 @Pseudo
 @Mixin(
-        targets =
-                "fabric.net.conczin.mca.entity.interaction.EntityCommandHandler",
+        targets = "fabric.net.conczin.mca.entity.interaction.VillagerCommandHandler",
         remap = false
 )
 public class VillagerCommandHandlerMixin {
 
     @Inject(
-            method = "handle",
+            method = "handle(Lnet/minecraft/server/level/ServerPlayer;Ljava/lang/String;)Z",
             at = @At("HEAD"),
             cancellable = true,
-            remap = false,
-            require = 0
+            remap = false
     )
-    private void mcacapitals$handleCustomCommand(
+    private void mcacapitals$handlePetitionCommand(
             ServerPlayer player,
             String command,
             CallbackInfoReturnable<Boolean> cir
     ) {
         if (command == null
-                || !command.startsWith(
-                "mcacapitals_"
-        )) {
+                || !command.startsWith("mcacapitals_")) {
             return;
         }
 
-        Entity entity =
-                resolveEntity();
+        Entity entity = resolveEntity();
 
         MCACapitals.LOGGER.info(
-                "[MCACapitals] EntityCommandHandler.handle intercepted. command='{}', entity='{}', player='{}'",
+                "[MCACapitals] VillagerCommandHandler.handle intercepted. command='{}', entity='{}', player='{}'",
                 command,
                 entity != null
-                        ? entity.getName()
-                        .getString()
+                        ? entity.getName().getString()
                         : "null",
                 player != null
-                        ? player.getName()
-                        .getString()
+                        ? player.getName().getString()
                         : "null"
         );
 
-        if (entity == null
-                || player == null) {
+        if (entity == null || player == null) {
             return;
         }
 
         boolean handled;
 
-        if (CapitalSovereignDeclarationPromptService
-                .handleCommand(
-                        player,
-                        entity,
-                        command
-                )) {
-
+        if (CapitalSovereignDeclarationPromptService.handleCommand(
+                player,
+                entity,
+                command
+        )) {
             handled = true;
-
-        } else if (
-                CapitalPlayerWarrantDialogueService
-                        .handleCommand(
-                                player,
-                                entity,
-                                command
-                        )
-        ) {
-
+        } else if (CapitalPlayerWarrantDialogueService.handleCommand(
+                player,
+                entity,
+                command
+        )) {
             handled = true;
-
-        } else if (
-                CapitalCrownJusticeService
-                        .DIALOGUE_COMMAND
-                        .equals(command)
-        ) {
-
-            handled =
-                    CapitalCrownJusticeService
-                            .openReview(
-                                    player,
-                                    entity.getUUID()
-                            ) > 0;
-
-        } else if (
-                CapitalForeignAffairsService
-                        .DIALOGUE_COMMAND
-                        .equals(command)
-        ) {
-
-            handled =
-                    CapitalForeignAffairsService
-                            .showReport(
-                                    player,
-                                    entity
-                            );
-
-        } else if (
-                CapitalDiplomaticGiftService
-                        .DIALOGUE_COMMAND
-                        .equals(command)
-        ) {
-
-            handled =
-                    CapitalDiplomaticGiftService
-                            .openDestinationList(
-                                    player,
-                                    entity
-                            );
-
-        } else if (
-                CapitalDiplomaticAgreementService
-                        .DIALOGUE_COMMAND
-                        .equals(command)
-        ) {
-
-            handled =
-                    CapitalDiplomaticAgreementService
-                            .openCapitalList(
-                                    player,
-                                    entity
-                            );
-
+        } else if (CapitalCrownJusticeService.DIALOGUE_COMMAND.equals(command)) {
+            handled = CapitalCrownJusticeService.openReview(
+                    player,
+                    entity.getUUID()
+            ) > 0;
+        } else if (CapitalForeignAffairsService.DIALOGUE_COMMAND.equals(command)) {
+            handled = CapitalForeignAffairsService.showReport(
+                    player,
+                    entity
+            );
+        } else if (CapitalDiplomaticGiftService.DIALOGUE_COMMAND.equals(command)) {
+            handled = CapitalDiplomaticGiftService.openDestinationList(
+                    player,
+                    entity
+            );
+        } else if (CapitalDiplomaticAgreementService.DIALOGUE_COMMAND.equals(command)) {
+            handled = CapitalDiplomaticAgreementService.openCapitalList(
+                    player,
+                    entity
+            );
         } else {
-
-            handled =
-                    CapitalPetitionService
-                            .handleCustomCommand(
-                                    player,
-                                    entity,
-                                    command
-                            );
+            handled = CapitalPetitionService.handleCustomCommand(
+                    player,
+                    entity,
+                    command
+            );
         }
 
         MCACapitals.LOGGER.info(
@@ -163,41 +112,26 @@ public class VillagerCommandHandlerMixin {
     }
 
     private Entity resolveEntity() {
-        Class<?> type =
-                this.getClass();
+        Class<?> type = this.getClass();
 
         while (type != null) {
             try {
-                Field field =
-                        type.getDeclaredField(
-                                "entity"
-                        );
+                Field field = type.getDeclaredField("entity");
+                field.setAccessible(true);
 
-                field.setAccessible(
-                        true
-                );
-
-                Object value =
-                        field.get(this);
+                Object value = field.get(this);
 
                 if (value instanceof Entity entity) {
                     return entity;
                 }
-
             } catch (NoSuchFieldException ignored) {
-
-                type =
-                        type.getSuperclass();
-
+                type = type.getSuperclass();
                 continue;
-
             } catch (Throwable ignored) {
-
                 return null;
             }
 
-            type =
-                    type.getSuperclass();
+            type = type.getSuperclass();
         }
 
         return null;

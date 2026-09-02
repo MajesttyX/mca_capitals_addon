@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "item": "minecraft:feather"
+    },
+    {
+      "item": "minecraft:ink_sac"
+    },
+    {
+      "item": "mcacapitals:purple_royal_seal"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "item": "mcacapitals:house_ledger"
+  }
+}

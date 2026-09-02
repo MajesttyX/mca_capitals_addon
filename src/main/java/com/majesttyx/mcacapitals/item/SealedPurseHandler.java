@@ -290,6 +290,7 @@ public class SealedPurseHandler {
             statusesByTarget.computeIfAbsent(targetId, ignored -> new LinkedHashSet<>()).add("in_custody");
         }
 
+
         List<OpenSealedPurseCaseSelectionPacket.CaseEntry> cases = new ArrayList<>();
         for (Map.Entry<UUID, Set<String>> entry : statusesByTarget.entrySet()) {
             UUID targetId = entry.getKey();
@@ -367,4 +368,9 @@ public class SealedPurseHandler {
 
     private record PendingPurseGift(UUID capitalId, long expiresAtGameTime) {
     }
+
+    public static void clearRuntimeState() {
+        PENDING_GIFTS.clear();
+    }
+
 }

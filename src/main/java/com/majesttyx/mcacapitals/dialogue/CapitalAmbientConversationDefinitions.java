@@ -210,4 +210,10 @@ final class CapitalAmbientConversationDefinitions {
 
         return Set.copyOf(references);
     }
+
+    static synchronized void clearCache() {
+        cachedResourceManager = null;
+        cachedDefinitions = Map.of();
+    }
+
 }

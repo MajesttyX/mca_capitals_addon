@@ -103,14 +103,6 @@ public final class CapitalJusticeService {
             return false;
         }
 
-        Entity master = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, capital.getMasterOfLaws());
-        if (master == null || player.distanceToSqr(master) > 12.0D * 12.0D) {
-            player.sendSystemMessage(Component.translatable(
-                    "mcacapitals.system.capital_justice_service.you_must_remain_near_the_master_of_laws_to_make_this_accusation"
-            ));
-            return false;
-        }
-
         if (!CapitalPlayerNotificationService.isPlayerWithinCapital(level, capital, player)) {
             player.sendSystemMessage(Component.translatable("mcacapitals.system.capital_justice_service.you_must_be_within_the_capital_to_make_this_accusation"));
             return false;
@@ -175,7 +167,7 @@ public final class CapitalJusticeService {
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, masterOfLawsId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 
     private static boolean isMasterOfLaws(CapitalRecord capital, UUID villagerId) {

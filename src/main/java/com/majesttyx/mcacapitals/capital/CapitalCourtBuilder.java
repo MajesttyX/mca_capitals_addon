@@ -15,6 +15,7 @@ import java.util.UUID;
 
 public class CapitalCourtBuilder {
 
+
     private CapitalCourtBuilder() {
     }
 
@@ -78,6 +79,15 @@ public class CapitalCourtBuilder {
 
         synchronizeRoyalSuccessionOrder(capital, newRoyalChildren, discoveredRoyalBirthOrder);
         newHeir = resolveHeir(level, capital, residents, sovereign, newRoyalChildren);
+        collectHeirChildren(
+                level,
+                capital,
+                newHeir,
+                newRoyalChildren,
+                newRoyalChildFemale,
+                discoveredRoyalBirthOrder
+        );
+        synchronizeRoyalSuccessionOrder(capital, newRoyalChildren, discoveredRoyalBirthOrder);
 
         collectPrinceConsortSources(
                 level,
@@ -126,22 +136,15 @@ public class CapitalCourtBuilder {
         );
 
         if (newConsort != null && !newConsort.equals(previousConsort)) {
-            ServerPlayer livePlayerSpouse = CapitalCourtMarriageResolver.findActualPlayerSpouse(level, sovereign);
-
-            if (livePlayerSpouse != null) {
-                capital.setPlayerConsort(true);
-                capital.setPlayerConsortId(livePlayerSpouse.getUUID());
-                capital.setPlayerConsortName(livePlayerSpouse.getGameProfile().getName());
-                capital.setConsort(livePlayerSpouse.getUUID());
-                capital.setConsortFemale(false);
-                newConsort = livePlayerSpouse.getUUID();
-            } else if (!MCAIntegrationBridge.isMCAVillager(level, newConsort)) {
+            if (MCAIntegrationBridge.isPlayerIdentity(level, newConsort)) {
                 capital.setPlayerConsort(true);
                 capital.setPlayerConsortId(newConsort);
-                capital.setPlayerConsortName(resolveBestOnlinePlayerName(level));
+                capital.setPlayerConsortName(CapitalFoundationInternal.resolvePlayerName(level, newConsort));
+                capital.setConsort(newConsort);
+                capital.setConsortFemale(MCAIntegrationBridge.isFemale(level, newConsort));
             }
 
-            if (MCAIntegrationBridge.isMCAVillager(level, newConsort)) {
+            if (!MCAIntegrationBridge.isPlayerIdentity(level, newConsort)) {
                 String sovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
                 String consortName = CapitalChronicleIdentitySnapshot.name(level, capital, newConsort);
 
@@ -176,23 +179,13 @@ public class CapitalCourtBuilder {
                 && CapitalCourtMarriageResolver.isValidMarriedConsort(level, sovereign, spouse)) ? spouse : null;
         boolean spouseFemale = validConsort != null && MCAIntegrationBridge.isFemale(level, validConsort);
 
-        ServerPlayer livePlayerSpouse = CapitalCourtMarriageResolver.findActualPlayerSpouse(level, sovereign);
-        if (livePlayerSpouse != null) {
-            validConsort = livePlayerSpouse.getUUID();
-            spouseFemale = false;
-        }
-
         capital.setConsort(validConsort);
         capital.setConsortFemale(spouseFemale);
 
-        if (livePlayerSpouse != null) {
-            capital.setPlayerConsort(true);
-            capital.setPlayerConsortId(livePlayerSpouse.getUUID());
-            capital.setPlayerConsortName(livePlayerSpouse.getGameProfile().getName());
-        } else if (validConsort != null && !MCAIntegrationBridge.isMCAVillager(level, validConsort)) {
+        if (validConsort != null && MCAIntegrationBridge.isPlayerIdentity(level, validConsort)) {
             capital.setPlayerConsort(true);
             capital.setPlayerConsortId(validConsort);
-            capital.setPlayerConsortName(resolveBestOnlinePlayerName(level));
+            capital.setPlayerConsortName(CapitalFoundationInternal.resolvePlayerName(level, validConsort));
         } else {
             capital.setPlayerConsort(false);
             capital.setPlayerConsortId(null);
@@ -210,7 +203,7 @@ public class CapitalCourtBuilder {
 
         if (validConsort != null
                 && !validConsort.equals(previousConsort)
-                && MCAIntegrationBridge.isMCAVillager(level, validConsort)) {
+                && !MCAIntegrationBridge.isPlayerIdentity(level, validConsort)) {
             String sovereignName = CapitalChronicleIdentitySnapshot.name(level, capital, sovereign);
             String consortName = CapitalChronicleIdentitySnapshot.name(level, capital, validConsort);
 
@@ -285,6 +278,34 @@ public class CapitalCourtBuilder {
                             : MCAIntegrationBridge.isFemale(level, existingRoyalChild)
             );
             newRoyalChildFemale.put(existingRoyalChild, female);
+        }
+    }
+
+    private static void collectHeirChildren(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID heir,
+            Set<UUID> newRoyalChildren,
+            Map<UUID, Boolean> newRoyalChildFemale,
+            List<UUID> discoveredRoyalBirthOrder
+    ) {
+        if (heir == null) {
+            return;
+        }
+
+        for (UUID childId : MCAIntegrationBridge.getChildren(level, heir)) {
+            if (childId == null || capital.isDisinheritedRoyalChild(childId)) {
+                continue;
+            }
+
+            if (!MCAIntegrationBridge.isChildOf(level, childId, heir)) {
+                continue;
+            }
+
+            if (newRoyalChildren.add(childId)) {
+                discoveredRoyalBirthOrder.add(childId);
+            }
+            newRoyalChildFemale.put(childId, MCAIntegrationBridge.isFemale(level, childId));
         }
     }
 
@@ -384,7 +405,7 @@ public class CapitalCourtBuilder {
             if (residents != null && !residents.contains(childId)) {
                 continue;
             }
-            if (MCAIntegrationBridge.hasFamilyNode(level, childId)) {
+            if (isValidLivingFamilyMember(level, childId)) {
                 return childId;
             }
         }
@@ -402,7 +423,7 @@ public class CapitalCourtBuilder {
             if (!MCAIntegrationBridge.isChildOf(level, childId, sovereign)) {
                 continue;
             }
-            if (MCAIntegrationBridge.hasFamilyNode(level, childId)) {
+            if (isValidLivingFamilyMember(level, childId)) {
                 return childId;
             }
         }
@@ -623,7 +644,7 @@ public class CapitalCourtBuilder {
     ) {
         for (UUID childId : newRoyalChildren) {
             if (!oldRoyalChildren.contains(childId)) {
-                String name = resolveName(level, childId);
+                String name = CapitalChronicleIdentitySnapshot.name(level, capital, childId);
                 CapitalChronicleService.addEvent(
                         level,
                         capital,
@@ -656,7 +677,7 @@ public class CapitalCourtBuilder {
             if (residents != null && !residents.contains(childId)) {
                 continue;
             }
-            if (MCAIntegrationBridge.hasFamilyNode(level, childId)) {
+            if (isValidLivingFamilyMember(level, childId)) {
                 return childId;
             }
         }
@@ -677,7 +698,7 @@ public class CapitalCourtBuilder {
             return false;
         }
 
-        return MCAIntegrationBridge.hasFamilyNode(level, candidate);
+        return isValidLivingFamilyMember(level, candidate);
     }
 
     private static boolean isValidManualHeirCandidate(
@@ -691,7 +712,7 @@ public class CapitalCourtBuilder {
             return false;
         }
 
-        if (!MCAIntegrationBridge.hasFamilyNode(level, candidate)) {
+        if (!isValidLivingFamilyMember(level, candidate)) {
             return false;
         }
 
@@ -702,22 +723,18 @@ public class CapitalCourtBuilder {
         return validRoyalChildren.contains(candidate) || isValidRelationshipPerson(level, candidate);
     }
 
-    private static String resolveName(ServerLevel level, UUID entityId) {
+    private static boolean isValidLivingFamilyMember(ServerLevel level, UUID entityId) {
+        if (entityId == null) {
+            return false;
+        }
+
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, entityId);
-        if (entity != null) {
-            return entity.getName().getString();
+        if (entity != null && (!entity.isAlive() || entity.isRemoved())) {
+            return false;
         }
 
-        ServerPlayer player = level.getServer().getPlayerList().getPlayer(entityId);
-        if (player != null) {
-            return player.getName().getString();
-        }
-
-        return "Unknown";
+        return MCAIntegrationBridge.hasFamilyNode(level, entityId)
+                && !MCAIntegrationBridge.isFamilyNodeDeceased(level, entityId);
     }
 
-    private static String resolveBestOnlinePlayerName(ServerLevel level) {
-        List<ServerPlayer> players = level.getServer().getPlayerList().getPlayers();
-        return players.isEmpty() ? "Unknown" : players.get(0).getName().getString();
-    }
 }

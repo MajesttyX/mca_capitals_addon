@@ -16,6 +16,7 @@ public class PlayerHouseSetupScreen extends CapitalNoBlurScreen {
 
     private static final ResourceLocation BACKGROUND =
             new ResourceLocation("mcacapitals", "textures/gui/declaration_paper.png");
+
     private static final int BG_WIDTH = 200;
     private static final int BG_HEIGHT = 150;
 

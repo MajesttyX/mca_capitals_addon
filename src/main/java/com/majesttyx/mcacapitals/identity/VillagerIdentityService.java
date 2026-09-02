@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.identity;
 
+import com.majesttyx.mcacapitals.util.EntityPersistentData;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
@@ -7,7 +8,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
-import com.majesttyx.mcacapitals.util.EntityPersistentData;
 
 import java.util.Locale;
 import java.util.Set;
@@ -54,6 +54,7 @@ public final class VillagerIdentityService {
         boolean changed = false;
         changed |= ensureSurname(level, entity, SurnameSource.GENERATED);
         changed |= ensureOriginFromCurrentVillage(level, entity, null, OriginSource.DISCOVERED);
+        changed |= HouseRevisionService.reconcileEntity(level, entity);
         return changed;
     }
 
@@ -65,6 +66,7 @@ public final class VillagerIdentityService {
         boolean changed = false;
         changed |= ensureSurname(level, entity, SurnameSource.GENERATED);
         changed |= ensureOriginFromCurrentVillage(level, entity, capital, OriginSource.DISCOVERED);
+        changed |= HouseRevisionService.reconcileEntity(level, entity);
         return changed;
     }
 
@@ -137,7 +139,7 @@ public final class VillagerIdentityService {
             return false;
         }
 
-        CapitalRecord capital = knownCapital != null ? knownCapital : CapitalManager.getCapitalForVillage(villageId);
+        CapitalRecord capital = knownCapital != null ? knownCapital : CapitalManager.getCapitalForVillage(level, villageId);
         String villageName = MCAIntegrationBridge.getVillageName(level, villageId);
         String capitalName = capital == null ? "" : MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
 
@@ -257,7 +259,59 @@ public final class VillagerIdentityService {
 
         identity.putString(HOUSE_FOUNDED_IN_CAPITAL_NAME, capitalName == null ? "" : capitalName);
         saveIdentityTag(entity, identity);
+
+        HouseRevisionService.reconcileEntity(level, entity);
         return true;
+    }
+
+    public static boolean reviseHouse(
+            ServerLevel level,
+            Entity entity,
+            String houseName,
+            String houseWords
+    ) {
+        if (!canStoreIdentity(level, entity)) {
+            return false;
+        }
+
+        houseName = normalizeSurname(houseName);
+        String normalizedHouseWords = houseWords == null
+                ? ""
+                : houseWords.trim().replaceAll("\\s+", " ");
+
+        if (houseName.isBlank()) {
+            return false;
+        }
+
+        CompoundTag identity = getIdentityTag(entity);
+        if (!identity.getBoolean(HOUSE_FOUNDED)) {
+            return false;
+        }
+
+        boolean changed = false;
+
+        if (!houseName.equals(getStringOrEmpty(identity, HOUSE_NAME))) {
+            identity.putString(HOUSE_NAME, houseName);
+            changed = true;
+        }
+
+        if (!houseName.equals(getStringOrEmpty(identity, CURRENT_SURNAME))) {
+            identity.putString(CURRENT_SURNAME, houseName);
+            identity.putString(SURNAME_SOURCE, SurnameSource.LEGAL_RENAME.name());
+            identity.putLong(SURNAME_SET_AT_GAME_TIME, level.getGameTime());
+            changed = true;
+        }
+
+        if (!normalizedHouseWords.equals(getStringOrEmpty(identity, HOUSE_WORDS))) {
+            identity.putString(HOUSE_WORDS, normalizedHouseWords);
+            changed = true;
+        }
+
+        if (changed) {
+            saveIdentityTag(entity, identity);
+        }
+
+        return changed;
     }
 
     public static void clearOrigin(Entity entity) {

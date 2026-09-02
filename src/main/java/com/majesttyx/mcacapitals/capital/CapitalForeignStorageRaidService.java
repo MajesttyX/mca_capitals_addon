@@ -3,8 +3,6 @@ package com.majesttyx.mcacapitals.capital;
 import com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalWarCause;
 import com.majesttyx.mcacapitals.data.CapitalWarDataAccess;
-import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -15,9 +13,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +32,11 @@ public final class CapitalForeignStorageRaidService {
     private CapitalForeignStorageRaidService() {
     }
 
-    public static StorageSnapshot snapshotBlock(ServerLevel level, BlockPos pos) {
+
+    public static StorageSnapshot snapshotBlock(
+            ServerLevel level,
+            net.minecraft.core.BlockPos pos
+    ) {
         if (level == null || pos == null) {
             return StorageSnapshot.none();
         }
@@ -61,7 +63,7 @@ public final class CapitalForeignStorageRaidService {
             return false;
         }
         Set<BlockEntity> blockEntities = new LinkedHashSet<>();
-        collectBlockEntities(source, blockEntities, Collections.newSetFromMap(new IdentityHashMap<>()));
+        collectBlockEntities(source, blockEntities, new LinkedHashSet<>());
         for (BlockEntity blockEntity : blockEntities) {
             if (blockEntity.getLevel() instanceof ServerLevel level
                     && resolveStorageOwner(level, blockEntity) != null) {
@@ -85,7 +87,10 @@ public final class CapitalForeignStorageRaidService {
         }
     }
 
-    public static StorageSnapshot snapshot(ServerLevel level, AbstractContainerMenu menu) {
+    public static StorageSnapshot snapshot(
+            ServerLevel level,
+            AbstractContainerMenu menu
+    ) {
         if (level == null || menu == null) {
             return StorageSnapshot.none();
         }
@@ -97,10 +102,12 @@ public final class CapitalForeignStorageRaidService {
             if (slot == null || slot.container == null) {
                 continue;
             }
+
             CapitalRecord candidate = resolveStorageOwner(level, slot.container);
             if (candidate == null) {
                 continue;
             }
+
             if (owner == null) {
                 owner = candidate;
             } else if (!owner.getCapitalId().equals(candidate.getCapitalId())) {
@@ -108,6 +115,7 @@ public final class CapitalForeignStorageRaidService {
             }
             containers.add(slot.container);
         }
+
         if (owner == null || containers.isEmpty()) {
             return StorageSnapshot.none();
         }
@@ -121,10 +129,14 @@ public final class CapitalForeignStorageRaidService {
                 }
             }
         }
+
         return new StorageSnapshot(owner, List.copyOf(contents));
     }
 
-    public static boolean removedItem(StorageSnapshot before, StorageSnapshot after) {
+    public static boolean removedItem(
+            StorageSnapshot before,
+            StorageSnapshot after
+    ) {
         if (before == null
                 || after == null
                 || before.owner() == null
@@ -132,6 +144,7 @@ public final class CapitalForeignStorageRaidService {
                 || !before.owner().getCapitalId().equals(after.owner().getCapitalId())) {
             return false;
         }
+
         for (ItemStack original : before.contents()) {
             int remaining = countMatching(after.contents(), original);
             if (remaining < original.getCount()) {
@@ -161,7 +174,10 @@ public final class CapitalForeignStorageRaidService {
         return count;
     }
 
-    public static boolean isForeign(ServerPlayer player, StorageSnapshot snapshot) {
+    public static boolean isForeign(
+            ServerPlayer player,
+            StorageSnapshot snapshot
+    ) {
         if (player == null || snapshot == null || snapshot.owner() == null) {
             return false;
         }
@@ -173,12 +189,16 @@ public final class CapitalForeignStorageRaidService {
                 && !declared.getCapitalId().equals(snapshot.owner().getCapitalId());
     }
 
-    public static boolean recordRaid(ServerPlayer player, CapitalRecord storageOwner) {
+    public static boolean recordRaid(
+            ServerPlayer player,
+            CapitalRecord storageOwner
+    ) {
         if (player == null
                 || storageOwner == null
                 || storageOwner.getCapitalId() == null) {
             return false;
         }
+
         ServerLevel level = player.serverLevel();
         CapitalRecord declared = PlayerCapitalAllegianceService.getDeclaredCapital(
                 level,
@@ -192,6 +212,7 @@ public final class CapitalForeignStorageRaidService {
         if (storageOwner.getCapitalId().equals(activeOwner)) {
             return false;
         }
+
         CapitalDiplomacyDataAccess.adjustRelationship(
                 level,
                 declared.getCapitalId(),
@@ -211,18 +232,24 @@ public final class CapitalForeignStorageRaidService {
         return true;
     }
 
-    private static boolean isInsideStorage(ServerLevel level, CapitalRecord capital, ServerPlayer player) {
+    private static boolean isInsideStorage(
+            ServerLevel level,
+            CapitalRecord capital,
+            ServerPlayer player
+    ) {
         if (level == null
                 || capital == null
                 || capital.getVillageId() == null
-                || player == null) {
+                || player == null
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return false;
         }
-        for (AABB bounds : MCAIntegrationBridge.getBuildingBoundsOfType(
-                level,
-                capital.getVillageId(),
-                CapitalBuildingService.STORAGE
-        )) {
+        for (AABB bounds : com.majesttyx.mcacapitals.util.MCAIntegrationBridge
+                .getBuildingBoundsOfType(
+                        level,
+                        capital.getVillageId(),
+                        CapitalBuildingService.STORAGE
+                )) {
             if (bounds.contains(player.position())) {
                 return true;
             }
@@ -230,9 +257,12 @@ public final class CapitalForeignStorageRaidService {
         return false;
     }
 
-    private static CapitalRecord resolveStorageOwner(ServerLevel level, Container container) {
+    private static CapitalRecord resolveStorageOwner(
+            ServerLevel level,
+            Container container
+    ) {
         Set<BlockEntity> blockEntities = new LinkedHashSet<>();
-        collectBlockEntities(container, blockEntities, Collections.newSetFromMap(new IdentityHashMap<>()));
+        collectBlockEntities(container, blockEntities, new LinkedHashSet<>());
         for (BlockEntity blockEntity : blockEntities) {
             CapitalRecord owner = resolveStorageOwner(level, blockEntity);
             if (owner != null) {
@@ -242,18 +272,23 @@ public final class CapitalForeignStorageRaidService {
         return null;
     }
 
-    private static CapitalRecord resolveStorageOwner(ServerLevel level, BlockEntity blockEntity) {
+    private static CapitalRecord resolveStorageOwner(
+            ServerLevel level,
+            BlockEntity blockEntity
+    ) {
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             if (capital == null
                     || capital.getState() != CapitalState.ACTIVE
-                    || capital.getVillageId() == null) {
+                    || capital.getVillageId() == null
+                    || !CapitalManager.isCapitalInLevel(capital, level)) {
                 continue;
             }
-            for (AABB bounds : MCAIntegrationBridge.getBuildingBoundsOfType(
-                    level,
-                    capital.getVillageId(),
-                    CapitalBuildingService.STORAGE
-            )) {
+            for (AABB bounds : com.majesttyx.mcacapitals.util.MCAIntegrationBridge
+                    .getBuildingBoundsOfType(
+                            level,
+                            capital.getVillageId(),
+                            CapitalBuildingService.STORAGE
+                    )) {
                 if (bounds.contains(
                         blockEntity.getBlockPos().getX() + 0.5D,
                         blockEntity.getBlockPos().getY() + 0.5D,
@@ -299,4 +334,9 @@ public final class CapitalForeignStorageRaidService {
             return new StorageSnapshot(null, List.of());
         }
     }
+
+    public static void clearRuntimeState() {
+        ACTIVE_INCIDENTS.clear();
+    }
+
 }

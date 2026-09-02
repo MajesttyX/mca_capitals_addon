@@ -24,10 +24,6 @@ final class CapitalDiplomaticWorldService {
             return;
         }
 
-        CapitalAsylumService.processNpcAsylum(
-                level
-        );
-
         long gameDay = currentDay(level);
         if (CapitalDiplomacyDataAccess
                 .getLastRelationshipDriftDay(level) < gameDay) {

@@ -30,6 +30,7 @@
     "ServerPlayerGameModeForeignStorageMixin",
     "LivingEntityCampaignDamageMixin",
     "CapitalCampaignChildSovereignDecisionMixin",
+    "CapitalPopulationScannerInterregnumMixin",
     "CapitalSuccessionServiceInterregnumMixin",
     "CapitalTitleResolverInterregnumMixin",
     "VillagerExecutionAuthorityMixin",
@@ -39,7 +40,7 @@
     "GuardEnemiesSensorCampaignMixin",
     "VillagerTasksMCACampaignCombatMixin",
     "SealedPurseGiftMixin",
-    "FamilyTreeNodeMarriageSurnameMixin"
+    "EntityRelationshipMarriageSurnameMixin"
   ],
   "client": [
     "InteractScreenBetrothalMixin",

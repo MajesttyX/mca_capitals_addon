@@ -53,22 +53,6 @@ final class CapitalCampaignEligibilityService {
             );
         }
 
-        CapitalDiplomaticTruceService.refreshExpiredTruce(
-                level,
-                attackingCapital,
-                defendingCapital
-        );
-        if (com.majesttyx.mcacapitals.data.CapitalDiplomacyDataAccess
-                .getDiplomaticState(
-                        level,
-                        attackingCapital.getCapitalId(),
-                        defendingCapital.getCapitalId()
-                ) == CapitalDiplomaticState.TRUCE) {
-            return Validation.failure(
-                    Component.translatable("mcacapitals.war.validation.active_truce")
-            );
-        }
-
         if (attackingCapital.getState()
                 != CapitalState.ACTIVE
                 || defendingCapital.getState()
@@ -80,6 +64,8 @@ final class CapitalCampaignEligibilityService {
 
         if (attackingCapital.getVillageId() == null
                 || defendingCapital.getVillageId() == null
+                || !CapitalManager.isCapitalInLevel(attackingCapital, level)
+                || !CapitalManager.isCapitalInLevel(defendingCapital, level)
                 || VillageManager.get(level)
                 .getOrEmpty(
                         attackingCapital.getVillageId()
@@ -222,6 +208,10 @@ final class CapitalCampaignEligibilityService {
         if (level == null
                 || capital == null
                 || capital.getVillageId() == null) {
+            return null;
+        }
+
+        if (!CapitalManager.isCapitalInLevel(capital, level)) {
             return null;
         }
 

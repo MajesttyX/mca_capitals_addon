@@ -8,6 +8,7 @@ import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenCapitalChroniclePacket;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import com.majesttyx.mcacapitals.util.ModDataKeys;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -18,8 +19,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,7 +48,7 @@ public class CapitalChronicleItem extends Item {
 
         CapitalRecord capital = resolveCapital(serverPlayer, heldStack);
         if (capital == null) {
-            serverPlayer.sendSystemMessage(Component.translatable("mcacapitals.system.capital_chronicle_item.no_capital_chronicle_can_be_found_from_here"));
+            serverPlayer.sendSystemMessage(Component.translatable("mcacapitals.chronicle.item.not_found"));
             return InteractionResultHolder.fail(heldStack);
         }
 
@@ -65,6 +68,12 @@ public class CapitalChronicleItem extends Item {
 
         ModNetwork.sendToPlayer(serverPlayer, new OpenCapitalChroniclePacket(previewBook));
         return InteractionResultHolder.consume(heldStack);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        tooltipComponents.add(Component.translatable("mcacapitals.chronicle.item.tooltip.record").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable("mcacapitals.chronicle.item.tooltip.use").withStyle(ChatFormatting.GRAY));
     }
 
     private CapitalRecord resolveCapital(ServerPlayer player, ItemStack stack) {
@@ -110,7 +119,7 @@ public class CapitalChronicleItem extends Item {
         Optional<Integer> lastSeenVillageId = MCAIntegrationBridge.getLastSeenVillageId(level, player);
         if (lastSeenVillageId.isPresent()) {
             Integer villageId = lastSeenVillageId.get();
-            CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId);
+            CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId);
 
             if (capital != null && MCAIntegrationBridge.isPlayerInVillage(level, player, villageId)) {
                 return capital;
@@ -119,7 +128,8 @@ public class CapitalChronicleItem extends Item {
 
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             Integer villageId = capital.getVillageId();
-            if (villageId == null) {
+            if (villageId == null
+                    || !CapitalManager.isCapitalInLevel(capital, level)) {
                 continue;
             }
 
@@ -139,7 +149,8 @@ public class CapitalChronicleItem extends Item {
 
         for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
             Integer villageId = capital.getVillageId();
-            if (villageId == null) {
+            if (villageId == null
+                    || !CapitalManager.isCapitalInLevel(capital, level)) {
                 continue;
             }
 

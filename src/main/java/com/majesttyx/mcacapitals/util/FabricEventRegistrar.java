@@ -1,5 +1,10 @@
 package com.majesttyx.mcacapitals.util;
 
+import com.majesttyx.mcacapitals.item.DeclarationOfSeparationHandler;
+import com.majesttyx.mcacapitals.identity.HouseRevisionLoadHandler;
+import com.majesttyx.mcacapitals.house.CapitalHouseRegistryTicker;
+import com.majesttyx.mcacapitals.event.CapitalHouseDeathEvents;
+import com.majesttyx.mcacapitals.capital.CapitalAmbassadorCooldownResetService;
 import com.majesttyx.mcacapitals.capital.CapitalAmbassadorUrgentMatterHandler;
 import com.majesttyx.mcacapitals.capital.CapitalCampaignCombatDamageHandler;
 import com.majesttyx.mcacapitals.capital.CapitalCampaignCombatTickHandler;
@@ -53,6 +58,11 @@ public final class FabricEventRegistrar {
         SovereignMarriageCaptureHandler sovereignMarriageCaptureHandler = new SovereignMarriageCaptureHandler();
 
         ServerLifecycleEvents.SERVER_STARTED.register(lifecycleHandler::onServerStarted);
+        ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resourceManager, success) -> {
+            if (success) {
+                CapitalRuntimeStateReset.clearResourceCaches();
+            }
+        });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             lifecycleHandler.onServerStopped(server);
             sovereignMarriageCaptureHandler.clear();
@@ -60,6 +70,8 @@ public final class FabricEventRegistrar {
 
         ServerTickEvents.END_WORLD_TICK.register(serverLevel -> {
             populationScanner.onLevelTick(serverLevel);
+            CapitalAmbassadorCooldownResetService.onLevelTick(serverLevel);
+            CapitalHouseRegistryTicker.onLevelTick(serverLevel);
             CapitalCampaignProcessor.onLevelTick(serverLevel);
             CapitalCampaignCombatTickHandler.onLevelTick(serverLevel);
             CapitalCampaignCasualtyService.onLevelTick(serverLevel);
@@ -80,8 +92,15 @@ public final class FabricEventRegistrar {
             }
         });
 
-        ServerEntityEvents.ENTITY_LOAD.register((entity, serverLevel) ->
-                VillagerIdentityTrackingSyncHandler.onEntityJoinLevel(entity, serverLevel)
+        ServerEntityEvents.ENTITY_LOAD.register((entity, serverLevel) -> {
+            MCAIntegrationBridge.applyPendingHeartDeltas(serverLevel, entity);
+            MCAIntegrationBridge.captureResidentState(serverLevel, entity);
+            HouseRevisionLoadHandler.onEntityJoinLevel(entity, serverLevel);
+            VillagerIdentityTrackingSyncHandler.onEntityJoinLevel(entity, serverLevel);
+        });
+
+        ServerEntityEvents.ENTITY_UNLOAD.register((entity, serverLevel) ->
+                MCAIntegrationBridge.captureResidentState(serverLevel, entity)
         );
 
         EntityTrackingEvents.START_TRACKING.register(VillagerIdentityTrackingSyncHandler::onStartTracking);
@@ -92,7 +111,8 @@ public final class FabricEventRegistrar {
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
             CapitalCampaignCasualtyService.onLivingDeath(entity);
-            CapitalDeathEvents.onLivingDeath(entity);
+            CapitalDeathEvents.onLivingDeath(entity, damageSource);
+            CapitalHouseDeathEvents.onLivingDeath(entity);
         });
 
         UseItemCallback.EVENT.register((player, level, hand) -> {
@@ -113,6 +133,11 @@ public final class FabricEventRegistrar {
                     entity,
                     hand
             );
+            if (result != InteractionResult.PASS) {
+                return result;
+            }
+
+            result = DeclarationOfSeparationHandler.handleEntityInteract(player, entity, hand);
             if (result != InteractionResult.PASS) {
                 return result;
             }

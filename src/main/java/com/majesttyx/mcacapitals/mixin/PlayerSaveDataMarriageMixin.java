@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.capital.CapitalChronicleEventId;
 import com.majesttyx.mcacapitals.capital.CapitalChronicleIdentitySnapshot;
+
 import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
@@ -10,7 +11,6 @@ import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.identity.MarriageSurnameService;
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
-import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -28,10 +28,9 @@ import java.util.UUID;
 public class PlayerSaveDataMarriageMixin {
 
     @Inject(
-            method = "marry",
+            method = "marry(Lnet/minecraft/world/entity/Entity;)V",
             at = @At("TAIL"),
-            remap = false,
-            require = 0
+            remap = false
     )
     private void mcacapitals$onPlayerMarry(Entity spouse, CallbackInfo ci) {
         if (spouse == null) {
@@ -95,7 +94,17 @@ public class PlayerSaveDataMarriageMixin {
         String playerName = player.getGameProfile().getName();
 
         if (!playerUuid.equals(previousConsort) && !hasMarriageEntry(capital, spouseName, playerName)) {
-            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, spouseName, playerName);
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.ROYAL_MARRIAGE,
+                    spouseName,
+                    playerName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, spouse.getUUID()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, spouse.getUUID()),
+                    CapitalChronicleIdentitySnapshot.title(level, capital, playerUuid),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, playerUuid)
+            );
         }
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
@@ -116,7 +125,17 @@ public class PlayerSaveDataMarriageMixin {
         String playerName = player.getGameProfile().getName();
 
         if (!hasMarriageEntry(capital, spouseName, playerName)) {
-            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.ROYAL_MARRIAGE, spouseName, playerName);
+            CapitalChronicleService.addEvent(
+                    level,
+                    capital,
+                    CapitalChronicleEventId.ROYAL_MARRIAGE,
+                    spouseName,
+                    playerName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, spouseId),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, spouseId),
+                    CapitalChronicleIdentitySnapshot.title(level, capital, playerUuid),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, playerUuid)
+            );
         }
 
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
@@ -136,7 +155,17 @@ public class PlayerSaveDataMarriageMixin {
     }
 
     private static boolean resolvePlayerFemale(ServerLevel level, ServerPlayer player) {
-        return MCAIntegrationBridge.isPlayerFemale(level, player);
+        try {
+            Class<?> bridge = Class.forName("com.majesttyx.mcacapitals.util.MCAPlayerBridge");
+            Method method = bridge.getDeclaredMethod("isPlayerFemale", ServerLevel.class, ServerPlayer.class);
+            method.setAccessible(true);
+            Object result = method.invoke(null, level, player);
+            if (result instanceof Boolean b) {
+                return b;
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     private static NobleTitle resolveMarriagePrinceTitle(ServerLevel level, ServerPlayer player) {

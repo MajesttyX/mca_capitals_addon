@@ -195,7 +195,12 @@ final class CapitalFoundationInternal {
         }
 
         ServerPlayer player = level.getServer().getPlayerList().getPlayer(playerId);
-        return player != null ? player.getName().getString() : playerId.toString();
+        if (player != null) {
+            return player.getName().getString();
+        }
+
+        String persistentName = MCAIntegrationBridge.getFamilyNodeName(level, playerId);
+        return persistentName == null || persistentName.isBlank() ? playerId.toString() : persistentName;
     }
 
     private static void restoreFormerSovereignStatus(

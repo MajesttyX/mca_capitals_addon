@@ -1,28 +1,27 @@
 package com.majesttyx.mcacapitals.mixin;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 import com.majesttyx.mcacapitals.MCACapitals;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
-import com.majesttyx.mcacapitals.capital.CapitalTitleOfficeIdentityResolver;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueRuntime;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueService;
-import com.majesttyx.mcacapitals.dialogue.CapitalDialogueSpeaker;
 import com.majesttyx.mcacapitals.dialogue.CapitalPoliticalDialogueService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
-import net.minecraft.network.chat.Component;
+import fabric.net.conczin.mca.resources.data.dialogue.Actions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Pseudo
@@ -38,25 +37,69 @@ public abstract class DialogueChatFallbackMixin {
     private static final int GENERAL_SUCCESS_CHANCE = 45;
     private static final int GENERAL_FAIL_CHANCE = 60;
 
-    @ModifyVariable(
-            method = "lambda$static$0(Ljava/lang/String;Lfabric/net/conczin/mca/entity/VillagerEntityMCA;Lnet/minecraft/class_3222;)V",
-            at = @At("HEAD"),
-            argsOnly = true,
-            ordinal = 0,
-            remap = false,
-            require = 0
+    /**
+     * MCA exposes dialogue actions through its public action factory registry. Wrap the "next"
+     * factory once after MCA initializes it instead of injecting into javac's synthetic lambda
+     * method. The latter is not a stable server integration point and can silently stop matching
+     * when MCA is rebuilt even when its source behavior has not changed.
+     */
+    @Inject(
+            method = "<clinit>",
+            at = @At("TAIL"),
+            remap = false
     )
-    private static String mcacapitals$redirectCapitalChatDialogue(
-            String nextKey,
-            String ignoredCurrentQuestion,
-            @Coerce Object villagerObj,
-            ServerPlayer player
-    ) {
-        if (nextKey == null || player == null || villagerObj == null) {
-            return nextKey;
+    private static void mcacapitals$installCapitalNextAction(CallbackInfo ci) {
+        Actions.Factory<JsonElement> mcaNextFactory = Actions.TYPES.get("next");
+        if (mcaNextFactory == null) {
+            MCACapitals.LOGGER.error(
+                    "[MCACapitals] MCA dialogue 'next' action factory was not available; Capitals chat routing was not installed."
+            );
+            return;
         }
 
-        if (!(villagerObj instanceof Entity villager)) {
+        Actions.TYPES.put("next", json -> {
+            Actions.Action originalAction = mcaNextFactory.parse(json);
+            String configuredNext = readNextId(json);
+
+            if (configuredNext == null || configuredNext.isBlank()) {
+                return originalAction;
+            }
+
+            return (villager, player) -> {
+                String redirectedNext = mcacapitals$redirectCapitalChatDialogue(
+                        configuredNext,
+                        villager,
+                        player
+                );
+
+                if (Objects.equals(configuredNext, redirectedNext)) {
+                    originalAction.trigger(villager, player);
+                    return;
+                }
+
+                mcaNextFactory.parse(new JsonPrimitive(redirectedNext)).trigger(villager, player);
+            };
+        });
+    }
+
+    private static String readNextId(JsonElement json) {
+        if (json == null || json.isJsonNull() || !json.isJsonPrimitive()) {
+            return null;
+        }
+
+        try {
+            return json.getAsString();
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private static String mcacapitals$redirectCapitalChatDialogue(
+            String nextKey,
+            Object villagerObj,
+            ServerPlayer player
+    ) {
+        if (nextKey == null || player == null || !(villagerObj instanceof Entity villager)) {
             return nextKey;
         }
 
@@ -77,12 +120,6 @@ public abstract class DialogueChatFallbackMixin {
         if (MCA_CHAT_TOPIC.equals(nextKey)) {
             String newsDialogueId = CapitalDialogueService.maybeResolveCapitalNewsDialogueId(player, villager);
             if (newsDialogueId != null && !newsDialogueId.isBlank()) {
-                MCACapitals.LOGGER.info(
-                        "[MCACapitals] Redirected capital chat topic to chronicle news. villager='{}', player='{}', next='{}'",
-                        villager.getName().getString(),
-                        player.getName().getString(),
-                        newsDialogueId
-                );
                 return newsDialogueId;
             }
 
@@ -116,62 +153,12 @@ public abstract class DialogueChatFallbackMixin {
             return nextKey;
         }
 
-        if (isUntitledCommoner(level, villager.getUUID()) && level.random.nextInt(100) < GENERAL_FAIL_CHANCE) {
+        if (isUntitledCommoner(level, villager.getUUID())
+                && level.random.nextInt(100) < GENERAL_FAIL_CHANCE) {
             return CapitalDialogueRuntime.GENERAL_FAIL;
         }
 
         return nextKey;
-    }
-
-    @Inject(
-            method = "lambda$static$0(Ljava/lang/String;Lfabric/net/conczin/mca/entity/VillagerEntityMCA;Lnet/minecraft/class_3222;)V",
-            at = @At("HEAD"),
-            cancellable = true,
-            remap = false,
-            require = 0
-    )
-    private static void mcacapitals$handleManagedRuntimeDialogue(
-            String nextKey,
-            @Coerce Object villagerObj,
-            ServerPlayer player,
-            CallbackInfo ci
-    ) {
-        if (nextKey == null || player == null || villagerObj == null) {
-            return;
-        }
-
-        if (!(villagerObj instanceof Entity villager)) {
-            return;
-        }
-
-        if (!CapitalDialogueRuntime.isManagedRuntimeKey(nextKey)) {
-            return;
-        }
-
-        ServerLevel level = player.serverLevel();
-        CapitalRecord capital = resolveCapital(level, villager.getUUID());
-        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
-            MCAIntegrationBridge.stopInteracting(villager);
-            ci.cancel();
-            return;
-        }
-
-        Component line = CapitalDialogueRuntime.formatManagedRuntimeComponent(
-                nextKey,
-                player,
-                villager,
-                level,
-                capital
-        );
-        if (line == null) {
-            MCAIntegrationBridge.stopInteracting(villager);
-            ci.cancel();
-            return;
-        }
-
-        player.sendSystemMessage(CapitalDialogueSpeaker.formatVillagerSpeech(villager, line));
-        MCAIntegrationBridge.stopInteracting(villager);
-        ci.cancel();
     }
 
     private static boolean isBabyOrToddler(ServerLevel level, Entity villager) {
@@ -184,11 +171,10 @@ public abstract class DialogueChatFallbackMixin {
     }
 
     private static boolean isUntitledCommoner(ServerLevel level, UUID villagerId) {
-        String title = CapitalTitleResolver.getDisplayTitleForEntity(level, villagerId);
-        return title == null
-                || title.isBlank()
-                || "None".equals(title)
-                || "Commoner".equals(title);
+        CapitalTitleResolver.ResolvedTitleId titleId =
+                CapitalTitleResolver.getResolvedTitleIdForEntity(level, villagerId);
+        return titleId == CapitalTitleResolver.ResolvedTitleId.NONE
+                || titleId == CapitalTitleResolver.ResolvedTitleId.COMMONER;
     }
 
     private static CapitalRecord resolveCapital(ServerLevel level, UUID villagerId) {
@@ -198,6 +184,6 @@ public abstract class DialogueChatFallbackMixin {
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 }

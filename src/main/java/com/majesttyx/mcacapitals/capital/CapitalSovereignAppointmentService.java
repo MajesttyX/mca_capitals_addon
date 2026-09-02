@@ -36,7 +36,6 @@ final class CapitalSovereignAppointmentService {
         }
 
         if (!villagerId.equals(previous)) {
-            String title = female ? "Queen" : "King";
             String name = CapitalChronicleIdentitySnapshot.name(level, capital, villagerId);
 
             CapitalChronicleService.addEvent(
@@ -92,7 +91,6 @@ final class CapitalSovereignAppointmentService {
         }
 
         if (!playerId.equals(previous)) {
-            String title = female ? "Queen" : "King";
             String name = CapitalChronicleIdentitySnapshot.name(level, capital, playerId);
 
             CapitalChronicleService.addEvent(

@@ -68,11 +68,10 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
             "mcacapitals_surrender_warrant";
 
     @Inject(
-            method = "getValidAnswers",
+            method = "getValidAnswers(Lnet/minecraft/server/level/ServerPlayer;Lforge/net/conczin/mca/entity/VillagerEntityMCA;)Ljava/util/List;",
             at = @At("RETURN"),
             cancellable = true,
-            remap = false,
-            require = 0
+            remap = false
     )
     private void mcacapitals$filterPetitionAnswersByCrownAuthority(
             ServerPlayer player,
@@ -253,7 +252,7 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
                     villagerId
             );
 
-            capital = CapitalManager.getCapitalByVillageId(villageId);
+            capital = CapitalManager.getCapitalByVillageId(level, villageId);
         }
 
         return capital;

@@ -31,7 +31,7 @@ import java.util.UUID;
 public final class CapitalCampaignCombatService {
 
     private static final double CAMPAIGN_TARGET_RANGE_SQR =
-            192.0D * 192.0D;
+            96.0D * 96.0D;
 
     private static final float MELEE_SPEED = 0.6F;
     private static final float RANGED_SPEED = 0.6F;
@@ -757,4 +757,9 @@ public final class CapitalCampaignCombatService {
                 target.getUUID()
         ) == campaign;
     }
+
+    public static void clearRuntimeState() {
+        OUTSIDE_SINCE.clear();
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.client;
 
 import com.majesttyx.mcacapitals.util.ModDataKeys;
+import com.majesttyx.mcacapitals.util.ModItemStackData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.minecraft.nbt.CompoundTag;
@@ -9,6 +10,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 public class ChronicleBookClient {
+
+    private static final String BOOK_KIND_KEY = "mcacapitals_book_kind";
+    private static final String BOOK_KIND_HOUSES = "houses";
 
     private ChronicleBookClient() {
     }
@@ -28,8 +32,26 @@ public class ChronicleBookClient {
             return;
         }
 
-        localizeBookMetadata(bookToOpen);
-        minecraft.setScreen(new BookViewScreen(new BookViewScreen.WrittenBookAccess(bookToOpen)));
+        boolean houseBook = isBookOfHouses(bookToOpen);
+        if (!houseBook) {
+            localizeBookMetadata(bookToOpen);
+        }
+
+        BookViewScreen.BookAccess access = new BookViewScreen.WrittenBookAccess(bookToOpen);
+        Component screenTitle = houseBook
+                ? Component.translatable("item.mcacapitals.book_of_houses")
+                : Component.translatable("item.mcacapitals.capital_chronicle");
+
+        minecraft.setScreen(new DoublePageBookScreen(
+                access,
+                screenTitle,
+                !houseBook
+        ));
+    }
+
+    private static boolean isBookOfHouses(ItemStack bookStack) {
+        CompoundTag data = ModItemStackData.getCustomData(bookStack);
+        return BOOK_KIND_HOUSES.equals(data.getString(BOOK_KIND_KEY));
     }
 
     private static void localizeBookMetadata(ItemStack bookStack) {

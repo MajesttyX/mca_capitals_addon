@@ -218,4 +218,10 @@ public final class CapitalDialogueRuntime {
         private String lastBucket = "";
         private int lastIndex = -1;
     }
+
+    static void clearRuntimeState() {
+        LAST_LINE_STATE.clear();
+        WARNED_MISSING_FRIENDLY_POOLS.clear();
+    }
+
 }

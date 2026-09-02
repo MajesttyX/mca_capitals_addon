@@ -1,6 +1,7 @@
 package com.majesttyx.mcacapitals.dialogue;
 
 import com.majesttyx.mcacapitals.capital.CapitalAmbassadorService;
+import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.house.PlayerHouseRecord;
@@ -294,8 +295,15 @@ final class CapitalDialogueContext {
             return Component.translatable("mcacapitals.dynamic.foreign_capital");
         }
 
+        ServerLevel foreignLevel = level == null || level.getServer() == null
+                ? null
+                : CapitalManager.getCapitalLevel(level.getServer(), foreignCapital);
+        if (foreignLevel == null) {
+            return Component.translatable("mcacapitals.dynamic.foreign_capital");
+        }
+
         return MCAIntegrationBridge.getVillageNameComponent(
-                level,
+                foreignLevel,
                 foreignCapital.getVillageId()
         );
     }

@@ -1,7 +1,7 @@
 package com.majesttyx.mcacapitals.identity;
 
+import com.majesttyx.mcacapitals.capital.CapitalNameService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
-import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.house.PlayerHouseRecord;
 import com.majesttyx.mcacapitals.house.PlayerHouseService;
@@ -14,16 +14,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.AABB;
 
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
 
 public final class DecreeOfTheHouseService {
-
-    private static final double CAPITAL_FALLBACK_RADIUS = 128.0D;
 
     private DecreeOfTheHouseService() {
     }
@@ -39,7 +33,7 @@ public final class DecreeOfTheHouseService {
         return new OpenDecreeOfTheHousePacket(
                 target.getUUID(),
                 false,
-                getDisplayFirstNameOnly(target),
+                getDisplayFirstNameOnly(level, target),
                 identity.currentSurname(),
                 identity.hasFoundedHouse(),
                 identity.houseName(),
@@ -114,15 +108,14 @@ public final class DecreeOfTheHouseService {
         }
 
         if (establishedHouse) {
-            boolean surnameChanged = isHouseNameBeingChanged(before, currentSurname);
-
-            if (surnameChanged) {
-                applySelectedHouseRevisionOnly(level, target, before, currentSurname, houseWords);
-            } else {
-                applySharedHouseWordsRevision(level, target, before, houseWords);
-            }
+            applyWholeHouseRevision(level, target, before, currentSurname, houseWords);
         } else {
-            VillagerIdentityService.assignCurrentSurname(level, target, currentSurname, SurnameSource.LEGAL_RENAME);
+            VillagerIdentityService.assignCurrentSurname(
+                    level,
+                    target,
+                    currentSurname,
+                    SurnameSource.LEGAL_RENAME
+            );
             VillagerIdentitySyncService.syncToNearbyPlayers(level, target);
         }
 
@@ -149,7 +142,12 @@ public final class DecreeOfTheHouseService {
         return new ItemStack(ModItems.DECREE_OF_THE_HOUSE.get());
     }
 
-    private static boolean applyPlayerHouseRevision(ServerPlayer player, UUID targetId, String houseName, String houseWords) {
+    private static boolean applyPlayerHouseRevision(
+            ServerPlayer player,
+            UUID targetId,
+            String houseName,
+            String houseWords
+    ) {
         if (player == null || targetId == null || !targetId.equals(player.getUUID())) {
             return false;
         }
@@ -179,6 +177,13 @@ public final class DecreeOfTheHouseService {
             return false;
         }
 
+        HouseRevisionService.recordAndApply(
+                level,
+                targetId,
+                houseName,
+                houseWords
+        );
+
         damageDecree(decree);
 
         player.sendSystemMessage(
@@ -197,206 +202,51 @@ public final class DecreeOfTheHouseService {
         return true;
     }
 
-    private static boolean isHouseNameBeingChanged(VillagerIdentityData before, String newSurname) {
-        if (before == null) {
-            return true;
-        }
-
-        String oldCurrentSurname = normalizeNullable(before.currentSurname());
-        String oldHouseName = normalizeNullable(before.houseName());
-        String normalizedNew = normalizeNullable(newSurname);
-
-        if (normalizedNew.isBlank()) {
-            return true;
-        }
-
-        if (!oldHouseName.isBlank()) {
-            return !oldHouseName.equals(normalizedNew);
-        }
-
-        return !oldCurrentSurname.equals(normalizedNew);
-    }
-
-    private static void applySelectedHouseRevisionOnly(
+    private static void applyWholeHouseRevision(
             ServerLevel level,
             Entity target,
             VillagerIdentityData before,
             String newHouseName,
             String newHouseWords
     ) {
-        VillagerIdentityService.assignCurrentSurname(level, target, newHouseName, SurnameSource.LEGAL_RENAME);
-        VillagerIdentityService.clearHouse(target);
+        UUID founderId = before == null ? null : before.houseFounderId();
 
-        VillagerIdentityService.foundHouse(
-                level,
-                target,
-                newHouseName,
-                newHouseWords,
-                before.houseWordsPersonality(),
-                before.houseFounderId(),
-                before.houseFounderName(),
-                before.houseFoundedInCapitalId(),
-                before.houseFoundedInCapitalName()
-        );
-
-        VillagerIdentitySyncService.syncToNearbyPlayers(level, target);
-    }
-
-    private static void applySharedHouseWordsRevision(
-            ServerLevel level,
-            Entity target,
-            VillagerIdentityData targetBefore,
-            String newHouseWords
-    ) {
-        String associatedHouseName = targetBefore.houseName();
-        String associatedSurname = targetBefore.currentSurname();
-
-        CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(level, target.getUUID());
-        Set<Entity> affected = collectLoadedAssociatedHouseMembers(
-                level,
-                capital,
-                target,
-                associatedHouseName,
-                associatedSurname
-        );
-
-        for (Entity member : affected) {
-            if (member == null || !MCAIntegrationBridge.isMCAVillagerEntity(member)) {
-                continue;
-            }
-
-            VillagerIdentityService.ensureAssigned(level, member);
-            VillagerIdentityData memberIdentity = VillagerIdentityService.getIdentity(member);
-
-            if (!memberIdentity.hasFoundedHouse()) {
-                continue;
-            }
-
-            if (!isAssociatedHouseMember(memberIdentity, associatedHouseName, associatedSurname)) {
-                continue;
-            }
-
-            String houseName = memberIdentity.houseName();
-            if (houseName == null || houseName.isBlank()) {
-                houseName = associatedHouseName;
-            }
-
-            VillagerIdentityService.clearHouse(member);
-
-            VillagerIdentityService.foundHouse(
+        if (founderId != null) {
+            HouseRevisionService.recordAndApply(
                     level,
-                    member,
-                    houseName,
-                    newHouseWords,
-                    memberIdentity.houseWordsPersonality(),
-                    memberIdentity.houseFounderId(),
-                    memberIdentity.houseFounderName(),
-                    memberIdentity.houseFoundedInCapitalId(),
-                    memberIdentity.houseFoundedInCapitalName()
+                    founderId,
+                    newHouseName,
+                    newHouseWords
             );
-
-            VillagerIdentitySyncService.syncToNearbyPlayers(level, member);
-        }
-    }
-
-    private static Set<Entity> collectLoadedAssociatedHouseMembers(
-            ServerLevel level,
-            CapitalRecord capital,
-            Entity target,
-            String associatedHouseName,
-            String associatedSurname
-    ) {
-        Set<Entity> affected = new LinkedHashSet<>();
-        affected.add(target);
-
-        collectCapitalMatchingMembers(level, capital, associatedHouseName, associatedSurname, affected);
-        collectNearbyMatchingMembers(level, target, associatedHouseName, associatedSurname, affected);
-
-        return affected;
-    }
-
-    private static void collectCapitalMatchingMembers(
-            ServerLevel level,
-            CapitalRecord capital,
-            String associatedHouseName,
-            String associatedSurname,
-            Set<Entity> affected
-    ) {
-        if (level == null || capital == null || capital.getCapitalId() == null) {
             return;
         }
 
-        Set<UUID> residents = CapitalResidentScanner.scanResidents(level, capital.getCapitalId());
-        for (UUID residentId : residents) {
-            addIfAssociatedHouseMember(level, residentId, associatedHouseName, associatedSurname, affected);
+        if (target != null) {
+            VillagerIdentityService.reviseHouse(
+                    level,
+                    target,
+                    newHouseName,
+                    newHouseWords
+            );
+            VillagerIdentitySyncService.syncToNearbyPlayers(level, target);
         }
     }
 
-    private static void collectNearbyMatchingMembers(
-            ServerLevel level,
-            Entity target,
-            String associatedHouseName,
-            String associatedSurname,
-            Set<Entity> affected
-    ) {
+    private static String getDisplayFirstNameOnly(ServerLevel level, Entity target) {
         if (level == null || target == null) {
-            return;
-        }
-
-        AABB searchBox = target.getBoundingBox().inflate(CAPITAL_FALLBACK_RADIUS);
-        for (Entity entity : level.getEntitiesOfClass(Entity.class, searchBox, MCAIntegrationBridge::isMCAVillagerEntity)) {
-            addIfAssociatedHouseMember(level, entity.getUUID(), associatedHouseName, associatedSurname, affected);
-        }
-    }
-
-    private static void addIfAssociatedHouseMember(
-            ServerLevel level,
-            UUID entityId,
-            String associatedHouseName,
-            String associatedSurname,
-            Set<Entity> affected
-    ) {
-        if (level == null || entityId == null) {
-            return;
-        }
-
-        Entity entity = MCAIntegrationBridge.findLoadedMCAVillagerByUuid(level, entityId);
-        if (entity == null || !MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
-            return;
-        }
-
-        VillagerIdentityService.ensureAssigned(level, entity);
-        VillagerIdentityData identity = VillagerIdentityService.getIdentity(entity);
-
-        if (isAssociatedHouseMember(identity, associatedHouseName, associatedSurname)) {
-            affected.add(entity);
-        }
-    }
-
-    private static boolean isAssociatedHouseMember(
-            VillagerIdentityData identity,
-            String associatedHouseName,
-            String associatedSurname
-    ) {
-        if (identity == null || !identity.hasFoundedHouse()) {
-            return false;
-        }
-
-        String normalizedHouseName = normalizeNullable(identity.houseName());
-        String normalizedCurrentSurname = normalizeNullable(identity.currentSurname());
-        String normalizedAssociatedHouseName = normalizeNullable(associatedHouseName);
-        String normalizedAssociatedSurname = normalizeNullable(associatedSurname);
-
-        return (!normalizedAssociatedHouseName.isBlank() && normalizedHouseName.equals(normalizedAssociatedHouseName))
-                || (!normalizedAssociatedSurname.isBlank() && normalizedCurrentSurname.equals(normalizedAssociatedSurname));
-    }
-
-    private static String getDisplayFirstNameOnly(Entity target) {
-        if (target == null || target.getName() == null) {
             return "";
         }
 
-        return stripFormattingAndKnownTitlePrefixes(target.getName().getString());
+        CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(
+                level,
+                target.getUUID()
+        );
+
+        return CapitalNameService.resolveDisplayName(
+                level,
+                capital,
+                target.getUUID()
+        );
     }
 
     private static ItemStack findHeldDecree(ServerPlayer player) {
@@ -443,14 +293,6 @@ public final class DecreeOfTheHouseService {
         return value.trim().replaceAll("\\s+", " ");
     }
 
-    private static String normalizeNullable(String value) {
-        if (value == null) {
-            return "";
-        }
-
-        return value.trim().replaceAll("\\s+", " ");
-    }
-
     private static boolean isValidNamePart(String value, int min, int max) {
         if (value == null) {
             return false;
@@ -485,50 +327,4 @@ public final class DecreeOfTheHouseService {
         return normalized.matches("[A-Za-z][A-Za-z '\\-,]*");
     }
 
-    private static String stripFormattingAndKnownTitlePrefixes(String value) {
-        String normalized = normalizeNamePart(value);
-        if (normalized.isBlank()) {
-            return "";
-        }
-
-        String lower = normalized.toLowerCase(Locale.ROOT);
-
-        String[] prefixes = new String[] {
-                "high queen ",
-                "high king ",
-                "dowager queen ",
-                "dowager king ",
-                "queen consort ",
-                "king consort ",
-                "crown princess ",
-                "crown prince ",
-                "princess consort ",
-                "prince consort ",
-                "dowager princess ",
-                "dowager prince ",
-                "hand of the queen ",
-                "hand of the king ",
-                "grand maester ",
-                "court herald ",
-                "lord commander ",
-                "princess ",
-                "prince ",
-                "duchess ",
-                "duke ",
-                "lady ",
-                "lord ",
-                "dame ",
-                "sir ",
-                "queen ",
-                "king "
-        };
-
-        for (String prefix : prefixes) {
-            if (lower.startsWith(prefix)) {
-                return normalized.substring(prefix.length()).trim();
-            }
-        }
-
-        return normalized;
-    }
 }

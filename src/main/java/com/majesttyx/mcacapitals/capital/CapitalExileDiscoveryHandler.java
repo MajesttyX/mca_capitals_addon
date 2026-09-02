@@ -16,10 +16,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public final class CapitalExileDiscoveryHandler {
+public class CapitalExileDiscoveryHandler {
 
-    private static final int
-            TICK_INTERVAL =
+    private static final int TICK_INTERVAL =
             20 * 30;
 
     private static final int
@@ -34,11 +33,12 @@ public final class CapitalExileDiscoveryHandler {
             CAPITAL_RADIUS_SQR =
             96.0D * 96.0D;
 
-    public void onLevelTick(
-            ServerLevel level
-    ) {
-        if (level == null
-                || level.getGameTime()
+    public void onLevelTick(ServerLevel level) {
+        if (level == null) {
+            return;
+        }
+
+        if (level.getGameTime()
                 % TICK_INTERVAL != 0L) {
             return;
         }
@@ -48,7 +48,6 @@ public final class CapitalExileDiscoveryHandler {
         for (CapitalRecord capital :
                 CapitalManager
                         .getAllCapitalRecords()) {
-
             if (tickCapital(
                     level,
                     capital
@@ -58,9 +57,7 @@ public final class CapitalExileDiscoveryHandler {
         }
 
         if (changed) {
-            CapitalDataAccess.markDirty(
-                    level
-            );
+            CapitalDataAccess.markDirty(level);
         }
     }
 
@@ -72,7 +69,8 @@ public final class CapitalExileDiscoveryHandler {
                 || capital == null
                 || capital.getCapitalId() == null
                 || capital.getState()
-                != CapitalState.ACTIVE) {
+                != CapitalState.ACTIVE
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return false;
         }
 
@@ -91,9 +89,7 @@ public final class CapitalExileDiscoveryHandler {
         }
 
         long currentDay =
-                currentDay(
-                        level
-                );
+                currentDay(level);
 
         long lastScanDay =
                 CapitalJusticeDataAccess
@@ -126,8 +122,7 @@ public final class CapitalExileDiscoveryHandler {
 
         if (lastDiscoveryDay
                 != Long.MIN_VALUE
-                && currentDay
-                - lastDiscoveryDay
+                && currentDay - lastDiscoveryDay
                 < NATURAL_DISCOVERY_COOLDOWN_DAYS) {
             return false;
         }
@@ -162,11 +157,10 @@ public final class CapitalExileDiscoveryHandler {
             return false;
         }
 
-        discoveryData
-                .setLastDiscoveryDay(
-                        capital.getCapitalId(),
-                        currentDay
-                );
+        discoveryData.setLastDiscoveryDay(
+                capital.getCapitalId(),
+                currentDay
+        );
 
         return true;
     }
@@ -191,9 +185,7 @@ public final class CapitalExileDiscoveryHandler {
                     capital,
                     residentId
             )) {
-                candidates.add(
-                        residentId
-                );
+                candidates.add(residentId);
             }
         }
 
@@ -325,20 +317,10 @@ public final class CapitalExileDiscoveryHandler {
                         capital,
                         targetId
                 )) {
-
-            CapitalJusticeDataAccess
-                    .clearArrestWarrant(
-                            level,
-                            capital.getCapitalId(),
-                            targetId
-                    );
-
             return false;
         }
 
-        CapitalResidentScanner.clearCache(
-                level
-        );
+        CapitalResidentScanner.clearCache(level);
 
         Set<UUID> residents =
                 CapitalResidentScanner
@@ -354,10 +336,9 @@ public final class CapitalExileDiscoveryHandler {
                         residents
                 );
 
-        CapitalCourtWatcher
-                .clearFingerprint(
-                        capital.getCapitalId()
-                );
+        CapitalCourtWatcher.clearFingerprint(
+                capital.getCapitalId()
+        );
 
         Component warrantLine =
                 CapitalJusticeText

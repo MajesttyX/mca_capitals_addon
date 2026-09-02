@@ -46,7 +46,7 @@ public abstract class InteractScreenBetrothalMixin {
     @Unique
     private boolean mcacapitals$marriageStateSuppressed;
 
-    @Inject(method = "drawIcons", at = @At("HEAD"), remap = false, require = 0)
+    @Inject(method = "drawIcons", at = @At("HEAD"), remap = false)
     private void mcacapitals$suppressMarriageIconForRoyalDecree(GuiGraphics graphics, CallbackInfo ci) {
         if (mcacapitals$getBetrothalDisplayData() == null) {
             return;
@@ -54,7 +54,7 @@ public abstract class InteractScreenBetrothalMixin {
         mcacapitals$suppressMarriageState();
     }
 
-    @Inject(method = "drawIcons", at = @At("TAIL"), remap = false, require = 0)
+    @Inject(method = "drawIcons", at = @At("TAIL"), remap = false)
     private void mcacapitals$drawRoyalDecreeBetrothalIcon(GuiGraphics graphics, CallbackInfo ci) {
         try {
             RoyalDecreeBetrothalClientHelper.BetrothalDisplayData data = mcacapitals$getBetrothalDisplayData();
@@ -82,7 +82,7 @@ public abstract class InteractScreenBetrothalMixin {
         }
     }
 
-    @Inject(method = "drawTextPopups", at = @At("HEAD"), remap = false, require = 0)
+    @Inject(method = "drawTextPopups", at = @At("HEAD"), remap = false)
     private void mcacapitals$suppressMarriageTooltipForRoyalDecree(GuiGraphics graphics, CallbackInfo ci) {
         if (mcacapitals$getBetrothalDisplayData() == null) {
             return;
@@ -90,7 +90,7 @@ public abstract class InteractScreenBetrothalMixin {
         mcacapitals$suppressMarriageState();
     }
 
-    @Inject(method = "drawTextPopups", at = @At("TAIL"), remap = false, require = 0)
+    @Inject(method = "drawTextPopups", at = @At("TAIL"), remap = false)
     private void mcacapitals$drawRoyalDecreeBetrothalTooltip(GuiGraphics graphics, CallbackInfo ci) {
         try {
             RoyalDecreeBetrothalClientHelper.BetrothalDisplayData data = mcacapitals$getBetrothalDisplayData();
@@ -115,7 +115,10 @@ public abstract class InteractScreenBetrothalMixin {
 
             graphics.renderTooltip(
                     minecraft.font,
-                    Component.translatable("mcacapitals.system.interact_screen_betrothal_mixin.betrothed_by_royal_decree", data.partnerName()),
+                    Component.translatable(
+                            "mcacapitals.system.interact_screen_betrothal_mixin.betrothed_by_royal_decree",
+                            data.partnerName()
+                    ),
                     MCACAPITALS_SLOT_X + MCACAPITALS_TOOLTIP_SIZE + 4,
                     MCACAPITALS_SLOT_Y + 4
             );

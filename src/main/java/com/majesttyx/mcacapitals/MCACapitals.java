@@ -20,6 +20,10 @@ import com.majesttyx.mcacapitals.util.CapitalHouseCommands;
 import com.majesttyx.mcacapitals.util.CapitalHouseFoundationCommands;
 import com.majesttyx.mcacapitals.util.CapitalIdentityCommands;
 import com.majesttyx.mcacapitals.util.CapitalJusticeCommands;
+import com.majesttyx.mcacapitals.util.RoyalScepterOfficeCommands;
+import com.majesttyx.mcacapitals.util.CapitalOathsCommands;
+import com.majesttyx.mcacapitals.util.CapitalLawCommands;
+import com.majesttyx.mcacapitals.util.CapitalIntegrationTestCommands;
 import com.majesttyx.mcacapitals.util.CapitalPetitionCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalEscortCommands;
@@ -46,9 +50,12 @@ public class MCACapitals implements ModInitializer {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             CapitalTestCommands.register(dispatcher);
+            CapitalIntegrationTestCommands.register(dispatcher);
             CapitalHouseCommands.register(dispatcher);
             CapitalIdentityCommands.register(dispatcher);
             CapitalJusticeCommands.register(dispatcher);
+            CapitalLawCommands.register(dispatcher);
+            CapitalOathsCommands.register(dispatcher);
             CapitalHouseFoundationCommands.register(dispatcher);
             CapitalDebugCommands.register(dispatcher);
             CapitalDiplomaticGiftCommands.register(dispatcher);
@@ -65,6 +72,7 @@ public class MCACapitals implements ModInitializer {
             CapitalCharterCommands.register(dispatcher);
             CapitalPetitionCommands.register(dispatcher);
             RoyalScepterCommands.register(dispatcher);
+            RoyalScepterOfficeCommands.register(dispatcher);
             SuccessionDecreeCommands.register(dispatcher);
         });
     }

@@ -31,11 +31,7 @@ final class CapitalCommanderSelection {
         List<UUID> candidates = new ArrayList<>();
 
         for (UUID residentId : residents) {
-            if (!MCAIntegrationBridge.isMCAGuard(level, residentId)) {
-                continue;
-            }
-            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, residentId);
-            if (!MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)) {
+            if (!isEligibleCandidate(level, capital, residentId, residents)) {
                 continue;
             }
             candidates.add(residentId);
@@ -51,6 +47,41 @@ final class CapitalCommanderSelection {
                 .thenComparing(UUID::toString));
 
         return candidates.isEmpty() ? null : candidates.get(0);
+    }
+
+
+    static boolean isEligibleCandidate(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID candidateId,
+            Set<UUID> residents
+    ) {
+        if (level == null
+                || capital == null
+                || candidateId == null
+                || residents == null
+                || !residents.contains(candidateId)) {
+            return false;
+        }
+
+        if (!CapitalCrownJusticeService.isTrustedOfficeEligible(
+                level,
+                capital,
+                candidateId
+        )) {
+            return false;
+        }
+
+        if (hasConflictingOffice(level, capital, candidateId)) {
+            return false;
+        }
+
+        if (!MCAIntegrationBridge.isMCAGuard(level, candidateId)) {
+            return false;
+        }
+
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, candidateId);
+        return MCAIntegrationBridge.isAliveMCAVillagerEntity(entity);
     }
 
     static boolean isValidCommander(ServerLevel level, UUID commanderId, Set<UUID> residents) {
@@ -70,4 +101,22 @@ final class CapitalCommanderSelection {
         return MCAIntegrationBridge.isAliveMCAVillagerEntity(entity)
                 && MCAIntegrationBridge.isMCAGuard(level, commanderId);
     }
+    private static boolean hasConflictingOffice(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID candidateId
+    ) {
+        if (candidateId.equals(capital.getSovereign())
+                || candidateId.equals(capital.getPlayerSovereignId())
+                || candidateId.equals(capital.getHand())
+                || candidateId.equals(capital.getGrandMaester())
+                || candidateId.equals(capital.getHerald())
+                || candidateId.equals(capital.getMasterOfLaws())
+                || capital.isRoyalGuard(candidateId)) {
+            return true;
+        }
+
+        return CapitalAmbassadorService.isAmbassador(level, capital, candidateId);
+    }
+
 }

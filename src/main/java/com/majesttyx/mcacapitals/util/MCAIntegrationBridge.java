@@ -1,5 +1,7 @@
 package com.majesttyx.mcacapitals.util;
 
+import fabric.net.conczin.mca.server.world.data.VillagerTrackerManager;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -59,6 +61,17 @@ public final class MCAIntegrationBridge {
         return MCAPlayerBridge.getDialogueName(player);
     }
 
+    public static boolean forceVillageResidency(
+            ServerLevel level,
+            UUID villagerId,
+            int villageId
+    ) {
+        return MCAVillageResidencyBridge.forceVillageResidency(
+                level,
+                villagerId,
+                villageId
+        );
+    }
 
     public static boolean isPlayerFemale(ServerLevel level, ServerPlayer player) {
         return MCAPlayerBridge.isPlayerFemale(level, player);
@@ -72,15 +85,28 @@ public final class MCAIntegrationBridge {
         return MCAEntityBridge.isAliveMCAVillagerEntity(entity);
     }
 
-    public static boolean isFemale(ServerLevel level, UUID entityId) {
-        if (level != null && entityId != null && level.getServer() != null) {
+    public static Optional<Boolean> getFemaleIfKnown(ServerLevel level, UUID entityId) {
+        if (level == null || entityId == null) {
+            return Optional.empty();
+        }
+
+        if (level.getServer() != null) {
             ServerPlayer player = level.getServer().getPlayerList().getPlayer(entityId);
             if (player != null) {
-                return MCAPlayerBridge.isPlayerFemale(level, player);
+                return Optional.of(MCAPlayerBridge.isPlayerFemale(level, player));
             }
         }
 
-        return MCAEntityBridge.isFemale(level, entityId);
+        Entity entity = MCAEntityBridge.findLoadedEntityByUuid(level, entityId);
+        if (MCAEntityBridge.isMCAVillagerEntity(entity)) {
+            return Optional.of(MCAEntityBridge.isFemale(level, entityId));
+        }
+
+        return MCAFamilyBridge.getFemaleIfKnown(level, entityId);
+    }
+
+    public static boolean isFemale(ServerLevel level, UUID entityId) {
+        return getFemaleIfKnown(level, entityId).orElse(false);
     }
 
     public static String getAgeState(ServerLevel level, UUID entityId) {
@@ -101,6 +127,31 @@ public final class MCAIntegrationBridge {
 
     public static UUID getSpouse(ServerLevel level, UUID entityId) {
         return MCAFamilyBridge.getSpouse(level, entityId);
+    }
+
+    public static boolean isPlayerFamilyNode(ServerLevel level, UUID entityId) {
+        return MCAFamilyBridge.isPlayerFamilyNode(level, entityId);
+    }
+
+    public static boolean isPlayerIdentity(ServerLevel level, UUID entityId) {
+        if (level == null || entityId == null) {
+            return false;
+        }
+
+        if (level.getServer() != null
+                && level.getServer().getPlayerList().getPlayer(entityId) != null) {
+            return true;
+        }
+
+        return MCAFamilyBridge.isPlayerFamilyNode(level, entityId);
+    }
+
+    public static String getFamilyNodeName(ServerLevel level, UUID entityId) {
+        return MCAFamilyBridge.getFamilyNodeName(level, entityId);
+    }
+
+    public static boolean isPersistentlyMarried(ServerLevel level, UUID firstId, UUID secondId) {
+        return MCAFamilyBridge.isPersistentlyMarried(level, firstId, secondId);
     }
 
     public static Set<UUID> getChildren(ServerLevel level, UUID entityId) {
@@ -223,6 +274,30 @@ public final class MCAIntegrationBridge {
         return MCAEntityBridge.getHeartsWithPlayer(level, villagerId, playerId);
     }
 
+    public static void captureLoadedResidentStates(ServerLevel level, java.util.Collection<UUID> residentIds) {
+        MCAEntityBridge.captureLoadedResidentStates(level, residentIds);
+    }
+
+    public static void captureResidentState(ServerLevel level, Entity entity) {
+        MCAEntityBridge.captureResidentState(level, entity);
+    }
+
+    public static void applyPendingHeartDeltas(ServerLevel level, Entity entity) {
+        MCASocialBridge.applyPendingHeartDeltas(level, entity);
+    }
+
+    public static String getTrackedVillagerDimensionId(ServerLevel level, UUID entityId) {
+        if (level == null || entityId == null) {
+            return null;
+        }
+        try {
+            GlobalPos position = VillagerTrackerManager.get(level).get(entityId);
+            return position == null ? null : position.dimension().location().toString();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
     public static boolean adjustHearts(ServerLevel level, UUID villagerId, UUID playerId, int delta) {
         return MCASocialBridge.adjustHearts(level, villagerId, playerId, delta);
     }
@@ -249,14 +324,6 @@ public final class MCAIntegrationBridge {
 
     public static void addEffect(Entity entity, MobEffectInstance effect) {
         MCAEntityBridge.addEffect(entity, effect);
-    }
-
-    public static boolean leaveHome(ServerLevel level, UUID entityId) {
-        return MCAEntityBridge.leaveHome(level, entityId);
-    }
-
-    public static boolean forceVillageResidency(ServerLevel level, UUID entityId, int villageId) {
-        return MCAEntityBridge.forceVillageResidency(level, entityId, villageId);
     }
 
     public static boolean moveTo(Entity entity, double x, double y, double z, double speed) {

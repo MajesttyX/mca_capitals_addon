@@ -15,8 +15,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.Nullable;
 
+import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,7 +44,10 @@ public class SuccessionDecreeItem extends Item {
         }
 
         if (isBound(stack)) {
-            player.sendSystemMessage(Component.translatable("mcacapitals.system.succession_decree_item.this_decree_is_already_bound_to", getBoundCapitalNameComponent(stack)));
+            player.sendSystemMessage(Component.translatable(
+                    "mcacapitals.system.succession_decree_item.already_bound_to",
+                    getBoundCapitalNameComponent(stack)
+            ));
             return InteractionResultHolder.success(stack);
         }
 
@@ -56,14 +59,20 @@ public class SuccessionDecreeItem extends Item {
 
         bind(stack, capital, MCAIntegrationBridge.getVillageName(serverLevel, capital.getVillageId()));
 
-        player.sendSystemMessage(Component.translatable("mcacapitals.system.succession_decree_item.succession_decree_bound_to", getBoundCapitalNameComponent(stack)));
+        player.sendSystemMessage(Component.translatable(
+                "mcacapitals.system.succession_decree_item.bound_to_success",
+                getBoundCapitalNameComponent(stack)
+        ));
         return InteractionResultHolder.success(stack);
     }
 
     @Override
     public Component getName(ItemStack stack) {
         if (isBound(stack)) {
-            return Component.translatable("mcacapitals.system.succession_decree_item.succession_decree_of", getBoundCapitalNameComponent(stack));
+            return Component.translatable(
+                    "mcacapitals.system.succession_decree_item.bound_name",
+                    getBoundCapitalNameComponent(stack)
+            );
         }
 
         return Component.translatable("mcacapitals.system.succession_decree_item.blank_succession_decree");
@@ -72,7 +81,10 @@ public class SuccessionDecreeItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         if (isBound(stack)) {
-            tooltipComponents.add(Component.translatable("mcacapitals.system.succession_decree_item.bound_to", getBoundCapitalNameComponent(stack)).withStyle(ChatFormatting.GRAY));
+            tooltipComponents.add(Component.translatable(
+                    "mcacapitals.system.succession_decree_item.bound_to_tooltip",
+                    getBoundCapitalNameComponent(stack)
+            ).withStyle(ChatFormatting.GRAY));
             tooltipComponents.add(Component.translatable("mcacapitals.system.succession_decree_item.allows_the_sovereign_to_peacefully_transfer_rule_of_this_capital").withStyle(ChatFormatting.DARK_PURPLE));
         } else {
             tooltipComponents.add(Component.translatable("mcacapitals.system.succession_decree_item.right_click_within_a_capital_to_bind_this_decree_to_that_capital").withStyle(ChatFormatting.GRAY));
@@ -125,7 +137,7 @@ public class SuccessionDecreeItem extends Item {
             return null;
         }
 
-        CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId.get());
+        CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId.get());
         if (capital == null) {
             return null;
         }

@@ -88,4 +88,10 @@ final class CapitalDialoguePersonalityResolver {
             );
         }
     }
+
+    static void clearWarningState() {
+        WARNED_PERSONALITIES.clear();
+        WARNED_ENTITIES.clear();
+    }
+
 }

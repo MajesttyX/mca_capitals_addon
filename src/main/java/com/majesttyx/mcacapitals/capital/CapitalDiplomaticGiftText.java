@@ -17,8 +17,9 @@ final class CapitalDiplomaticGiftText {
             return "Unknown Capital";
         }
 
+        ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
         return MCAIntegrationBridge.getVillageName(
-                level,
+                capitalLevel,
                 capital.getVillageId()
         );
     }

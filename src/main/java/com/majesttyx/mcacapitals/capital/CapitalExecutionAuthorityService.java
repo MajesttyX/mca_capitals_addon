@@ -29,6 +29,7 @@ public final class CapitalExecutionAuthorityService {
         if (target.level() != level) {
             return false;
         }
+
         CapitalRecord capital = resolveTargetCapital(
                 level,
                 target.getUUID()
@@ -59,6 +60,7 @@ public final class CapitalExecutionAuthorityService {
         if (capital != null) {
             return capital;
         }
+
         Integer villageId =
                 MCAIntegrationBridge.getVillageIdForResident(
                         level,
@@ -66,6 +68,7 @@ public final class CapitalExecutionAuthorityService {
                 );
 
         return CapitalManager.getCapitalByVillageId(
+                level,
                 villageId
         );
     }

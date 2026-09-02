@@ -15,14 +15,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public final class CapitalPrisonerHandler {
+public class CapitalPrisonerHandler {
 
     private static final int TICK_INTERVAL = 20 * 5;
     private static final long RESPONSE_WINDOW_TICKS = 20L * 120L;
     private static final double CAPITAL_RADIUS_SQR = 96.0D * 96.0D;
 
     public void onLevelTick(ServerLevel level) {
-        if (level == null || level.getGameTime() % TICK_INTERVAL != 0L) {
+        if (level == null) {
+            return;
+        }
+        if (level.getGameTime() % TICK_INTERVAL != 0L) {
             return;
         }
 
@@ -32,17 +35,22 @@ public final class CapitalPrisonerHandler {
                 changed = true;
             }
         }
+
         if (changed) {
             CapitalDataAccess.markDirty(level);
         }
     }
 
     private boolean tickCapital(ServerLevel level, CapitalRecord capital) {
-        if (level == null || capital == null || capital.getState() != CapitalState.ACTIVE) {
+        if (level == null
+                || capital == null
+                || capital.getState() != CapitalState.ACTIVE
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return false;
         }
 
         CapitalCrownJusticeService.syncReign(level, capital);
+
         if (capital.getVillageId() == null
                 || capital.getMasterOfLaws() == null
                 || !CapitalMasterOfLawsService.hasUnlockedJustice(level, capital)) {
@@ -56,20 +64,17 @@ public final class CapitalPrisonerHandler {
 
         boolean changed = CapitalCrownJusticeService.tickNpcGovernment(level, capital);
         Set<UUID> warrants = CapitalJusticeDataAccess.getArrestWarrants(level, capital.getCapitalId());
+
         for (UUID targetId : warrants) {
             if (tickWarrantTarget(level, capital, targetId, prisonBounds)) {
                 changed = true;
             }
         }
+
         return changed;
     }
 
-    private boolean tickWarrantTarget(
-            ServerLevel level,
-            CapitalRecord capital,
-            UUID targetId,
-            List<AABB> prisonBounds
-    ) {
+    private boolean tickWarrantTarget(ServerLevel level, CapitalRecord capital, UUID targetId, List<AABB> prisonBounds) {
         if (targetId == null
                 || !MCAIntegrationBridge.isLoadedAndAlive(level, targetId)
                 || !MCAIntegrationBridge.isTeenOrAdultVillager(level, targetId)) {
@@ -80,29 +85,36 @@ public final class CapitalPrisonerHandler {
         if (target == null) {
             return false;
         }
+
         if (CapitalJusticeDataAccess.getJudgment(level, capital.getCapitalId(), targetId)
                 == CapitalJudgmentType.EXECUTION) {
             return false;
         }
+
         if (isOutsideCapital(level, capital, target)) {
             return resolveEscortedOutOfCapital(level, capital, targetId);
         }
+
         if (isInsideAnyPrisonBound(target, prisonBounds)) {
             return tickPrisonStay(level, capital, targetId);
         }
+
         if (CapitalJusticeDataAccess.isDetainedPrisoner(level, capital.getCapitalId(), targetId)) {
             return false;
         }
+
         return tickMissedResponseWindow(level, capital, targetId);
     }
 
     private boolean tickPrisonStay(ServerLevel level, CapitalRecord capital, UUID targetId) {
+        long currentDay = currentDay(level);
         boolean newlyDetained = CapitalJusticeDataAccess.markDetainedPrisoner(
                 level,
                 capital.getCapitalId(),
                 targetId,
-                currentDay(level)
+                currentDay
         );
+
         if (newlyDetained) {
             String targetName = CapitalNameService.resolveDisplayName(level, capital, targetId);
             CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.PRISONER_DELIVERED, targetName);
@@ -114,10 +126,16 @@ public final class CapitalPrisonerHandler {
             return true;
         }
 
-        if (CapitalJusticeDataAccess.getJudgment(level, capital.getCapitalId(), targetId)
-                == CapitalJudgmentType.IMPRISONMENT) {
+        CapitalJudgmentType judgment = CapitalJusticeDataAccess.getJudgment(
+                level,
+                capital.getCapitalId(),
+                targetId
+        );
+
+        if (judgment == CapitalJudgmentType.IMPRISONMENT) {
             return CapitalCrownJusticeService.completeSentence(level, capital, targetId);
         }
+
         return false;
     }
 
@@ -127,6 +145,7 @@ public final class CapitalPrisonerHandler {
                 capital.getCapitalId(),
                 targetId
         );
+
         if (issuedGameTime == Long.MIN_VALUE) {
             CapitalJusticeDataAccess.issueArrestWarrant(level, capital.getCapitalId(), targetId);
             return true;
@@ -137,7 +156,12 @@ public final class CapitalPrisonerHandler {
 
         String targetName = CapitalNameService.resolveDisplayName(level, capital, targetId);
         boolean marked = MCAExecutionBridge.markForExecution(level, targetId);
-        CapitalJusticeDataAccess.clearJusticeCase(level, capital.getCapitalId(), targetId);
+        CapitalJusticeDataAccess.clearJusticeCase(
+                level,
+                capital.getCapitalId(),
+                targetId
+        );
+
         if (marked) {
             CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.WARRANT_EXECUTION_MARKED, targetName);
             CapitalPlayerNotificationService.notifyPlayersInCapital(
@@ -153,32 +177,24 @@ public final class CapitalPrisonerHandler {
                     Component.translatable("mcacapitals.justice.prisoner.warrant_execution_mark_failed", targetName)
             );
         }
+
         return true;
     }
 
     private boolean resolveEscortedOutOfCapital(ServerLevel level, CapitalRecord capital, UUID targetId) {
         String targetName = CapitalNameService.resolveDisplayName(level, capital, targetId);
         boolean exiled = CapitalAsylumService.markExiled(level, capital, targetId);
+
         CapitalJusticeDataAccess.clearJusticeCase(level, capital.getCapitalId(), targetId);
-        CapitalJusticeDataAccess.setLastResolvedDay(
-                level,
-                capital.getCapitalId(),
-                targetId,
-                currentDay(level)
-        );
+        CapitalJusticeDataAccess.setLastResolvedDay(level, capital.getCapitalId(), targetId, currentDay(level));
 
         if (exiled) {
             String capitalName = MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
             Object capitalDisplay = capitalName == null || capitalName.isBlank()
                     ? CapitalChronicleService.translatable("mcacapitals.chronicle.identity.the_capital")
                     : capitalName;
-            CapitalChronicleService.addEvent(
-                    level,
-                    capital,
-                    CapitalChronicleEventId.PRISONER_ESCAPED_EXILE,
-                    targetName,
-                    capitalDisplay
-            );
+
+            CapitalChronicleService.addEvent(level, capital, CapitalChronicleEventId.PRISONER_ESCAPED_EXILE, targetName, capitalDisplay);
             CapitalPlayerNotificationService.notifyPlayersInCapital(
                     level,
                     capital,
@@ -192,6 +208,7 @@ public final class CapitalPrisonerHandler {
                     Component.translatable("mcacapitals.justice.prisoner.escaped_exile_record_failed", targetName)
             );
         }
+
         return true;
     }
 
@@ -204,6 +221,7 @@ public final class CapitalPrisonerHandler {
         if (center == null) {
             return false;
         }
+
         return entity.distanceToSqr(
                 center.getX() + 0.5D,
                 center.getY() + 0.5D,
@@ -215,6 +233,7 @@ public final class CapitalPrisonerHandler {
         if (entity == null || prisonBounds == null || prisonBounds.isEmpty()) {
             return false;
         }
+
         for (AABB bounds : prisonBounds) {
             if (bounds != null && bounds.inflate(1.5D).contains(entity.position())) {
                 return true;

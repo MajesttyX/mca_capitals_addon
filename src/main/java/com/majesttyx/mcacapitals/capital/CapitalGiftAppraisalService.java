@@ -197,8 +197,12 @@ public final class CapitalGiftAppraisalService {
             return null;
         }
 
-        Entity entity =
-                level.getEntity(capital.getSovereign());
+        ServerLevel capitalLevel = CapitalManager.getCapitalLevel(level.getServer(), capital);
+        if (capitalLevel == null) {
+            return null;
+        }
+
+        Entity entity = capitalLevel.getEntity(capital.getSovereign());
 
         return entity instanceof VillagerEntityMCA villager
                 ? villager
