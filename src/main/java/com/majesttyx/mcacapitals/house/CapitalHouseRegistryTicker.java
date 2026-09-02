@@ -35,7 +35,8 @@ public final class CapitalHouseRegistryTicker {
                 : CapitalManager.getAllCapitalsSnapshot().values()) {
             if (capital == null
                     || capital.getCapitalId() == null
-                    || capital.getState() != CapitalState.ACTIVE) {
+                    || capital.getState() != CapitalState.ACTIVE
+                    || !CapitalManager.isCapitalInLevel(capital, level)) {
                 continue;
             }
 
