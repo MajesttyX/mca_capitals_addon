@@ -1,7 +1,10 @@
 package com.majesttyx.mcacapitals.capital;
 
+import com.majesttyx.mcacapitals.identity.VillagerIdentitySyncService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
+import net.conczin.mca.entity.VillagerEntityMCA;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
@@ -9,53 +12,23 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-public class CapitalNameService {
+public final class CapitalNameService {
 
-    private static final String[] KNOWN_TITLES = new String[] {
-            "Deposed Queen",
-            "Deposed King",
-            "Late Queen",
-            "Late King",
-            "Regent",
-            "High Queen",
-            "High King",
-            "Dowager Queen",
-            "Dowager King",
-            "Queen Consort",
-            "King Consort",
-            "Heir Apparent",
-            "Crown Princess",
-            "Crown Prince",
-            "Dowager Princess",
-            "Dowager Prince",
-            "Princess Consort",
-            "Prince Consort",
-            "Hand of the Queen",
-            "Hand of the King",
-            "Grand Maester",
-            "Master of Laws",
-            "Maester",
-            "Court Herald",
-            "Ambassador",
-            "Princess",
-            "Prince",
-            "Lord Commander",
-            "Dowager Duchess",
-            "Dowager Duke",
-            "Duchess",
-            "Duke",
-            "Lady",
-            "Lord",
-            "Dame",
-            "Sir",
-            "Queen",
-            "King"
-    };
+    private static final String TITLED_NAME_KEY =
+            "mcacapitals.dynamic.name.titled";
+    private static final String KINGSGUARD_NAME_KEY =
+            "mcacapitals.dynamic.name.royal_guard.kingsguard";
+    private static final String QUEENSGUARD_NAME_KEY =
+            "mcacapitals.dynamic.name.royal_guard.queensguard";
 
     private CapitalNameService() {
     }
 
     public static void refreshCapitalNames(ServerLevel level, CapitalRecord capital, Set<UUID> residents) {
+        if (level == null || capital == null || residents == null) {
+            return;
+        }
+
         Set<UUID> allRelevant = new HashSet<>(residents);
 
         if (capital.getSovereign() != null) {
@@ -107,44 +80,35 @@ public class CapitalNameService {
                 continue;
             }
 
-            String currentName = entity.getCustomName() != null
-                    ? entity.getCustomName().getString()
-                    : entity.getName().getString();
-
-            String baseName = normalizeBaseName(currentName);
-            Component finalName = buildDisplayNameComponent(level, entityId, baseName);
-            Component currentComponent = entity.getCustomName() != null
-                    ? entity.getCustomName()
-                    : entity.getName();
-
-            if (!currentComponent.equals(finalName)) {
-                entity.setCustomName(finalName);
-                entity.setCustomNameVisible(true);
-            }
+            repairLegacyCapitalsName(entity);
+            VillagerIdentitySyncService.syncToNearbyPlayers(level, entity);
         }
     }
 
     public static String resolveDisplayName(ServerLevel level, CapitalRecord capital, UUID entityId) {
         if (level == null || entityId == null) {
-            return "Unknown";
+            return "";
         }
 
         Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
-        if (entity == null) {
-            if (capital != null && capital.getVillageId() != null) {
-                String savedName = MCAIntegrationBridge.getVillageResidentNames(level, capital.getVillageId()).get(entityId);
-                if (savedName != null && !savedName.isBlank()) {
-                    return normalizeBaseName(savedName);
-                }
+        if (entity != null) {
+            String baseName = resolveBaseName(entity);
+            if (isUsableBaseName(baseName)) {
+                return baseName.trim();
             }
-            return entityId.toString();
         }
 
-        String currentName = entity.getCustomName() != null
-                ? entity.getCustomName().getString()
-                : entity.getName().getString();
+        if (capital != null && capital.getVillageId() != null) {
+            ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
+            String savedName = MCAIntegrationBridge
+                    .getVillageResidentNames(capitalLevel, capital.getVillageId())
+                    .get(entityId);
+            if (isUsableBaseName(savedName)) {
+                return savedName.trim();
+            }
+        }
 
-        return normalizeBaseName(currentName);
+        return entityId.toString();
     }
 
     public static Component resolveDisplayNameComponent(ServerLevel level, CapitalRecord capital, UUID entityId) {
@@ -153,94 +117,158 @@ public class CapitalNameService {
         }
 
         Entity entity = MCAIntegrationBridge.findLoadedEntityByUuid(level, entityId);
-        if (entity == null) {
-            if (capital != null && capital.getVillageId() != null) {
-                String savedName = MCAIntegrationBridge.getVillageResidentNames(level, capital.getVillageId()).get(entityId);
-                if (savedName != null && !savedName.isBlank()) {
-                    return Component.literal(normalizeBaseName(savedName));
-                }
+        if (entity != null) {
+            String baseName = resolveBaseName(entity);
+            if (isUsableBaseName(baseName)) {
+                return Component.literal(baseName.trim());
             }
-            return Component.literal(entityId.toString());
         }
 
-        String currentName = entity.getCustomName() != null
-                ? entity.getCustomName().getString()
-                : entity.getName().getString();
-
-        if (currentName == null || currentName.isBlank()) {
-            return Component.translatable("mcacapitals.system.common.unnamed");
+        if (capital != null && capital.getVillageId() != null) {
+            ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
+            String savedName = MCAIntegrationBridge
+                    .getVillageResidentNames(capitalLevel, capital.getVillageId())
+                    .get(entityId);
+            if (isUsableBaseName(savedName)) {
+                return Component.literal(savedName.trim());
+            }
         }
 
-        return Component.literal(normalizeBaseName(currentName));
+        return Component.literal(entityId.toString());
     }
 
-    private static Component buildDisplayNameComponent(ServerLevel level, UUID entityId, String baseName) {
-        CapitalTitleResolver.ResolvedTitleId titleId =
-                CapitalTitleResolver.getResolvedTitleIdForEntity(level, entityId);
-
-        if (titleId == CapitalTitleResolver.ResolvedTitleId.COMMONER
-                || titleId == CapitalTitleResolver.ResolvedTitleId.NONE) {
-            return Component.literal(baseName);
+    /**
+     * Repairs only names that Capitals itself previously stored as one of its
+     * structured translatable title wrappers. Arbitrary/custom MCA names are
+     * deliberately left untouched.
+     */
+    public static boolean repairLegacyCapitalsName(Entity entity) {
+        if (!(entity instanceof VillagerEntityMCA villager)) {
+            return false;
         }
 
-        CapitalRecord royalGuardCapital = findRoyalGuardCapital(entityId);
-        if (royalGuardCapital != null
-                && titleId == CapitalTitleResolver.ResolvedTitleId.ROYAL_GUARD) {
-            return CapitalRoyalGuardService.buildRoyalGuardDisplayNameComponent(
-                    level,
-                    royalGuardCapital,
-                    entityId
-            );
+        Component customName = villager.getCustomName();
+        String recoveredName = recoverBaseNameFromCapitalsWrapper(customName);
+        if (!isUsableBaseName(recoveredName)) {
+            return false;
         }
 
-        return Component.translatable(
-                "mcacapitals.dynamic.name.titled",
-                CapitalTitleResolver.getDisplayTitleComponentForEntity(level, entityId),
-                Component.literal(baseName)
-        );
+        String baseName = recoveredName.trim();
+        String canonicalName = canonicalMcaName(villager);
+        if (!baseName.equals(canonicalName)) {
+            villager.setName(baseName);
+        }
+
+        // Replace only a known legacy Capitals wrapper with the recovered base
+        // name. VillagerEntityMCA#setCustomName(non-null) also writes MCA's
+        // canonical citizen name, but at this point that value is deliberately
+        // the same literal base name. This keeps vanilla/MCA getName() readers
+        // correct while Capitals titles remain presentation-only Components.
+        villager.setCustomName(Component.literal(baseName));
+        return true;
     }
 
-    private static CapitalRecord findRoyalGuardCapital(UUID entityId) {
-        if (entityId == null) {
+    private static String canonicalMcaName(VillagerEntityMCA villager) {
+        if (villager == null || villager.getRelationships() == null
+                || villager.getRelationships().getFamilyEntry() == null) {
+            return null;
+        }
+        return villager.getRelationships().getFamilyEntry().getName();
+    }
+
+    private static String resolveBaseName(Entity entity) {
+        if (entity == null) {
             return null;
         }
 
-        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
-            if (capital != null && capital.isRoyalGuard(entityId)) {
-                return capital;
+        if (entity instanceof VillagerEntityMCA villager) {
+            repairLegacyCapitalsName(villager);
+
+            String canonicalName = canonicalMcaName(villager);
+            if (isUsableBaseName(canonicalName)) {
+                return canonicalName.trim();
             }
         }
 
-        return null;
+        Component customName = entity.getCustomName();
+        String recoveredName = recoverBaseNameFromCapitalsWrapper(customName);
+        if (isUsableBaseName(recoveredName)) {
+            return recoveredName.trim();
+        }
+
+        if (customName != null) {
+            String currentName = customName.getString();
+            if (isUsableBaseName(currentName)) {
+                return currentName.trim();
+            }
+        }
+
+        String currentName = entity.getName().getString();
+        return isUsableBaseName(currentName)
+                ? currentName.trim()
+                : null;
+    }
+
+    private static String recoverBaseNameFromCapitalsWrapper(Component component) {
+        if (component == null
+                || !(component.getContents() instanceof TranslatableContents contents)
+                || !isCapitalsNameWrapper(contents.getKey())) {
+            return null;
+        }
+
+        Object[] args = contents.getArgs();
+        if (args == null || args.length < 2) {
+            return null;
+        }
+
+        return extractBaseNameArgument(args[1]);
+    }
+
+    private static String extractBaseNameArgument(Object argument) {
+        if (argument instanceof Component component) {
+            String nestedName = recoverBaseNameFromCapitalsWrapper(component);
+            if (isUsableBaseName(nestedName)) {
+                return nestedName.trim();
+            }
+
+            String value = component.getString();
+            return isUsableBaseName(value)
+                    ? value.trim()
+                    : null;
+        }
+
+        if (argument == null) {
+            return null;
+        }
+
+        String value = String.valueOf(argument);
+        return isUsableBaseName(value)
+                ? value.trim()
+                : null;
+    }
+
+    private static boolean isCapitalsNameWrapper(String key) {
+        return TITLED_NAME_KEY.equals(key)
+                || KINGSGUARD_NAME_KEY.equals(key)
+                || QUEENSGUARD_NAME_KEY.equals(key);
+    }
+
+    private static boolean isUsableBaseName(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+
+        String value = name.trim();
+        return !TITLED_NAME_KEY.equals(value)
+                && !KINGSGUARD_NAME_KEY.equals(value)
+                && !QUEENSGUARD_NAME_KEY.equals(value);
     }
 
     static String normalizeBaseName(String name) {
-        if (name == null || name.isBlank()) {
-            return "Unnamed";
+        if (!isUsableBaseName(name)) {
+            return "";
         }
 
-        String result = name.trim();
-
-        if (result.endsWith(" of the Kingsguard")) {
-            result = result.substring(0, result.length() - " of the Kingsguard".length()).trim();
-        }
-        if (result.endsWith(" of the Queensguard")) {
-            result = result.substring(0, result.length() - " of the Queensguard".length()).trim();
-        }
-
-        boolean changed = true;
-        while (changed) {
-            changed = false;
-            for (String title : KNOWN_TITLES) {
-                String prefix = title + " ";
-                if (result.startsWith(prefix)) {
-                    result = result.substring(prefix.length()).trim();
-                    changed = true;
-                    break;
-                }
-            }
-        }
-
-        return result.isBlank() ? "Unnamed" : result;
+        return name.trim();
     }
 }

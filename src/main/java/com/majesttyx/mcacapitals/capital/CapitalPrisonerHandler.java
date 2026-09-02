@@ -45,7 +45,10 @@ public class CapitalPrisonerHandler {
     }
 
     private boolean tickCapital(ServerLevel level, CapitalRecord capital) {
-        if (level == null || capital == null || capital.getState() != CapitalState.ACTIVE) {
+        if (level == null
+                || capital == null
+                || capital.getState() != CapitalState.ACTIVE
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return false;
         }
 

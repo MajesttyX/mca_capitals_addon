@@ -155,7 +155,8 @@ public final class CapitalDiplomaticCorrespondenceService {
             return "Unknown Capital";
         }
 
-        return MCAIntegrationBridge.getVillageName(level, capital.getVillageId());
+        ServerLevel capitalLevel = CapitalManager.resolveCapitalLevel(level, capital);
+        return MCAIntegrationBridge.getVillageName(capitalLevel, capital.getVillageId());
     }
 
     private static Component capitalNameComponent(String name) {

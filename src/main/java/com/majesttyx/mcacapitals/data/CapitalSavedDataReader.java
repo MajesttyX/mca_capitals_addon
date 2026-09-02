@@ -29,6 +29,9 @@ final class CapitalSavedDataReader {
                     : null;
 
             CapitalRecord capital = new CapitalRecord(capitalId, villageId);
+            if (capitalTag.contains(CapitalSavedData.KEY_VILLAGE_DIMENSION)) {
+                capital.setVillageDimensionId(capitalTag.getString(CapitalSavedData.KEY_VILLAGE_DIMENSION));
+            }
 
             if (capitalTag.contains(CapitalSavedData.KEY_STATE)) {
                 try {

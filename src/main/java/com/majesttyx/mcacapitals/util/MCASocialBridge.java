@@ -43,11 +43,12 @@ final class MCASocialBridge {
             int currentHearts = heartsObj instanceof Integer i ? i : 0;
             int newHearts = currentHearts + delta;
 
-            if (trySetHeartsByMethod(memory, newHearts)) {
-                return true;
+            boolean updated = trySetHeartsByMethod(memory, newHearts)
+                    || trySetHeartsByField(memory, newHearts);
+            if (updated) {
+                MCAEntityBridge.captureResidentState(level, entity);
             }
-
-            return trySetHeartsByField(memory, newHearts);
+            return updated;
         } catch (Throwable ignored) {
             return false;
         }

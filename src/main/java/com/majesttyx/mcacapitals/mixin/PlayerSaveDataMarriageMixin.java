@@ -99,7 +99,11 @@ public class PlayerSaveDataMarriageMixin {
                     capital,
                     CapitalChronicleEventId.ROYAL_MARRIAGE,
                     spouseName,
-                    playerName
+                    playerName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, spouse.getUUID()),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, spouse.getUUID()),
+                    CapitalChronicleIdentitySnapshot.title(level, capital, playerUuid),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, playerUuid)
             );
         }
 
@@ -126,7 +130,11 @@ public class PlayerSaveDataMarriageMixin {
                     capital,
                     CapitalChronicleEventId.ROYAL_MARRIAGE,
                     spouseName,
-                    playerName
+                    playerName,
+                    CapitalChronicleIdentitySnapshot.title(level, capital, spouseId),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, spouseId),
+                    CapitalChronicleIdentitySnapshot.title(level, capital, playerUuid),
+                    CapitalChronicleIdentitySnapshot.style(level, capital, playerUuid)
             );
         }
 

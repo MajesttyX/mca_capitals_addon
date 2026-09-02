@@ -20,14 +20,21 @@ final class CapitalCourtMarriageResolver {
             return null;
         }
 
+        UUID spouse = MCAIntegrationBridge.getSpouse(level, personId);
+        if (spouse != null
+                && CapitalCourtBuilder.isValidRelationshipPerson(level, spouse)
+                && MCAIntegrationBridge.isPersistentlyMarried(level, personId, spouse)) {
+            return spouse;
+        }
+
         UUID villagerSpouse = findActualVillagerSpouse(level, personId);
         if (villagerSpouse != null) {
             return villagerSpouse;
         }
 
-        ServerPlayer playerSpouse = findActualPlayerSpouse(level, personId);
+        UUID playerSpouse = findActualPlayerSpouseId(level, personId);
         if (playerSpouse != null) {
-            return playerSpouse.getUUID();
+            return playerSpouse;
         }
 
         return null;
@@ -39,11 +46,7 @@ final class CapitalCourtMarriageResolver {
         }
 
         UUID spouse = MCAIntegrationBridge.getSpouse(level, personId);
-        if (spouse == null) {
-            return null;
-        }
-
-        if (!MCAIntegrationBridge.isMCAVillager(level, spouse)) {
+        if (spouse == null || MCAIntegrationBridge.isPlayerFamilyNode(level, spouse)) {
             return null;
         }
 
@@ -51,40 +54,44 @@ final class CapitalCourtMarriageResolver {
             return null;
         }
 
-        return spouse;
+        return MCAIntegrationBridge.isPersistentlyMarried(level, personId, spouse)
+                ? spouse
+                : null;
     }
 
-    static ServerPlayer findActualPlayerSpouse(ServerLevel level, UUID personId) {
+    static UUID findActualPlayerSpouseId(ServerLevel level, UUID personId) {
         if (level == null || personId == null || level.getServer() == null) {
             return null;
         }
 
-        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, personId);
-
-        if (entity instanceof ServerPlayer playerPerson) {
-            for (Entity candidate : level.getAllEntities()) {
-                if (!MCAIntegrationBridge.isMCAVillagerEntity(candidate)) {
-                    continue;
-                }
-                if (MCARelationshipBridge.isActuallyMarried(playerPerson, candidate)) {
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        UUID villagerSpouse = MCAIntegrationBridge.getSpouse(level, personId);
-        if (villagerSpouse != null && MCAIntegrationBridge.isMCAVillager(level, villagerSpouse)) {
-            return null;
+        UUID spouse = MCAIntegrationBridge.getSpouse(level, personId);
+        if (spouse != null
+                && MCAIntegrationBridge.isPlayerFamilyNode(level, spouse)
+                && CapitalCourtBuilder.isValidRelationshipPerson(level, spouse)
+                && MCAIntegrationBridge.isPersistentlyMarried(level, personId, spouse)) {
+            return spouse;
         }
 
         for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+            UUID playerId = player.getUUID();
+            if (playerId.equals(spouse)
+                    && MCAIntegrationBridge.isPersistentlyMarried(level, personId, playerId)) {
+                return playerId;
+            }
             if (MCARelationshipBridge.isActuallyMarriedToPlayer(player, personId)) {
-                return player;
+                return playerId;
             }
         }
 
         return null;
+    }
+
+    static ServerPlayer findActualPlayerSpouse(ServerLevel level, UUID personId) {
+        UUID spouseId = findActualPlayerSpouseId(level, personId);
+        if (spouseId == null || level == null || level.getServer() == null) {
+            return null;
+        }
+        return level.getServer().getPlayerList().getPlayer(spouseId);
     }
 
     static String resolveSpouseName(ServerLevel level, UUID personId) {
@@ -92,21 +99,25 @@ final class CapitalCourtMarriageResolver {
             return "Unknown";
         }
 
-        UUID villagerSpouse = findActualVillagerSpouse(level, personId);
-        if (villagerSpouse != null) {
-            Entity entity = MCAIntegrationBridge.getEntityByUuid(level, villagerSpouse);
-            if (entity != null) {
-                return entity.getName().getString();
-            }
+        UUID spouse = findActualSpouse(level, personId);
+        if (spouse == null) {
             return "Unknown";
         }
 
-        ServerPlayer playerSpouse = findActualPlayerSpouse(level, personId);
-        if (playerSpouse != null) {
-            return playerSpouse.getGameProfile().getName();
+        Entity entity = MCAIntegrationBridge.getEntityByUuid(level, spouse);
+        if (entity != null) {
+            return entity.getName().getString();
         }
 
-        return "Unknown";
+        if (level.getServer() != null) {
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(spouse);
+            if (player != null) {
+                return player.getGameProfile().getName();
+            }
+        }
+
+        String persistentName = MCAIntegrationBridge.getFamilyNodeName(level, spouse);
+        return persistentName == null || persistentName.isBlank() ? "Unknown" : persistentName;
     }
 
     static boolean isValidMarriedConsort(ServerLevel level, UUID sourceId, UUID spouseId) {
@@ -114,17 +125,8 @@ final class CapitalCourtMarriageResolver {
             return false;
         }
 
-        UUID villagerSpouse = findActualVillagerSpouse(level, sourceId);
-        if (villagerSpouse != null) {
-            return villagerSpouse.equals(spouseId);
-        }
-
-        ServerPlayer playerSpouse = findActualPlayerSpouse(level, sourceId);
-        if (playerSpouse != null) {
-            return playerSpouse.getUUID().equals(spouseId);
-        }
-
-        return false;
+        UUID actualSpouse = findActualSpouse(level, sourceId);
+        return spouseId.equals(actualSpouse);
     }
 
     static void collectMarriageDukeSources(

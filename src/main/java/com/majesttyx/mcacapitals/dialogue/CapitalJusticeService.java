@@ -167,7 +167,7 @@ public final class CapitalJusticeService {
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, masterOfLawsId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 
     private static boolean isMasterOfLaws(CapitalRecord capital, UUID villagerId) {

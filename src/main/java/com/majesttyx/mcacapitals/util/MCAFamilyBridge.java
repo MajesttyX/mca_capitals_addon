@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-final class MCAFamilyBridge {
+public final class MCAFamilyBridge {
 
     private MCAFamilyBridge() {
     }
@@ -31,6 +31,43 @@ final class MCAFamilyBridge {
         return value instanceof Boolean b && b;
     }
 
+    static Optional<Boolean> getFemaleIfKnown(ServerLevel level, UUID entityId) {
+        Optional<Object> nodeOpt = getFamilyNode(level, entityId);
+        if (nodeOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Object gender = MCAReflectionHelper.invoke(nodeOpt.get(), "gender");
+        if (gender == null) {
+            return Optional.empty();
+        }
+
+        Object binary = MCAReflectionHelper.invoke(gender, "binary");
+        Object resolvedGender = binary == null ? gender : binary;
+        Object dataName = MCAReflectionHelper.invoke(resolvedGender, "getDataName");
+        if (!(dataName instanceof String value)) {
+            return Optional.empty();
+        }
+
+        if (value.equalsIgnoreCase("female")) {
+            return Optional.of(true);
+        }
+        if (value.equalsIgnoreCase("male")) {
+            return Optional.of(false);
+        }
+        return Optional.empty();
+    }
+
+    public static boolean isPlayerFamilyNode(ServerLevel level, UUID entityId) {
+        Optional<Object> nodeOpt = getFamilyNode(level, entityId);
+        if (nodeOpt.isEmpty()) {
+            return false;
+        }
+
+        Object value = MCAReflectionHelper.invoke(nodeOpt.get(), "isPlayer");
+        return value instanceof Boolean b && b;
+    }
+
     static UUID getSpouse(ServerLevel level, UUID entityId) {
         Optional<Object> nodeOpt = getFamilyNode(level, entityId);
         if (nodeOpt.isEmpty()) {
@@ -39,6 +76,70 @@ final class MCAFamilyBridge {
 
         UUID partner = MCAReflectionHelper.asUuid(MCAReflectionHelper.invoke(nodeOpt.get(), "partner"));
         return MCAReflectionHelper.isNullUuid(partner) ? null : partner;
+    }
+
+    static String getFamilyNodeName(ServerLevel level, UUID entityId) {
+        Optional<Object> nodeOpt = getFamilyNode(level, entityId);
+        if (nodeOpt.isEmpty()) {
+            return null;
+        }
+
+        Object value = MCAReflectionHelper.invoke(nodeOpt.get(), "getName");
+        if (value instanceof String name && !name.isBlank()) {
+            return name;
+        }
+        return null;
+    }
+
+    static boolean isPersistentlyMarried(ServerLevel level, UUID firstId, UUID secondId) {
+        if (level == null || firstId == null || secondId == null) {
+            return false;
+        }
+
+        Optional<Object> firstNode = getFamilyNode(level, firstId);
+        if (firstNode.isEmpty()) {
+            return false;
+        }
+
+        UUID firstPartner = MCAReflectionHelper.asUuid(
+                MCAReflectionHelper.invoke(firstNode.get(), "partner")
+        );
+        if (!secondId.equals(firstPartner)) {
+            return false;
+        }
+
+        if (!isMarriedRelationshipState(firstNode.get())) {
+            return false;
+        }
+
+        Optional<Object> secondNode = getFamilyNode(level, secondId);
+        if (secondNode.isEmpty()) {
+            return true;
+        }
+
+        UUID secondPartner = MCAReflectionHelper.asUuid(
+                MCAReflectionHelper.invoke(secondNode.get(), "partner")
+        );
+        if (secondPartner != null && !MCAReflectionHelper.isNullUuid(secondPartner) && !firstId.equals(secondPartner)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static boolean isMarriedRelationshipState(Object node) {
+        Object state = MCAReflectionHelper.invoke(node, "getRelationshipState");
+        if (state == null) {
+            return false;
+        }
+
+        Object married = MCAReflectionHelper.invoke(state, "isMarried");
+        if (married instanceof Boolean value) {
+            return value;
+        }
+
+        String name = state instanceof Enum<?> e ? e.name() : String.valueOf(state);
+        return name.startsWith("MARRIED_");
     }
 
     static Set<UUID> getChildren(ServerLevel level, UUID entityId) {

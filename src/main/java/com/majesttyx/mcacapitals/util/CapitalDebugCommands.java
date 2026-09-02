@@ -82,7 +82,7 @@ public class CapitalDebugCommands {
                                                         + " isVillage=" + isVillage
                                                         + " population=" + population
                                                         + " residents=" + residents
-                                                        + " hasCapital=" + CapitalManager.hasCapitalForVillageId(villageId)
+                                                        + " hasCapital=" + CapitalManager.hasCapitalForVillageId(level, villageId)
                                         ), false);
                                     }
 

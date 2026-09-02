@@ -51,7 +51,7 @@ final class CapitalPetitionRequirements {
         CapitalRecord capital = CapitalTitleResolver.findCapitalForEntity(level, villagerEntity.getUUID());
         if (capital == null) {
             Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerEntity.getUUID());
-            capital = CapitalManager.getCapitalByVillageId(villageId);
+            capital = CapitalManager.getCapitalByVillageId(level, villageId);
         }
 
         if (capital == null) {

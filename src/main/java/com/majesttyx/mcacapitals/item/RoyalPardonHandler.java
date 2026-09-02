@@ -138,6 +138,6 @@ public class RoyalPardonHandler {
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, targetId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 }

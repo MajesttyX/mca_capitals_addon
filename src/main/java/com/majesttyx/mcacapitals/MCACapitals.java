@@ -43,6 +43,7 @@ import com.majesttyx.mcacapitals.util.CapitalPetitionCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalEscortCommands;
 import com.majesttyx.mcacapitals.util.CapitalRoyalGuardCommands;
 import com.majesttyx.mcacapitals.util.CapitalTestCommands;
+import com.majesttyx.mcacapitals.util.MCAResidentStateSnapshotHandler;
 import com.majesttyx.mcacapitals.util.RoyalScepterCommands;
 import com.majesttyx.mcacapitals.util.SuccessionDecreeCommands;
 import com.mojang.logging.LogUtils;
@@ -99,6 +100,7 @@ public class MCACapitals {
         NeoForge.EVENT_BUS.register(new DeclarationOfSeparationHandler());
         NeoForge.EVENT_BUS.register(new RoyalPardonHandler());
         NeoForge.EVENT_BUS.register(new CapitalLifecycleHandler());
+        NeoForge.EVENT_BUS.register(new MCAResidentStateSnapshotHandler());
 
         NeoForge.EVENT_BUS.addListener(
                 this::registerCommands

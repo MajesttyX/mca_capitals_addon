@@ -75,7 +75,8 @@ public class CapitalExileDiscoveryHandler {
                 || capital == null
                 || capital.getCapitalId() == null
                 || capital.getState()
-                != CapitalState.ACTIVE) {
+                != CapitalState.ACTIVE
+                || !CapitalManager.isCapitalInLevel(capital, level)) {
             return false;
         }
 

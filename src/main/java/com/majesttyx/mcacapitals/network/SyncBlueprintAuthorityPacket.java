@@ -81,7 +81,7 @@ public class SyncBlueprintAuthorityPacket implements CustomPacketPayload {
 
         int villageId = village.getId();
         ServerLevel level = player.serverLevel();
-        CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId);
+        CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId);
         boolean activeCapital = capital != null && capital.getState() == CapitalState.ACTIVE;
 
         if (!activeCapital) {

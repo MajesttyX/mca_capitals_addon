@@ -188,7 +188,7 @@ public class CapitalTestCommands {
                                         return 0;
                                     }
 
-                                    CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId);
+                                    CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId);
                                     if (capital == null) {
                                         source.sendFailure(Component.literal("No capital exists yet for MCA village " + villageId));
                                         return 0;
@@ -257,7 +257,7 @@ public class CapitalTestCommands {
                                         return 0;
                                     }
 
-                                    CapitalRecord capital = CapitalManager.getCapitalByVillageId(villageId);
+                                    CapitalRecord capital = CapitalManager.getCapitalByVillageId(level, villageId);
                                     if (capital == null) {
                                         source.sendFailure(Component.literal("No capital exists yet for MCA village " + villageId));
                                         return 0;

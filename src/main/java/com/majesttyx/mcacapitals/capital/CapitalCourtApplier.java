@@ -38,7 +38,7 @@ final class CapitalCourtApplier {
             capital.removeRoyalGuard(newConsort);
         }
 
-        if (newConsort != null && !MCAIntegrationBridge.isMCAVillager(level, newConsort)) {
+        if (newConsort != null && MCAIntegrationBridge.isPlayerIdentity(level, newConsort)) {
             capital.setPlayerConsort(true);
             capital.setPlayerConsortId(newConsort);
             capital.setPlayerConsortName(CapitalFoundationInternal.resolvePlayerName(level, newConsort));

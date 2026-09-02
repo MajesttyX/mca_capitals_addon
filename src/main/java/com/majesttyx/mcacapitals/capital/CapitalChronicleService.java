@@ -149,8 +149,15 @@ public class CapitalChronicleService {
             arguments.add(CapitalChronicleEntry.Argument.literal(capitalName));
         }
 
-        if (hasSemanticChronicleEntry(capital, semanticDedupeKey(eventId, arguments))) {
-            return true;
+        String semanticKey = semanticDedupeKey(eventId, arguments);
+        for (String stored : capital.getChronicleEntries()) {
+            CapitalChronicleEntry decoded = CapitalChronicleEntry.decode(stored);
+            if (decoded == null || !eventId.chronicleKey().equals(decoded.translationKey())) {
+                continue;
+            }
+            if (semanticKey.equals(semanticDedupeKey(eventId, decoded.arguments()))) {
+                return true;
+            }
         }
 
         String legacyKey = canonicalMarriage(
@@ -195,6 +202,20 @@ public class CapitalChronicleService {
                 dedupeKey,
                 arguments
         );
+
+        if (isMarriageEvent(eventId)
+                && arguments.size() >= 2
+                && hasMarriageEvent(
+                capital,
+                eventId,
+                arguments.get(0).dedupeValue(),
+                arguments.get(1).dedupeValue(),
+                eventId == CapitalChronicleEventId.CAPITAL_MARRIAGE && arguments.size() >= 3
+                        ? arguments.get(2).dedupeValue()
+                        : null
+        )) {
+            return;
+        }
 
         if (hasSemanticChronicleEntry(capital, dedupeKey)) {
             return;
@@ -269,11 +290,9 @@ public class CapitalChronicleService {
             CapitalChronicleEventId eventId,
             List<CapitalChronicleEntry.Argument> arguments
     ) {
-        if ((eventId == CapitalChronicleEventId.ROYAL_MARRIAGE
-                || eventId == CapitalChronicleEventId.CAPITAL_MARRIAGE)
-                && arguments.size() >= 2) {
-            String first = canonicalText(arguments.get(0).value());
-            String second = canonicalText(arguments.get(1).value());
+        if (isMarriageEvent(eventId) && arguments.size() >= 2) {
+            String first = canonicalText(CapitalNameService.normalizeBaseName(arguments.get(0).dedupeValue()));
+            String second = canonicalText(CapitalNameService.normalizeBaseName(arguments.get(1).dedupeValue()));
             String left = first.compareTo(second) <= 0 ? first : second;
             String right = first.compareTo(second) <= 0 ? second : first;
             StringBuilder marriage = new StringBuilder(eventId.path())
@@ -281,8 +300,11 @@ public class CapitalChronicleService {
                     .append(left)
                     .append(':')
                     .append(right);
-            for (int i = 2; i < arguments.size(); i++) {
-                marriage.append(':').append(canonicalText(arguments.get(i).value()));
+
+            // Titles and styles are presentation snapshots, not the identity of
+            // the marriage itself. Capital marriages also include the capital.
+            if (eventId == CapitalChronicleEventId.CAPITAL_MARRIAGE && arguments.size() >= 3) {
+                marriage.append(':').append(canonicalText(arguments.get(2).dedupeValue()));
             }
             return marriage.toString();
         }
@@ -295,6 +317,11 @@ public class CapitalChronicleService {
                     .append(canonicalText(argument.dedupeValue()));
         }
         return key.toString();
+    }
+
+    private static boolean isMarriageEvent(CapitalChronicleEventId eventId) {
+        return eventId == CapitalChronicleEventId.ROYAL_MARRIAGE
+                || eventId == CapitalChronicleEventId.CAPITAL_MARRIAGE;
     }
 
     private static String canonicalLegacyChronicleEntry(String entry) {
@@ -567,4 +594,9 @@ public class CapitalChronicleService {
 
     private record HeraldAnnouncement(long gameTime, String signature) {
     }
+
+    public static void clearRuntimeState() {
+        LAST_HERALD_ANNOUNCEMENTS.clear();
+    }
+
 }

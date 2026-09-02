@@ -219,4 +219,8 @@ public final class CapitalAmbassadorService {
             VillagerIdentitySyncService.syncToNearbyPlayers(level, entity);
         }
     }
+
+    public static void clearRuntimeCache() {
+        AMBASSADOR_CACHE.clear();
+    }
 }

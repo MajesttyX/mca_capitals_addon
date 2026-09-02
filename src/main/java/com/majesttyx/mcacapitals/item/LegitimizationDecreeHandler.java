@@ -23,30 +23,6 @@ import java.util.UUID;
 
 public class LegitimizationDecreeHandler {
 
-    private static final String[] KNOWN_TITLES = new String[] {
-            "High Queen",
-            "High King",
-            "Dowager Queen",
-            "Dowager King",
-            "Queen Consort",
-            "King Consort",
-            "Heir Apparent",
-            "Crown Princess",
-            "Crown Prince",
-            "Princess Consort",
-            "Prince Consort",
-            "Princess",
-            "Prince",
-            "Duchess",
-            "Duke",
-            "Lady",
-            "Lord",
-            "Commander",
-            "Dame",
-            "Sir",
-            "Queen",
-            "King"
-    };
 
     @SubscribeEvent
     public void onEntityInteract(PlayerInteractEvent.EntityInteractSpecific event) {
@@ -124,7 +100,7 @@ public class LegitimizationDecreeHandler {
         CapitalCourtWatcher.clearFingerprint(capital.getCapitalId());
         CapitalDataAccess.markDirty(level);
 
-        String displayName = stripKnownTitles(livingTarget.getName().getString());
+        String displayName = CapitalChronicleIdentitySnapshot.name(level, capital, targetId);
         Component title = Component.translatable(
                 female
                         ? "mcacapitals.dynamic.title.royal_child.female"
@@ -153,7 +129,7 @@ public class LegitimizationDecreeHandler {
     private CapitalRecord resolveCapital(ServerLevel level, UUID targetId) {
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, targetId);
         if (villageId != null) {
-            CapitalRecord byVillage = CapitalManager.getCapitalByVillageId(villageId);
+            CapitalRecord byVillage = CapitalManager.getCapitalByVillageId(level, villageId);
             if (byVillage != null) {
                 return byVillage;
             }
@@ -188,26 +164,11 @@ public class LegitimizationDecreeHandler {
     }
 
     private Component displayNameComponent(String displayName) {
-        if (displayName == null || displayName.isBlank() || "Unnamed".equals(displayName)) {
+        if (displayName == null || displayName.isBlank()) {
             return Component.translatable("mcacapitals.system.common.unnamed");
         }
         return Component.literal(displayName);
     }
 
-    private String stripKnownTitles(String name) {
-        if (name == null || name.isBlank()) {
-            return "Unnamed";
-        }
 
-        String result = name.trim();
-
-        for (String title : KNOWN_TITLES) {
-            String prefix = title + " ";
-            if (result.startsWith(prefix)) {
-                return result.substring(prefix.length()).trim();
-            }
-        }
-
-        return result;
-    }
 }

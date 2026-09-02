@@ -252,7 +252,7 @@ public abstract class DialogueCrownAuthorityAnswerMixin {
                     villagerId
             );
 
-            capital = CapitalManager.getCapitalByVillageId(villageId);
+            capital = CapitalManager.getCapitalByVillageId(level, villageId);
         }
 
         return capital;

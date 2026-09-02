@@ -757,4 +757,9 @@ public final class CapitalCampaignCombatService {
                 target.getUUID()
         ) == campaign;
     }
+
+    public static void clearRuntimeState() {
+        OUTSIDE_SINCE.clear();
+    }
+
 }

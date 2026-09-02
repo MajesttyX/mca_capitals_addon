@@ -133,7 +133,7 @@ final class CapitalInterregnumSuccessionResolver {
                     level,
                     capital,
                     CapitalChronicleEventId.WARTIME_INTERREGNUM_NO_SUCCESSOR_CONSORT,
-                    resolveName(level, oldConsort),
+                    resolveName(level, capital, oldConsort),
                     CapitalDiplomaticAgreementText.capitalName(level, capital)
             );
         } else {
@@ -257,6 +257,7 @@ final class CapitalInterregnumSuccessionResolver {
 
         String successorName = resolveName(
                 level,
+                capital,
                 successor
         );
 
@@ -633,17 +634,13 @@ final class CapitalInterregnumSuccessionResolver {
 
     private static String resolveName(
             ServerLevel level,
+            CapitalRecord capital,
             UUID entityId
     ) {
-        Entity entity = MCAIntegrationBridge
-                .getEntityByUuid(
-                        level,
-                        entityId
-                );
-
-        return entity == null
-                ? entityId.toString()
-                : entity.getName().getString();
+        if (entityId == null) {
+            return "Unknown";
+        }
+        return CapitalChronicleIdentitySnapshot.name(level, capital, entityId);
     }
 
     private static void finish(

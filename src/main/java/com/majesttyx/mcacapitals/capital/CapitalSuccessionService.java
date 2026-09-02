@@ -2,6 +2,7 @@ package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
+import com.majesttyx.mcacapitals.util.CapitalHardcoreDeathTracker;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -29,7 +30,10 @@ public class CapitalSuccessionService {
             return false;
         }
 
-        if (isValidLivingSovereign(level, sovereign)) {
+        boolean confirmedHardcorePlayerDeath = capital.isPlayerSovereign()
+                && CapitalHardcoreDeathTracker.isConfirmedDead(level, sovereign);
+
+        if (!confirmedHardcorePlayerDeath && isValidLivingSovereign(level, sovereign)) {
             return false;
         }
 

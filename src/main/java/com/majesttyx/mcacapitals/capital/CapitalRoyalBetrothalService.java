@@ -849,7 +849,8 @@ public final class CapitalRoyalBetrothalService {
                     || destination.getState()
                     != CapitalState.ACTIVE
                     || destination.getVillageId()
-                    == null) {
+                    == null
+                    || !CapitalManager.isCapitalInLevel(destination, level)) {
                 continue;
             }
 

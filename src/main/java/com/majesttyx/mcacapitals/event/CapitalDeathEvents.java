@@ -6,11 +6,15 @@ import com.majesttyx.mcacapitals.capital.CapitalChronicleService;
 import com.majesttyx.mcacapitals.capital.CapitalDeathTransitionService;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalNameService;
+import com.majesttyx.mcacapitals.capital.CapitalSuccessionService;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import com.majesttyx.mcacapitals.capital.CapitalState;
+import com.majesttyx.mcacapitals.data.CapitalDataAccess;
+import com.majesttyx.mcacapitals.util.CapitalHardcoreDeathTracker;
 import com.majesttyx.mcacapitals.util.MCAExecutionBridge;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -32,12 +36,48 @@ public final class CapitalDeathEvents {
             return;
         }
 
+        if (entity instanceof ServerPlayer player) {
+            handleHardcorePlayerSovereignDeath(serverLevel, player);
+            return;
+        }
+
         if (!MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
             return;
         }
 
         recordExecutionIfNeeded(serverLevel, entity, event.getSource());
         CapitalDeathTransitionService.handleVillagerDeath(serverLevel, entity.getUUID());
+    }
+
+
+    private static void handleHardcorePlayerSovereignDeath(ServerLevel deathLevel, ServerPlayer player) {
+        if (deathLevel == null
+                || player == null
+                || deathLevel.getServer() == null
+                || !deathLevel.getServer().isHardcore()) {
+            return;
+        }
+
+        UUID playerId = player.getUUID();
+        CapitalHardcoreDeathTracker.record(deathLevel, playerId);
+
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            if (capital == null
+                    || !capital.isPlayerSovereign()
+                    || capital.getPlayerSovereignId() == null
+                    || !playerId.equals(capital.getPlayerSovereignId())) {
+                continue;
+            }
+
+            ServerLevel capitalLevel = CapitalManager.getCapitalLevel(deathLevel.getServer(), capital);
+            if (capitalLevel == null) {
+                continue;
+            }
+
+            if (CapitalSuccessionService.handleSuccessionIfNeeded(capitalLevel, capital)) {
+                CapitalDataAccess.markDirty(capitalLevel);
+            }
+        }
     }
 
     private static void recordExecutionIfNeeded(ServerLevel level, Entity villager, DamageSource source) {
@@ -80,7 +120,7 @@ public final class CapitalDeathEvents {
         }
 
         Integer villageId = MCAIntegrationBridge.getVillageIdForResident(level, villagerId);
-        return CapitalManager.getCapitalByVillageId(villageId);
+        return CapitalManager.getCapitalByVillageId(level, villageId);
     }
 
     private static String resolveExecutionerName(DamageSource source) {

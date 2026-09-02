@@ -67,6 +67,8 @@ public final class CapitalCampaignProcessor {
                     == null
                     || defendingCapital.getVillageId()
                     == null
+                    || !CapitalManager.isCapitalInLevel(attackingCapital, level)
+                    || !CapitalManager.isCapitalInLevel(defendingCapital, level)
                     || VillageManager.get(level)
                     .getOrEmpty(
                             attackingCapital
