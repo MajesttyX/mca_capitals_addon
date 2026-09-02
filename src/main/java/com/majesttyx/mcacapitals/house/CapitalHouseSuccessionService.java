@@ -151,6 +151,10 @@ public final class CapitalHouseSuccessionService {
             return null;
         }
 
+        if (isValidLivingBloodlineMember(level, house, founder)) {
+            return founder;
+        }
+
         List<UUID> ordered =
                 new ArrayList<>();
 

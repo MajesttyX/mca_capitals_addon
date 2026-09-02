@@ -16,7 +16,7 @@
     }
   ],
   "result": {
-    "count": 1,
-    "item": "mcacapitals:book_of_houses"
+    "id": "mcacapitals:book_of_houses",
+    "count": 1
   }
 }

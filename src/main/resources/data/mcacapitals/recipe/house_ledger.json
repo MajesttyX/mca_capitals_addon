@@ -16,7 +16,7 @@
     }
   ],
   "result": {
-    "count": 1,
-    "item": "mcacapitals:house_ledger"
+    "id": "mcacapitals:house_ledger",
+    "count": 1
   }
 }
