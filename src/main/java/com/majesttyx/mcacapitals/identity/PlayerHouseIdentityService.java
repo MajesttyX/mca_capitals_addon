@@ -24,10 +24,12 @@ public final class PlayerHouseIdentityService {
         }
 
         if (applyPlayerHouseToChild(level, child, firstParentId)) {
+            VillagerIdentitySyncService.syncToNearbyPlayers(level, child);
             return true;
         }
 
         if (applyPlayerHouseToChild(level, child, secondParentId)) {
+            VillagerIdentitySyncService.syncToNearbyPlayers(level, child);
             return true;
         }
 
@@ -190,13 +192,14 @@ public final class PlayerHouseIdentityService {
             return false;
         }
 
-        boolean changed = applyPlayerHouseIdentityToVillager(level, child, playerId, record, SurnameSource.BIRTH, true);
-
-        if (changed) {
-            VillagerIdentitySyncService.syncToNearbyPlayers(level, child);
-        }
-
-        return changed;
+        return applyPlayerHouseIdentityToVillager(
+                level,
+                child,
+                playerId,
+                record,
+                SurnameSource.BIRTH,
+                true
+        );
     }
 
     private static boolean applyPlayerHouseToChildIfNeeded(ServerLevel level, Entity child, UUID playerId) {

@@ -25,24 +25,23 @@ public abstract class InteractionDialogueInitMessageMixin {
 
     @Inject(
             method = "handleServer",
-            at = @At("HEAD"),
-            cancellable = true,
+            at = @At("RETURN"),
             remap = false
     )
-    private void mcacapitals$promptUndeclaredPlayer(
+    private void mcacapitals$promptUndeclaredPlayerAfterDialogueInitialization(
             ServerPlayer player,
             CallbackInfo ci
     ) {
+        if (player == null) {
+            return;
+        }
+
         Entity entity = player.serverLevel().getEntity(villagerUUID());
         if (!(entity instanceof VillagerEntityMCA villager)
-                || !CapitalSovereignDeclarationPromptService.shouldPrompt(
-                player,
-                villager
-        )) {
+                || !CapitalSovereignDeclarationPromptService.shouldPrompt(player, villager)) {
             return;
         }
 
         CapitalSovereignDeclarationPromptService.openPrompt(player, villager);
-        ci.cancel();
     }
 }

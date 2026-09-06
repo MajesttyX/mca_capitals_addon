@@ -77,11 +77,17 @@ public record CapitalChronicleEntry(
 
         Component component() {
             return switch (kind) {
-                case TRANSLATABLE -> Component.translatable(value);
+                case TRANSLATABLE -> isHiddenTitleKey(value)
+                        ? Component.empty()
+                        : Component.translatable(value);
                 case TRANSLATABLE_SNAPSHOT -> renderTranslatableSnapshot(value);
                 case ITEM_LIST -> renderItemList(value);
                 case LITERAL -> Component.literal(value);
             };
+        }
+
+        private static boolean isHiddenTitleKey(String translationKey) {
+            return "mcacapitals.dynamic.title.commoner".equals(translationKey);
         }
 
         String dedupeKindName() {
@@ -274,19 +280,132 @@ public record CapitalChronicleEntry(
             return null;
         }
 
-        // Some older royal-marriage entries contain only the two names, while
-        // the Herald variants require title/style snapshots as arguments 3-6.
-        // Keep those saved entries localized without exposing raw %n$s tokens.
-        if (CapitalChronicleEventId.ROYAL_MARRIAGE.heraldKey().equals(heraldKey)
-                && arguments.size() < 6) {
-            return render();
+        int normalizedVariant = Math.max(1, Math.min(3, variant));
+
+        // Royal-marriage entries store each person's base name, title, and
+        // courtesy style separately. Compose those identity pieces here so an
+        // untitled commoner stays name-only and ranks without a distinct style
+        // never become values such as "Lord, Lord Name". The composition itself
+        // remains translatable, so language packs retain control of ordering and
+        // punctuation. Older entries with only the two names still fall back to
+        // the localized chronicle sentence.
+        if (CapitalChronicleEventId.ROYAL_MARRIAGE.heraldKey().equals(heraldKey)) {
+            if (arguments.size() < 6) {
+                return render();
+            }
+            return renderRoyalMarriageHeraldVariant(normalizedVariant);
         }
 
-        int normalizedVariant = Math.max(1, Math.min(3, variant));
         return Component.translatable(
                 heraldKey + ".0" + normalizedVariant,
                 componentArguments()
         );
+    }
+
+    private Component renderRoyalMarriageHeraldVariant(int normalizedVariant) {
+        Argument firstNameArgument = arguments.get(0);
+        Argument secondNameArgument = arguments.get(1);
+        Argument firstTitleArgument = arguments.get(2);
+        Argument firstStyleArgument = arguments.get(3);
+        Argument secondTitleArgument = arguments.get(4);
+        Argument secondStyleArgument = arguments.get(5);
+
+        Component firstName = firstNameArgument.component();
+        Component secondName = secondNameArgument.component();
+        Component firstTitle = firstTitleArgument.component();
+        Component firstStyle = firstStyleArgument.component();
+        Component secondTitle = secondTitleArgument.component();
+        Component secondStyle = secondStyleArgument.component();
+
+        Component firstTitledName = titledName(
+                firstTitleArgument,
+                firstTitle,
+                firstName
+        );
+        Component secondTitledName = titledName(
+                secondTitleArgument,
+                secondTitle,
+                secondName
+        );
+
+        Component firstStyledName = styledTitledName(
+                firstStyleArgument,
+                firstTitleArgument,
+                firstStyle,
+                firstTitledName
+        );
+        Component secondStyledName = styledTitledName(
+                secondStyleArgument,
+                secondTitleArgument,
+                secondStyle,
+                secondTitledName
+        );
+
+        return Component.translatable(
+                heraldKey + ".0" + normalizedVariant,
+                firstTitledName,
+                secondTitledName,
+                firstStyledName,
+                secondStyledName
+        );
+    }
+
+    private static Component titledName(
+            Argument titleArgument,
+            Component title,
+            Component name
+    ) {
+        if (isUntitledArgument(titleArgument)
+                || title == null
+                || title.getString().isBlank()) {
+            return name == null ? Component.empty() : name;
+        }
+
+        return Component.translatable(
+                "mcacapitals.dynamic.name.titled",
+                title,
+                name == null ? Component.empty() : name
+        );
+    }
+
+    private static Component styledTitledName(
+            Argument styleArgument,
+            Argument titleArgument,
+            Component style,
+            Component titledName
+    ) {
+        if (isUntitledArgument(styleArgument)
+                || style == null
+                || style.getString().isBlank()
+                || sameArgument(styleArgument, titleArgument)) {
+            return titledName;
+        }
+
+        return Component.translatable(
+                "mcacapitals.dynamic.name.styled_titled",
+                style,
+                titledName
+        );
+    }
+
+    private static boolean isUntitledArgument(Argument argument) {
+        if (argument == null) {
+            return true;
+        }
+
+        if (argument.kind() == ArgumentKind.LITERAL) {
+            return argument.value().isBlank();
+        }
+
+        return argument.kind() == ArgumentKind.TRANSLATABLE
+                && "mcacapitals.dynamic.title.commoner".equals(argument.value());
+    }
+
+    private static boolean sameArgument(Argument first, Argument second) {
+        return first != null
+                && second != null
+                && first.kind() == second.kind()
+                && first.value().equals(second.value());
     }
 
     public String encode() {
