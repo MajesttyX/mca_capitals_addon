@@ -310,7 +310,8 @@ final class CapitalDialogueContext {
             return Component.translatable(fallbackKey);
         }
 
-        if (capital.isPlayerSovereign()
+        if (capital != null
+                && capital.isPlayerSovereign()
                 && id.equals(capital.getPlayerSovereignId())
                 && capital.getPlayerSovereignName() != null
                 && !capital.getPlayerSovereignName().isBlank()) {
@@ -327,7 +328,7 @@ final class CapitalDialogueContext {
             }
         }
 
-        if (capital.getCapitalId() != null) {
+        if (capital != null && capital.getCapitalId() != null) {
             PlayerCapitalTitleRecord playerRecord =
                     PlayerCapitalTitleService.get(level, id, capital.getCapitalId());
             if (playerRecord != null
@@ -337,11 +338,15 @@ final class CapitalDialogueContext {
             }
         }
 
+        String savedName = CapitalNameService.resolveDisplayName(level, capital, id);
+        if (savedName != null
+                && !savedName.isBlank()
+                && !savedName.equals(id.toString())) {
+            return Component.literal(savedName.trim());
+        }
+
         Entity entity = MCAIntegrationBridge.getEntityByUuid(level, id);
         if (entity != null && entity.getName() != null) {
-            if (MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
-                return CapitalNameService.resolveDisplayNameComponent(level, capital, id);
-            }
             return Component.literal(entity.getName().getString());
         }
 

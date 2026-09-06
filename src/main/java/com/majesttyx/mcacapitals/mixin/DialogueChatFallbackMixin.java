@@ -9,9 +9,11 @@ import com.majesttyx.mcacapitals.capital.CapitalState;
 import com.majesttyx.mcacapitals.capital.CapitalTitleResolver;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueRuntime;
 import com.majesttyx.mcacapitals.dialogue.CapitalDialogueService;
+import com.majesttyx.mcacapitals.dialogue.CapitalDialogueSpeaker;
 import com.majesttyx.mcacapitals.dialogue.CapitalPoliticalDialogueService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import forge.net.conczin.mca.resources.data.dialogue.Actions;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -66,11 +68,27 @@ public abstract class DialogueChatFallbackMixin {
             }
 
             return (villager, player) -> {
+                if (mcacapitals$handleManagedRuntimeDialogue(
+                        configuredNext,
+                        villager,
+                        player
+                )) {
+                    return;
+                }
+
                 String redirectedNext = mcacapitals$redirectCapitalChatDialogue(
                         configuredNext,
                         villager,
                         player
                 );
+
+                if (mcacapitals$handleManagedRuntimeDialogue(
+                        redirectedNext,
+                        villager,
+                        player
+                )) {
+                    return;
+                }
 
                 if (Objects.equals(configuredNext, redirectedNext)) {
                     originalAction.trigger(villager, player);
@@ -92,6 +110,40 @@ public abstract class DialogueChatFallbackMixin {
         } catch (RuntimeException ignored) {
             return null;
         }
+    }
+
+    private static boolean mcacapitals$handleManagedRuntimeDialogue(
+            String nextKey,
+            Object villagerObj,
+            ServerPlayer player
+    ) {
+        if (!CapitalDialogueRuntime.isManagedRuntimeKey(nextKey)
+                || player == null
+                || !(villagerObj instanceof Entity villager)) {
+            return false;
+        }
+
+        ServerLevel level = player.serverLevel();
+        CapitalRecord capital = resolveCapital(level, villager.getUUID());
+        if (capital == null || capital.getState() != CapitalState.ACTIVE) {
+            MCAIntegrationBridge.stopInteracting(villager);
+            return true;
+        }
+
+        Component line = CapitalDialogueRuntime.formatManagedRuntimeComponent(
+                nextKey,
+                player,
+                villager,
+                level,
+                capital
+        );
+
+        if (line != null && !line.getString().isBlank()) {
+            CapitalDialogueSpeaker.speakVillager(player, villager, line);
+        }
+
+        MCAIntegrationBridge.stopInteracting(villager);
+        return true;
     }
 
     private static String mcacapitals$redirectCapitalChatDialogue(

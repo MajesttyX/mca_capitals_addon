@@ -74,7 +74,7 @@ final class CapitalDialogueIdentityResolver {
             case DOWAGER_DUKE -> genderedTitle("dowager_duke", gender);
             case LORD -> genderedTitle("lord", gender);
             case KNIGHT -> genderedTitle("knight", gender);
-            case COMMONER -> Component.translatable("mcacapitals.dynamic.title.commoner");
+            case COMMONER -> Component.empty();
         };
     }
 
@@ -84,7 +84,7 @@ final class CapitalDialogueIdentityResolver {
             CapitalTitleOfficeIdentityResolver.OfficeIdentity office
     ) {
         return switch (office) {
-            case NONE -> Component.translatable("mcacapitals.dynamic.office.none");
+            case NONE -> Component.empty();
             case HAND -> handOffice(level, capital);
             case GRAND_MAESTER -> Component.translatable("mcacapitals.dynamic.office.grand_maester");
             case COURT_HERALD -> Component.translatable("mcacapitals.dynamic.office.court_herald");

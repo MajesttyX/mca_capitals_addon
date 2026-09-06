@@ -68,24 +68,26 @@ public final class CapitalChronicleIdentitySnapshot {
         CapitalDialogueGenderResolver.ResolvedGender gender =
                 CapitalDialogueGenderResolver.resolve(level, capital, entityId);
 
-        return CapitalChronicleEntry.Argument.translatable(
-                switch (title) {
-                    case HIGH_SOVEREIGN -> gendered("high_sovereign", gender);
-                    case SOVEREIGN -> gendered("sovereign", gender);
-                    case SOVEREIGN_CONSORT -> gendered("sovereign_consort", gender);
-                    case SOVEREIGN_DOWAGER -> gendered("sovereign_dowager", gender);
-                    case HEIR_APPARENT -> "mcacapitals.dynamic.title.heir_apparent";
-                    case CROWN_HEIR -> gendered("crown_heir", gender);
-                    case ROYAL_CHILD -> gendered("royal_child", gender);
-                    case PRINCE_CONSORT -> gendered("prince_consort", gender);
-                    case DOWAGER_PRINCE -> gendered("dowager_prince", gender);
-                    case DUKE -> gendered("duke", gender);
-                    case DOWAGER_DUKE -> gendered("dowager_duke", gender);
-                    case LORD -> gendered("lord", gender);
-                    case KNIGHT -> gendered("knight", gender);
-                    case COMMONER -> "mcacapitals.dynamic.title.commoner";
-                }
-        );
+        String key = switch (title) {
+            case HIGH_SOVEREIGN -> gendered("high_sovereign", gender);
+            case SOVEREIGN -> gendered("sovereign", gender);
+            case SOVEREIGN_CONSORT -> gendered("sovereign_consort", gender);
+            case SOVEREIGN_DOWAGER -> gendered("sovereign_dowager", gender);
+            case HEIR_APPARENT -> "mcacapitals.dynamic.title.heir_apparent";
+            case CROWN_HEIR -> gendered("crown_heir", gender);
+            case ROYAL_CHILD -> gendered("royal_child", gender);
+            case PRINCE_CONSORT -> gendered("prince_consort", gender);
+            case DOWAGER_PRINCE -> gendered("dowager_prince", gender);
+            case DUKE -> gendered("duke", gender);
+            case DOWAGER_DUKE -> gendered("dowager_duke", gender);
+            case LORD -> gendered("lord", gender);
+            case KNIGHT -> gendered("knight", gender);
+            case COMMONER -> null;
+        };
+
+        return key == null
+                ? CapitalChronicleEntry.Argument.literal("")
+                : CapitalChronicleEntry.Argument.translatable(key);
     }
 
     public static CapitalChronicleEntry.Argument style(
@@ -121,9 +123,12 @@ public final class CapitalChronicleIdentitySnapshot {
         CapitalTitleOfficeIdentityResolver.OfficeIdentity office =
                 CapitalTitleOfficeIdentityResolver.resolveOffice(level, capital, entityId);
 
+        if (office == CapitalTitleOfficeIdentityResolver.OfficeIdentity.NONE) {
+            return CapitalChronicleEntry.Argument.literal("");
+        }
+
         return CapitalChronicleEntry.Argument.translatable(
                 switch (office) {
-                    case NONE -> "mcacapitals.dynamic.office.none";
                     case HAND -> handOfficeKey(level, capital);
                     case GRAND_MAESTER -> "mcacapitals.dynamic.office.grand_maester";
                     case COURT_HERALD -> "mcacapitals.dynamic.office.court_herald";
@@ -132,6 +137,7 @@ public final class CapitalChronicleIdentitySnapshot {
                     case MASTER_OF_LAWS -> "mcacapitals.dynamic.office.master_of_laws";
                     case ROYAL_GUARD -> "mcacapitals.dynamic.office.royal_guard";
                     case AMBASSADOR -> "mcacapitals.dynamic.office.ambassador";
+                    case NONE -> throw new IllegalStateException("NONE handled before office translation");
                 }
         );
     }

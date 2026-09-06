@@ -27,25 +27,24 @@ public abstract class InteractionDialogueInitMessageMixin {
 
     @Inject(
             method = "receive(Lnet/minecraft/server/level/ServerPlayer;)V",
-            at = @At("HEAD"),
-            cancellable = true,
+            at = @At("RETURN"),
             remap = false,
             require = 0
     )
-    private void mcacapitals$promptUndeclaredPlayer(
+    private void mcacapitals$promptUndeclaredPlayerAfterDialogueInitialization(
             ServerPlayer player,
             CallbackInfo ci
     ) {
+        if (player == null) {
+            return;
+        }
+
         Entity entity = player.serverLevel().getEntity(villagerUUID);
         if (!(entity instanceof VillagerEntityMCA villager)
-                || !CapitalSovereignDeclarationPromptService.shouldPrompt(
-                player,
-                villager
-        )) {
+                || !CapitalSovereignDeclarationPromptService.shouldPrompt(player, villager)) {
             return;
         }
 
         CapitalSovereignDeclarationPromptService.openPrompt(player, villager);
-        ci.cancel();
     }
 }

@@ -175,7 +175,7 @@ public abstract class CapitalTitleResolverInterregnumMixin {
         }
 
         if (record.wasDeposition()) {
-            return Component.translatable("mcacapitals.dynamic.title.commoner");
+            return Component.empty();
         }
 
         return Component.translatable(

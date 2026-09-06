@@ -59,7 +59,10 @@ final class CapitalDialogueChronicleLogic {
                     ? parsed.type()
                     : classifyEvent(level, capital, parsed.text().getString());
             if (type == CapitalChronicleEventType.NONE) {
-                continue;
+                if (parsed.semantic()) {
+                    continue;
+                }
+                type = CapitalChronicleEventType.GENERIC_NOTABLE;
             }
 
             result.add(new CapitalDialogueEventModels.ChronicleEvent(

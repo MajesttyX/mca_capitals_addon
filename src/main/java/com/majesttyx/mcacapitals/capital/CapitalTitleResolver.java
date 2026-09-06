@@ -19,7 +19,7 @@ public class CapitalTitleResolver {
 
     public static Component getDisplayTitleComponent(ServerLevel level, CapitalRecord capital, UUID entityId) {
         if (entityId == null || capital == null) {
-            return Component.translatable("mcacapitals.dynamic.title.none");
+            return Component.empty();
         }
 
         ResolvedTitle resolved = resolveLocalTitle(level, capital, entityId);
@@ -79,7 +79,7 @@ public class CapitalTitleResolver {
 
     public static Component getDisplayTitleComponentForEntity(ServerLevel level, UUID entityId) {
         if (entityId == null) {
-            return Component.translatable("mcacapitals.dynamic.title.commoner");
+            return Component.empty();
         }
 
         ResolvedTitle best = null;
@@ -96,7 +96,7 @@ public class CapitalTitleResolver {
         }
 
         if (best == null) {
-            return Component.translatable("mcacapitals.dynamic.title.commoner");
+            return Component.empty();
         }
 
         return displayTitleComponent(level, best.capital(), entityId, best.id());
@@ -286,8 +286,7 @@ public class CapitalTitleResolver {
         boolean female = isFemaleForTitle(level, capital, entityId);
 
         return switch (titleId) {
-            case NONE -> Component.translatable("mcacapitals.dynamic.title.none");
-            case COMMONER -> Component.translatable("mcacapitals.dynamic.title.commoner");
+            case NONE, COMMONER -> Component.empty();
             case AMBASSADOR -> Component.translatable("mcacapitals.dynamic.office.ambassador");
             case KNIGHT, ROYAL_GUARD -> Component.translatable(
                     female

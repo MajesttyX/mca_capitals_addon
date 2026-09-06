@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.dialogue;
 
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,6 +14,11 @@ public final class CapitalDialogueSpeaker {
 
     public static void speakVillager(ServerPlayer player, Entity speaker, Component line) {
         if (player == null || line == null) {
+            return;
+        }
+
+        if (speaker instanceof VillagerEntityMCA villager) {
+            villager.sendChatMessage(line.copy(), player);
             return;
         }
 

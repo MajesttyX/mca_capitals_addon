@@ -77,7 +77,6 @@ public final class BirthIdentityService {
             boolean applied = applyInheritedIdentity(level, child, pending);
             if (applied) {
                 clearPendingBirthIdentity(child);
-                VillagerIdentitySyncService.syncToNearbyPlayers(level, child);
             }
             return applied;
         }
@@ -134,12 +133,7 @@ public final class BirthIdentityService {
             return false;
         }
 
-        boolean applied = applyInheritedIdentity(level, child, inherited);
-        if (applied) {
-            VillagerIdentitySyncService.syncToNearbyPlayers(level, child);
-        }
-
-        return applied;
+        return applyInheritedIdentity(level, child, inherited);
     }
 
     private static InheritedBirthIdentity resolveInheritedBirthIdentity(ServerLevel level, Entity firstParent, Entity secondParent) {

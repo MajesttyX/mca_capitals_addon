@@ -17,12 +17,17 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class VillagerIdentitySyncService {
 
     private static final double NEARBY_SYNC_RADIUS =
             64.0D;
+
+    private static final Set<UUID> IDENTITY_REPAIR_IN_PROGRESS =
+            ConcurrentHashMap.newKeySet();
 
     private VillagerIdentitySyncService() {
     }
@@ -335,38 +340,53 @@ public final class VillagerIdentitySyncService {
             ServerLevel level,
             Entity entity
     ) {
-        boolean repairedFromPlayerHouse =
-                PlayerHouseIdentityService
+        if (level == null
+                || entity == null
+                || !MCAIntegrationBridge.isMCAVillagerEntity(entity)) {
+            return;
+        }
+
+        UUID entityId = entity.getUUID();
+        if (!IDENTITY_REPAIR_IN_PROGRESS.add(entityId)) {
+            return;
+        }
+
+        try {
+            boolean repairedFromPlayerHouse =
+                    PlayerHouseIdentityService
+                            .repairFromParentsIfNeeded(
+                                    level,
+                                    entity
+                            );
+
+            boolean repairedFromBirth =
+                    repairedFromPlayerHouse
+                            || BirthIdentityService
+                            .repairFromParentsIfNeeded(
+                                    level,
+                                    entity
+                            );
+
+            if (!repairedFromBirth) {
+                VillagerIdentityService.ensureAssigned(
+                        level,
+                        entity
+                );
+
+                if (!PlayerHouseIdentityService
                         .repairFromParentsIfNeeded(
                                 level,
                                 entity
-                        );
-
-        boolean repairedFromBirth =
-                repairedFromPlayerHouse
-                        || BirthIdentityService
-                        .repairFromParentsIfNeeded(
-                                level,
-                                entity
-                        );
-
-        if (!repairedFromBirth) {
-            VillagerIdentityService.ensureAssigned(
-                    level,
-                    entity
-            );
-
-            if (!PlayerHouseIdentityService
-                    .repairFromParentsIfNeeded(
-                            level,
-                            entity
-                    )) {
-                BirthIdentityService
-                        .repairFromParentsIfNeeded(
-                                level,
-                                entity
-                        );
+                        )) {
+                    BirthIdentityService
+                            .repairFromParentsIfNeeded(
+                                    level,
+                                    entity
+                            );
+                }
             }
+        } finally {
+            IDENTITY_REPAIR_IN_PROGRESS.remove(entityId);
         }
     }
 
