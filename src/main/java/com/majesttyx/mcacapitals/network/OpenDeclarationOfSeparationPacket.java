@@ -11,25 +11,25 @@ import java.util.function.Supplier;
 
 public class OpenDeclarationOfSeparationPacket {
 
-    private final UUID targetId;
+    private final UUID authorizationToken;
     private final String targetName;
     private final String currentHouse;
     private final String currentHouseWords;
 
     public OpenDeclarationOfSeparationPacket(
-            UUID targetId,
+            UUID authorizationToken,
             String targetName,
             String currentHouse,
             String currentHouseWords
     ) {
-        this.targetId = targetId;
+        this.authorizationToken = authorizationToken;
         this.targetName = targetName == null ? "" : targetName;
         this.currentHouse = currentHouse == null ? "" : currentHouse;
         this.currentHouseWords = currentHouseWords == null ? "" : currentHouseWords;
     }
 
     public static void encode(OpenDeclarationOfSeparationPacket packet, FriendlyByteBuf buffer) {
-        buffer.writeUUID(packet.targetId);
+        buffer.writeUUID(packet.authorizationToken);
         buffer.writeUtf(packet.targetName);
         buffer.writeUtf(packet.currentHouse);
         buffer.writeUtf(packet.currentHouseWords);
@@ -52,7 +52,7 @@ public class OpenDeclarationOfSeparationPacket {
         context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
                 Dist.CLIENT,
                 () -> () -> DeclarationOfSeparationClient.open(
-                        packet.targetId,
+                        packet.authorizationToken,
                         packet.targetName,
                         packet.currentHouse,
                         packet.currentHouseWords

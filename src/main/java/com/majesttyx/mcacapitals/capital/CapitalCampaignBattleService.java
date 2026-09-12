@@ -526,6 +526,15 @@ final class CapitalCampaignBattleService {
             CapitalRecord attackingCapital,
             CapitalRecord defendingCapital
     ) {
+        if (CapitalCampaignCourtDecisionService.resolveIfChildSovereign(
+                level,
+                campaign,
+                attackingCapital,
+                defendingCapital
+        )) {
+            return;
+        }
+
         String defendingName =
                 CapitalDiplomaticAgreementText
                         .capitalName(

@@ -5,6 +5,8 @@ import com.majesttyx.mcacapitals.data.CapitalPlayerWarrantSavedData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.HashSet;
@@ -15,6 +17,16 @@ import java.util.UUID;
 public final class CapitalPlayerLegalHandler {
 
     private final Set<String> notifiedWantedEntries = new HashSet<>();
+
+    @SubscribeEvent
+    public void onServerStarted(ServerStartedEvent event) {
+        notifiedWantedEntries.clear();
+    }
+
+    @SubscribeEvent
+    public void onServerStopped(ServerStoppedEvent event) {
+        notifiedWantedEntries.clear();
+    }
 
     @SubscribeEvent
     public void onPlayerTick(TickEvent.PlayerTickEvent event) {

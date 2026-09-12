@@ -22,7 +22,7 @@ public class DecreeOfTheHouseScreen
     private static final int MUTED_COLOR = 0x625849;
     private static final int ERROR_COLOR = 0x9A2929;
 
-    private final UUID targetId;
+    private final UUID authorizationToken;
     private final boolean playerTarget;
     private final boolean houseFounded;
 
@@ -49,7 +49,7 @@ public class DecreeOfTheHouseScreen
                 )
         );
 
-        this.targetId = packet.targetId();
+        this.authorizationToken = packet.authorizationToken();
         this.playerTarget = packet.playerTarget();
         this.houseFounded =
                 packet.houseFounded()
@@ -229,11 +229,9 @@ public class DecreeOfTheHouseScreen
             }
         }
 
-        ModNetwork.CHANNEL.sendToServer(
+        ModNetwork.sendToServer(
                 new SubmitDecreeOfTheHousePacket(
-                        targetId,
-                        playerTarget,
-                        firstName,
+                        authorizationToken,
                         surnameValue,
                         houseFounded
                                 ? houseWordsValue

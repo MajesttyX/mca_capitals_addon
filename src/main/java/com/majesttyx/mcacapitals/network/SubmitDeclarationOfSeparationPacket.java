@@ -10,31 +10,34 @@ import java.util.function.Supplier;
 
 public class SubmitDeclarationOfSeparationPacket {
 
-    private final UUID targetId;
+    private static final int MAX_HOUSE_NAME_LENGTH = 20;
+    private static final int MAX_HOUSE_WORDS_LENGTH = 80;
+
+    private final UUID authorizationToken;
     private final String newHouseName;
     private final String houseWords;
 
     public SubmitDeclarationOfSeparationPacket(
-            UUID targetId,
+            UUID authorizationToken,
             String newHouseName,
             String houseWords
     ) {
-        this.targetId = targetId;
+        this.authorizationToken = authorizationToken;
         this.newHouseName = newHouseName == null ? "" : newHouseName;
         this.houseWords = houseWords == null ? "" : houseWords;
     }
 
     public static void encode(SubmitDeclarationOfSeparationPacket packet, FriendlyByteBuf buffer) {
-        buffer.writeUUID(packet.targetId);
-        buffer.writeUtf(packet.newHouseName);
-        buffer.writeUtf(packet.houseWords);
+        buffer.writeUUID(packet.authorizationToken);
+        buffer.writeUtf(packet.newHouseName, MAX_HOUSE_NAME_LENGTH);
+        buffer.writeUtf(packet.houseWords, MAX_HOUSE_WORDS_LENGTH);
     }
 
     public static SubmitDeclarationOfSeparationPacket decode(FriendlyByteBuf buffer) {
         return new SubmitDeclarationOfSeparationPacket(
                 buffer.readUUID(),
-                buffer.readUtf(),
-                buffer.readUtf()
+                buffer.readUtf(MAX_HOUSE_NAME_LENGTH),
+                buffer.readUtf(MAX_HOUSE_WORDS_LENGTH)
         );
     }
 
@@ -45,14 +48,27 @@ public class SubmitDeclarationOfSeparationPacket {
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
-            if (player != null) {
-                DeclarationOfSeparationService.foundNewHouse(
-                        player,
-                        packet.targetId,
-                        packet.newHouseName,
-                        packet.houseWords
-                );
+            if (player == null) {
+                return;
             }
+
+            PendingNetworkInteractionService.PendingInteraction authorization =
+                    PendingNetworkInteractionService.consume(
+                            player,
+                            PendingNetworkInteractionService.InteractionType.DECLARATION_OF_SEPARATION,
+                            packet.authorizationToken
+                    );
+
+            if (authorization == null) {
+                return;
+            }
+
+            DeclarationOfSeparationService.foundNewHouse(
+                    player,
+                    authorization.targetId(),
+                    packet.newHouseName,
+                    packet.houseWords
+            );
         });
         context.setPacketHandled(true);
     }

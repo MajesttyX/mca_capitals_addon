@@ -8,6 +8,7 @@ import com.majesttyx.mcacapitals.house.PlayerHouseService;
 import com.majesttyx.mcacapitals.item.ModItems;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenDecreeOfTheHousePacket;
+import com.majesttyx.mcacapitals.network.PendingNetworkInteractionService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -22,8 +23,8 @@ public final class DecreeOfTheHouseService {
     private DecreeOfTheHouseService() {
     }
 
-    public static OpenDecreeOfTheHousePacket createOpenPacket(ServerLevel level, Entity target) {
-        if (level == null || target == null || !MCAIntegrationBridge.isMCAVillagerEntity(target)) {
+    public static OpenDecreeOfTheHousePacket createOpenPacket(ServerLevel level, Entity target, UUID authorizationToken) {
+        if (level == null || target == null || authorizationToken == null || !MCAIntegrationBridge.isMCAVillagerEntity(target)) {
             return null;
         }
 
@@ -31,7 +32,7 @@ public final class DecreeOfTheHouseService {
         VillagerIdentityData identity = VillagerIdentityService.getIdentity(target);
 
         return new OpenDecreeOfTheHousePacket(
-                target.getUUID(),
+                authorizationToken,
                 false,
                 getDisplayFirstNameOnly(level, target),
                 identity.currentSurname(),
@@ -48,9 +49,18 @@ public final class DecreeOfTheHouseService {
 
         ServerLevel level = player.serverLevel();
         PlayerHouseRecord record = PlayerHouseService.get(level, player.getUUID());
+        UUID authorizationToken = PendingNetworkInteractionService.authorize(
+                player,
+                PendingNetworkInteractionService.InteractionType.DECREE_OF_THE_HOUSE,
+                player.getUUID(),
+                true
+        );
+        if (authorizationToken == null) {
+            return;
+        }
 
         ModNetwork.sendToPlayer(player, new OpenDecreeOfTheHousePacket(
-                player.getUUID(),
+                authorizationToken,
                 true,
                 player.getName().getString(),
                 record == null ? "" : record.getHouseName(),
@@ -64,7 +74,6 @@ public final class DecreeOfTheHouseService {
             ServerPlayer player,
             UUID targetId,
             boolean playerTarget,
-            String ignoredFirstName,
             String currentSurname,
             String houseWords
     ) {

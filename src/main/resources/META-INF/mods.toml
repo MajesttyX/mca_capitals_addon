@@ -26,7 +26,7 @@ side="BOTH"
 [[dependencies.${mod_id}]]
 modId="architectury"
 mandatory=true
-versionRange="[9.2.14,)"
+versionRange="${architectury_version_range}"
 ordering="AFTER"
 side="BOTH"
 

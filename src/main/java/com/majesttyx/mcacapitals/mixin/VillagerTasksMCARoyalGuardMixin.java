@@ -2,7 +2,6 @@ package com.majesttyx.mcacapitals.mixin;
 
 import com.google.common.collect.ImmutableList;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
-import com.majesttyx.mcacapitals.capital.CapitalRecord;
 import forge.net.conczin.mca.entity.VillagerEntityMCA;
 import forge.net.conczin.mca.entity.ai.brain.VillagerTasksMCA;
 import net.minecraft.world.entity.ai.Brain;
@@ -13,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
-import java.util.UUID;
 
 @Mixin(value = VillagerTasksMCA.class, remap = false)
 public abstract class VillagerTasksMCARoyalGuardMixin {
@@ -24,7 +22,7 @@ public abstract class VillagerTasksMCARoyalGuardMixin {
             Brain<VillagerEntityMCA> inputBrain,
             CallbackInfoReturnable<Brain<VillagerEntityMCA>> cir
     ) {
-        if (villager == null || !isRoyalGuard(villager.getUUID())) {
+        if (villager == null || !CapitalManager.isRoyalGuard(villager.getUUID())) {
             return;
         }
 
@@ -47,20 +45,6 @@ public abstract class VillagerTasksMCARoyalGuardMixin {
                 villager.level().getDayTime(),
                 villager.level().getGameTime()
         );
-    }
-
-    private static boolean isRoyalGuard(UUID villagerId) {
-        if (villagerId == null) {
-            return false;
-        }
-
-        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
-            if (capital != null && capital.isRoyalGuard(villagerId)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

@@ -3,6 +3,7 @@ package com.majesttyx.mcacapitals.item;
 import com.majesttyx.mcacapitals.identity.DecreeOfTheHouseService;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenDecreeOfTheHousePacket;
+import com.majesttyx.mcacapitals.network.PendingNetworkInteractionService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -16,6 +17,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+
+import java.util.UUID;
 
 public class DecreeOfTheHouseHandler {
 
@@ -66,8 +69,23 @@ public class DecreeOfTheHouseHandler {
             return true;
         }
 
-        OpenDecreeOfTheHousePacket packet = DecreeOfTheHouseService.createOpenPacket(level, target);
+        UUID authorizationToken = PendingNetworkInteractionService.authorize(
+                serverPlayer,
+                PendingNetworkInteractionService.InteractionType.DECREE_OF_THE_HOUSE,
+                target.getUUID(),
+                false
+        );
+        OpenDecreeOfTheHousePacket packet = DecreeOfTheHouseService.createOpenPacket(
+                level,
+                target,
+                authorizationToken
+        );
         if (packet == null) {
+            PendingNetworkInteractionService.consume(
+                    serverPlayer,
+                    PendingNetworkInteractionService.InteractionType.DECREE_OF_THE_HOUSE,
+                    authorizationToken
+            );
             player.sendSystemMessage(Component.translatable("mcacapitals.system.decree_of_the_house_handler.the_records_for_that_villager_could_not_be_opened"));
             return true;
         }

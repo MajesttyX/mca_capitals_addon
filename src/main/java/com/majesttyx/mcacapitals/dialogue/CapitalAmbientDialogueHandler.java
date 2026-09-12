@@ -26,6 +26,8 @@ import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.ArrayDeque;
@@ -58,6 +60,16 @@ public class CapitalAmbientDialogueHandler {
     private MinecraftServer activeServer;
 
     @SubscribeEvent
+    public void onServerStarted(ServerStartedEvent event) {
+        clearRuntimeState();
+    }
+
+    @SubscribeEvent
+    public void onServerStopped(ServerStoppedEvent event) {
+        clearRuntimeState();
+    }
+
+    @SubscribeEvent
     public void onLevelTick(TickEvent.LevelTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
             return;
@@ -68,9 +80,8 @@ public class CapitalAmbientDialogueHandler {
         }
 
         if (activeServer != level.getServer()) {
+            clearRuntimeState();
             activeServer = level.getServer();
-            capitalStates.clear();
-            participantStates.clear();
         }
 
         long gameTime = level.getGameTime();
@@ -88,6 +99,12 @@ public class CapitalAmbientDialogueHandler {
         for (CapitalRecord capital : CapitalManager.getAllCapitalsSnapshot().values()) {
             tickCapital(level, capital, gameTime);
         }
+    }
+
+    private void clearRuntimeState() {
+        activeServer = null;
+        capitalStates.clear();
+        participantStates.clear();
     }
 
     private void tickCapital(ServerLevel level, CapitalRecord capital, long gameTime) {

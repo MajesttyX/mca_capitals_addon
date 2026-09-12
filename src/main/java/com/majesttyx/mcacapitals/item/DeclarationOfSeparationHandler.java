@@ -9,6 +9,7 @@ import com.majesttyx.mcacapitals.identity.VillagerIdentityData;
 import com.majesttyx.mcacapitals.identity.VillagerIdentityService;
 import com.majesttyx.mcacapitals.network.ModNetwork;
 import com.majesttyx.mcacapitals.network.OpenDeclarationOfSeparationPacket;
+import com.majesttyx.mcacapitals.network.PendingNetworkInteractionService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -21,6 +22,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+
+import java.util.UUID;
 
 public class DeclarationOfSeparationHandler {
 
@@ -123,10 +126,20 @@ public class DeclarationOfSeparationHandler {
             return true;
         }
 
+        UUID authorizationToken = PendingNetworkInteractionService.authorize(
+                serverPlayer,
+                PendingNetworkInteractionService.InteractionType.DECLARATION_OF_SEPARATION,
+                target.getUUID(),
+                false
+        );
+        if (authorizationToken == null) {
+            return true;
+        }
+
         ModNetwork.sendToPlayer(
                 serverPlayer,
                 new OpenDeclarationOfSeparationPacket(
-                        target.getUUID(),
+                        authorizationToken,
                         target.getName().getString(),
                         identity.houseName(),
                         identity.houseWords()

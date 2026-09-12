@@ -4,13 +4,16 @@ import com.majesttyx.mcacapitals.MCACapitals;
 import net.minecraft.world.entity.npc.Villager;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,20 +36,40 @@ final class MCAReflectionHelper {
     };
 
     private static final Set<String> WARNED_KEYS = ConcurrentHashMap.newKeySet();
+    private static final ConcurrentMap<String, Class<?>> CLASS_CACHE = new ConcurrentHashMap<>();
+    private static final Set<String> MISSING_CLASS_KEYS = ConcurrentHashMap.newKeySet();
+    private static final ConcurrentMap<MethodKey, Method> METHOD_CACHE = new ConcurrentHashMap<>();
+    private static final Set<MethodKey> MISSING_METHOD_KEYS = ConcurrentHashMap.newKeySet();
 
     private MCAReflectionHelper() {
     }
 
     static Class<?> resolveAnyClass(String[] classNames) {
+        if (classNames == null || classNames.length == 0) {
+            return null;
+        }
+
+        String cacheKey = String.join("|", classNames);
+        Class<?> cached = CLASS_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+        if (MISSING_CLASS_KEYS.contains(cacheKey)) {
+            return null;
+        }
+
         for (String className : classNames) {
             try {
-                return Class.forName(className);
+                Class<?> resolved = Class.forName(className);
+                Class<?> existing = CLASS_CACHE.putIfAbsent(cacheKey, resolved);
+                return existing == null ? resolved : existing;
             } catch (Throwable ignored) {
             }
         }
 
+        MISSING_CLASS_KEYS.add(cacheKey);
         warnOnce(
-                "resolveAnyClass:" + String.join("|", classNames),
+                "resolveAnyClass:" + cacheKey,
                 "Could not resolve any MCA class from candidates: {}",
                 String.join(", ", classNames)
         );
@@ -58,8 +81,12 @@ final class MCAReflectionHelper {
             return null;
         }
 
+        Method method = resolvePublicMethod(targetClass, methodName, parameterTypes);
+        if (method == null) {
+            return null;
+        }
+
         try {
-            Method method = targetClass.getMethod(methodName, parameterTypes);
             return method.invoke(null, args);
         } catch (Throwable t) {
             warnOnce(
@@ -78,8 +105,12 @@ final class MCAReflectionHelper {
             return null;
         }
 
+        Method method = resolvePublicMethod(target.getClass(), methodName, new Class<?>[0]);
+        if (method == null) {
+            return null;
+        }
+
         try {
-            Method method = target.getClass().getMethod(methodName);
             return method.invoke(target);
         } catch (Throwable t) {
             warnOnce(
@@ -98,8 +129,12 @@ final class MCAReflectionHelper {
             return null;
         }
 
+        Method method = resolvePublicMethod(target.getClass(), methodName, parameterTypes);
+        if (method == null) {
+            return null;
+        }
+
         try {
-            Method method = target.getClass().getMethod(methodName, parameterTypes);
             return method.invoke(target, args);
         } catch (Throwable t) {
             warnOnce(
@@ -252,6 +287,57 @@ final class MCAReflectionHelper {
         if (WARNED_KEYS.add(key)) {
             MCACapitals.LOGGER.warn("[MCACapitals] " + message, args);
         }
+    }
+
+    private static Method resolvePublicMethod(
+            Class<?> targetClass,
+            String methodName,
+            Class<?>[] parameterTypes
+    ) {
+        if (targetClass == null || methodName == null || methodName.isBlank()) {
+            return null;
+        }
+
+        Class<?>[] resolvedParameterTypes = parameterTypes == null
+                ? new Class<?>[0]
+                : parameterTypes;
+        MethodKey key = new MethodKey(
+                targetClass,
+                methodName,
+                Arrays.asList(resolvedParameterTypes.clone())
+        );
+
+        Method cached = METHOD_CACHE.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        if (MISSING_METHOD_KEYS.contains(key)) {
+            return null;
+        }
+
+        try {
+            Method resolved = targetClass.getMethod(methodName, resolvedParameterTypes);
+            Method existing = METHOD_CACHE.putIfAbsent(key, resolved);
+            return existing == null ? resolved : existing;
+        } catch (Throwable t) {
+            MISSING_METHOD_KEYS.add(key);
+            warnOnce(
+                    "resolveMethod:" + targetClass.getName() + "#" + methodName + ":" + parameterSignature(resolvedParameterTypes),
+                    "Could not resolve reflection method: {}#{}{} ({})",
+                    targetClass.getName(),
+                    methodName,
+                    parameterSignature(resolvedParameterTypes),
+                    t.toString()
+            );
+            return null;
+        }
+    }
+
+    private record MethodKey(
+            Class<?> targetClass,
+            String methodName,
+            List<Class<?>> parameterTypes
+    ) {
     }
 
     private static String parameterSignature(Class<?>[] parameterTypes) {

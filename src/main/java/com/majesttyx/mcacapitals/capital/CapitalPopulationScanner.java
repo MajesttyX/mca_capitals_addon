@@ -45,20 +45,23 @@ public class CapitalPopulationScanner {
         ServerLevel level =
                 (ServerLevel) event.level;
 
-        CapitalResidentScanner.clearCache(level);
+        try (CapitalDataAccess.DirtyBatch ignored =
+                     CapitalDataAccess.batch(level)) {
+            CapitalResidentScanner.clearCache(level);
 
-        boolean changed = false;
+            boolean changed = false;
 
-        changed |= normalizeCapitalsPhase(level);
-        changed |= scanForNewCapitals(level);
+            changed |= normalizeCapitalsPhase(level);
+            changed |= scanForNewCapitals(level);
 
-        markDirtyIfNeeded(level, changed);
+            markDirtyIfNeeded(level, changed);
 
-        for (CapitalRecord capital :
-                CapitalManager
-                        .getAllCapitalsSnapshot()
-                        .values()) {
-            processCapital(level, capital);
+            for (CapitalRecord capital :
+                    CapitalManager
+                            .getAllCapitalsSnapshot()
+                            .values()) {
+                processCapital(level, capital);
+            }
         }
     }
 
@@ -274,6 +277,14 @@ public class CapitalPopulationScanner {
             ServerLevel level,
             CapitalRecord capital
     ) {
+        if (capital != null
+                && CapitalWartimeSuccessionService.isInInterregnum(
+                level,
+                capital.getCapitalId()
+        )) {
+            return;
+        }
+
         if (capital.getSovereign() == null
                 && !capital.isMonarchyRejected()) {
             if (issueRoyalCharterIfNeeded(
@@ -289,6 +300,14 @@ public class CapitalPopulationScanner {
             ServerLevel level,
             CapitalRecord capital
     ) {
+        if (CapitalWartimeSuccessionService.handleIfNeeded(
+                level,
+                capital
+        )) {
+            CapitalDataAccess.markDirty(level);
+            return true;
+        }
+
         if (capital.getSovereign() == null) {
             return false;
         }

@@ -1,7 +1,6 @@
 package com.majesttyx.mcacapitals.capital;
 
 import com.majesttyx.mcacapitals.data.CapitalCampaignDataAccess;
-import com.majesttyx.mcacapitals.data.CapitalCampaignPhase;
 import com.majesttyx.mcacapitals.data.CapitalCampaignRecord;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
 import forge.net.conczin.mca.entity.VillagerEntityMCA;
@@ -267,26 +266,13 @@ public final class CapitalCampaignCombatService {
             return null;
         }
 
-        for (CapitalCampaignRecord campaign :
-                CapitalCampaignDataAccess
-                        .getActiveCampaigns(level)) {
-            if (campaign == null
-                    || campaign.getPhase()
-                    != CapitalCampaignPhase.ACTIVE) {
-                continue;
-            }
-
-            if (campaign.containsAttacker(villagerId)
-                    || campaign.containsDefender(villagerId)
-                    || isCrownDefender(
-                    campaign,
-                    villagerId
-            )) {
-                return campaign;
-            }
-        }
-
-        return null;
+        return CapitalCampaignDataAccess
+                .findActiveCombatCampaign(
+                        level,
+                        campaign -> campaign.containsAttacker(villagerId)
+                                || campaign.containsDefender(villagerId)
+                                || isCrownDefender(campaign, villagerId)
+                );
     }
 
     private static CapitalCampaignRecord findOpposingCampaign(
@@ -301,43 +287,43 @@ public final class CapitalCampaignCombatService {
             return null;
         }
 
-        for (CapitalCampaignRecord campaign :
-                CapitalCampaignDataAccess
-                        .getActiveCampaigns(level)) {
-            if (campaign == null
-                    || campaign.getPhase()
-                    != CapitalCampaignPhase.ACTIVE) {
-                continue;
-            }
+        return CapitalCampaignDataAccess
+                .findActiveCombatCampaign(
+                        level,
+                        campaign -> isOpposingInCampaign(
+                                campaign,
+                                firstId,
+                                secondId
+                        )
+                );
+    }
 
-            boolean firstAttacker =
-                    campaign.containsAttacker(firstId);
-
-            boolean secondAttacker =
-                    campaign.containsAttacker(secondId);
-
-            if (firstAttacker == secondAttacker) {
-                continue;
-            }
-
-            UUID defenderId = firstAttacker
-                    ? secondId
-                    : firstId;
-
-            if (campaign.containsDefender(defenderId)) {
-                return campaign;
-            }
-
-            if (!campaign.isCrownRallyPending()
-                    && isCrownDefender(
-                    campaign,
-                    defenderId
-            )) {
-                return campaign;
-            }
+    private static boolean isOpposingInCampaign(
+            CapitalCampaignRecord campaign,
+            UUID firstId,
+            UUID secondId
+    ) {
+        if (campaign == null
+                || firstId == null
+                || secondId == null
+                || firstId.equals(secondId)) {
+            return false;
         }
 
-        return null;
+        boolean firstAttacker = campaign.containsAttacker(firstId);
+        boolean secondAttacker = campaign.containsAttacker(secondId);
+
+        if (firstAttacker == secondAttacker) {
+            return false;
+        }
+
+        UUID defenderId = firstAttacker ? secondId : firstId;
+        if (campaign.containsDefender(defenderId)) {
+            return true;
+        }
+
+        return !campaign.isCrownRallyPending()
+                && isCrownDefender(campaign, defenderId);
     }
 
     private static boolean isCrownDefender(

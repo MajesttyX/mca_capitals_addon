@@ -2,8 +2,8 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    id 'org.spongepowered.mixin' version '0.7.+'
+    id 'net.minecraftforge.gradle' version '6.0.35'
+    id 'org.spongepowered.mixin' version '0.7.38'
 }
 
 version = mod_version
@@ -65,14 +65,8 @@ mixin {
 }
 
 repositories {
-    mavenLocal()
-
     maven {
         url = "https://maven.architectury.dev/"
-    }
-
-    maven {
-        url = "https://maven.conczin.net/Artifacts"
     }
 
     maven {
@@ -110,6 +104,8 @@ tasks.named('processResources', ProcessResources).configure {
             forge_version          : forge_version,
             forge_version_range    : forge_version_range,
             loader_version_range   : loader_version_range,
+            architectury_version   : architectury_version,
+            architectury_version_range: architectury_version_range,
             mca_version            : mca_version,
             mca_version_range      : mca_version_range,
             mod_id                 : mod_id,
@@ -135,8 +131,7 @@ tasks.named('jar', Jar).configure {
                 'Specification-Version'   : '1',
                 'Implementation-Title'    : project.name,
                 'Implementation-Version'  : project.jar.archiveVersion,
-                'Implementation-Vendor'   : mod_authors,
-                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+                'Implementation-Vendor'   : mod_authors
         ])
     }
 
@@ -155,6 +150,161 @@ publishing {
             url "file://${project.projectDir}/mcmodsrepo"
         }
     }
+}
+
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+// Build-only guardrails for the exact Forge/Minecraft/MCA target of this branch.
+// These checks validate implementation contracts without changing runtime gameplay.
+def supportedEnvironment = [
+        minecraft_version      : '1.20.1',
+        minecraft_version_range: '[1.20.1]',
+        forge_version          : '47.4.20',
+        forge_version_range    : '[47.4.20]',
+        mca_version            : '7.7.1-alpha.3+1.20.1',
+        mca_version_range      : '[7.7.1-alpha.3+1.20.1]'
+]
+
+tasks.register('verifySupportedEnvironment') {
+    group = 'verification'
+    description = 'Verifies that this Forge branch still targets its audited Minecraft, Forge, and MCA versions.'
+
+    doLast {
+        supportedEnvironment.each { key, expected ->
+            def actual = project.findProperty(key)?.toString()
+            if (actual != expected) {
+                throw new GradleException("Unsupported ${key}: expected '${expected}', found '${actual}'.")
+            }
+        }
+
+        def expectedJavaHome = 'C:/Program Files/Eclipse Adoptium/jdk-17.0.18.8-hotspot'
+        def configuredJavaHome = project.findProperty('org.gradle.java.home')?.toString()
+        if (configuredJavaHome != expectedJavaHome) {
+            throw new GradleException("org.gradle.java.home must remain pinned to the required Java 17 JDK: '${expectedJavaHome}'. Found '${configuredJavaHome}'.")
+        }
+
+        def wrapperText = file('gradle/wrapper/gradle-wrapper.properties').getText('UTF-8')
+        if (!wrapperText.contains('distributionUrl=https\\://services.gradle.org/distributions/gradle-8.8-bin.zip')) {
+            throw new GradleException('Gradle wrapper must remain pinned to Gradle 8.8 for this baseline.')
+        }
+        if (!wrapperText.contains('distributionSha256Sum=a4b4158601f8636cdeeab09bd76afb640030bb5b144aafe261a5e8af027dc612')) {
+            throw new GradleException('Gradle 8.8 wrapper checksum is missing or unexpected.')
+        }
+
+        byte[] gradlewBytes = file('gradlew').bytes
+        for (int i = 0; i + 1 < gradlewBytes.length; i++) {
+            if (gradlewBytes[i] == 13 && gradlewBytes[i + 1] == 10) {
+                throw new GradleException('gradlew must use LF line endings so it runs on Unix/Linux hosts and CI.')
+            }
+        }
+    }
+}
+
+tasks.register('verifyRegressionBaseline') {
+    group = 'verification'
+    description = 'Checks non-gameplay contracts established by the pre-Ambitions hardening passes.'
+
+    doLast {
+        def networkFile = file('src/main/java/com/majesttyx/mcacapitals/network/ModNetwork.java')
+        def networkText = networkFile.getText('UTF-8')
+        if (!networkText.contains('private static final String PROTOCOL_VERSION = "2";')) {
+            throw new GradleException('Capitals network protocol baseline must remain version 2 unless the packet schema is intentionally versioned again.')
+        }
+        if (networkText.contains('nextId')) {
+            throw new GradleException('Packet registration IDs must remain explicit; registration-order IDs are not allowed.')
+        }
+
+        def expectedPacketIds = [
+                OPEN_CAPITAL_CHRONICLE             : 0,
+                OPEN_AMBASSADOR_COMMUNICATION      : 1,
+                OPEN_BETROTHAL_SELECTION            : 2,
+                OPEN_ACCUSATION_SELECTION           : 3,
+                OPEN_SEALED_PURSE_CASE_SELECTION   : 4,
+                OPEN_ROYAL_CHARTER_DECISION        : 5,
+                OPEN_PLAYER_HOUSE_SETUP             : 6,
+                OPEN_DECREE_OF_THE_HOUSE            : 7,
+                SYNC_VILLAGER_IDENTITY              : 8,
+                SYNC_BLUEPRINT_AUTHORITY            : 9,
+                SUBMIT_DECREE_OF_THE_HOUSE          : 10,
+                OPEN_DECLARATION_OF_SEPARATION      : 11,
+                SUBMIT_DECLARATION_OF_SEPARATION    : 12
+        ]
+        def seenPacketIds = [:]
+        expectedPacketIds.each { name, id ->
+            def matcher = networkText =~ /private static final int ${name} = (\d+);/
+            if (!matcher.find()) {
+                throw new GradleException("Missing explicit packet ID constant ${name}.")
+            }
+            def actualId = matcher.group(1) as int
+            if (actualId != id) {
+                throw new GradleException("Packet ${name} moved from stable ID ${id} to ${actualId}.")
+            }
+            if (seenPacketIds.containsKey(actualId)) {
+                throw new GradleException("Duplicate network packet ID ${actualId}: ${seenPacketIds[actualId]} and ${name}.")
+            }
+            seenPacketIds[actualId] = name
+        }
+
+        def legacyFiles = [
+                'src/main/java/com/majesttyx/mcacapitals/data/NobleSavedData.java',
+                'src/main/java/com/majesttyx/mcacapitals/dialogue/CapitalDialogueActionRegistrar.java',
+                'src/main/java/com/majesttyx/mcacapitals/marriage/PlayerMarriageTitleResolver.java',
+                'src/main/java/com/majesttyx/mcacapitals/nobility/NobleManager.java',
+                'src/main/java/com/majesttyx/mcacapitals/nobility/NobleRecord.java',
+                'src/main/java/com/majesttyx/mcacapitals/nobility/TitleAssignmentService.java',
+                'src/main/java/com/majesttyx/mcacapitals/succession/SuccessionService.java',
+                'src/main/java/com/majesttyx/mcacapitals/util/GenderHelper.java'
+        ]
+        legacyFiles.each { path ->
+            if (file(path).exists()) {
+                throw new GradleException("Removed legacy implementation returned: ${path}")
+            }
+        }
+
+        def selfMixinNames = [
+                'CapitalPopulationScannerInterregnumMixin',
+                'CapitalSuccessionServiceInterregnumMixin',
+                'CapitalTitleResolverInterregnumMixin',
+                'CapitalCampaignChildSovereignDecisionMixin'
+        ]
+        def mixinConfigFile = file('src/main/resources/mcacapitals.mixins.json')
+        def mixinConfigText = mixinConfigFile.getText('UTF-8')
+        selfMixinNames.each { name ->
+            if (mixinConfigText.contains(name) || file("src/main/java/com/majesttyx/mcacapitals/mixin/${name}.java").exists()) {
+                throw new GradleException("Capitals-owned self-mixin returned: ${name}")
+            }
+        }
+
+        def jsonSlurper = new groovy.json.JsonSlurper()
+        fileTree('src/main/resources') {
+            include '**/*.json'
+        }.files.each { jsonFile ->
+            try {
+                jsonSlurper.parse(jsonFile, 'UTF-8')
+            } catch (Exception ex) {
+                throw new GradleException("Invalid JSON resource: ${project.relativePath(jsonFile)}", ex)
+            }
+        }
+
+        def mixinConfig = jsonSlurper.parse(mixinConfigFile, 'UTF-8')
+        def configuredMixins = []
+        configuredMixins.addAll((mixinConfig.mixins ?: []) as Collection)
+        configuredMixins.addAll((mixinConfig.client ?: []) as Collection)
+        configuredMixins.each { mixinName ->
+            def source = file("src/main/java/com/majesttyx/mcacapitals/mixin/${mixinName}.java")
+            if (!source.exists()) {
+                throw new GradleException("Mixin config references missing source: ${mixinName}.java")
+            }
+        }
+    }
+}
+
+tasks.named('check').configure {
+    dependsOn tasks.named('verifySupportedEnvironment')
+    dependsOn tasks.named('verifyRegressionBaseline')
 }
 
 tasks.withType(JavaCompile).configureEach {

@@ -23,6 +23,10 @@ final class MCAPlayerBridge {
     private MCAPlayerBridge() {
     }
 
+    static void clearRuntimeState() {
+        LOGGED_PLAYER_GENDER_RESOLUTION.clear();
+    }
+
     static Optional<Integer> getLastSeenVillageId(ServerLevel level, ServerPlayer player) {
         if (level == null || player == null) {
             return Optional.empty();

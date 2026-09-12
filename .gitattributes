@@ -1,5 +1,22 @@
-# Disable autocrlf on generated files, they always generate with LF
-# Add any extra files or paths here to make git stop saying they
-# are changed when only line endings change.
+# Normalize source/build text files so cross-platform checkouts do not create noisy diffs.
+* text=auto
+
+# Unix launchers must stay LF or /bin/sh will reject the shebang.
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Windows command scripts remain native CRLF.
+*.bat text eol=crlf
+
+# Project source/config text is normalized to LF.
+*.gradle text eol=lf
+*.properties text eol=lf
+*.java text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.mcmeta text eol=lf
+*.md text eol=lf
+
+# Generated resource caches are also normalized.
 src/generated/**/.cache/cache text eol=lf
 src/generated/**/*.json text eol=lf

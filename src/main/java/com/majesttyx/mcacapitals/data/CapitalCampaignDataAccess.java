@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 public final class CapitalCampaignDataAccess {
 
@@ -81,6 +82,28 @@ public final class CapitalCampaignDataAccess {
                 && get(level).removeCampaign(
                 campaignId
         );
+    }
+
+    public static CapitalCampaignRecord getActiveCombatCampaignForParticipant(
+            ServerLevel level,
+            UUID villagerId
+    ) {
+        if (level == null || villagerId == null) {
+            return null;
+        }
+
+        return get(level).getActiveCombatCampaignForParticipant(villagerId);
+    }
+
+    public static CapitalCampaignRecord findActiveCombatCampaign(
+            ServerLevel level,
+            Predicate<CapitalCampaignRecord> predicate
+    ) {
+        if (level == null || predicate == null) {
+            return null;
+        }
+
+        return get(level).findActiveCombatCampaign(predicate);
     }
 
     public static List<CapitalCampaignRecord>

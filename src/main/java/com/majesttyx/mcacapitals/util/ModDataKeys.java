@@ -19,10 +19,5 @@ public final class ModDataKeys {
     public static final String BOOK_GENERATION = "generation";
     public static final String BOOK_PAGES = "pages";
 
-    public static final String NOBLES = "Nobles";
-    public static final String DIRECT_TITLE = "DirectTitle";
-    public static final String TITLE_GRANTED_BY_MARRIAGE = "TitleGrantedByMarriage";
-    public static final String SUCCESSION_ORDER = "SuccessionOrder";
-
     public static final String MCA_DATA_KEY = "MCAData";
 }

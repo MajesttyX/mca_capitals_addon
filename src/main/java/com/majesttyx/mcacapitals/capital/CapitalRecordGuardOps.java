@@ -31,6 +31,7 @@ final class CapitalRecordGuardOps {
         if (id != null) {
             CapitalRecordMembers.putMember(record.guard.royalGuards, record.guard.royalGuardFemale, id, female);
             record.guard.royalGuardLiege = liege;
+            CapitalManager.invalidateRoyalGuardIndex();
         }
     }
 
@@ -40,6 +41,7 @@ final class CapitalRecordGuardOps {
             record.guard.royalGuardPatrolling.remove(id);
             record.guard.royalGuardPatrolAnchors.remove(id);
             record.guard.royalGuardDutyModes.remove(id);
+            CapitalManager.invalidateRoyalGuardIndex();
         }
     }
 

@@ -24,23 +24,24 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
     private static final String KEY_REMAINING_TICKS = "RemainingTicks";
     private static final String KEY_CASE_KEY = "CaseKey";
 
-    private final Map<RouteKey, LeaveOrder> leaveOrders = new LinkedHashMap<>();
-    private final Set<RouteKey> warrants = new LinkedHashSet<>();
-    private final Map<RouteKey, Long> sentences = new LinkedHashMap<>();
+    private final Map<UUID, LinkedHashMap<UUID, LeaveOrder>> leaveOrdersByPlayer =
+            new LinkedHashMap<>();
+    private final Map<UUID, LinkedHashSet<UUID>> warrantsByPlayer =
+            new LinkedHashMap<>();
+    private final Map<UUID, LinkedHashMap<UUID, Long>> sentencesByPlayer =
+            new LinkedHashMap<>();
     private final Set<String> penalizedCases = new LinkedHashSet<>();
 
     public LeaveOrder getLeaveOrder(UUID playerId, UUID capitalId) {
-        return leaveOrders.get(new RouteKey(playerId, capitalId));
+        Map<UUID, LeaveOrder> orders = leaveOrdersByPlayer.get(playerId);
+        return orders == null ? null : orders.get(capitalId);
     }
 
     public Map<UUID, LeaveOrder> getLeaveOrders(UUID playerId) {
-        Map<UUID, LeaveOrder> result = new LinkedHashMap<>();
-        for (Map.Entry<RouteKey, LeaveOrder> entry : leaveOrders.entrySet()) {
-            if (entry.getKey().playerId().equals(playerId)) {
-                result.put(entry.getKey().capitalId(), entry.getValue());
-            }
-        }
-        return result;
+        Map<UUID, LeaveOrder> orders = leaveOrdersByPlayer.get(playerId);
+        return orders == null || orders.isEmpty()
+                ? Map.of()
+                : new LinkedHashMap<>(orders);
     }
 
     public void setLeaveOrder(
@@ -52,21 +53,32 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
         if (playerId == null || capitalId == null) {
             return;
         }
-        leaveOrders.put(
-                new RouteKey(playerId, capitalId),
-                new LeaveOrder(Math.max(0L, remainingTicks), caseKey == null ? "" : caseKey)
-        );
+
+        leaveOrdersByPlayer
+                .computeIfAbsent(playerId, ignored -> new LinkedHashMap<>())
+                .put(
+                        capitalId,
+                        new LeaveOrder(
+                                Math.max(0L, remainingTicks),
+                                caseKey == null ? "" : caseKey
+                        )
+                );
         setDirty();
     }
 
     public boolean updateLeaveOrder(UUID playerId, UUID capitalId, long remainingTicks) {
-        RouteKey key = new RouteKey(playerId, capitalId);
-        LeaveOrder existing = leaveOrders.get(key);
+        LinkedHashMap<UUID, LeaveOrder> orders = leaveOrdersByPlayer.get(playerId);
+        if (orders == null) {
+            return false;
+        }
+
+        LeaveOrder existing = orders.get(capitalId);
         if (existing == null) {
             return false;
         }
-        leaveOrders.put(
-                key,
+
+        orders.put(
+                capitalId,
                 new LeaveOrder(Math.max(0L, remainingTicks), existing.caseKey())
         );
         setDirty();
@@ -74,7 +86,7 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
     }
 
     public boolean clearLeaveOrder(UUID playerId, UUID capitalId) {
-        if (leaveOrders.remove(new RouteKey(playerId, capitalId)) != null) {
+        if (removeNestedValue(leaveOrdersByPlayer, playerId, capitalId)) {
             setDirty();
             return true;
         }
@@ -82,24 +94,25 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
     }
 
     public boolean hasWarrant(UUID playerId, UUID capitalId) {
-        return warrants.contains(new RouteKey(playerId, capitalId));
+        Set<UUID> warrants = warrantsByPlayer.get(playerId);
+        return warrants != null && warrants.contains(capitalId);
     }
 
     public Set<UUID> getWarrantCapitals(UUID playerId) {
-        Set<UUID> result = new LinkedHashSet<>();
-        for (RouteKey key : warrants) {
-            if (key.playerId().equals(playerId)) {
-                result.add(key.capitalId());
-            }
-        }
-        return result;
+        Set<UUID> warrants = warrantsByPlayer.get(playerId);
+        return warrants == null || warrants.isEmpty()
+                ? Set.of()
+                : new LinkedHashSet<>(warrants);
     }
 
     public boolean issueWarrant(UUID playerId, UUID capitalId) {
         if (playerId == null || capitalId == null) {
             return false;
         }
-        if (warrants.add(new RouteKey(playerId, capitalId))) {
+
+        if (warrantsByPlayer
+                .computeIfAbsent(playerId, ignored -> new LinkedHashSet<>())
+                .add(capitalId)) {
             setDirty();
             return true;
         }
@@ -107,10 +120,9 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
     }
 
     public boolean clearWarrant(UUID playerId, UUID capitalId) {
-        RouteKey key = new RouteKey(playerId, capitalId);
-        boolean changed = warrants.remove(key);
-        changed |= sentences.remove(key) != null;
-        changed |= leaveOrders.remove(key) != null;
+        boolean changed = removeNestedSetValue(warrantsByPlayer, playerId, capitalId);
+        changed |= removeNestedValue(sentencesByPlayer, playerId, capitalId);
+        changed |= removeNestedValue(leaveOrdersByPlayer, playerId, capitalId);
         if (changed) {
             setDirty();
         }
@@ -118,36 +130,35 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
     }
 
     public long getSentenceRemaining(UUID playerId, UUID capitalId) {
-        return sentences.getOrDefault(new RouteKey(playerId, capitalId), 0L);
+        Map<UUID, Long> sentences = sentencesByPlayer.get(playerId);
+        return sentences == null ? 0L : sentences.getOrDefault(capitalId, 0L);
     }
 
     public Map<UUID, Long> getSentences(UUID playerId) {
-        Map<UUID, Long> result = new LinkedHashMap<>();
-        for (Map.Entry<RouteKey, Long> entry : sentences.entrySet()) {
-            if (entry.getKey().playerId().equals(playerId)) {
-                result.put(entry.getKey().capitalId(), entry.getValue());
-            }
-        }
-        return result;
+        Map<UUID, Long> sentences = sentencesByPlayer.get(playerId);
+        return sentences == null || sentences.isEmpty()
+                ? Map.of()
+                : new LinkedHashMap<>(sentences);
     }
 
     public void setSentence(UUID playerId, UUID capitalId, long remainingTicks) {
         if (playerId == null || capitalId == null) {
             return;
         }
-        sentences.put(
-                new RouteKey(playerId, capitalId),
-                Math.max(0L, remainingTicks)
-        );
+
+        sentencesByPlayer
+                .computeIfAbsent(playerId, ignored -> new LinkedHashMap<>())
+                .put(capitalId, Math.max(0L, remainingTicks));
         setDirty();
     }
 
     public boolean updateSentence(UUID playerId, UUID capitalId, long remainingTicks) {
-        RouteKey key = new RouteKey(playerId, capitalId);
-        if (!sentences.containsKey(key)) {
+        LinkedHashMap<UUID, Long> sentences = sentencesByPlayer.get(playerId);
+        if (sentences == null || !sentences.containsKey(capitalId)) {
             return false;
         }
-        sentences.put(key, Math.max(0L, remainingTicks));
+
+        sentences.put(capitalId, Math.max(0L, remainingTicks));
         setDirty();
         return true;
     }
@@ -170,25 +181,36 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
     @Override
     public CompoundTag save(CompoundTag tag) {
         ListTag leaveOrderTags = new ListTag();
-        for (Map.Entry<RouteKey, LeaveOrder> entry : leaveOrders.entrySet()) {
-            CompoundTag value = saveRoute(entry.getKey());
-            value.putLong(KEY_REMAINING_TICKS, entry.getValue().remainingTicks());
-            value.putString(KEY_CASE_KEY, entry.getValue().caseKey());
-            leaveOrderTags.add(value);
+        for (Map.Entry<UUID, LinkedHashMap<UUID, LeaveOrder>> playerEntry :
+                leaveOrdersByPlayer.entrySet()) {
+            UUID playerId = playerEntry.getKey();
+            for (Map.Entry<UUID, LeaveOrder> entry : playerEntry.getValue().entrySet()) {
+                CompoundTag value = saveRoute(playerId, entry.getKey());
+                value.putLong(KEY_REMAINING_TICKS, entry.getValue().remainingTicks());
+                value.putString(KEY_CASE_KEY, entry.getValue().caseKey());
+                leaveOrderTags.add(value);
+            }
         }
         tag.put(KEY_LEAVE_ORDERS, leaveOrderTags);
 
         ListTag warrantTags = new ListTag();
-        for (RouteKey key : warrants) {
-            warrantTags.add(saveRoute(key));
+        for (Map.Entry<UUID, LinkedHashSet<UUID>> playerEntry : warrantsByPlayer.entrySet()) {
+            UUID playerId = playerEntry.getKey();
+            for (UUID capitalId : playerEntry.getValue()) {
+                warrantTags.add(saveRoute(playerId, capitalId));
+            }
         }
         tag.put(KEY_WARRANTS, warrantTags);
 
         ListTag sentenceTags = new ListTag();
-        for (Map.Entry<RouteKey, Long> entry : sentences.entrySet()) {
-            CompoundTag value = saveRoute(entry.getKey());
-            value.putLong(KEY_REMAINING_TICKS, entry.getValue());
-            sentenceTags.add(value);
+        for (Map.Entry<UUID, LinkedHashMap<UUID, Long>> playerEntry :
+                sentencesByPlayer.entrySet()) {
+            UUID playerId = playerEntry.getKey();
+            for (Map.Entry<UUID, Long> entry : playerEntry.getValue().entrySet()) {
+                CompoundTag value = saveRoute(playerId, entry.getKey());
+                value.putLong(KEY_REMAINING_TICKS, entry.getValue());
+                sentenceTags.add(value);
+            }
         }
         tag.put(KEY_SENTENCES, sentenceTags);
 
@@ -202,29 +224,31 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
         return tag;
     }
 
-    public static CapitalPlayerWarrantSavedData load(
-            CompoundTag tag
-    ) {
+    public static CapitalPlayerWarrantSavedData load(CompoundTag tag) {
         CapitalPlayerWarrantSavedData data = new CapitalPlayerWarrantSavedData();
 
         for (Tag raw : tag.getList(KEY_LEAVE_ORDERS, Tag.TAG_COMPOUND)) {
             CompoundTag value = (CompoundTag) raw;
             RouteKey key = loadRoute(value);
             if (key != null) {
-                data.leaveOrders.put(
-                        key,
-                        new LeaveOrder(
-                                Math.max(0L, value.getLong(KEY_REMAINING_TICKS)),
-                                value.getString(KEY_CASE_KEY)
-                        )
-                );
+                data.leaveOrdersByPlayer
+                        .computeIfAbsent(key.playerId(), ignored -> new LinkedHashMap<>())
+                        .put(
+                                key.capitalId(),
+                                new LeaveOrder(
+                                        Math.max(0L, value.getLong(KEY_REMAINING_TICKS)),
+                                        value.getString(KEY_CASE_KEY)
+                                )
+                        );
             }
         }
 
         for (Tag raw : tag.getList(KEY_WARRANTS, Tag.TAG_COMPOUND)) {
             RouteKey key = loadRoute((CompoundTag) raw);
             if (key != null) {
-                data.warrants.add(key);
+                data.warrantsByPlayer
+                        .computeIfAbsent(key.playerId(), ignored -> new LinkedHashSet<>())
+                        .add(key.capitalId());
             }
         }
 
@@ -232,10 +256,12 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
             CompoundTag value = (CompoundTag) raw;
             RouteKey key = loadRoute(value);
             if (key != null) {
-                data.sentences.put(
-                        key,
-                        Math.max(0L, value.getLong(KEY_REMAINING_TICKS))
-                );
+                data.sentencesByPlayer
+                        .computeIfAbsent(key.playerId(), ignored -> new LinkedHashMap<>())
+                        .put(
+                                key.capitalId(),
+                                Math.max(0L, value.getLong(KEY_REMAINING_TICKS))
+                        );
             }
         }
 
@@ -249,10 +275,10 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
         return data;
     }
 
-    private static CompoundTag saveRoute(RouteKey key) {
+    private static CompoundTag saveRoute(UUID playerId, UUID capitalId) {
         CompoundTag tag = new CompoundTag();
-        tag.putUUID(KEY_PLAYER_ID, key.playerId());
-        tag.putUUID(KEY_CAPITAL_ID, key.capitalId());
+        tag.putUUID(KEY_PLAYER_ID, playerId);
+        tag.putUUID(KEY_CAPITAL_ID, capitalId);
         return tag;
     }
 
@@ -261,6 +287,36 @@ public final class CapitalPlayerWarrantSavedData extends SavedData {
             return null;
         }
         return new RouteKey(tag.getUUID(KEY_PLAYER_ID), tag.getUUID(KEY_CAPITAL_ID));
+    }
+
+    private static <T> boolean removeNestedValue(
+            Map<UUID, ? extends Map<UUID, T>> valuesByPlayer,
+            UUID playerId,
+            UUID capitalId
+    ) {
+        Map<UUID, T> values = valuesByPlayer.get(playerId);
+        if (values == null || values.remove(capitalId) == null) {
+            return false;
+        }
+        if (values.isEmpty()) {
+            valuesByPlayer.remove(playerId);
+        }
+        return true;
+    }
+
+    private static boolean removeNestedSetValue(
+            Map<UUID, ? extends Set<UUID>> valuesByPlayer,
+            UUID playerId,
+            UUID capitalId
+    ) {
+        Set<UUID> values = valuesByPlayer.get(playerId);
+        if (values == null || !values.remove(capitalId)) {
+            return false;
+        }
+        if (values.isEmpty()) {
+            valuesByPlayer.remove(playerId);
+        }
+        return true;
     }
 
     private record RouteKey(UUID playerId, UUID capitalId) {

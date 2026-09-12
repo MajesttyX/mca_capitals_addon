@@ -3,12 +3,14 @@ package com.majesttyx.mcacapitals.util;
 import com.majesttyx.mcacapitals.capital.CapitalCourtWatcher;
 import com.majesttyx.mcacapitals.capital.CapitalManager;
 import com.majesttyx.mcacapitals.capital.CapitalRecord;
-import com.majesttyx.mcacapitals.capital.CapitalResidentScanner;
 import com.majesttyx.mcacapitals.data.CapitalDataAccess;
 import com.majesttyx.mcacapitals.data.CapitalSavedData;
+import com.majesttyx.mcacapitals.network.PendingNetworkInteractionService;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -26,9 +28,6 @@ public class CapitalLifecycleHandler {
     public void onServerStarted(ServerStartedEvent event) {
         CapitalRuntimeStateReset.clearServerSessionState();
         CapitalRuntimeStateReset.clearResourceCaches();
-        CapitalManager.clearAll();
-        CapitalResidentScanner.clearAllCaches();
-        CapitalCourtWatcher.clearAllFingerprints();
 
         ServerLevel overworld = event.getServer().overworld();
         if (overworld == null) {
@@ -241,6 +240,14 @@ public class CapitalLifecycleHandler {
         return ids;
     }
 
+
+    @SubscribeEvent
+    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PendingNetworkInteractionService.clearPlayer(player);
+        }
+    }
+
     @SubscribeEvent
     public void onAddReloadListeners(AddReloadListenerEvent event) {
         CapitalRuntimeStateReset.clearResourceCaches();
@@ -250,8 +257,5 @@ public class CapitalLifecycleHandler {
     public void onServerStopped(ServerStoppedEvent event) {
         CapitalRuntimeStateReset.clearServerSessionState();
         CapitalRuntimeStateReset.clearResourceCaches();
-        CapitalManager.clearAll();
-        CapitalResidentScanner.clearAllCaches();
-        CapitalCourtWatcher.clearAllFingerprints();
     }
 }

@@ -5,23 +5,29 @@ import net.minecraft.server.level.ServerLevel;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class CapitalManager {
 
     private static final Map<UUID, CapitalRecord> CAPITALS = new LinkedHashMap<>();
+    private static final Set<UUID> ROYAL_GUARD_IDS = new HashSet<>();
+    private static boolean royalGuardIndexDirty = true;
 
     private CapitalManager() {
     }
 
     public static void clear() {
         CAPITALS.clear();
+        invalidateRoyalGuardIndex();
     }
 
     public static void clearAll() {
         CAPITALS.clear();
+        invalidateRoyalGuardIndex();
     }
 
     public static boolean isEmpty() {
@@ -33,6 +39,7 @@ public class CapitalManager {
             return;
         }
         CAPITALS.put(capital.getCapitalId(), capital);
+        invalidateRoyalGuardIndex();
     }
 
     public static CapitalRecord getCapital(UUID capitalId) {
@@ -47,6 +54,34 @@ public class CapitalManager {
             return;
         }
         CAPITALS.remove(capitalId);
+        invalidateRoyalGuardIndex();
+    }
+
+    public static boolean isRoyalGuard(UUID entityId) {
+        if (entityId == null) {
+            return false;
+        }
+
+        rebuildRoyalGuardIndexIfNeeded();
+        return ROYAL_GUARD_IDS.contains(entityId);
+    }
+
+    static void invalidateRoyalGuardIndex() {
+        royalGuardIndexDirty = true;
+    }
+
+    private static void rebuildRoyalGuardIndexIfNeeded() {
+        if (!royalGuardIndexDirty) {
+            return;
+        }
+
+        ROYAL_GUARD_IDS.clear();
+        for (CapitalRecord capital : CAPITALS.values()) {
+            if (capital != null) {
+                ROYAL_GUARD_IDS.addAll(capital.getRoyalGuards());
+            }
+        }
+        royalGuardIndexDirty = false;
     }
 
     public static Map<UUID, CapitalRecord> getAllCapitals() {

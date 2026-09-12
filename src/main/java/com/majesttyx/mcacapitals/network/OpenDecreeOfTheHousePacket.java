@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 
 public class OpenDecreeOfTheHousePacket {
 
-    private final UUID targetId;
+    private final UUID authorizationToken;
     private final boolean playerTarget;
     private final String firstName;
     private final String currentSurname;
@@ -20,7 +20,7 @@ public class OpenDecreeOfTheHousePacket {
     private final String houseWords;
 
     public OpenDecreeOfTheHousePacket(
-            UUID targetId,
+            UUID authorizationToken,
             boolean playerTarget,
             String firstName,
             String currentSurname,
@@ -28,7 +28,7 @@ public class OpenDecreeOfTheHousePacket {
             String houseName,
             String houseWords
     ) {
-        this.targetId = targetId;
+        this.authorizationToken = authorizationToken;
         this.playerTarget = playerTarget;
         this.firstName = firstName == null ? "" : firstName;
         this.currentSurname = currentSurname == null ? "" : currentSurname;
@@ -37,8 +37,8 @@ public class OpenDecreeOfTheHousePacket {
         this.houseWords = houseWords == null ? "" : houseWords;
     }
 
-    public UUID targetId() {
-        return targetId;
+    public UUID authorizationToken() {
+        return authorizationToken;
     }
 
     public boolean playerTarget() {
@@ -66,7 +66,7 @@ public class OpenDecreeOfTheHousePacket {
     }
 
     public static void encode(OpenDecreeOfTheHousePacket packet, FriendlyByteBuf buffer) {
-        buffer.writeUUID(packet.targetId);
+        buffer.writeUUID(packet.authorizationToken);
         buffer.writeBoolean(packet.playerTarget);
         buffer.writeUtf(packet.firstName);
         buffer.writeUtf(packet.currentSurname);
@@ -76,7 +76,7 @@ public class OpenDecreeOfTheHousePacket {
     }
 
     public static OpenDecreeOfTheHousePacket decode(FriendlyByteBuf buffer) {
-        UUID targetId = buffer.readUUID();
+        UUID authorizationToken = buffer.readUUID();
         boolean playerTarget = buffer.readBoolean();
         String firstName = buffer.readUtf();
         String currentSurname = buffer.readUtf();
@@ -85,7 +85,7 @@ public class OpenDecreeOfTheHousePacket {
         String houseWords = buffer.readUtf();
 
         return new OpenDecreeOfTheHousePacket(
-                targetId,
+                authorizationToken,
                 playerTarget,
                 firstName,
                 currentSurname,

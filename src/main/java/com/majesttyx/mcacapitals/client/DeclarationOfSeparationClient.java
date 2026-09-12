@@ -18,7 +18,7 @@ public final class DeclarationOfSeparationClient {
     }
 
     public static void open(
-            UUID targetId,
+            UUID authorizationToken,
             String targetName,
             String currentHouse,
             String currentHouseWords
@@ -26,7 +26,7 @@ public final class DeclarationOfSeparationClient {
         Minecraft.getInstance()
                 .setScreen(
                         new DeclarationScreen(
-                                targetId,
+                                authorizationToken,
                                 targetName,
                                 currentHouse,
                                 currentHouseWords
@@ -44,7 +44,7 @@ public final class DeclarationOfSeparationClient {
         private static final int TEXT_COLOR = 0x2F2418;
         private static final int MUTED_COLOR = 0x625849;
 
-        private final UUID targetId;
+        private final UUID authorizationToken;
         private final String targetName;
         private final String currentHouse;
         private final String currentHouseWords;
@@ -56,7 +56,7 @@ public final class DeclarationOfSeparationClient {
         private int panelY;
 
         private DeclarationScreen(
-                UUID targetId,
+                UUID authorizationToken,
                 String targetName,
                 String currentHouse,
                 String currentHouseWords
@@ -67,7 +67,7 @@ public final class DeclarationOfSeparationClient {
                     )
             );
 
-            this.targetId = targetId;
+            this.authorizationToken = authorizationToken;
             this.targetName =
                     targetName == null
                             ? ""
@@ -164,7 +164,7 @@ public final class DeclarationOfSeparationClient {
         private void confirm() {
             ModNetwork.sendToServer(
                     new SubmitDeclarationOfSeparationPacket(
-                            targetId,
+                            authorizationToken,
                             houseName.getValue(),
                             houseWords.getValue()
                     )

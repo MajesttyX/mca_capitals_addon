@@ -21,6 +21,13 @@ public class CapitalSuccessionService {
     }
 
     public static boolean handleSuccessionIfNeeded(ServerLevel level, CapitalRecord capital) {
+        if (CapitalWartimeSuccessionService.handleIfNeeded(
+                level,
+                capital
+        )) {
+            return true;
+        }
+
         UUID sovereign = capital.getSovereign();
         if (sovereign == null) {
             return false;

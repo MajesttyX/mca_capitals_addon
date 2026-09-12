@@ -1,7 +1,7 @@
 package com.majesttyx.mcacapitals.mixin;
 
 import com.majesttyx.mcacapitals.capital.CapitalManager;
-import com.majesttyx.mcacapitals.capital.CapitalRecord;
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.UUID;
 
 @Mixin(Entity.class)
 public abstract class EntitySprintingRoyalGuardMixin {
@@ -21,16 +20,13 @@ public abstract class EntitySprintingRoyalGuardMixin {
         }
 
         Entity self = (Entity) (Object) this;
-        if (!(self.level() instanceof ServerLevel)) {
+        if (!(self instanceof VillagerEntityMCA)
+                || !(self.level() instanceof ServerLevel)) {
             return;
         }
 
-        UUID entityId = self.getUUID();
-        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
-            if (capital != null && capital.isRoyalGuard(entityId)) {
-                ci.cancel();
-                return;
-            }
+        if (CapitalManager.isRoyalGuard(self.getUUID())) {
+            ci.cancel();
         }
     }
 }

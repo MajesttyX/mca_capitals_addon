@@ -50,9 +50,9 @@ public final class CapitalCampaignRecord {
     private final UUID attackingCapitalId;
     private final UUID defendingCapitalId;
     private final UUID initiatingPlayerId;
-    private final List<UUID> attackerIds;
-    private final List<UUID> defenderIds;
-    private final List<UUID> returnedAttackerIds;
+    private final Set<UUID> attackerIds;
+    private final Set<UUID> defenderIds;
+    private final Set<UUID> returnedAttackerIds;
     private final long createdAt;
 
     private CapitalCampaignPhase phase;
@@ -261,16 +261,16 @@ public final class CapitalCampaignRecord {
         this.defendingCapitalId = defendingCapitalId;
         this.initiatingPlayerId = initiatingPlayerId;
         this.attackerIds =
-                new ArrayList<>(normalizedAttackers);
+                new LinkedHashSet<>(normalizedAttackers);
         this.defenderIds =
-                new ArrayList<>(
+                new LinkedHashSet<>(
                         normalizeCombatants(
                                 defenderIds,
                                 Integer.MAX_VALUE
                         )
                 );
         this.returnedAttackerIds =
-                new ArrayList<>(
+                new LinkedHashSet<>(
                         normalizeCombatants(
                                 returnedAttackerIds,
                                 MAX_ATTACKERS
@@ -917,7 +917,7 @@ public final class CapitalCampaignRecord {
     }
 
     private static ListTag saveCombatants(
-            List<UUID> ids
+            Iterable<UUID> ids
     ) {
         ListTag tag =
                 new ListTag();

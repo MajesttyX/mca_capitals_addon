@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.util;
 
+import forge.net.conczin.mca.entity.VillagerEntityMCA;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
@@ -7,7 +8,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.AABB;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,8 +52,7 @@ final class MCAEntityBridge {
             return false;
         }
 
-        Class<?> villagerClass = MCAReflectionHelper.resolveAnyClass(MCAReflectionHelper.MCA_VILLAGER_CLASSES);
-        return villagerClass != null && villagerClass.isInstance(entity);
+        return entity instanceof VillagerEntityMCA;
     }
 
     static boolean isAliveMCAVillager(ServerLevel level, UUID entityId) {
@@ -313,13 +312,11 @@ final class MCAEntityBridge {
             return Collections.emptyList();
         }
 
-        List<Entity> result = new ArrayList<>();
-        for (Entity entity : level.getEntities().getAll()) {
-            if (entity != null && isAliveMCAVillagerEntity(entity) && entity.getBoundingBox().intersects(area)) {
-                result.add(entity);
-            }
-        }
-        return result;
+        return level.getEntities(
+                (Entity) null,
+                area,
+                MCAEntityBridge::isAliveMCAVillagerEntity
+        );
     }
 
     static void addEffect(Entity entity, MobEffectInstance effect) {

@@ -1,5 +1,6 @@
 package com.majesttyx.mcacapitals.capital;
 
+import com.majesttyx.mcacapitals.data.CapitalInterregnumRecord;
 import com.majesttyx.mcacapitals.noble.NobleTitle;
 import com.majesttyx.mcacapitals.player.PlayerCapitalTitleService;
 import com.majesttyx.mcacapitals.util.MCAIntegrationBridge;
@@ -14,10 +15,20 @@ public class CapitalTitleResolver {
     }
 
     public static String getDisplayTitle(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        Component interregnumTitle = resolveInterregnumTitleComponent(level, capital, entityId);
+        if (interregnumTitle != null) {
+            return interregnumTitle.getString();
+        }
+
         return getDisplayTitleComponent(level, capital, entityId).getString();
     }
 
     public static Component getDisplayTitleComponent(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        Component interregnumTitle = resolveInterregnumTitleComponent(level, capital, entityId);
+        if (interregnumTitle != null) {
+            return interregnumTitle;
+        }
+
         if (entityId == null || capital == null) {
             return Component.empty();
         }
@@ -27,6 +38,11 @@ public class CapitalTitleResolver {
     }
 
     public static ResolvedTitleId getResolvedTitleId(ServerLevel level, CapitalRecord capital, UUID entityId) {
+        ResolvedTitleId interregnumTitleId = resolveInterregnumTitleId(level, capital, entityId);
+        if (interregnumTitleId != null) {
+            return interregnumTitleId;
+        }
+
         if (entityId == null || capital == null) {
             return ResolvedTitleId.NONE;
         }
@@ -74,10 +90,20 @@ public class CapitalTitleResolver {
     }
 
     public static String getDisplayTitleForEntity(ServerLevel level, UUID entityId) {
+        Component interregnumTitle = resolveGlobalInterregnumTitleComponent(level, entityId);
+        if (interregnumTitle != null) {
+            return interregnumTitle.getString();
+        }
+
         return getDisplayTitleComponentForEntity(level, entityId).getString();
     }
 
     public static Component getDisplayTitleComponentForEntity(ServerLevel level, UUID entityId) {
+        Component interregnumTitle = resolveGlobalInterregnumTitleComponent(level, entityId);
+        if (interregnumTitle != null) {
+            return interregnumTitle;
+        }
+
         if (entityId == null) {
             return Component.empty();
         }
@@ -103,6 +129,11 @@ public class CapitalTitleResolver {
     }
 
     public static ResolvedTitleId getResolvedTitleIdForEntity(ServerLevel level, UUID entityId) {
+        ResolvedTitleId interregnumTitleId = resolveGlobalInterregnumTitleId(level, entityId);
+        if (interregnumTitleId != null) {
+            return interregnumTitleId;
+        }
+
         if (entityId == null) {
             return ResolvedTitleId.COMMONER;
         }
@@ -169,6 +200,102 @@ public class CapitalTitleResolver {
         }
 
         return getResolvedTitleId(level, capital, entityId) == ResolvedTitleId.ROYAL_GUARD;
+    }
+
+    private static Component resolveGlobalInterregnumTitleComponent(
+            ServerLevel level,
+            UUID entityId
+    ) {
+        if (level == null || entityId == null) {
+            return null;
+        }
+
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            Component title = resolveInterregnumTitleComponent(level, capital, entityId);
+            if (title != null) {
+                return title;
+            }
+        }
+
+        return null;
+    }
+
+    private static ResolvedTitleId resolveGlobalInterregnumTitleId(
+            ServerLevel level,
+            UUID entityId
+    ) {
+        if (level == null || entityId == null) {
+            return null;
+        }
+
+        for (CapitalRecord capital : CapitalManager.getAllCapitalRecords()) {
+            ResolvedTitleId titleId = resolveInterregnumTitleId(level, capital, entityId);
+            if (titleId != null) {
+                return titleId;
+            }
+        }
+
+        return null;
+    }
+
+    private static Component resolveInterregnumTitleComponent(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID entityId
+    ) {
+        CapitalInterregnumRecord record = resolveInterregnumRecord(level, capital, entityId);
+        if (record == null) {
+            return null;
+        }
+
+        if (record.wasDeposition()) {
+            return Component.empty();
+        }
+
+        return Component.translatable(
+                record.wasDeceasedSovereignFemale()
+                        ? "mcacapitals.dynamic.title.sovereign.female"
+                        : "mcacapitals.dynamic.title.sovereign.male"
+        );
+    }
+
+    private static ResolvedTitleId resolveInterregnumTitleId(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID entityId
+    ) {
+        CapitalInterregnumRecord record = resolveInterregnumRecord(level, capital, entityId);
+        if (record == null) {
+            return null;
+        }
+
+        return record.wasDeposition()
+                ? ResolvedTitleId.COMMONER
+                : ResolvedTitleId.SOVEREIGN;
+    }
+
+    private static CapitalInterregnumRecord resolveInterregnumRecord(
+            ServerLevel level,
+            CapitalRecord capital,
+            UUID entityId
+    ) {
+        if (level == null
+                || capital == null
+                || capital.getCapitalId() == null
+                || entityId == null) {
+            return null;
+        }
+
+        CapitalInterregnumRecord record = CapitalWartimeSuccessionService.getRecord(
+                level,
+                capital.getCapitalId()
+        );
+
+        if (record == null || !entityId.equals(record.getDeceasedSovereignId())) {
+            return null;
+        }
+
+        return record;
     }
 
     private static ResolvedTitle resolveLocalTitle(ServerLevel level, CapitalRecord capital, UUID entityId) {

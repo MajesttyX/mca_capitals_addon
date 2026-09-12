@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 public final class CapitalCampaignSavedData
         extends SavedData {
@@ -124,6 +125,43 @@ public final class CapitalCampaignSavedData
         }
 
         return removed;
+    }
+
+    public CapitalCampaignRecord getActiveCombatCampaignForParticipant(
+            UUID villagerId
+    ) {
+        if (villagerId == null) {
+            return null;
+        }
+
+        for (CapitalCampaignRecord campaign : campaigns.values()) {
+            if (campaign != null
+                    && campaign.getPhase() == CapitalCampaignPhase.ACTIVE
+                    && (campaign.containsAttacker(villagerId)
+                    || campaign.containsDefender(villagerId))) {
+                return campaign;
+            }
+        }
+
+        return null;
+    }
+
+    public CapitalCampaignRecord findActiveCombatCampaign(
+            Predicate<CapitalCampaignRecord> predicate
+    ) {
+        if (predicate == null) {
+            return null;
+        }
+
+        for (CapitalCampaignRecord campaign : campaigns.values()) {
+            if (campaign != null
+                    && campaign.getPhase() == CapitalCampaignPhase.ACTIVE
+                    && predicate.test(campaign)) {
+                return campaign;
+            }
+        }
+
+        return null;
     }
 
     public List<CapitalCampaignRecord>
