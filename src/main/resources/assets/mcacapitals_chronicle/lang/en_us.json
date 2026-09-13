@@ -77,6 +77,7 @@
   "mcacapitals.chronicle.event.hand_appointed": "%1$s was appointed %2$s of %3$s.",
   "mcacapitals.chronicle.event.hand_vacant": "The office of %1$s stands vacant in %2$s.",
   "mcacapitals.chronicle.event.heir_apparent_named": "%1$s was named Heir Apparent of %2$s.",
+  "mcacapitals.chronicle.event.house_separation": "%1$s separated from %2$s and founded %3$s.",
   "mcacapitals.chronicle.event.legitimized": "%1$s was legitimized and recognized as %2$s of %3$s.",
   "mcacapitals.chronicle.event.lord_elevated": "%1$s was raised to the dignity of %2$s in %3$s.",
   "mcacapitals.chronicle.event.master_of_laws_appointed": "%1$s was appointed Master of Laws of %2$s.",
